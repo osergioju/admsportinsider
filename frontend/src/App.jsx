@@ -1,35 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
+import Login from "./Pages/Auth/Login";
+import Register from "./Pages/Auth/Register";
+import Dashboard from "./Pages/Dashboard/Main";
+import NotFound from "./Pages/Errors/NotFound";
 
+// User pages
+import UserIndex from "./Pages/User";
+import UserPerfil from "./Pages/User/Perfil";
+import UserConfiguracoes from "./Pages/User/Configuracoes";
+
+// Admin pages
+import AdminIndex from "./Pages/Admin";
+
+// Layouts
+import AuthLayout from "./layouts/AuthLayout";
+import DashboardLayout from "./layouts/DashboardLayout";
+
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <BrowserRouter>
+      <Routes>
 
-export default App
+        {/* ---- Layout sem sidebar ---- */}
+        <Route element={<AuthLayout />}>
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+        </Route>
+
+        {/* ---- Layout com sidebar ---- */}
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+
+          {/* User routes */}
+          <Route path="/user" element={<UserIndex />} />
+          <Route path="/user/perfil" element={<UserPerfil />} />
+          <Route path="/user/configuracoes" element={<UserConfiguracoes />} />
+
+          {/* Admin */}
+          <Route path="/admin" element={<AdminIndex />} />
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
