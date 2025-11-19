@@ -22,7 +22,9 @@ export function AuthProvider({ children }) {
           setUser(null);
         })
         .finally(() => {
-          setLoading(false);
+          setTimeout(() => {
+            setLoading(false);
+          }, 1500); // 1.5s pra você ver o efeito
         });
     } else {
       setLoading(false);

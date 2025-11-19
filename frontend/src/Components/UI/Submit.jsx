@@ -4,7 +4,7 @@ export default function Submit({ value = "Enviar", type = "submit", ...props }) 
       <input
         type={type}
         value={value}
-        className="px-6 bg-[#440e6d] text-white py-2 rounded w-full"
+        className="cursor-pointer px-6 bg-[#440e6d] text-white py-4 rounded-full uppercase w-full"
         {...props}
       />
     </div>

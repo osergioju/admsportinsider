@@ -1,10 +1,14 @@
 import { useState } from "react";
-import Input from "../../Components/UI/Input";
-import Submit from "../../Components/UI/Submit";
+import Input from "../../components/ui/Input";
+import Submit from "../../components/ui/Submit";
 import useTitle from '../../hooks/useTitle'
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import LoadingSkeleton from "../../components/ui/LoadingSkeleton";
+
+// iconezuxo 
+import { Panda } from "lucide-react";
 
 export default function Login() {
     useTitle("Entre na sua conta");
@@ -16,6 +20,7 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [error, setError] = useState("");
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
 
     // Enviar o formulário para a API do logim
     const handleSubmit = async (event) => {
@@ -23,6 +28,7 @@ export default function Login() {
 
         // Remove o erro 
         setError("");
+        setIsLoggingIn(true);
 
         try {
             const response = await fetch("http://localhost:3000/auth/login", {
@@ -41,9 +47,9 @@ export default function Login() {
 
             if (response.ok) {
                 login(data.token, data.user);
+                setIsLoggingIn(false);
 
                 // Redireciona para o dashboard
-
                 if (data.user.role === "user") navigate("/dashboard");
                 if (data.user.role === "admin") navigate("/admin");
                 if (data.user.role === "admin_master") navigate("/admin");
@@ -56,14 +62,19 @@ export default function Login() {
         }
     };
 
+    if (isLoggingIn) {
+        return <LoadingSkeleton />;
+    }
 
     return (
         <div className="mx-2">
-            <h1 className="text-2xl font-bold mb-6">Entrar</h1>
+            <Panda className="w-10 h-10 text-white"></Panda>
+            <h1 className="font-bold mb-6 text-white font-light text-5xl">Entrar</h1>
 
             <form onSubmit={handleSubmit}>
                 <Input
                     label="E-mail"
+                    labelColor="text-white"
                     type="email"
                     placeholder="seu@email.com"
                     value={email}
@@ -72,6 +83,7 @@ export default function Login() {
 
                 <Input
                     label="Senha"
+                    labelColor="text-white"
                     type="password"
                     placeholder="********"
                     value={senha}

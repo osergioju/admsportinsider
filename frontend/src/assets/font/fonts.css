@@ -1,0 +1,141 @@
+@font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 100; /* Hairline */
+    src: local('Effra Trial Hairline'), url('./Effra_Trial_Hair.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 100; /* Hairline Italic */
+    src: local('Effra Trial Hairline Italic'), url('./Effra_Trial_HairIt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 200; /* Thin */
+    src: local('Effra Trial Thin'), url('./Effra_Trial_Th.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 200; /* Thin Italic */
+    src: local('Effra Trial Thin Italic'), url('./Effra_Trial_ThIt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 300; /* Light */
+    src: local('Effra Trial Light'), url('./Effra_Trial_Lt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 300; /* Light Italic */
+    src: local('Effra Trial Light Italic'), url('./Effra_Trial_LtIt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 400; /* Regular */
+    src: local('Effra Trial Regular'), url('./Effra_Trial_Rg.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 400; /* Italic */
+    src: local('Effra Trial Italic'), url('./Effra_Trial_It.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 500; /* Medium */
+    src: local('Effra Trial Medium'), url('./Effra_Trial_Md.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 500; /* Medium Italic */
+    src: local('Effra Trial Medium Italic'), url('./Effra_Trial_MdIt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 600; /* SemiBold */
+    src: local('Effra Trial SemiBold'), url('./Effra_Trial_SBd.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 600; /* SemiBold Italic */
+    src: local('Effra Trial SemiBold Italic'), url('./Effra_Trial_SBdIt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 700; /* Bold */
+    src: local('Effra Trial Bold'), url('./Effra_Trial_Bd.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 700; /* Bold Italic */
+    src: local('Effra Trial Bold Italic'), url('./Effra_Trial_BdIt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 800; /* ExtraBold */
+    src: local('Effra Trial XBold'), url('./Effra_Trial_XBd.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 800; /* ExtraBold Italic */
+    src: local('Effra Trial XBold Italic'), url('./Effra_Trial_XBdIt.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: normal;
+    font-weight: 900; /* Black */
+    src: local('Effra Trial Black'), url('./Effra_Trial_Blk.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial';
+    font-style: italic;
+    font-weight: 900; /* Black Italic */
+    src: local('Effra Trial Black Italic'), url('./Effra_Trial_BlkIt.woff') format('woff');
+  }
+  
+  /* Variable Font (Regular) */
+  @font-face {
+    font-family: 'Effra Trial VF';
+    font-style: normal;
+    font-weight: 100 900;
+    src: local('Effra VF Trial Regular'), url('./EffraVF_Trial_Wght.woff') format('woff');
+  }
+  
+  @font-face {
+    font-family: 'Effra Trial VF';
+    font-style: italic;
+    font-weight: 100 900;
+    src: local('Effra VF Trial Regular'), url('./EffraVF_Trial_WghtItal.woff') format('woff');
+  }
+  
