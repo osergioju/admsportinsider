@@ -4,12 +4,15 @@ import Submit from "../../Components/UI/Submit";
 import useTitle from '../../hooks/useTitle'
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
     useTitle("Entre na sua conta");
     
     // Consts do ambiente
     const { login } = useContext(AuthContext);
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [error, setError] = useState("");
@@ -38,8 +41,12 @@ export default function Login() {
 
             if (response.ok) {
                 login(data.token, data.user);
+
                 // Redireciona para o dashboard
-                window.location.href = "/dashboard";
+
+                if (data.user.role === "user") navigate("/dashboard");
+                if (data.user.role === "admin") navigate("/admin");
+                if (data.user.role === "admin_master") navigate("/admin");
             } else {
                 setError(data.error);
             }

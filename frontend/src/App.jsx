@@ -16,6 +16,7 @@ import AdminIndex from "./Pages/Admin";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
+import AdminLayout from "./layouts/AdminLayout";
 
 // Rotas 
 import PrivateRoute from "./routes/PrivateRoute";
@@ -43,6 +44,17 @@ export default function App() {
               <Route path="/user" element={<UserIndex />} />
               <Route path="/user/perfil" element={<UserPerfil />} />
               <Route path="/user/configuracoes" element={<UserConfiguracoes />} />
+            </Route>
+
+          </Route>
+        </Route>
+
+        {/* ---- Adm - páginas do admin comum e do admin master ---- */}
+        <Route element={<PrivateRoute />}>
+          <Route element={<AdminLayout />}>
+
+            <Route element={<RoleRoute allowedRoles={["admin", "admin_master"]} />}>
+              <Route path="/admin" element={<AdminIndex />} />
             </Route>
 
           </Route>
