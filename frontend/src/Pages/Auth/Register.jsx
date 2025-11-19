@@ -1,7 +1,7 @@
 export default function Register() {
   return (
     <div>
-        Olá
+        Olá??
     </div>
   )
 }

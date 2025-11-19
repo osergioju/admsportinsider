@@ -25,20 +25,20 @@ export function AuthProvider({ children }) {
           setLoading(false);
         });
     } else {
-      // setLoading(false);
+      setLoading(false);
     }
   }, []);
 
   function login(token, userData) {
-    localStorage.setItem("token", token);
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    setUser(userData);
+      localStorage.setItem("token", token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setUser(userData);
   }
 
   function logout() {
-    localStorage.removeItem("token");
-    delete api.defaults.headers.common["Authorization"];
-    setUser(null);
+      localStorage.removeItem("token");
+      delete api.defaults.headers.common["Authorization"];
+      setUser(null);
   }
 
   return (

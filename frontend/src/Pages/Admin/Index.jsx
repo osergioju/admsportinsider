@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 export default function Admin() {
   return (
     <div>
-        Olá
+        Oláx
     </div>
   )
 }

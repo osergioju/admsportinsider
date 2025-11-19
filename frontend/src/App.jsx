@@ -17,30 +17,37 @@ import AdminIndex from "./Pages/Admin";
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 
+// Rotas 
+import PrivateRoute from "./routes/PrivateRoute";
+import RoleRoute from "./routes/RoleRoute";
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* ---- Layout sem sidebar ---- */}
+        {/* ---- Abertos para todos ---- */}
         <Route element={<AuthLayout />}>
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
         </Route>
 
-        {/* ---- Layout com sidebar ---- */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* User routes */}
-          <Route path="/user" element={<UserIndex />} />
-          <Route path="/user/perfil" element={<UserPerfil />} />
-          <Route path="/user/configuracoes" element={<UserConfiguracoes />} />
+        {/* ---- Apenas para usuários - Dashboard e afins ---- */}
+        <Route element={<PrivateRoute />}>
+          <Route element={<DashboardLayout />}>
 
-          {/* Admin */}
-          <Route path="/admin" element={<AdminIndex />} />
+            <Route element={<RoleRoute allowedRoles={["user"]} />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/user" element={<UserIndex />} />
+              <Route path="/user/perfil" element={<UserPerfil />} />
+              <Route path="/user/configuracoes" element={<UserConfiguracoes />} />
+            </Route>
+
+          </Route>
         </Route>
+
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

@@ -4,7 +4,7 @@ import { generateAccessToken } from "../config/jwt.js";
 import { db } from "../config/db.js";
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, senha } = req.body;
 
   try {
     // 1. Buscar usuário no banco
@@ -15,10 +15,10 @@ export const login = async (req, res) => {
     }
 
     // 2. Verificar senha
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    const passwordMatch = await bcrypt.compare(senha, user.password_hash);
 
     if (!passwordMatch) {
-      return res.status(401).json({ error: "Credenciais inválidas 2" });
+      return res.status(401).json({ error: "E-mail ou senha incorretos" });
     }
 
     // 3. Gerar JWT

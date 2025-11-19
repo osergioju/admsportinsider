@@ -1,6 +1,11 @@
 import { Outlet, Link } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 export default function DashboardLayout() {
+  // Sair 
+  const { logout } = useContext(AuthContext);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
 
@@ -14,6 +19,7 @@ export default function DashboardLayout() {
           <Link to="/user/perfil" className="hover:text-gray-300">Perfil</Link>
           <Link to="/user/configuracoes" className="hover:text-gray-300">Configurações</Link>
           <Link to="/admin" className="hover:text-gray-300">Admin</Link>
+          <button onClick={logout}>Sair</button>
         </nav>
       </aside>
 
