@@ -1,14 +1,14 @@
 import { Router } from "express";
-import { login, me } from "../controllers/auth.controller.js";
+import { login, me, resetPasswordRequest, resetPasswordConfirm } from "../controllers/auth.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-// POST /auth/login
+// Rotas de autenticação, login, cadastro, troca senha etc 
 router.post("/login", login);
+router.post("/reset-password", resetPasswordRequest);
 router.get("/me", authGuard, me);
+router.post("/reset-password/confirm", resetPasswordConfirm);
 
-// POST /auth/register
-// router.post("/register", register);
 
 export default router;

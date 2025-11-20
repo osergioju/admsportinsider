@@ -2,8 +2,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./Pages/Auth/Login";
 import Register from "./Pages/Auth/Register";
+import ResetPass from "./Pages/Auth/ResetPass";
 import Dashboard from "./Pages/Dashboard/Main";
 import NotFound from "./Pages/Errors/NotFound";
+import FrontPage from "./Pages/FrontPage";
+import ResetPassConfirm from "./Pages/Auth/ResetPassConfirm";
 
 // User pages
 import UserIndex from "./Pages/User";
@@ -29,9 +32,11 @@ export default function App() {
 
         {/* ---- Abertos para todos ---- */}
         <Route element={<AuthLayout />}>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<FrontPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPass />} />
+          <Route path="/reset" element={<ResetPassConfirm />} />
         </Route>
 
 

@@ -6,6 +6,7 @@ import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import LoadingSkeleton from "../../components/ui/LoadingSkeleton";
+import { api } from "../../services/api"; 
 
 // iconezuxo 
 import { Panda } from "lucide-react";
@@ -28,37 +29,25 @@ export default function Login() {
 
         // Remove o erro 
         setError("");
-        setIsLoggingIn(true);
 
         try {
-            const response = await fetch("http://localhost:3000/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email,
-                    senha,
-                }),
-            });
+            const { data } = await api.post("/auth/login", { email, senha });
 
-            const data = await response.json();
+            // Se chegou aqui, login deu certo
+            login(data.token, data.user);
+            setIsLoggingIn(false);
 
-
-            if (response.ok) {
-                login(data.token, data.user);
-                setIsLoggingIn(false);
-
-                // Redireciona para o dashboard
-                if (data.user.role === "user") navigate("/dashboard");
-                if (data.user.role === "admin") navigate("/admin");
-                if (data.user.role === "admin_master") navigate("/admin");
-            } else {
-                setError(data.error);
-            }
+            // Redireciona
+            if (data.user.role === "user") navigate("/dashboard");
+            if (data.user.role === "admin") navigate("/admin");
+            if (data.user.role === "admin_master") navigate("/admin");
 
         } catch (error) {
-            console.error("Erro ao fazer login:", error);
+            setIsLoggingIn(false);
+
+            // erro retornado pelo backend
+            const msg = error.response?.data?.error || "Erro ao fazer login.";
+            setError(msg);
         }
     };
 
@@ -78,6 +67,7 @@ export default function Login() {
                     type="email"
                     placeholder="seu@email.com"
                     value={email}
+                    variant="dark"
                     onChange={(e) => setEmail(e.target.value)}
                 />
 
@@ -87,6 +77,7 @@ export default function Login() {
                     type="password"
                     placeholder="********"
                     value={senha}
+                    variant="dark"
                     onChange={(e) => setSenha(e.target.value)}
                 />
 
