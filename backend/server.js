@@ -6,6 +6,7 @@ import { db } from "./src/config/db.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
+import dashboardRoutes from "./src/routes/dashboard.routes.js";
 import financeiroRoutes from "./src/routes/financeiro.routes.js";
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/admin", adminRoutes);
+app.use("/dashboard", dashboardRoutes);
 app.use("/financeiro", financeiroRoutes);
 
 app.listen(PORT, () => {

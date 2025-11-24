@@ -4,7 +4,7 @@ import { findUserByEmail } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 import { checkResetLimit } from "../utils/resetLimiter.js";
 import { db } from "../config/db.js";
-import { sendResetEmail } from "../utils/mailer.js";
+import { sendResetEmail, sendResetEmailSucess } from "../utils/mailer.js";
 
 // LOGIN BÁSICO
 export const login = async (req, res) => {
@@ -134,6 +134,7 @@ export async function resetPasswordRequest(req, res) {
       message:
         "Se o e-mail existir, você receberá um link de redefinição em instantes."
     });
+
   } catch (error) {
     console.error("Erro no resetPasswordRequest:", error);
     return res.status(500).json({
@@ -142,9 +143,10 @@ export async function resetPasswordRequest(req, res) {
   }
 }
 
+// RESET PASSWORD CONFIRM
 export async function resetPasswordConfirm(req, res) {
   try {
-    const { token, senha } = req.body;
+    const { token, senha,  } = req.body;
 
     if (!token || !senha) {
       return res.status(400).json({
@@ -153,10 +155,10 @@ export async function resetPasswordConfirm(req, res) {
       });
     }
 
-    // 1. Criar hash do token enviado
+    // Criar hash do token enviado
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-    // 2. Buscar token no banco
+    // buscar token no banco
     const result = await db.query(
       `
       SELECT pr.id, pr.user_id, pr.expires_at, u.email
@@ -176,28 +178,42 @@ export async function resetPasswordConfirm(req, res) {
 
     const reset = result.rows[0];
 
-    // 3. Verificar expiração
+    // Verificar expiração
     if (new Date(reset.expires_at) < new Date()) {
       return res.status(400).json({
         status: "error",
         message: "Token expirado. Solicite uma nova redefinição."
       });
     }
-
-    // 4. Gerar hash da nova senha
+    
+    // gerar hash da nova senha
     const hashedPassword = await bcrypt.hash(senha, 10);
 
-    // 5. Atualizar senha do usuário
+    // atualizar senha do usuário
     await db.query(
       "UPDATE users SET password_hash = $1 WHERE id = $2",
       [hashedPassword, reset.user_id]
     );
 
-    // 6. Apagar token após o uso
+    // Apagar token após o uso
     await db.query(
       "DELETE FROM password_resets WHERE id = $1",
       [reset.id]
     );
+
+    // Pega o e-mail do user com base no id fazendo select na base
+    const getUserMail = await db.query(
+      `
+      SELECT email
+      FROM users WHERE id = $1
+      `,
+      [reset.user_id]
+    );
+
+    const email = getUserMail.rows[0].email
+
+    // enviar e-mail de sucesso falando q ele mudou a senha 
+    await sendResetEmailSucess(email);
 
     return res.json({
       status: "ok",
