@@ -15,6 +15,7 @@ import UserConfiguracoes from "./Pages/User/Configuracoes";
 
 // Admin pages
 import AdminIndex from "./Pages/Admin";
+import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
@@ -44,7 +45,7 @@ export default function App() {
         <Route element={<PrivateRoute />}>
           <Route element={<DashboardLayout />}>
 
-            <Route element={<RoleRoute allowedRoles={["user"]} />}>
+            <Route element={<RoleRoute allowedRoles={["user", "admin_master"]} />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user" element={<UserIndex />} />
               <Route path="/user/perfil" element={<UserPerfil />} />
@@ -60,6 +61,7 @@ export default function App() {
 
             <Route element={<RoleRoute allowedRoles={["admin", "admin_master"]} />}>
               <Route path="/admin" element={<AdminIndex />} />
+              <Route path="/admin/send-league" element={<SendLeaguePage />} />
             </Route>
 
           </Route>

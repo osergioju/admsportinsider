@@ -2,6 +2,7 @@ import { useState } from "react";
 import SelectClubes from "../../components/charts/dashboard/filters/SelectClubes";
 import GraficoReceita from "../../components/charts/dashboard/GraficoReceita";
 import GraficoPizzaReceitas from "../../components/charts/dashboard/GraficoPizzaReceitas";
+import GraficoLigaBilheteria from "../../components/charts/dashboard/GraficoLigaBilheteria";
 
 export default function Main() {
   const [clubeSelecionado, setClubeSelecionado] = useState("");
@@ -14,6 +15,8 @@ export default function Main() {
       <GraficoReceita clube={clubeSelecionado} />
 
       <GraficoPizzaReceitas clube={clubeSelecionado} />
+
+      <GraficoLigaBilheteria />
     
     </div>
   );
