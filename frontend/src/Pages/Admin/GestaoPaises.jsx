@@ -3,7 +3,7 @@ import { api } from "../../services/api";
 import { Trash2, Loader, Check } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import paises from "world-countries";
+//import paises from "world-countries";
 import Select from  "../../components/ui/Select"
 
 export default function GestaoPaises() {
