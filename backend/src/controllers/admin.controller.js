@@ -87,6 +87,56 @@ export async function deleteCountry(req, res) {
   }
 }
 
+
+////////////
+/*  GESTAO DE USUÁRIOS */
+///////////
+export async function getAllUsers(req, res) {
+  try {
+    const result = await db.query(`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        u.created_at,
+        p.name AS plan_name
+      FROM users u
+      LEFT JOIN plans p ON p.id = u.plan_id
+      ORDER BY u.created_at DESC
+    `);
+    return res.json({
+      success: true,
+      users: result.rows,
+    });
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    return res.status(500).json({
+      error: "Erro ao obter usuários",
+    });
+  }
+}
+
+export async function getUserById(req, res) {
+  const { id } = req.params;
+
+    try {
+        const result = await db.query(
+            "SELECT * FROM users WHERE id = $1", [id]
+        );  
+
+        res.json({
+            success: true,
+            user: result.rows,
+        });
+    } catch (error) {
+        console.error("Erro ao buscar país:", error);
+        res.status(500).json({ error: "Erro ao obter país" });
+    }
+}
+
+
+
 ////// IMPORT DE XMLS 
 // IMPORT LIGA
 const upload = multer({ dest: "uploads/" });
@@ -126,3 +176,5 @@ export const uploadLeagueBalance = [
     }
   },
 ];
+
+
