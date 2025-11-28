@@ -15,9 +15,24 @@ export default function AdminLayout() {
 
         <nav className="flex flex-col space-y-3">
             {(user.role === "admin_master") && (
-                <Link to="/admin/painel" className="hover:text-gray-300">Painel do Admin</Link>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold mb-1">Dashboard</span>
+                  <Link to="/admin/gestao-paises" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Países</Link>
+                  <Link to="/admin/gestao-ligas" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Ligas</Link>
+                  <Link to="/admin/gestao-clubes" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Clubes</Link>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold mb-1">Configurações</span>
+                  <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Gestão de usuários</Link>
+                  <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Financeiro</Link>
+                  <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Insights</Link>
+                  <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Central de ajuda</Link>
+                </div>
+              </div>
             )}
-            <button onClick={logout}>Sair</button>
+            <button className="text-sm opacity-70 text-left underline font-light" onClick={logout}>Sair</button>
         </nav>
       </aside>
 

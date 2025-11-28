@@ -26,7 +26,66 @@ export async function getAllCountries(req, res) {
   }
 }
 
+// Pega o país pelo ID
+export async function getAllCountriesById(req, res) {
+  const { id } = req.params;
 
+  try {
+    const result = await db.query(
+      "SELECT id_country, name, flag_url FROM countries WHERE id_country = $1",
+      [id]
+    );  
+
+    res.json({
+      success: true,
+      countries: result.rows,
+    });
+  } catch (error) {
+    console.error("Erro ao buscar país:", error);
+    res.status(500).json({ error: "Erro ao obter país" });
+  }
+}
+
+// Cadastrar país
+export async function createCountry(req, res) {
+  const { codigo, flag, value } = req.body;
+
+  try {
+    await db.query(
+      "INSERT INTO countries (name, flag_url) VALUES ($1, $2)",
+      [value, flag]
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "País cadastrado com sucesso!"
+    });
+
+  } catch (error) {
+    console.error("Erro ao cadastrar país:", error);
+    return res.status(500).json({
+      error: "Erro ao cadastrar país"
+    });
+  }
+}
+
+// Deleta o país 
+export async function deleteCountry(req, res) {
+  const { id } = req.params;
+  
+  try {
+    await db.query("DELETE FROM countries WHERE id_country = $1", [id]);
+    return res.status(200).json({
+      success: true,
+      message: "País deletado com sucesso!"
+    });
+  } catch (error) {
+    console.error("Erro ao deletar país:", error);
+    return res.status(500).json({
+      error: "Erro ao deletar país"
+    });
+  }
+}
 
 ////// IMPORT DE XMLS 
 // IMPORT LIGA

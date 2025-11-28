@@ -13,10 +13,15 @@ import UserIndex from "./Pages/User";
 import UserPerfil from "./Pages/User/Perfil";
 import UserConfiguracoes from "./Pages/User/Configuracoes";
 
-// Admin pages
+// ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
 
+// ADMIN - Gestão de ligas, países e clubes
+import GestaoPaises from "./Pages/Admin/GestaoPaises";
+import GestaoLigas from "./Pages/Admin/GestaoLigas";
+import GestaoClubes from "./Pages/Admin/GestaoClubes";
+ 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -62,6 +67,12 @@ export default function App() {
             <Route element={<RoleRoute allowedRoles={["admin", "admin_master"]} />}>
               <Route path="/admin" element={<AdminIndex />} />
               <Route path="/admin/send-league" element={<SendLeaguePage />} />
+
+              {/* Gestão de países, ligas e clubes */}
+              <Route path="/admin/gestao-paises" element={<GestaoPaises />} />
+
+              <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
+              <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
             </Route>
 
           </Route>
