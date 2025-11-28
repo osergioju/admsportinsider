@@ -25,7 +25,7 @@ export default function AdminLayout() {
 
                 <div className="flex flex-col">
                   <span className="text-xl font-bold mb-1">Configurações</span>
-                  <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Gestão de usuários</Link>
+                  <Link to="/admin/usuarios" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Usuários</Link>
                   <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Financeiro</Link>
                   <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Insights</Link>
                   <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Central de ajuda</Link>

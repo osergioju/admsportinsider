@@ -22,6 +22,9 @@ import GestaoPaises from "./Pages/Admin/GestaoPaises";
 import GestaoLigas from "./Pages/Admin/GestaoLigas";
 import GestaoClubes from "./Pages/Admin/GestaoClubes";
  
+// ADMIN - Gestão do usuário 
+import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
+
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -73,6 +76,9 @@ export default function App() {
 
               <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
               <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
+
+              {/* GEstão de usuários */}
+              <Route path="/admin/usuarios" element={<AdminUsuarios />} />
             </Route>
 
           </Route>
