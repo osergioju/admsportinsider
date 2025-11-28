@@ -24,6 +24,7 @@ import GestaoClubes from "./Pages/Admin/GestaoClubes";
  
 // ADMIN - Gestão do usuário 
 import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
+import UnicoUsuario from "./Pages/Admin/Usuarios/UnicoUsuario";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
@@ -79,6 +80,7 @@ export default function App() {
 
               {/* GEstão de usuários */}
               <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+              <Route path="/admin/usuarios/:id" element={<UnicoUsuario />} />
             </Route>
 
           </Route>
