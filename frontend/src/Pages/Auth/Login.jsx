@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Input from "../../components/ui/Input.jsx";
+import Input from "../../components/ui/Input";
 import Submit from "../../components/ui/Submit";
 import useTitle from '../../hooks/useTitle'
 import { useContext } from "react";
