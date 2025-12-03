@@ -14,7 +14,7 @@ import UserPerfil from "./Pages/User/Perfil";
 import UserConfiguracoes from "./Pages/User/Configuracoes";
 
 // ADMIN PAGES // 
-import AdminIndex from "./Pages/Admin";
+import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
 
 // ADMIN - Gestão de ligas, países e clubes
