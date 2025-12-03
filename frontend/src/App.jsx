@@ -26,6 +26,9 @@ import GestaoClubes from "./Pages/Admin/GestaoClubes";
 import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
 import UnicoUsuario from "./Pages/Admin/Usuarios/UnicoUsuario";
 
+// ADMIN - Insights 
+import InsightUsuarios from "./Pages/Admin/Insights/Users/Index"
+
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -81,6 +84,10 @@ export default function App() {
               {/* GEstão de usuários */}
               <Route path="/admin/usuarios" element={<AdminUsuarios />} />
               <Route path="/admin/usuarios/:id" element={<UnicoUsuario />} />
+
+              {/*--------- INSIGHTS -----------*/}
+              {/* Insights - Usuários */}
+              <Route path="/admin/insights/usuarios" element={<InsightUsuarios />} />
             </Route>
 
           </Route>

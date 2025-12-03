@@ -18,23 +18,42 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: "O e-mail informado não pertence a nenhuma conta" });
     }
 
-    // 2. Verificar senha
+    // 2. Verificar se está ativo
+    if (!user.active) {
+      return res.status(403).json({
+        error: "Sua conta está desativada. Entre em contato com o suporte."
+      });
+    }
+
+    // 3. Verificar se o e-mail foi confirmado
+    if (!user.email_verified) {
+      return res.status(403).json({
+        error: "Você precisa confirmar seu e-mail antes de acessar o sistema."
+      });
+    }
+
+    // 4. Verificar senha
     const passwordMatch = await bcrypt.compare(senha, user.password_hash);
 
     if (!passwordMatch) {
       return res.status(401).json({ error: "E-mail ou senha incorretos" });
     }
 
-    // 3. Gerar JWT
+    // 5. Gerar JWT
     const token = generateAccessToken({
       id: user.id,
       email: user.email,
       role: user.role
     });
 
-    // 4. Atualizar last_login
+    // 6. Atualizar last_login
     await db.query(
       "UPDATE users SET last_login = NOW() WHERE id = $1",
+      [user.id]
+    );
+
+    await db.query(
+      "INSERT INTO login_logs (user_id) VALUES ($1)",
       [user.id]
     );
 
@@ -59,12 +78,42 @@ export const login = async (req, res) => {
 // Check no middleware pra ver quem sou eu
 export const me = async (req, res) => {
   try {
+    // Buscar dados atualizados no banco
+    const result = await db.query(
+      `SELECT id, name, email, role, email_verified, active
+       FROM users 
+       WHERE id = $1`,
+      [req.user.id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
+    const user = result.rows[0];
+
+    // Verifica se usuário está ativo
+    if (!user.active) {
+      return res.status(403).json({
+        error: "Conta desativada. Entre em contato com o suporte."
+      });
+    }
+
+    // Verifica se e-mail foi confirmado
+    if (!user.email_verified) {
+      return res.status(403).json({
+        error: "E-mail ainda não foi verificado."
+      });
+    }
+
     return res.json({
       authenticated: true,
-      user: req.user
+      user
     });
+
   } catch (error) {
-    return res.status(500).json({ error: "Erro interno" });
+    console.error("Erro no /auth/me:", error);
+    return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
 

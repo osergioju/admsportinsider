@@ -1,11 +1,14 @@
 import { Link, useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { api } from "../../../services/api";
+import { AuthContext } from "../../../context/AuthContext";
 
 export default function GestaoUsuarios() {
-    const [user, setUser] = useState(null);
+    const { user } = useContext(AuthContext);
+    const [theUser, setUser] = useState(null);
     const [plans, setPlans] = useState([]);
     const [showPlanModal, setShowPlanModal] = useState(false);
+    const [message, setMessage] = useState("");
     const { id } = useParams();
     
     const [form, setForm] = useState({
@@ -39,7 +42,6 @@ export default function GestaoUsuarios() {
                 const u = data.user[0];
 
                 setUser(u);
-
                 setForm({
                     name: u.name,
                     email: u.email,
@@ -60,11 +62,22 @@ export default function GestaoUsuarios() {
         e.preventDefault();
 
         try {
-            await api.put("/admin/users/" + id + "/update", form);
-            alert("Usuário atualizado com sucesso!");
+            const { data } = await api.put(`/admin/users/${id}/update`, form);
+
+            setMessage(data.message);
+
+            // recarrega só depois de pequeno delay para mostrar feedback
+            setTimeout(() => {
+                window.location.reload();
+            }, 600);
+
         } catch (error) {
-            console.error("Erro ao atualizar usuário:", error);
-            alert("Erro ao atualizar usuário");
+            console.error(error);
+
+            const msg_error = error.response?.data?.message || 
+                            "Erro ao atualizar usuário. Tente novamente.";
+
+            setMessage(msg_error);
         }
     }
 
@@ -134,7 +147,7 @@ export default function GestaoUsuarios() {
         }
     }
 
-    if (!user) {
+    if (!theUser) {
         return (
             <div className="p-10 text-center text-gray-500">
                 Carregando usuário...
@@ -147,20 +160,20 @@ export default function GestaoUsuarios() {
 
             {/* HEADER */}
             <div className="pb-4 mb-4 border-b border-gray-200">
-                <h1 className="font-bold text-2xl">Usuário: {user.name} - { user.active ? "Ativo" : "Inativo"}</h1>
-                <p className="text-gray-600">ID: {user.id}</p>
+                <h1 className="font-bold text-2xl">Usuário: {theUser.name} - { theUser.active ? "Ativo" : "Inativo"}</h1>
+                <p className="text-gray-600">ID: {theUser.id}</p>
             </div>
 
             {/* PAINEL DE INFORMAÇÕES */}
             <div className="bg-white shadow p-6 rounded-lg mb-8">
                 <h2 className="text-lg font-semibold mb-4">Informações atuais</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <p><strong>Nome:</strong> {user.name}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
-                    <p><strong>Função:</strong> {user.role}</p>
-                    <p><strong>Plano:</strong> {user.plan_name}</p>
-                    <p><strong>Criado em:</strong> {user.created_at}</p>
-                    <p><strong>Email verificado:</strong> {user.email_verified ? "Sim" : "Não"}</p>
+                    <p><strong>Nome:</strong> {theUser.name}</p>
+                    <p><strong>Email:</strong> {theUser.email}</p>
+                    <p><strong>Função:</strong> {theUser.role}</p>
+                    <p><strong>Plano:</strong> {theUser.plan_name}</p>
+                    <p><strong>Criado em:</strong> {theUser.created_at}</p>
+                    <p><strong>Email verificado:</strong> {theUser.email_verified ? "Sim" : "Não"}</p>
                 </div>
             </div>
 
@@ -189,7 +202,7 @@ export default function GestaoUsuarios() {
                         />
                     </div>
 
-                    <div>
+                    <div className={ theUser.id === user.id ? "opacity-30 pointer-events-none" : "" }>
                         <label className="block text-sm font-medium text-gray-700">Função</label>
                         <select
                             value={form.role}
@@ -200,14 +213,26 @@ export default function GestaoUsuarios() {
                             <option value="admin">Admin</option>
                             <option value="admin_master">Admin Master</option>
                         </select>
+                       
                     </div>
-
+                    { 
+                        theUser.id === user.id && (
+                            <p className="text-xs text-gray-500 mt-1">Você não pode trocar sua própria função. caso necessário, contate o desenvolvedor responsável.</p>
+                        )
+                    }
                     <button
                         type="submit"
                         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                     >
                         Salvar alterações
                     </button>
+                    {
+                        message && (
+                            <div>
+                                <span className="px-2 py-1 text-xs rounded-full bg-purple-200 text-purple-700">{message}</span> 
+                            </div>
+                        )
+                    }
                 </form>
             </div>
 
@@ -218,7 +243,7 @@ export default function GestaoUsuarios() {
                 <div className="flex gap-4 flex-wrap">
 
                     {
-                        user.active ? (
+                        theUser.active ? (
                              <div className="flex gap-3">
                                 <button
                                     onClick={resendConfirmation}

@@ -1,17 +1,19 @@
 import { Outlet, Link } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useState} from "react";
 import { AuthContext } from "../context/AuthContext";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 export default function AdminLayout() {
-    // Pega as infos do user
-    const { logout, user } = useContext(AuthContext);
+  // Pega as infos do user
+  const { logout, user } = useContext(AuthContext);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
 
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white p-5">
-        <h2 className="text-xl font-bold mb-6">Admin</h2>
+        <h2 className="text-xl font-bold mb-6">Admin - {user.name.split(' ')[0]}</h2>
 
         <nav className="flex flex-col space-y-3">
             {(user.role === "admin_master") && (
@@ -27,8 +29,63 @@ export default function AdminLayout() {
                   <span className="text-xl font-bold mb-1">Configurações</span>
                   <Link to="/admin/usuarios" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Usuários</Link>
                   <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Financeiro</Link>
-                  <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Insights</Link>
-                  <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Central de ajuda</Link>
+                  
+                  {/* Insights */}
+                  {/* ITEM PAI */}
+                  <button
+                    onClick={() => setOpen(!open)}
+                    className="flex items-center justify-between w-full text-sm font-light text-left hover:text-gray-300"
+                  >
+                    <span>Insights</span>
+                    {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </button>
+
+                  {/* SUBITENS */}
+                  {open && (
+                    <ul className="mt-2 ml-3 border-l border-gray-700 pl-3 space-y-1">
+                      <li>
+                        <Link to="/admin/insights/usuarios" className="text-xs hover:underline hover:text-gray-300">
+                          Usuários
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/painel/clubes" className="text-xs hover:underline hover:text-gray-300">
+                          Clubes
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/painel/ligas" className="text-xs hover:underline hover:text-gray-300">
+                          Ligas
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/painel/financeiro" className="text-xs hover:underline hover:text-gray-300">
+                          Financeiro Consolidado
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/painel/planos" className="text-xs hover:underline hover:text-gray-300">
+                          Planos / Assinaturas
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/painel/importacoes" className="text-xs hover:underline hover:text-gray-300">
+                          Importações
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/painel/uso" className="text-xs hover:underline hover:text-gray-300">
+                          Uso do Sistema
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/admin/painel/performance" className="text-xs hover:underline hover:text-gray-300">
+                          Performance
+                        </Link>
+                      </li>
+                    </ul>
+                  )}
+                  <Link to="/admin/painel" className="text-sm mt-2 mb-2 font-light hover:underline hover:text-gray-300">Central de ajuda</Link>
                 </div>
               </div>
             )}

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { getAdminDashboard, deleteCountry, createCountry, getAllCountries, getAllCountriesById, uploadLeagueBalance, getAllUsers, getUserById, disableUser, enableUser, getAllPlans, changeUserPlan, resendConfirmationEmail } from "../controllers/admin.controller.js";
-
+import { getAdminDashboard, deleteCountry, createCountry, getAllCountries, getAllCountriesById, uploadLeagueBalance, getAllUsers, getUserById, disableUser, enableUser, getAllPlans, changeUserPlan, resendConfirmationEmail, updateUser } from "../controllers/admin.controller.js";
+import { getUsersInsights } from "../controllers/insights.controller.js";
 const router = Router();
 
 // GET /admin/dashboard
@@ -18,7 +18,9 @@ router.post("/users/:id", getUserById);
 router.post("/users/:id/disable", disableUser);
 router.post("/users/:id/enable", enableUser);
 router.post("/users/:id/change-plan", changeUserPlan);
+router.put("/users/:id/update", updateUser);
 router.post("/users/:id/resend-confirmation", resendConfirmationEmail);
+router.get("/insights/users", getUsersInsights);
 
 // Pega os planos 
 router.get("/plans", getAllPlans);

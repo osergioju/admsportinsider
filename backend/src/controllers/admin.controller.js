@@ -190,6 +190,85 @@ export async function enableUser(req, res) {
     }
 }
 
+// Salvar as alterações do módulo central 
+export async function updateUser(req, res) {
+    const { id } = req.params;             // ID do usuário sendo atualizado
+    const editorId = req.user.id;          // ID do usuário logado (vem do JWT)
+    const editorRole = req.user.role;      // role do usuário logado
+
+    const { name, email, role } = req.body;
+
+    if (!name || !email) {
+        return res.status(400).json({
+            success: false,
+            message: "Nome e email são obrigatórios."
+        });
+    }
+
+    try {
+        // 🔒 1. Impedir editar o próprio role
+        if (editorId === id && role !== undefined) {
+            return res.status(403).json({
+                success: false,
+                message: "Você não pode alterar a sua própria função."
+            });
+        }
+
+        // 🔒 2. Apenas admin_master pode alterar role de outros
+        if (role && editorRole !== "admin_master") {
+            return res.status(403).json({
+                success: false,
+                message: "Você não possui permissão para alterar a função deste usuário."
+            });
+        }
+
+        // 🔒 3. Validar e-mail único
+        const emailExists = await db.query(
+            `SELECT id FROM users WHERE email = $1 AND id <> $2 LIMIT 1`,
+            [email, id]
+        );
+
+        if (emailExists.rowCount > 0) {
+            return res.status(409).json({
+                success: false,
+                message: "Já existe um usuário usando este e-mail."
+            });
+        }
+
+        // 🔧 4. Atualiza (role só se tiver permissão)
+        const result = await db.query(
+            `UPDATE users
+             SET name = $1,
+                 email = $2,
+                 role = COALESCE($3, role)
+             WHERE id = $4
+             RETURNING id, name, email, role, plan_id, active, created_at`,
+            [name, email, role ?? null, id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuário não encontrado."
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: "Usuário atualizado com sucesso!",
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Erro ao atualizar usuário:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Erro interno ao atualizar usuário."
+        });
+    }
+}
+
+
 // Troca o plan 
 export async function changeUserPlan(req, res) {
     const { id } = req.params;
