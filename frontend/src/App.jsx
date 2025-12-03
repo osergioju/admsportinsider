@@ -9,7 +9,7 @@ import FrontPage from "./Pages/FrontPage";
 import ResetPassConfirm from "./Pages/Auth/ResetPassConfirm";
 
 // User pages
-import UserIndex from "./Pages/User";
+import UserIndex from "./Pages/User/Index";
 import UserPerfil from "./Pages/User/Perfil";
 import UserConfiguracoes from "./Pages/User/Configuracoes";
 
