@@ -1,9 +1,9 @@
 import { useState } from "react";
-import Input from "../../components/ui/Input";
-import Submit from "../../components/ui/Submit";
+import Input from "../../components/uxui/Input";
+import Submit from "../../components/uxui/Submit";
 import useTitle from '../../hooks/useTitle'
 import { useNavigate } from "react-router-dom";
-import LoadingSkeleton from "../../components/ui/LoadingSkeleton";
+import LoadingSkeleton from "../../components/uxui/LoadingSkeleton";
 import { api } from "../../services/api"; 
 import { Panda } from "lucide-react";
 

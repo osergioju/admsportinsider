@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import Input from "../../components/ui/Input";
-import Submit from "../../components/ui/Submit";
+import Input from "../../components/uxui/Input";
+import Submit from "../../components/uxui/Submit";
 import { api } from "../../services/api"; 
 
 export default function ResetPassConfirm() {

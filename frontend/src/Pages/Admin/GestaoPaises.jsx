@@ -4,7 +4,7 @@ import { Trash2, Loader, Check } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 //import paises from "world-countries";
-import Select from  "../../components/ui/Select"
+import Select from  "../../components/uxui/Select"
 
 export default function GestaoPaises() {
     const [countries, setCountries] = useState([]);

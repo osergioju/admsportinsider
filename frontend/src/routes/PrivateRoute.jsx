@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import LoadingSkeleton from "../components/ui/LoadingSkeleton";
+import LoadingSkeleton from "../components/uxui/LoadingSkeleton";
 
 export default function PrivateRoute() {
   const { user, loading } = useContext(AuthContext);

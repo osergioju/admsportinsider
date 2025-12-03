@@ -1,6 +1,6 @@
 // Importa gráficos 
 import GraficoLinha from '../../charts/LineChart';
-import TitleChart from '../../ui/TitleChart';
+import TitleChart from '../../uxui/TitleChart';
 
 export default function GraficoBalanco() {
   // Dados em num

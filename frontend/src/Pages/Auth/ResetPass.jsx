@@ -1,6 +1,6 @@
 import { useState } from "react";
-import Input from "../../components/ui/Input";
-import Submit from "../../components/ui/Submit";
+import Input from "../../components/uxui/Input";
+import Submit from "../../components/uxui/Submit";
 import { api } from "../../services/api"; 
 
 export default function ResetPass() {
