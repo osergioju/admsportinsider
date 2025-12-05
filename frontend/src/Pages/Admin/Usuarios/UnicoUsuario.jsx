@@ -7,6 +7,7 @@ export default function GestaoUsuarios() {
     const { user } = useContext(AuthContext);
     const [theUser, setUser] = useState(null);
     const [plans, setPlans] = useState([]);
+    const [passwordForm, setPasswordForm] = useState({ password: "", confirmPassword: "" });
     const [showPlanModal, setShowPlanModal] = useState(false);
     const [message, setMessage] = useState("");
     const { id } = useParams();
@@ -147,6 +148,31 @@ export default function GestaoUsuarios() {
         }
     }
 
+    async function handleUpdatePassword(e) {
+        e.preventDefault();
+
+        if (passwordForm.password.length < 6) {
+            return alert("A senha deve ter pelo menos 6 caracteres.");
+        }
+
+        if (passwordForm.password !== passwordForm.confirmPassword) {
+            return alert("As senhas não conferem.");
+        }
+
+        try {
+            const { data } = await api.put(`/admin/users/${id}/update-password`, {
+                password: passwordForm.password
+            });
+
+            alert(data.message || "Senha alterada com sucesso!");
+            setPasswordForm({ password: "", confirmPassword: "" });
+
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao atualizar senha.");
+        }
+    }
+
     if (!theUser) {
         return (
             <div className="p-10 text-center text-gray-500">
@@ -220,6 +246,8 @@ export default function GestaoUsuarios() {
                             <p className="text-xs text-gray-500 mt-1">Você não pode trocar sua própria função. caso necessário, contate o desenvolvedor responsável.</p>
                         )
                     }
+
+                    
                     <button
                         type="submit"
                         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -234,7 +262,46 @@ export default function GestaoUsuarios() {
                         )
                     }
                 </form>
+
             </div>
+
+            {/* Alterar a senha */}
+            {theUser.id === user.id && (
+                <form onSubmit={handleUpdatePassword} className="space-y-4 mt-6 bg-gray-50 p-4 rounded border">
+                    <h3 className="text-md font-semibold">Alterar Minha Senha</h3>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Nova senha</label>
+                        <input 
+                            type="password"
+                            value={passwordForm.password}
+                            onChange={(e) =>
+                                setPasswordForm({ ...passwordForm, password: e.target.value })
+                            }
+                            className="w-full border rounded px-3 py-2"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Confirmar nova senha</label>
+                        <input 
+                            type="password"
+                            value={passwordForm.confirmPassword}
+                            onChange={(e) =>
+                                setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                            }
+                            className="w-full border rounded px-3 py-2"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                    >
+                        Atualizar Senha
+                    </button>
+                </form>
+            )}
 
             {/* AÇÕES ADMIN MASTER */}
             <div className="bg-white shadow p-6 rounded-lg">
@@ -245,25 +312,34 @@ export default function GestaoUsuarios() {
                     {
                         theUser.active ? (
                              <div className="flex gap-3">
-                                <button
-                                    onClick={resendConfirmation}
-                                    className="cursor-pointer bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
-                                >
-                                    Reenviar confirmação de email
-                                </button>
+                               
+
+                                
+                                { 
+                                    theUser.id === user.id && (
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={disableUser}
+                                                className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                                            >
+                                                Inativar usuário
+                                            </button>
+                                             <button
+                                                onClick={resendConfirmation}
+                                                className="cursor-pointer bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+                                            >
+                                                Reenviar confirmação de email
+                                            </button>
+                                        </div>
+                                        
+                                    )
+                                }
 
                                 <button
                                     onClick={() => setShowPlanModal(true)}
                                     className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
                                 >
                                     Trocar plano
-                                </button>
-                                
-                                <button
-                                    onClick={disableUser}
-                                    className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                                >
-                                    Inativar usuário
                                 </button>
                              </div>
                         ) : (

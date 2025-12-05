@@ -4,20 +4,29 @@ import { api } from "../../../services/api";
 
 export default function GestaoUsuarios() {
     const [users, setUsers] = useState([]);
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState(null);
     const navigate = useNavigate();
-
-    // Use effect 
-    useEffect(() => {
-        async function loadUsers() {
-          try {
-            const { data } = await api.get("/admin/users");
+    
+    async function loadUsers() {
+        try {
+            const { data } = await api.get(`/admin/users?page=${page}&limit=3`);
             setUsers(data.users);
-          } catch (err) {
-            console.error("Erro ao carregar países:", err);
-          }
+            setPagination(data.pagination);
+        } catch (err) {
+            console.error("Erro ao carregar usuários:", err);
         }
+    }
+
+    // Carregar primeira página ao montar
+    useEffect(() => {
         loadUsers();
     }, []);
+
+    // Recarregar quando a página mudar
+    useEffect(() => {
+        loadUsers();
+    }, [page]);
 
     function gotoUser (id) {
         // Redireciona para a página de edição do usuário
@@ -85,6 +94,33 @@ export default function GestaoUsuarios() {
                 </div>
 
             </div>
+
+            {pagination && (
+                <div className="flex gap-2 justify-center mt-4">
+
+                    <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                    >
+                    Anterior
+                    </button>
+
+                    <span className="px-3 py-1">
+                    Página {page} de {pagination.totalPages}
+                    </span>
+
+                    <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                    >
+                    Próxima
+                    </button>
+
+                </div>
+            )}
+
         </div>
   )
 }

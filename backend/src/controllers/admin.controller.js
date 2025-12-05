@@ -2,6 +2,7 @@ import { db } from "../config/db.js";
 import multer from "multer";
 import { importLeagueBalance } from "../utils/importLeagueBalance.service.js";
 import { reSendMail } from "../utils/mailer.js";
+import bcrypt from "bcryptjs";
 
 // Pegar o admin, mas nem faz nada isso agora
 export const getAdminDashboard = (req, res) => {
@@ -12,20 +13,302 @@ export const getAdminDashboard = (req, res) => {
 
 // Cata os países da base
 export async function getAllCountries(req, res) {
-  try {
-    const result = await db.query(
-      "SELECT id_country, name, flag_url FROM countries ORDER BY name ASC"
-    );
+   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
 
-    res.json({
-      success: true,
-      countries: result.rows,
+    const countriesQuery = await db.query(`
+      SELECT id_country, name, flag_url FROM countries ORDER BY name ASC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const countQuery = await db.query(`SELECT COUNT(*) FROM countries`);
+
+    const total = parseInt(countQuery.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      countries: countriesQuery.rows,
+      pagination: {
+        total,
+        page,
+        totalPages
+      }
     });
-  } catch (error) {
-    console.error("Erro ao buscar países:", error);
-    res.status(500).json({ error: "Erro ao obter países" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao listar usuários" });
   }
 }
+
+export async function getAllLeagues(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const leaguesQuery = await db.query(`
+    SELECT 
+      l.id_league,
+      l.name,
+      l.description,
+      l.logo_url,
+      l.created_at,
+      l.id_country,
+      c.name AS country_name,
+      c.flag_url
+    FROM leagues l
+    LEFT JOIN countries c ON c.id_country = l.id_country
+    WHERE l.active = true
+    ORDER BY l.name ASC
+    LIMIT $1 OFFSET $2
+  `, [limit, offset]);
+
+    const countQuery = await db.query(`SELECT COUNT(*) FROM leagues`);
+
+    const total = parseInt(countQuery.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      leagues: leaguesQuery.rows,
+      pagination: {
+        total,
+        page,
+        totalPages
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao listar ligas" });
+  }
+}
+
+
+export async function getLeagueById(req, res) {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(`
+    SELECT 
+      l.*,
+      c.name AS country_name,
+      c.flag_url
+    FROM leagues l
+    LEFT JOIN countries c ON c.id_country = l.id_country
+    WHERE id_league = $1
+  `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Liga não encontrada" });
+    }
+
+    return res.json({ league: result.rows[0] });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao buscar liga" });
+  }
+}
+
+export async function createLeague(req, res) {
+  const { id_country, name, description, logo_url } = req.body;
+
+  if (!id_country || !name) {
+    return res.status(400).json({ message: "Campos obrigatórios faltando." });
+  }
+
+  try {
+    await db.query(`
+      INSERT INTO leagues (id_country, name, description, logo_url)
+      VALUES ($1, $2, $3, $4)
+    `, [id_country, name, description, logo_url]);
+
+    return res.status(201).json({ message: "Liga cadastrada com sucesso!" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao cadastrar liga" });
+  }
+}
+
+export async function updateLeague(req, res) {
+  const { id } = req.params;
+  const { id_country, name, description, logo_url } = req.body;
+
+  try {
+    await db.query(`
+      UPDATE leagues 
+      SET 
+        id_country = $1,
+        name = $2,
+        description = $3,
+        logo_url = $4
+      WHERE id_league = $5
+    `, [id_country, name, description, logo_url, id]);
+
+    return res.json({ message: "Liga atualizada com sucesso!" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao atualizar liga" });
+  }
+}
+
+export async function disableLeague(req, res) {
+  const { id } = req.params;
+
+  try {
+    await db.query(`
+      UPDATE leagues
+      SET active = false
+      WHERE id_league = $1
+    `, [id]);
+
+    return res.json({ message: "Liga desativada com sucesso!" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao desativar liga" });
+  }
+}
+
+export async function getAllClubs(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // Listar clubes com JOIN da liga
+    const clubsQuery = await db.query(`
+      SELECT 
+        c.id_club,
+        c.name,
+        c.description,
+        c.crest_url,
+        c.id_league,
+        c.active,
+        c.created_at,
+        l.name AS league_name
+      FROM clubs c
+      LEFT JOIN leagues l ON l.id_league = c.id_league
+      WHERE c.active = TRUE
+      ORDER BY c.name ASC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    // Contagem total p/ paginação
+    const countQuery = await db.query(`
+      SELECT COUNT(*) FROM clubs WHERE active = TRUE
+    `);
+
+    const total = parseInt(countQuery.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      clubs: clubsQuery.rows,
+      pagination: { total, page, totalPages }
+    });
+
+  } catch (err) {
+    console.error("Erro ao listar clubes:", err);
+    return res.status(500).json({ message: "Erro ao listar clubes" });
+  }
+}
+
+export async function getClubById(req, res) {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(`
+      SELECT 
+        c.*,
+        l.name AS league_name
+      FROM clubs c
+      LEFT JOIN leagues l ON l.id_league = c.id_league
+      WHERE c.id_club = $1
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Clube não encontrado" });
+    }
+
+    return res.json({ club: result.rows[0] });
+
+  } catch (err) {
+    console.error("Erro ao buscar clube:", err);
+    return res.status(500).json({ message: "Erro ao buscar clube" });
+  }
+}
+
+export async function createClub(req, res) {
+  const { id_league, name, description, crest_url } = req.body;
+
+  // Valida campos obrigatórios
+  if (!id_league || !name) {
+    return res.status(400).json({
+      message: "Liga e nome do clube são obrigatórios."
+    });
+  }
+
+  try {
+    await db.query(`
+      INSERT INTO clubs (id_league, name, description, crest_url)
+      VALUES ($1, $2, $3, $4)
+    `, [id_league, name, description, crest_url]);
+
+    return res.status(201).json({ message: "Clube cadastrado com sucesso!" });
+
+  } catch (err) {
+    console.error("Erro ao criar clube:", err);
+    return res.status(500).json({ message: "Erro ao cadastrar clube" });
+  }
+}
+
+export async function updateClub(req, res) {
+  const { id } = req.params;
+  const { id_league, name, description, crest_url } = req.body;
+
+  try {
+    await db.query(`
+      UPDATE clubs
+      SET 
+        id_league = $1,
+        name = $2,
+        description = $3,
+        crest_url = $4
+      WHERE id_club = $5
+    `, [id_league, name, description, crest_url, id]);
+
+    return res.json({ message: "Clube atualizado com sucesso!" });
+
+  } catch (err) {
+    console.error("Erro ao atualizar clube:", err);
+    return res.status(500).json({ message: "Erro ao atualizar clube" });
+  }
+}
+
+export async function disableClub(req, res) {
+  const { id } = req.params;
+
+  try {
+    await db.query(`
+      UPDATE clubs
+      SET active = FALSE
+      WHERE id_club = $1
+    `, [id]);
+
+    return res.json({ message: "Clube desativado com sucesso!" });
+
+  } catch (err) {
+    console.error("Erro ao desativar clube:", err);
+    return res.status(500).json({ message: "Erro ao desativar clube" });
+  }
+}
+
+
 
 // Pega o país pelo ID
 export async function getAllCountriesById(req, res) {
@@ -71,22 +354,27 @@ export async function createCountry(req, res) {
 }
 
 // Deleta o país 
-export async function deleteCountry(req, res) {
+export async function disableCountry(req, res) {
   const { id } = req.params;
-  
+
   try {
-    await db.query("DELETE FROM countries WHERE id_country = $1", [id]);
-    return res.status(200).json({
+    await db.query(
+      "UPDATE countries SET active = false WHERE id_country = $1",
+      [id]
+    );
+
+    return res.json({
       success: true,
-      message: "País deletado com sucesso!"
+      message: "País desativado com sucesso!"
     });
   } catch (error) {
-    console.error("Erro ao deletar país:", error);
+    console.error("Erro ao desativar país:", error);
     return res.status(500).json({
-      error: "Erro ao deletar país"
+      error: "Erro ao desativar país"
     });
   }
 }
+
 
 
 ////////////
@@ -94,29 +382,38 @@ export async function deleteCountry(req, res) {
 ///////////
 export async function getAllUsers(req, res) {
   try {
-    const result = await db.query(`
-      SELECT 
-        u.id,
-        u.name,
-        u.email,
-        u.role,
-        u.created_at,
-        p.name AS plan_name
-      FROM users u
-      LEFT JOIN plans p ON p.id = u.plan_id
-      ORDER BY u.created_at DESC
-    `);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const usersQuery = await db.query(`
+      SELECT users.*, plans.name AS plan_name
+      FROM users
+      LEFT JOIN plans ON plans.id = users.plan_id
+      ORDER BY users.created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const countQuery = await db.query(`SELECT COUNT(*) FROM users`);
+
+    const total = parseInt(countQuery.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
     return res.json({
-      success: true,
-      users: result.rows,
+      users: usersQuery.rows,
+      pagination: {
+        total,
+        page,
+        totalPages
+      }
     });
-  } catch (error) {
-    console.error("Erro ao buscar usuários:", error);
-    return res.status(500).json({
-      error: "Erro ao obter usuários",
-    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao listar usuários" });
   }
 }
+
 
 export async function getUserById(req, res) {
   const { id } = req.params;
@@ -356,6 +653,30 @@ export async function getAllPlans(req, res) {
     } catch (error) {
         console.error("Erro ao buscar planos:", error);
         return res.status(500).json({ error: "Erro ao buscar planos" });
+    }
+}
+
+export async function updateUserPassword(req, res) {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+        return res.status(400).json({ message: "Senha inválida." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    try {
+        await db.query(
+            "UPDATE users SET password_hash = $1 WHERE id = $2",
+            [passwordHash, id]
+        );
+
+        return res.json({ message: "Senha atualizada com sucesso!" });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Erro ao atualizar senha." });
     }
 }
 

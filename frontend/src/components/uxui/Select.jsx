@@ -20,7 +20,7 @@ export default function Select({ label, labelColor, options, variant = "default"
         className={`${variants[variant]} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary`}
         {...props}
       >
-        
+        <option selected disabled>Selecione</option>
         {options.map((option) => (
             <option
                 key={option.cca2}

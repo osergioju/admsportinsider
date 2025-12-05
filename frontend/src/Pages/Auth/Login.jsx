@@ -4,7 +4,7 @@ import Submit from "../../components/uxui/Submit";
 import useTitle from '../../hooks/useTitle'
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import LoadingSkeleton from "../../components/uxui/LoadingSkeleton";
 import { api } from "../../services/api"; 
 
@@ -82,7 +82,7 @@ export default function Login() {
                 />
 
                 <Submit value="Entrar" />
-
+                <Link className="text-white mt-2 inline-block underline" to="/reset-password">esqueci minha senha</Link>
                 {error && <p className="text-red-500">{error}</p>}
             </form>
         </div>

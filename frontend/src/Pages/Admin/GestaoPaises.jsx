@@ -3,7 +3,7 @@ import { api } from "../../services/api";
 import { Trash2, Loader, Check } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-//import paises from "world-countries";
+import paises from "world-countries";
 import Select from  "../../components/uxui/Select"
 
 export default function GestaoPaises() {
@@ -15,19 +15,29 @@ export default function GestaoPaises() {
     const [success, setSuccess] = useState(false);
     const [editCounty, setEditCountry] = useState(null);
     const [currentCountry, setCurrentCountry] = useState(null);
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState(null);
 
     // Use effect 
-    useEffect(() => {
-        async function loadCountries() {
-          try {
-            const { data } = await api.get("/admin/countries");
+    async function loadCountries() {
+        try {
+        const { data } = await api.get(`/admin/countries?page=${page}&limit=6`);
             setCountries(data.countries);
-          } catch (err) {
+            setPagination(data.pagination);
+        } catch (err) {
             console.error("Erro ao carregar países:", err);
-          }
         }
+    }
+
+    // Carregar primeira página ao montar
+    useEffect(() => {
         loadCountries();
     }, []);
+
+    // Recarregar quando a página mudar
+    useEffect(() => {
+        loadCountries();
+    }, [page]);
 
     // Constante pra ir para a página de edição do país 
     const handleEditCountry = async (countryId) =>  {
@@ -83,6 +93,9 @@ export default function GestaoPaises() {
         } catch (error) {
             console.error("Erro ao enviar país:", error);
             alert("Erro ao cadastrar país. Verifique os dados e tente novamente.");
+            setModal(false);
+            setLoading(false);
+            setSuccess(false);
         }
     };
 
@@ -93,7 +106,7 @@ export default function GestaoPaises() {
         }
 
         try {
-            const res = await api.delete(`/admin/delete-country/${countryId}`);
+            const res = await api.delete(`/admin/disable-country/${countryId}`);
             console.log(res);
 
             if (res.status === 200) {
@@ -154,6 +167,33 @@ export default function GestaoPaises() {
               )}
 
             </div>
+
+            {pagination && (
+                <div className="flex gap-2 justify-center mt-4">
+
+                    <button
+                        disabled={page === 1}
+                        onClick={() => setPage(page - 1)}
+                        className="cursor-pointer px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                    >
+                        Anterior
+                    </button>
+
+                    <span className="px-3 py-1">
+                    Página {page} de {pagination.totalPages}
+                    </span>
+
+                    <button
+                        disabled={page === pagination.totalPages}
+                        onClick={() => setPage(page + 1)}
+                        className="cursor-pointer px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                    >
+                        Próxima
+                    </button>
+
+                </div>
+            )}
+
             {modal && (
                 <div
                     className="fixed inset-0 bg-[#222222b1] flex items-center justify-center z-50 animate-fadeIn"
@@ -181,12 +221,16 @@ export default function GestaoPaises() {
                         {/* conteúdo */}
                         { editCounty && currentCountry ? (
                             <div>
-                                <h2 className="text-xl font-bold mb-2">Excluir <span className="bg-[#222222] px-2 text-white ">{currentCountry.name}</span> da lista de países?</h2>
+                                <h2 className="text-xl font-bold mb-2">Desativar <span className="bg-[#222222] px-2 text-white ">{currentCountry.name}</span> da lista de países?</h2>
+                                <p>
+                                    Desativar um país automaticamente desativa todos os clubes e ligas a ele atrelado, tem certeza?
+                                    <b className="mb-2 inline-block">O país é apenas desabilitado e não excluído</b>
+                                </p>
                                 <button 
                                     onClick={() => {
                                         deleteCountry(currentCountry.id_country)
                                     }}
-                                    className="hover:text-[#53083d] transition-all cursor-pointer underline rounded-xl p-0 text-left text-lg">Sim, excluir</button>
+                                    className="hover:text-[#53083d] transition-all cursor-pointer underline rounded-xl p-0 text-left text-lg">Sim, desativar</button>
                                 </div>
                         ) : (
                             <div>
@@ -197,6 +241,7 @@ export default function GestaoPaises() {
                                     variant="light"
                                     options={paises}
                                 ></Select>
+
 
                                 { 
                                     paisSelecionado ? (
