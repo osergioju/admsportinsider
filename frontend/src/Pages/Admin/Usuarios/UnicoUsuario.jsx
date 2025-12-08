@@ -315,25 +315,22 @@ export default function GestaoUsuarios() {
                                
 
                                 
-                                { 
-                                    theUser.id === user.id && (
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={disableUser}
-                                                className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                                            >
-                                                Inativar usuário
-                                            </button>
-                                             <button
-                                                onClick={resendConfirmation}
-                                                className="cursor-pointer bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
-                                            >
-                                                Reenviar confirmação de email
-                                            </button>
-                                        </div>
-                                        
-                                    )
-                                }
+                                
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={disableUser}
+                                        className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                                    >
+                                        Inativar usuário
+                                    </button>
+                                        <button
+                                        onClick={resendConfirmation}
+                                        className="cursor-pointer bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+                                    >
+                                        Reenviar confirmação de email
+                                    </button>
+                                </div>
+                                
 
                                 <button
                                     onClick={() => setShowPlanModal(true)}

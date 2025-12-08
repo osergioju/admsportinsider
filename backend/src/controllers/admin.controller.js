@@ -645,17 +645,6 @@ export async function resendConfirmationEmail(req, res) {
     }
 }
 
-// Pega planos 
-export async function getAllPlans(req, res) {
-    try {
-        const result = await db.query("SELECT id, name FROM plans ORDER BY id ASC");
-        return res.json({ success: true, plans: result.rows });
-    } catch (error) {
-        console.error("Erro ao buscar planos:", error);
-        return res.status(500).json({ error: "Erro ao buscar planos" });
-    }
-}
-
 export async function updateUserPassword(req, res) {
     const { id } = req.params;
     const { password } = req.body;
@@ -680,6 +669,48 @@ export async function updateUserPassword(req, res) {
     }
 }
 
+
+export async function createUser(req, res) {
+  const { name, email, password, role, plan_id } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      message: "Nome, email e senha são obrigatórios."
+    });
+  }
+
+  try {
+    // Verifica se e-mail já existe
+    const exists = await db.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (exists.rows.length > 0) {
+      return res.status(400).json({ message: "Email já cadastrado." });
+    }
+
+    // Criptografa senha
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Criação
+    await db.query(
+      `INSERT INTO users (name, email, password_hash, role, plan_id, email_verified, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [name, email, hashedPassword, role, plan_id || null, true]
+    );
+
+    return res.status(201).json({
+      message: "Usuário criado com sucesso!"
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Erro ao criar usuário."
+    });
+  }
+}
 
 ////// IMPORT DE XMLS 
 // IMPORT LIGA

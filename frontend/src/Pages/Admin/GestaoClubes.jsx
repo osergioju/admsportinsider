@@ -24,6 +24,9 @@ export default function GestaoClubes() {
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState(null);
 
+    const [file, setFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+
     // ============================
     // CARREGA LIGAS + CLUBES
     // ============================
@@ -40,6 +43,40 @@ export default function GestaoClubes() {
             console.error("Erro ao carregar dados:", err);
         }
     }
+
+    const uploadLogo = async () => {
+        if (!file) {
+            alert("Selecione uma imagem primeiro.");
+            return;
+        }
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await api.post("/admin/upload-club-logo", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+
+            // A URL FINAL DA IMAGEM
+            const url = res.data.url;
+
+            setNewClub(prev => ({
+                ...prev,
+                crest_url: url
+            }));
+
+            alert("Logo enviada com sucesso!");
+
+        } catch (err) {
+            alert("Erro ao enviar logo.");
+            console.error(err);
+        }
+
+        setUploading(false);
+    };
+
 
     useEffect(() => { loadData(); }, []);
     useEffect(() => { loadData(); }, [page]);
@@ -268,15 +305,35 @@ export default function GestaoClubes() {
                         />
 
                         {/* Logo */}
-                        <label className="block text-sm text-gray-600 mb-1">URL do Escudo</label>
+                        <label className="block text-sm text-gray-600 mb-1">Escudo do Clube</label>
+
+                        {/* INPUT FILE */}
                         <input
-                            type="text"
-                            className="w-full border px-3 py-2 rounded mb-4"
-                            value={newClub.crest_url}
-                            onChange={(e) =>
-                                setNewClub({ ...newClub, crest_url: e.target.value })
-                            }
+                            type="file"
+                            accept="image/*"
+                            className="mb-3"
+                            onChange={(e) => setFile(e.target.files[0])}
                         />
+
+                        {/* BOTÃO UPLOAD */}
+                        <button
+                            onClick={uploadLogo}
+                            disabled={uploading}
+                            className="bg-purple-600 text-white px-3 py-1 rounded mb-3 hover:bg-purple-700 disabled:opacity-40"
+                        >
+                            {uploading ? "Enviando..." : "Enviar Logo"}
+                        </button>
+
+                        {/* PREVIEW */}
+                        {newClub.crest_url && (
+                            <div className="w-24 h-24 border rounded-lg overflow-hidden mb-4">
+                                <img 
+                                    src={newClub.crest_url} 
+                                    className="w-full h-full object-cover" 
+                                />
+                            </div>
+                        )}
+
 
                         {/* Ações */}
                         <div className="flex justify-between items-center mt-4">

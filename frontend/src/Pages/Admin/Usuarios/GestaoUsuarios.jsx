@@ -10,7 +10,7 @@ export default function GestaoUsuarios() {
     
     async function loadUsers() {
         try {
-            const { data } = await api.get(`/admin/users?page=${page}&limit=3`);
+            const { data } = await api.get(`/admin/users?page=${page}&limit=5`);
             setUsers(data.users);
             setPagination(data.pagination);
         } catch (err) {
@@ -58,6 +58,9 @@ export default function GestaoUsuarios() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Plano
                                 </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Fonte de cadastro
+                                </th>
                             </tr>
                         </thead>
 
@@ -85,7 +88,16 @@ export default function GestaoUsuarios() {
                                         { user.created_at.split("T")[0] }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        { user.plan_name }
+                                        { 
+                                            user.plan_name == null ? ( <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700">Sem plano</span> ) :
+                                            ( <span className="px-2 py-1 text-xs rounded-full bg-green-200 text-green-700">{user.plan_name}</span> )
+                                        }
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        { 
+                                            user.provider == 'google' ? (<span className="px-2 py-1 text-xs rounded-full bg-red-200 text-black-700">Google</span>):
+                                            ( <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-black-700">E-mail</span> )
+                                        }
                                     </td>
                                 </tr>
                             ))}

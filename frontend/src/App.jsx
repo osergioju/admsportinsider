@@ -7,6 +7,7 @@ import Dashboard from "./Pages/Dashboard/Main";
 import NotFound from "./Pages/Errors/NotFound";
 import FrontPage from "./Pages/FrontPage";
 import ResetPassConfirm from "./Pages/Auth/ResetPassConfirm";
+import GoogleCallback from "./Pages/Auth/GoogleCallback";
 
 // User pages
 import UserIndex from "./Pages/User/Index";
@@ -24,7 +25,14 @@ import GestaoClubes from "./Pages/Admin/GestaoClubes";
  
 // ADMIN - Gestão do usuário 
 import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
+import AdminNewUsuario from "./Pages/Admin/Usuarios/NovoUsuario";
 import UnicoUsuario from "./Pages/Admin/Usuarios/UnicoUsuario";
+
+// ADMIN - Gestão dos planos
+import GestaoPlanos from "./Pages/Admin/Planos/GestaoPlanos";
+import NovoPlano from "./Pages/Admin/Planos/NovoPlano";
+import EditarPlano from "./Pages/Admin/Planos/EditarPlano";
+
 
 // ADMIN - Insights 
 import InsightUsuarios from "./Pages/Admin/Insights/Users/Index"
@@ -50,6 +58,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPass />} />
           <Route path="/reset" element={<ResetPassConfirm />} />
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
         </Route>
 
 
@@ -83,7 +92,13 @@ export default function App() {
 
               {/* GEstão de usuários */}
               <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+              <Route path="/admin/new-user" element={<AdminNewUsuario />} />
               <Route path="/admin/usuarios/:id" element={<UnicoUsuario />} />
+
+              {/* GESTÃO DE PLANOS */}
+              <Route path="/admin/gestao-planos" element={<GestaoPlanos />} />
+              <Route path="/admin/gestao-planos/novo" element={<NovoPlano />} />
+              <Route path="/admin/gestao-planos/:id" element={<EditarPlano />} />
 
               {/*--------- INSIGHTS -----------*/}
               {/* Insights - Usuários */}

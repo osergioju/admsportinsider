@@ -28,6 +28,7 @@ export default function AdminLayout() {
                 <div className="flex flex-col">
                   <span className="text-xl font-bold mb-1">Configurações</span>
                   <Link to="/admin/usuarios" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Usuários</Link>
+                  <Link to="/admin/new-user" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Adicionar usuário</Link>
                   <Link to="/admin/painel" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Financeiro</Link>
                   
                   {/* Insights */}
@@ -87,6 +88,13 @@ export default function AdminLayout() {
                   )}
                   <Link to="/admin/painel" className="text-sm mt-2 mb-2 font-light hover:underline hover:text-gray-300">Central de ajuda</Link>
                 </div>
+
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold mb-1">Planos</span>
+                  <Link to="/admin/gestao-planos" className="text-sm font-light hover:underline hover:text-gray-300">Listar planos</Link>
+                  <Link to="/admin/gestao-planos/novo" className="text-sm font-light hover:underline hover:text-gray-300">Criar plano</Link>
+                </div>
+                
               </div>
             )}
             <button className="text-sm opacity-70 text-left underline font-light" onClick={logout}>Sair</button>

@@ -85,6 +85,13 @@ export default function Login() {
                 <Link className="text-white mt-2 inline-block underline" to="/reset-password">esqueci minha senha</Link>
                 {error && <p className="text-red-500">{error}</p>}
             </form>
+            <button 
+                onClick={() => window.location.href = "http://localhost:3000/auth/google"}
+                className="mt-4 w-full bg-white text-black py-2 rounded-md flex items-center justify-center gap-2"
+                >
+                <img src="/google-logo.svg" alt="Google" className="w-5 h-5" />
+                Entrar com Google
+            </button>
         </div>
     );
 }
