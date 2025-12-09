@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { findUserByEmail } from "../models/user.model.js";
+import { findUserByEmail, createPublicUser } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 import { checkResetLimit } from "../utils/resetLimiter.js";
 import { db } from "../config/db.js";
-import { sendResetEmail, sendResetEmailSucess } from "../utils/mailer.js";
+import { sendResetEmail, sendResetEmailSucess, reSendMail } from "../utils/mailer.js";
 
 // LOGIN BÁSICO
 export const login = async (req, res) => {
@@ -74,6 +74,65 @@ export const login = async (req, res) => {
   }
 };
 
+export const register = async (req, res) => {
+  const { name, email, senha } = req.body;
+
+  // 1. Validação básica
+  if (!name || !email || !senha) {
+    return res.status(400).json({ error: "Preencha todos os campos obrigatórios." });
+  }
+
+  if (senha.length < 6) {
+    return res.status(400).json({ error: "A senha deve ter no mínimo 6 caracteres." });
+  }
+
+  try {
+    // 2. Verificar se usuário já existe
+    const userExists = await findUserByEmail(email);
+    if (userExists) {
+      return res.status(409).json({ error: "Este e-mail já está em uso." });
+    }
+
+    // 3. Criptografar senha
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(senha, salt);
+
+    // 4. Salvar no banco (usando a função nova do model)
+    const newUser = await createPublicUser({
+      name,
+      email,
+      passwordHash
+    });
+
+    // 5. Enviar e-mail de confirmação (depois a gente faz isso direito)
+    try {
+        await reSendMail(newUser.email); 
+    } catch (mailError) {
+        console.error("Erro ao enviar email de boas-vindas:", mailError);
+        // Não bloqueamos o cadastro se o email falhar
+    }
+
+    // 6. Gerar Token JWT para já logar o usuário direto
+    const token = generateAccessToken({
+      id: newUser.id,
+      email: newUser.email,
+      role: newUser.role
+    });
+
+    // Registrar log de login (já que ele entrou ao se cadastrar)
+    await db.query("INSERT INTO login_logs (user_id) VALUES ($1)", [newUser.id]);
+
+    return res.status(201).json({
+      message: "Usuário cadastrado com sucesso! Verifique seu e-mail.",
+      token,
+      user: newUser
+    });
+
+  } catch (error) {
+    console.error("Erro no registro:", error);
+    return res.status(500).json({ error: "Erro interno ao criar conta." });
+  }
+};
 
 // Check no middleware pra ver quem sou eu
 export const me = async (req, res) => {
