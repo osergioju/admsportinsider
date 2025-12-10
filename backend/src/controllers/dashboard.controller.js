@@ -1,3 +1,5 @@
+import { db } from "../config/db.js";
+
 export const getClubes = (req, res) => {
   const clubes = [
     "Athletico-PR", "Atlético-GO", "Atlético-MG", "Bahia", "Botafogo",
@@ -57,3 +59,50 @@ export const getReceita = (req, res) => {
 
   return res.json({ labels, series, data });
 };
+
+
+// Retorna evolução da receita de todas as ligas
+export async function getRevenueEvolutionByLeague(req, res) {
+  try {
+    // 1. Buscar dados agregados por ano e liga
+    const result = await db.query(`
+      SELECT 
+        l.id_league,
+        l.name AS league_name,
+        lf.year,
+        SUM(lf.value) AS total
+      FROM league_financials lf
+      JOIN leagues l ON l.id_league = lf.id_league
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE fi.category = 'revenue'
+      GROUP BY l.id_league, l.name, lf.year
+      ORDER BY lf.year ASC, l.id_league ASC;
+    `);
+
+    const rows = result.rows;
+
+    // Extrair anos únicos
+    const years = [...new Set(rows.map(r => r.year))].sort();
+
+    // Extrair ligas únicas
+    const leagues = [...new Set(rows.map(r => r.league_name))];
+
+    // Montar matriz de dados [liga][anos...]
+    const data = leagues.map(league => {
+      return years.map(year => {
+        const row = rows.find(r => r.league_name === league && r.year === year);
+        return row ? Math.round(Number(row.total)).toLocaleString("pt-BR") : "0";
+      });
+    });
+
+    return res.json({
+      labels: years,
+      series: leagues,
+      data
+    });
+
+  } catch (err) {
+    console.error("Erro ao carregar gráfico:", err);
+    return res.status(500).json({ message: "Erro ao gerar gráfico." });
+  }
+}

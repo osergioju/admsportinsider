@@ -1,4 +1,4 @@
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, useNavigate } from "react-router-dom";
 import { useContext, useState} from "react";
 import { AuthContext } from "../context/AuthContext";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -7,22 +7,40 @@ export default function AdminLayout() {
   // Pega as infos do user
   const { logout, user } = useContext(AuthContext);
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleGoPerfil = (idPerfil) => {
+      navigate("/admin/usuarios/" + idPerfil);
+      window.location.reload();
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-
+      
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 text-white p-5">
-        <h2 className="text-xl font-bold mb-6">Admin - {user.name.split(' ')[0]}</h2>
-
         <nav className="flex flex-col space-y-3">
             {(user.role === "admin_master") && (
               <div className="flex flex-col gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold mb-1">Admin - {user.name.split(' ')[0]}</span>
+                  <button
+                    onClick={()=> handleGoPerfil(user.id)}
+                    className="text-sm mb-2 font-light hover:underline hover:text-gray-300 text-left"
+                  >Meu Perfil</button>
+                </div>
+
                 <div className="flex flex-col">
                   <span className="text-xl font-bold mb-1">Dashboard</span>
                   <Link to="/admin/gestao-paises" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Países</Link>
                   <Link to="/admin/gestao-ligas" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Ligas</Link>
                   <Link to="/admin/gestao-clubes" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Clubes</Link>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold mb-1">Dados</span>
+                  <Link to="/admin/upload/ligas" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Ligas</Link>
+                  <Link to="/admin/upload/ligas" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Clubes</Link>
                 </div>
 
                 <div className="flex flex-col">

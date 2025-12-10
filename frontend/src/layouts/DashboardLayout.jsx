@@ -15,7 +15,7 @@ export default function DashboardLayout() {
         <h2 className="text-lg flex items-center gap-2 font-bold mb-6">
           {
             user.avatar_url && (
-              <img src={user.avatar_url} className="w-6 rounded-xl" alt="" />
+              <img src={user.avatar_url} className="h-6 w-6 rounded-xl" alt="" />
             )
           }
           

@@ -82,7 +82,6 @@ export default function App() {
 
             <Route element={<RoleRoute allowedRoles={["admin", "admin_master"]} />}>
               <Route path="/admin" element={<AdminIndex />} />
-              <Route path="/admin/send-league" element={<SendLeaguePage />} />
 
               {/* Gestão de países, ligas e clubes */}
               <Route path="/admin/gestao-paises" element={<GestaoPaises />} />
@@ -103,6 +102,9 @@ export default function App() {
               {/*--------- INSIGHTS -----------*/}
               {/* Insights - Usuários */}
               <Route path="/admin/insights/usuarios" element={<InsightUsuarios />} />
+
+              {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
+              <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
             </Route>
 
           </Route>

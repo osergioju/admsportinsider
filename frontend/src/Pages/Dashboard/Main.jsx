@@ -1,22 +1,10 @@
-import { useState } from "react";
-import SelectClubes from "../../components/charts/dashboard/filters/SelectClubes";
-import GraficoReceita from "../../components/charts/dashboard/GraficoReceita";
-import GraficoPizzaReceitas from "../../components/charts/dashboard/GraficoPizzaReceitas";
-import GraficoLigaBilheteria from "../../components/charts/dashboard/GraficoLigaBilheteria";
+import GraficoReceitaLiga from "../../components/charts/dashboard/GraficoReceitaLiga";
 
 export default function Main() {
-  const [clubeSelecionado, setClubeSelecionado] = useState("");
-
   return (
     <div className="space-y-8">
       
-      <SelectClubes onChange={setClubeSelecionado} />
-
-      <GraficoReceita clube={clubeSelecionado} />
-
-      <GraficoPizzaReceitas clube={clubeSelecionado} />
-
-      <GraficoLigaBilheteria />
+      <GraficoReceitaLiga titulo="Evolução da receita" />
     
     </div>
   );

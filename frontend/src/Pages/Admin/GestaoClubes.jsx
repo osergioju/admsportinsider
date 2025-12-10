@@ -3,9 +3,10 @@ import { api } from "../../services/api";
 import { Trash2, Loader, Check } from "lucide-react";
 
 export default function GestaoClubes() {
-
+    
     const [clubs, setClubs] = useState([]);
     const [leagues, setLeagues] = useState([]);
+    const [attributeKeys, setAttributeKeys] = useState([]);
 
     const [modal, setModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -15,8 +16,14 @@ export default function GestaoClubes() {
         id_league: "",
         name: "",
         description: "",
-        crest_url: ""
+        crest_url: "",
+        founded_at: "",
+        stadium_name: "",
+        stadium_capacity: "",
+        ownership_model: ""
     });
+    const [attributes, setAttributes] = useState([]);
+
 
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -43,6 +50,15 @@ export default function GestaoClubes() {
             console.error("Erro ao carregar dados:", err);
         }
     }
+
+    async function loadAttributeKeys() {
+        const res = await api.get("/admin/attribute-keys");
+        setAttributeKeys(res.data.keys);
+    }
+
+    useEffect(() => {
+        loadAttributeKeys();
+    }, []);
 
     const uploadLogo = async () => {
         if (!file) {
@@ -89,7 +105,11 @@ export default function GestaoClubes() {
             id_league: "",
             name: "",
             description: "",
-            crest_url: ""
+            crest_url: "",
+            founded_at: "",
+            stadium_name: "",
+            stadium_capacity: "",
+            ownership_model: ""
         });
         setIsEditing(false);
         setModal(true);
@@ -101,14 +121,27 @@ export default function GestaoClubes() {
     const openEditModal = async (id) => {
         try {
             const { data } = await api.get(`/admin/clubs/${id}`);
+            var clube_foundation = "";
+            if(data.club.founded_at !== null){
+                clube_foundation = data.club.founded_at.split("T")[0];
+            } else { 
+                clube_foundation = "";
+            }
+            
             setCurrentClub(data.club);
-
+            
             setNewClub({
                 id_league: data.club.id_league,
                 name: data.club.name,
                 description: data.club.description,
-                crest_url: data.club.crest_url
+                crest_url: data.club.crest_url,
+                founded_at: clube_foundation,
+                stadium_name: data.club.stadium_name,
+                stadium_capacity: data.club.stadium_capacity,
+                ownership_model: data.club.ownership_model
             });
+
+            setAttributes(data.attributes || []);
 
             setIsEditing(true);
             setModal(true);
@@ -121,48 +154,61 @@ export default function GestaoClubes() {
     // ============================
     // CADASTRAR CLUBE
     // ============================
-    const sendClub = async () => {
+    const sendClub = async (payload) => {
         setLoading(true);
-
+        
         try {
-            const res = await api.post("/admin/send-club", newClub);
+            const res = await api.post("/admin/send-club", payload);
 
             if (res.status === 201) {
                 setSuccess(true);
+
+                // atualiza listagem sem reload
+                await loadData();
+
                 setTimeout(() => {
                     setModal(false);
-                    window.location.reload();
-                }, 700);
+                    setSuccess(false);
+                }, 800);
             }
 
         } catch (err) {
+            console.error(err);
             alert("Erro ao cadastrar clube");
+
         } finally {
             setLoading(false);
         }
     };
 
+
     // ============================
     // ATUALIZAR CLUBE
     // ============================
-    const updateClub = async () => {
+    const updateClub = async (payload) => {
         setLoading(true);
 
         try {
-            await api.put(`/admin/clubs/${currentClub.id_club}/update`, newClub);
+            await api.put(`/admin/clubs/${currentClub.id_club}/update`, payload);
+
             setSuccess(true);
+
+            // Atualiza lista
+            await loadData();
 
             setTimeout(() => {
                 setModal(false);
-                window.location.reload();
-            }, 700);
+                setSuccess(false);
+            }, 800);
 
         } catch (err) {
+            console.error(err);
             alert("Erro ao atualizar clube");
         } finally {
             setLoading(false);
         }
     };
+
 
     // ============================
     // DESATIVAR CLUBE
@@ -259,14 +305,14 @@ export default function GestaoClubes() {
                     onClick={() => setModal(false)}
                 >
                     <div 
-                        className="bg-white w-full max-w-xl p-6 rounded-2xl"
+                        className="bg-white w-full max-w-2xl p-6 rounded-2xl overflow-y-auto max-h-[90vh]"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <h2 className="text-xl font-bold mb-4">
                             {isEditing ? "Editar Clube" : "Cadastrar Clube"}
                         </h2>
 
-                        {/* Liga */}
+                        {/* LIGA */}
                         <label className="block text-sm text-gray-600 mb-1">Liga</label>
                         <select
                             value={newClub.id_league}
@@ -283,7 +329,7 @@ export default function GestaoClubes() {
                             ))}
                         </select>
 
-                        {/* Nome */}
+                        {/* NOME */}
                         <label className="block text-sm text-gray-600 mb-1">Nome do Clube</label>
                         <input
                             type="text"
@@ -294,7 +340,7 @@ export default function GestaoClubes() {
                             }
                         />
 
-                        {/* Descrição */}
+                        {/* DESCRIÇÃO */}
                         <label className="block text-sm text-gray-600 mb-1">Descrição</label>
                         <textarea
                             className="w-full border px-3 py-2 rounded mb-3"
@@ -304,18 +350,76 @@ export default function GestaoClubes() {
                             }
                         />
 
-                        {/* Logo */}
-                        <label className="block text-sm text-gray-600 mb-1">Escudo do Clube</label>
+                        {/* CAMPOS FIXOS */}
+                        <div className="grid grid-cols-2 gap-4 mb-4">
 
-                        {/* INPUT FILE */}
+                            {/* Fundação */}
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">Fundação</label>
+                                <input
+                                    type="date"
+                                    className="w-full border px-3 py-2 rounded"
+                                    value={newClub.founded_at || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, founded_at: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* Estrutura societária */}
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">Modelo societário</label>
+                                <select
+                                    className="w-full border px-3 py-2 rounded"
+                                    value={newClub.ownership_model || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, ownership_model: e.target.value })
+                                    }
+                                >
+                                    <option value="">Selecione</option>
+                                    <option value="SAF">SAF</option>
+                                    <option value="Associativo">Associativo</option>
+                                    <option value="Empresa">Empresa</option>
+                                </select>
+                            </div>
+
+                            {/* Estádio */}
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">Nome do Estádio</label>
+                                <input
+                                    type="text"
+                                    className="w-full border px-3 py-2 rounded"
+                                    value={newClub.stadium_name || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, stadium_name: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* Capacidade */}
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">Capacidade do Estádio</label>
+                                <input
+                                    type="number"
+                                    className="w-full border px-3 py-2 rounded"
+                                    value={newClub.stadium_capacity || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, stadium_capacity: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                        </div>
+
+                        {/* LOGO */}
+                        <label className="block text-sm text-gray-600 mb-1">Escudo do Clube</label>
                         <input
                             type="file"
                             accept="image/*"
-                            className="mb-3"
+                            className="mb-2"
                             onChange={(e) => setFile(e.target.files[0])}
                         />
 
-                        {/* BOTÃO UPLOAD */}
                         <button
                             onClick={uploadLogo}
                             disabled={uploading}
@@ -324,29 +428,103 @@ export default function GestaoClubes() {
                             {uploading ? "Enviando..." : "Enviar Logo"}
                         </button>
 
-                        {/* PREVIEW */}
                         {newClub.crest_url && (
                             <div className="w-24 h-24 border rounded-lg overflow-hidden mb-4">
-                                <img 
-                                    src={newClub.crest_url} 
-                                    className="w-full h-full object-cover" 
-                                />
+                                <img src={newClub.crest_url} className="w-full h-full object-cover" />
                             </div>
                         )}
 
+                        {/* ATRIBUTOS DINÂMICOS */}
+                        <hr className="my-4" />
+                        <h3 className="text-lg font-semibold mb-2">Atributos adicionais</h3>
 
-                        {/* Ações */}
+                        {attributes.map((attr, index) => (
+                            <div key={index} className="grid grid-cols-4 gap-2 mb-2">
+
+                                {/* key */}
+                                <input
+                                    list="attributeKeys"
+                                    className="border px-2 py-1 rounded"
+                                    value={attr.key}
+                                    onChange={(e) => {
+                                        const updated = [...attributes];
+                                        updated[index].key = e.target.value;
+                                        setAttributes(updated);
+                                    }}
+                                />
+
+                                <datalist id="attributeKeys">
+                                    {attributeKeys.map((k) => (
+                                        <option key={k} value={k} />
+                                    ))}
+                                </datalist>
+
+                                {/* value */}
+                                <input
+                                    type="text"
+                                    placeholder="Valor"
+                                    className="border px-2 py-1 rounded"
+                                    value={attr.value}
+                                    onChange={(e) => {
+                                        const updated = [...attributes];
+                                        updated[index].value = e.target.value;
+                                        setAttributes(updated);
+                                    }}
+                                />
+
+                                {/* tipo */}
+                                <select
+                                    className="border px-2 py-1 rounded"
+                                    value={attr.type}
+                                    onChange={(e) => {
+                                        const updated = [...attributes];
+                                        updated[index].type = e.target.value;
+                                        setAttributes(updated);
+                                    }}
+                                >
+                                    <option value="string">Texto</option>
+                                    <option value="number">Número</option>
+                                    <option value="date">Data</option>
+                                    <option value="boolean">Booleano</option>
+                                    <option value="json">JSON</option>
+                                </select>
+
+                                {/* remover */}
+                                <button
+                                    className="text-red-600"
+                                    onClick={() => {
+                                        const updated = attributes.filter((_, i) => i !== index);
+                                        setAttributes(updated);
+                                    }}
+                                >
+                                    Remover
+                                </button>
+                            </div>
+                        ))}
+
+                        {/* Adicionar atributo */}
+                        <button
+                            className="bg-gray-200 px-3 py-1 rounded mb-4"
+                            onClick={() =>
+                                setAttributes([...attributes, { key: "", value: "", type: "string" }])
+                            }
+                        >
+                            + Adicionar atributo
+                        </button>
+
+                        {/* BOTÕES FINAIS */}
                         <div className="flex justify-between items-center mt-4">
-
-                            {/* Cadastrar / Atualizar */}
+                            
                             <button
-                                onClick={isEditing ? updateClub : sendClub}
+                                onClick={async () => {
+                                    const payload = { ...newClub, attributes };
+                                    isEditing ? updateClub(payload) : sendClub(payload);
+                                }}
                                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                             >
-                                {isEditing ? "Salvar Alterações" : "Cadastrar"}
+                                {isEditing ? "Salvar alterações" : "Cadastrar"}
                             </button>
 
-                            {/* Desativar */}
                             {isEditing && (
                                 <button
                                     onClick={() => {
@@ -365,6 +543,7 @@ export default function GestaoClubes() {
                     </div>
                 </div>
             )}
+
 
         </div>
     );

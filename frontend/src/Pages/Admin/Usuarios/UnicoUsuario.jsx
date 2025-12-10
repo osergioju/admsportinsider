@@ -314,15 +314,17 @@ export default function GestaoUsuarios() {
                              <div className="flex gap-3">
                                
 
-                                
-                                
-                                <div className="flex gap-3">
-                                    <button
+                                {
+                                    theUser.id != user.id && (
+                                        <button
                                         onClick={disableUser}
                                         className="cursor-pointer bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                                     >
                                         Inativar usuário
                                     </button>
+                                    )
+                                }
+                                <div className="flex gap-3">
                                         <button
                                         onClick={resendConfirmation}
                                         className="cursor-pointer bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"

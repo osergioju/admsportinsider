@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, uploadLeagueBalance, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, getClubById, createClub, updateClub, disableClub} from "../controllers/admin.controller.js";
+import {getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, uploadLeagueBalance, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, getClubById, createClub, updateClub, disableClub} from "../controllers/admin.controller.js";
 import { getUsersInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { upload } from "../middlewares/upload.js";
@@ -31,6 +31,7 @@ router.get("/clubs/:id", getClubById);
 router.post("/send-club", createClub);
 router.put("/clubs/:id/update", updateClub);
 router.delete("/disable-club/:id", disableClub);
+router.get("/attribute-keys", getAttributeKeys);
 
 // USUÁRIOS - GESTÃO
 router.get("/users", getAllUsers);

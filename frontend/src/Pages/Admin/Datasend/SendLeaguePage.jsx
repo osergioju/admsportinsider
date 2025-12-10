@@ -1,92 +1,75 @@
 import { useState, useEffect } from "react";
-import { api } from "../../../services/api"; 
+import { api } from "../../../services/api";
 
 export default function SendLeaguePage() {
-  const [countries, setCountries] = useState([]);
-  const [countryId, setCountryId] = useState("");
-  const [leagueName, setLeagueName] = useState("");
+
+  const [leagues, setLeagues] = useState([]);
+  const [leagueId, setLeagueId] = useState("");
   const [file, setFile] = useState(null);
 
-  // Carrega países quando a página abre
+  // Carrega ligas ao abrir a página
   useEffect(() => {
-    async function loadCountries() {
+    async function loadLeagues() {
       try {
-        const { data } = await api.get("/admin/countries");
-        setCountries(data.countries);
+        const { data } = await api.get("/admin/leagues");
+        setLeagues(data.leagues);
       } catch (err) {
-        console.error("Erro ao carregar países:", err);
+        console.error("Erro ao carregar ligas:", err);
       }
     }
-    loadCountries();
+    loadLeagues();
   }, []);
 
   const handleSubmit = async () => {
-    if (!countryId || !leagueName || !file) {
-      alert("Preencha todos os campos.");
+    if (!leagueId || !file) {
+      alert("Selecione a liga e envie o arquivo.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("countryId", countryId);
-    formData.append("leagueName", leagueName);
+    formData.append("leagueId", leagueId);
     formData.append("file", file);
 
     try {
       const { data } = await api.post(
-        "/admin/leagues/import-balance",
+        "/upload/leagues/import-balance",
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert("Balanço enviado com sucesso!");
+      alert("Dados da liga importados com sucesso!");
       console.log(data);
 
     } catch (err) {
       console.error(err);
-      alert("Erro ao enviar balanço.");
+      alert("Erro ao importar balanço da liga.");
     }
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Upload de Balanço da Liga</h1>
+      <h1 className="text-2xl font-semibold mb-4">Upload Financeiro da Liga</h1>
 
       <div className="bg-white rounded-xl p-6 shadow">
 
         <div className="flex flex-col gap-4">
 
-          {/* País */}
+          {/* Selecionar Liga */}
           <div>
-            <label className="block text-sm font-medium mb-1">País</label>
+            <label className="block text-sm font-medium mb-1">Liga</label>
             <select
               className="border rounded w-full p-2"
-              value={countryId}
-              onChange={(e) => setCountryId(e.target.value)}
+              value={leagueId}
+              onChange={(e) => setLeagueId(e.target.value)}
             >
-              <option value="">Selecione um país</option>
+              <option value="">Selecione uma liga</option>
 
-              {countries.map((c) => (
-                <option key={c.id_country} value={c.id_country}>
-                  {c.name}
+              {leagues.map((l) => (
+                <option key={l.id_league} value={l.id_league}>
+                  {l.name}
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Nome da liga */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Nome da liga</label>
-            <input
-              type="text"
-              className="border rounded w-full p-2"
-              placeholder="Ex: Brasileirão Série A"
-              value={leagueName}
-              onChange={(e) => setLeagueName(e.target.value)}
-            />
           </div>
 
           {/* Arquivo XLSX */}

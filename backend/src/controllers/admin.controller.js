@@ -219,76 +219,224 @@ export async function getAllClubs(req, res) {
 }
 
 export async function getClubById(req, res) {
-  const { id } = req.params;
+    const { id } = req.params;
 
-  try {
-    const result = await db.query(`
-      SELECT 
-        c.*,
-        l.name AS league_name
-      FROM clubs c
-      LEFT JOIN leagues l ON l.id_league = c.id_league
-      WHERE c.id_club = $1
-    `, [id]);
+    try {
+        // Buscar o clube
+        const clubResult = await db.query(`
+            SELECT 
+                c.*,
+                l.name AS league_name
+            FROM clubs c
+            LEFT JOIN leagues l ON l.id_league = c.id_league
+            WHERE c.id_club = $1
+        `, [id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Clube não encontrado" });
+        if (clubResult.rows.length === 0) {
+            return res.status(404).json({ message: "Clube não encontrado" });
+        }
+
+        const club = clubResult.rows[0];
+
+        // Buscar atributos dinâmicos
+        const attrResult = await db.query(`
+            SELECT 
+                key,
+                value,
+                value_type
+            FROM club_attributes
+            WHERE id_club = $1
+            ORDER BY key ASC
+        `, [id]);
+
+        const attributes = attrResult.rows;
+
+        // Retorna tudo junto
+        return res.json({
+            club,
+            attributes
+        });
+
+    } catch (err) {
+        console.error("Erro ao buscar clube:", err);
+        return res.status(500).json({ message: "Erro ao buscar clube" });
     }
+} 
 
-    return res.json({ club: result.rows[0] });
+export async function getAttributeKeys(req, res) {
+    try {
+        const result = await db.query(`
+            SELECT DISTINCT key
+            FROM club_attributes
+            ORDER BY key ASC
+        `);
 
-  } catch (err) {
-    console.error("Erro ao buscar clube:", err);
-    return res.status(500).json({ message: "Erro ao buscar clube" });
-  }
+        return res.json({ keys: result.rows.map(r => r.key) });
+
+    } catch (err) {
+        console.error("Erro ao carregar chaves de atributos:", err);
+        return res.status(500).json({ message: "Erro ao carregar chaves" });
+    }
 }
 
-export async function createClub(req, res) {
-  const { id_league, name, description, crest_url } = req.body;
 
-  // Valida campos obrigatórios
+export async function createClub(req, res) {
+  const {
+    id_league,
+    name,
+    description,
+    crest_url,
+    founded_at,
+    stadium_name,
+    stadium_capacity,
+    ownership_model,
+    attributes = [] // array vindo do front
+  } = req.body;
+
   if (!id_league || !name) {
-    return res.status(400).json({
-      message: "Liga e nome do clube são obrigatórios."
-    });
+    return res.status(400).json({ message: "Liga e nome são obrigatórios." });
   }
 
-  try {
-    await db.query(`
-      INSERT INTO clubs (id_league, name, description, crest_url)
-      VALUES ($1, $2, $3, $4)
-    `, [id_league, name, description, crest_url]);
+  const client = await db.connect();
 
+  try {
+    await client.query("BEGIN");
+
+    // 1️⃣ INSERT CLUB
+    const insertClub = await client.query(
+      `
+      INSERT INTO clubs (
+        id_league, name, description, crest_url,
+        founded_at, stadium_name, stadium_capacity, ownership_model
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING id_club
+      `,
+      [
+        id_league,
+        name,
+        description,
+        crest_url,
+        founded_at || null,
+        stadium_name || null,
+        stadium_capacity || null,
+        ownership_model || null
+      ]
+    );
+
+    const id_club = insertClub.rows[0].id_club;
+
+    // 2️⃣ INSERT ATRIBUTOS DINÂMICOS
+    if (attributes.length > 0) {
+      const insertAttrQuery = `
+        INSERT INTO club_attributes (id_club, key, value, value_type)
+        VALUES ($1, $2, $3, $4)
+      `;
+
+      for (const attr of attributes) {
+        await client.query(insertAttrQuery, [
+          id_club,
+          attr.key,
+          attr.value,
+          attr.type || "string"
+        ]);
+      }
+    }
+
+    await client.query("COMMIT");
     return res.status(201).json({ message: "Clube cadastrado com sucesso!" });
 
   } catch (err) {
-    console.error("Erro ao criar clube:", err);
+    await client.query("ROLLBACK");
+    console.error(err);
     return res.status(500).json({ message: "Erro ao cadastrar clube" });
+
+  } finally {
+    client.release();
   }
 }
 
+
 export async function updateClub(req, res) {
-  const { id } = req.params;
-  const { id_league, name, description, crest_url } = req.body;
+  const id = req.params.id;
+
+  const {
+    id_league,
+    name,
+    description,
+    crest_url,
+    founded_at,
+    stadium_name,
+    stadium_capacity,
+    ownership_model,
+    attributes = [] // array de atributos novos/atualizados
+  } = req.body;
+
+  const client = await db.connect();
 
   try {
-    await db.query(`
-      UPDATE clubs
-      SET 
+    await client.query("BEGIN");
+
+    // 1️⃣ UPDATE CLUB
+    await client.query(
+      `
+      UPDATE clubs SET
         id_league = $1,
         name = $2,
         description = $3,
-        crest_url = $4
-      WHERE id_club = $5
-    `, [id_league, name, description, crest_url, id]);
+        crest_url = $4,
+        founded_at = $5,
+        stadium_name = $6,
+        stadium_capacity = $7,
+        ownership_model = $8
+      WHERE id_club = $9
+      `,
+      [
+        id_league,
+        name,
+        description,
+        crest_url,
+        founded_at || null,
+        stadium_name || null,
+        stadium_capacity || null,
+        ownership_model || null,
+        id
+      ]
+    );
 
+    // 2️⃣ Limpa atributos antigos
+    await client.query("DELETE FROM club_attributes WHERE id_club = $1", [id]);
+
+    // 3️⃣ Insere novos atributos
+    if (attributes.length > 0) {
+      const insertAttrQuery = `
+        INSERT INTO club_attributes (id_club, key, value, value_type)
+        VALUES ($1, $2, $3, $4)
+      `;
+
+      for (const attr of attributes) {
+        await client.query(insertAttrQuery, [
+          id,
+          attr.key,
+          attr.value,
+          attr.type || "string"
+        ]);
+      }
+    }
+
+    await client.query("COMMIT");
     return res.json({ message: "Clube atualizado com sucesso!" });
 
   } catch (err) {
-    console.error("Erro ao atualizar clube:", err);
+    await client.query("ROLLBACK");
+    console.error(err);
     return res.status(500).json({ message: "Erro ao atualizar clube" });
+
+  } finally {
+    client.release();
   }
 }
+
 
 export async function disableClub(req, res) {
   const { id } = req.params;

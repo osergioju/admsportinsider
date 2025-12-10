@@ -8,6 +8,7 @@ import userRoutes from "./src/routes/user.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
 import dashboardRoutes from "./src/routes/dashboard.routes.js";
 import financeiroRoutes from "./src/routes/financeiro.routes.js";
+import uploadRoutes from "./src/routes/upload.routes.js";
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use("/user", userRoutes);
 app.use("/admin", adminRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/financeiro", financeiroRoutes);
+app.use("/upload", uploadRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
