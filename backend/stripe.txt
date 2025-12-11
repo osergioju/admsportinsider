@@ -1,0 +1,19 @@
+2025-12-10 22:00:14   --> product.created [evt_1ScyEsGpvzwsEpHhwwEK3XtZ]
+2025-12-10 22:00:14  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyEsGpvzwsEpHhwwEK3XtZ]
+2025-12-10 22:00:14   --> plan.created [evt_1ScyEsGpvzwsEpHhQiO9DjSW]
+2025-12-10 22:00:14  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyEsGpvzwsEpHhQiO9DjSW]
+2025-12-10 22:00:14   --> price.created [evt_1ScyEsGpvzwsEpHhSqIkK4AO]
+2025-12-10 22:00:14  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyEsGpvzwsEpHhSqIkK4AO]
+2025-12-10 22:00:15   --> product.updated [evt_1ScyEtGpvzwsEpHhUuYEFUG4]
+2025-12-10 22:00:15  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyEtGpvzwsEpHhUuYEFUG4]
+
+/// 
+
+025-12-10 22:01:06  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyFiGpvzwsEpHhA6vF9xkh]
+2025-12-10 22:01:07   --> plan.created [evt_1ScyFiGpvzwsEpHhNikn8RRS]
+2025-12-10 22:01:07  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyFiGpvzwsEpHhNikn8RRS]
+2025-12-10 22:01:07   --> price.created [evt_1ScyFjGpvzwsEpHhjA8DvljI]
+2025-12-10 22:01:07  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyFjGpvzwsEpHhjA8DvljI]
+2025-12-10 22:01:07   --> product.updated [evt_1ScyFjGpvzwsEpHhnvbK5jpp]
+2025-12-10 22:01:07  <--  [404] POST http://localhost:3000/stripe/webhook [evt_1ScyFjGpvzwsEpHhnvbK5jpp]
+

@@ -9,16 +9,18 @@ import adminRoutes from "./src/routes/admin.routes.js";
 import dashboardRoutes from "./src/routes/dashboard.routes.js";
 import financeiroRoutes from "./src/routes/financeiro.routes.js";
 import uploadRoutes from "./src/routes/upload.routes.js";
+import stripeRoutes from "./src/routes/stripe.routes.js";
+import stripeWebhookRoutes from "./src/routes/stripeWebhook.routes.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares globais
+// ===== CORS =====
 const allowedOrigins = [
-  "http://localhost:5173",          // seu frontend dev
-  "https://sportinsider.com",       // seu frontend produção
+  "http://localhost:5173",
+  "https://sportinsider.com",
   "https://dashboard.sportinsider.com"
 ];
 
@@ -32,6 +34,11 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// ===== WEBHOOK (vem ANTES do express.json()) =====
+app.use("/stripe", stripeWebhookRoutes);
+
+// ===== JSON NORMAL =====
 app.use(express.json());
 
 // Teste banco
@@ -39,18 +46,19 @@ db.query("SELECT NOW()")
   .then((res) => console.log("Conectado ao banco:", res.rows[0].now))
   .catch((err) => console.error("Erro ao conectar no banco:", err));
 
-// Rota raiz
+// Rotas principais
 app.get("/", (req, res) => {
   res.send("API funcionando!");
 });
-
-// Rotas principais
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/admin", adminRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/financeiro", financeiroRoutes);
 app.use("/upload", uploadRoutes);
+
+// ===== ROTA DE CHECKOUT =====
+app.use("/stripe", stripeRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
