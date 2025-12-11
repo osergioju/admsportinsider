@@ -3,6 +3,8 @@ import multer from "multer";
 import { importLeagueBalance } from "../utils/importLeagueBalance.service.js";
 import { reSendMail } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
+import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Pegar o admin, mas nem faz nada isso agora
 export const getAdminDashboard = (req, res) => {
@@ -726,16 +728,47 @@ export async function changeUserPlan(req, res) {
         });
     }
 
+    const PRICE_IDS = {
+      2: "price_1ScyEsGpvzwsEpHhVnmLViFU", // Premium
+      3: "price_1ScyFiGpvzwsEpHh70blpgpx", // Business
+    };
+
     try {
-        // Verifica se o plano existe
+        // verifica plano
         const check = await db.query("SELECT id FROM plans WHERE id = $1", [plan_id]);
         if (check.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                error: "Plano não encontrado"
+            return res.status(404).json({ error: "Plano não encontrado" });
+        }
+
+        // pega usuário
+        const userResult = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(404).json({ error: "Usuário não encontrado" });
+        }
+
+        if (!user.stripe_subscription_id) {
+            return res.status(400).json({
+                error: "Usuário não possui assinatura Stripe para atualizar"
             });
         }
 
+        // PEGA O ITEM DA ASSINATURA
+        const subscription = await stripe.subscriptions.retrieve(
+            user.stripe_subscription_id
+        );
+
+        const subscriptionItemId = subscription.items.data[0].id;
+
+        // ALTERA O PLANO NO STRIPE
+        await stripe.subscriptionItems.update(subscriptionItemId, {
+            price: PRICE_IDS[plan_id],
+            proration_behavior: "always_invoice" // ou "none"
+        });
+
+        // **NÃO** precisa atualizar seu banco aqui!
+        // O webhook customer.subscription.updated fará isso automático
         // Atualiza o plano do usuário
         await db.query(
             "UPDATE users SET plan_id = $1 WHERE id = $2",
@@ -744,7 +777,7 @@ export async function changeUserPlan(req, res) {
 
         return res.json({
             success: true,
-            message: "Plano atualizado com sucesso!"
+            message: "Plano atualizado no Stripe com sucesso!"
         });
 
     } catch (error) {
