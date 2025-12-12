@@ -40,6 +40,13 @@ export default function Register() {
             setIsRegistering(false);
 
             alert("Cadastro realizado com sucesso! Faça login para continuar.");
+
+            // AQUI SIM
+            localStorage.setItem(
+                "pending_email_verification",
+                email
+            );
+
             navigate("/login"); 
 
         } catch (error) {

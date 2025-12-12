@@ -56,21 +56,16 @@ export async function sendResetEmailSucess(to) {
 }
 
 
-export async function reSendMail(to) {
+export async function reSendMail(to, token) {
   const transporter = createTransporter();
-  const siteUrl_send = `${process.env.FRONTEND_URL}/login`;
-  const html = resendMailTemplate(siteUrl_send);
+  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
-  try {
-    console.log("=== Enviando email para:", to);
-    await transporter.sendMail({
-      from: `"${process.env.SENDER_SUPORTE}" <${process.env.MAIL_USER}>`,
-      to,
-      subject: "Confirme seu e-mail",
-      html
-    });
-    console.log("=== Email enviado com sucesso! ===");
-  } catch (err) {
-    console.error("Erro ao enviar email:", err);
-  }
+  const html = resendMailTemplate(verifyUrl);
+
+  await transporter.sendMail({
+    from: `"${process.env.SENDER_SUPORTE}" <${process.env.MAIL_USER}>`,
+    to,
+    subject: "Confirme seu e-mail",
+    html
+  });
 }

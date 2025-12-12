@@ -13,7 +13,7 @@ import GoogleCallback from "./Pages/Auth/GoogleCallback";
 import UserIndex from "./Pages/User/Index";
 import UserPerfil from "./Pages/User/Perfil";
 import UserConfiguracoes from "./Pages/User/Configuracoes";
-
+import VerifyEmail from "./Pages/Auth/VerifyEmail";
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
@@ -59,6 +59,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPass />} />
           <Route path="/reset" element={<ResetPassConfirm />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
 

@@ -6,6 +6,15 @@ import { checkResetLimit } from "../utils/resetLimiter.js";
 import { db } from "../config/db.js";
 import { sendResetEmail, sendResetEmailSucess, reSendMail } from "../utils/mailer.js";
 
+// Tokens pro cadastro, pra chegar no e-mail e confirmar e tal
+function generateEmailToken() {
+  return crypto.randomBytes(32).toString("hex"); // token "cru"
+}
+
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 // LOGIN BÁSICO
 export const login = async (req, res) => {
   const { email, senha } = req.body;
@@ -75,10 +84,10 @@ export const login = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { name, email, senha } = req.body;
+  const { nome, email, senha } = req.body;
 
   // 1. Validação básica
-  if (!name || !email || !senha) {
+  if (!nome || !email || !senha) {
     return res.status(400).json({ error: "Preencha todos os campos obrigatórios." });
   }
 
@@ -99,14 +108,22 @@ export const register = async (req, res) => {
 
     // 4. Salvar no banco (usando a função nova do model)
     const newUser = await createPublicUser({
-      name,
+      nome,
       email,
       passwordHash
     });
 
     // 5. Enviar e-mail de confirmação (depois a gente faz isso direito)
     try {
-        await reSendMail(newUser.email); 
+        const token = generateEmailToken();
+        const tokenHash = hashToken(token);
+
+        await db.query(`
+          INSERT INTO email_verifications (user_id, token_hash, expires_at)
+          VALUES ($1, $2, NOW() + INTERVAL '24 hours')
+        `, [newUser.id, tokenHash]);
+
+        await reSendMail(newUser.email, token); // agora manda token
     } catch (mailError) {
         console.error("Erro ao enviar email de boas-vindas:", mailError);
         // Não bloqueamos o cadastro se o email falhar
@@ -118,7 +135,7 @@ export const register = async (req, res) => {
       email: newUser.email,
       role: newUser.role
     });
-
+    
     // Registrar log de login (já que ele entrou ao se cadastrar)
     await db.query("INSERT INTO login_logs (user_id) VALUES ($1)", [newUser.id]);
 
@@ -133,6 +150,117 @@ export const register = async (req, res) => {
     return res.status(500).json({ error: "Erro interno ao criar conta." });
   }
 };
+
+export async function verifyMail(req, res) {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ error: "Token não informado." });
+  }
+
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  // 1️⃣ Busca o token (mesmo que já tenha sido usado)
+  const { rows } = await db.query(`
+    SELECT ev.id, ev.user_id, ev.used_at, u.email_verified
+    FROM email_verifications ev
+    JOIN users u ON u.id = ev.user_id
+    WHERE ev.token_hash = $1
+      AND ev.expires_at > NOW()
+    LIMIT 1
+  `, [tokenHash]);
+
+  if (!rows.length) {
+    return res.status(400).json({
+      error: "Token inválido ou expirado."
+    });
+  }
+
+  const verification = rows[0];
+  console.log(verification);
+  // 2️⃣ Se já estiver confirmado, responde sucesso (IDEMPOTENTE)
+  if (verification.email_verified) {
+    return res.status(200).json({
+      message: "E-mail já confirmado."
+    });
+  }
+
+  // 3️⃣ Confirma usuário
+  await db.query(`
+    UPDATE users
+    SET email_verified = true,
+        updated_at = NOW()
+    WHERE id = $1
+  `, [verification.user_id]);
+
+  // 4️⃣ Marca token como usado (se ainda não estiver)
+  if (!verification.used_at) {
+    await db.query(`
+      UPDATE email_verifications
+      SET used_at = NOW()
+      WHERE id = $1
+    `, [verification.id]);
+  }
+
+  return res.status(200).json({
+    message: "E-mail confirmado com sucesso."
+  });
+}
+
+
+export async function resendVerification(req, res) {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "E-mail não informado." });
+  }
+
+  // 1️⃣ Busca usuário
+  const { rows } = await db.query(
+    "SELECT id, email_verified FROM users WHERE email = $1",
+    [email]
+  );
+
+  if (!rows.length) {
+    // segurança: não revela se existe ou não
+    return res.status(200).json({
+      message: "Se o e-mail existir, enviaremos a confirmação."
+    });
+  }
+
+  const user = rows[0];
+
+  if (user.email_verified) {
+    return res.status(400).json({
+      error: "E-mail já confirmado."
+    });
+  }
+
+  // 2️⃣ Invalida tokens antigos
+  await db.query(
+    "UPDATE email_verifications SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL",
+    [user.id]
+  );
+
+  // 3️⃣ Cria novo token
+  const token = generateEmailToken();
+  const tokenHash = hashToken(token);
+
+  await db.query(`
+    INSERT INTO email_verifications (user_id, token_hash, expires_at)
+    VALUES ($1, $2, NOW() + INTERVAL '24 hours')
+  `, [user.id, tokenHash]);
+
+  // 4️⃣ Envia e-mail
+  await reSendMail(email, token);
+
+  return res.status(200).json({
+    message: "Novo e-mail de confirmação enviado."
+  });
+}
 
 // Check no middleware pra ver quem sou eu
 export const me = async (req, res) => {

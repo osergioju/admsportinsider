@@ -8,30 +8,59 @@ export async function findUserByEmail(email) {
   return result.rows[0];
 }
 
-export async function createPublicUser({ name, email, passwordHash }) {
+export async function createPublicUser({ nome, email, passwordHash }) {
   const query = `
     INSERT INTO users (
-      name, 
-      email, 
-      password_hash, 
-      role, 
-      active, 
-      email_verified, 
-      created_at, 
+      name,
+      email,
+      password_hash,
+      role,
+      plan_id,
+      active,
+      email_verified,
+      provider,
+      last_login,
+      created_at,
       updated_at,
-      provider
+      country,
+      provider_id,
+      avatar_url,
+      stripe_customer_id,
+      stripe_subscription_id,
+      stripe_price_id,
+      subscription_status,
+      subscription_current_period_end,
+      cancel_at_period_end
     )
-    VALUES ($1, $2, $3, 'user', true, false, NOW(), NOW(), 'email')
-    RETURNING id, name, email, role, created_at;
+    VALUES (
+      $1, $2, $3,
+      'user',
+      1,
+      true,
+      false,
+      'email',
+      NOW(),
+      NOW(),
+      NOW(),
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      false
+    )
+    RETURNING
+      id, name, email, role, plan_id, active, email_verified, provider, last_login, created_at;
   `;
-  
-  // role 'user' é o padrão para quem se cadastra pelo site
-  // email_verified false obriga o usuário a confirmar o email depois
-  
-  const values = [name, email, passwordHash];
+
+  const values = [nome, email, passwordHash];
   const result = await db.query(query, values);
   return result.rows[0];
 }
+
 
 // Atualizar dados do próprio usuário
 export async function updateUserProfile(id, { name, email }) {
