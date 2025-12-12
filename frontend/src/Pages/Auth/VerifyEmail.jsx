@@ -44,7 +44,7 @@ export default function VerifyEmail() {
     async function resend() {
         try {
             await api.post("/auth/resend-verification", {
-                email: email // ou campo input
+                email: email
             });
 
             alert("E-mail reenviado. Verifique sua caixa de entrada.");
@@ -70,7 +70,7 @@ export default function VerifyEmail() {
         {status === "success" && (
           <div>
             <h1 className="text-2xl font-semibold text-green-600">
-              Tudo certo 🎉
+              Tudo certo
             </h1>
             <p class="text-white">{message}</p>
             <button
