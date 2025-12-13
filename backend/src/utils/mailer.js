@@ -58,14 +58,22 @@ export async function sendResetEmailSucess(to) {
 
 export async function reSendMail(to, token) {
   const transporter = createTransporter();
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
+  // Esta linha garante que o link vá para o React (Porta 5173)
+  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  
   const html = resendMailTemplate(verifyUrl);
 
-  await transporter.sendMail({
-    from: `"${process.env.SENDER_SUPORTE}" <${process.env.MAIL_USER}>`,
-    to,
-    subject: "Confirme seu e-mail",
-    html
-  });
+  try {
+    
+    await transporter.sendMail({
+      from: `"${process.env.SENDER_SUPORTE}" <${process.env.MAIL_USER}>`,
+      to,
+      subject: "Confirme seu e-mail",
+      html
+    });
+
+  } catch (err) {
+    console.error("Erro ao enviar email de verificação:", err);
+  }
 }

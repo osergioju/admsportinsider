@@ -9,7 +9,7 @@ const router = Router();
 router.post("/login", login);
 router.post("/register", register);
 
-// Verifica e-mail e reenvia caso a pessoa tenha expirado e tal
+// Verifica e-mail e reenvia caso a pessoa tenha expirado
 router.get("/verify-email", verifyMail);
 router.post("/resend-verification", resendVerification);
 
@@ -17,7 +17,7 @@ router.post("/resend-verification", resendVerification);
 router.post("/reset-password", resetPasswordRequest);
 router.post("/reset-password/confirm", resetPasswordConfirm);
 
-// Se atutentica, garante que vc é vc
+// Se autentica, garante que vc é vc KKKK
 router.get("/me", authGuard, me);
 
 // Login com Google

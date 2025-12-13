@@ -1,9 +1,10 @@
 import Stripe from "stripe";
 import { db } from "../config/db.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export const stripeWebhookHandler = async (req, res) => {
+  
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  
   const sig = req.headers["stripe-signature"];
 
   let event;
@@ -14,23 +15,22 @@ export const stripeWebhookHandler = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.log("❌ Erro ao validar webhook:", err.message);
+    console.log("Erro ao validar webhook:", err.message);
     return res.status(400).send(`Webhook error: ${err.message}`);
   }
 
   const data = event.data.object;
 
   switch (event.type) {
-    // ========================================
-    // ✔ CHECKOUT COMPLETED
-    // ========================================
+    
+    // CHECKOUT COMPLETO
     case "checkout.session.completed": {
       const userId = data.metadata?.userId;
       const plan_id = Number(data.metadata?.plan_id);
 
       if (!userId || !plan_id) break;
 
-      console.log("💰 Checkout concluído para user:", userId);
+      console.log("Checkout concluído para user:", userId);
 
       // Buscar line_items manualmente
       const session = await stripe.checkout.sessions.retrieve(data.id, {
@@ -49,9 +49,7 @@ export const stripeWebhookHandler = async (req, res) => {
       break;
     }
 
-    // ========================================
-    // ✔ SUBSCRIPTION CREATED
-    // ========================================
+    // SUBSCRIPTION CREATED
     case "customer.subscription.created": {
       const {
         id: subscriptionId,
@@ -85,9 +83,7 @@ export const stripeWebhookHandler = async (req, res) => {
       break;
     }
 
-    // ========================================
     // ✔ SUBSCRIPTION UPDATED
-    // ========================================
     case "customer.subscription.updated": {
       const {
         customer,
@@ -119,9 +115,7 @@ export const stripeWebhookHandler = async (req, res) => {
       break;
     }
 
-    // ========================================
     // ✔ SUBSCRIPTION DELETED (CANCELADA)
-    // ========================================
     case "customer.subscription.deleted": {
       const { customer } = data;
 
