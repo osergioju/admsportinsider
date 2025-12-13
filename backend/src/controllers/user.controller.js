@@ -17,8 +17,10 @@ export const updateProfile = async (req, res) => {
   }
 
   try {
+    // 2. Se o usuário estiver tentando mudar o e-mail, verificar duplicidade
     if (email) {
       const existingUser = await findUserByEmail(email);
+      // Se existe usuário com esse email E não é o próprio usuário que está requisitando
       if (existingUser && existingUser.id !== userId) {
         return res.status(409).json({ error: "Este e-mail já está em uso." });
       }

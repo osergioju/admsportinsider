@@ -6,9 +6,7 @@ import { checkResetLimit } from "../utils/resetLimiter.js";
 import { db } from "../config/db.js";
 import { sendResetEmail, sendResetEmailSucess, reSendMail } from "../utils/mailer.js";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// Tokens pro cadastro, pra chegar no e-mail e confirmar
+// Tokens pro cadastro, pra chegar no e-mail e confirmar e tal
 function generateEmailToken() {
   return crypto.randomBytes(32).toString("hex"); // token "cru"
 }
@@ -29,28 +27,35 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: "O e-mail informado não pertence a nenhuma conta" });
     }
 
-    // 2. Verificar se o e-mail foi confirmado
+    // 2. Verificar se está ativo
+    if (!user.active) {
+      return res.status(403).json({
+        error: "Sua conta está desativada. Entre em contato com o suporte."
+      });
+    }
+
+    // 3. Verificar se o e-mail foi confirmado
     if (!user.email_verified) {
       return res.status(403).json({
         error: "Você precisa confirmar seu e-mail antes de acessar o sistema."
       });
     }
 
-    // 3. Verificar senha
+    // 4. Verificar senha
     const passwordMatch = await bcrypt.compare(senha, user.password_hash);
 
     if (!passwordMatch) {
       return res.status(401).json({ error: "E-mail ou senha incorretos" });
     }
 
-    // 4. Gerar JWT
+    // 5. Gerar JWT
     const token = generateAccessToken({
       id: user.id,
       email: user.email,
       role: user.role
     });
 
-    // 5. Atualizar last_login
+    // 6. Atualizar last_login
     await db.query(
       "UPDATE users SET last_login = NOW() WHERE id = $1",
       [user.id]
@@ -81,122 +86,130 @@ export const login = async (req, res) => {
 export const register = async (req, res) => {
   const { nome, email, senha } = req.body;
 
-  // 1. Validações de Entrada
+  // 1. Validação básica
   if (!nome || !email || !senha) {
     return res.status(400).json({ error: "Preencha todos os campos obrigatórios." });
   }
-  if (!EMAIL_REGEX.test(email)) {
-    return res.status(400).json({ error: "Formato de e-mail inválido." });
-  }
+
   if (senha.length < 6) {
     return res.status(400).json({ error: "A senha deve ter no mínimo 6 caracteres." });
   }
 
-  // Iniciar Cliente para Transação
-  const client = await db.connect();
-
   try {
-    // Verificar duplicidade antes de abrir transação (leitura rápida)
+    // 2. Verificar se usuário já existe
     const userExists = await findUserByEmail(email);
     if (userExists) {
       return res.status(409).json({ error: "Este e-mail já está em uso." });
     }
 
-    // === INÍCIO DA TRANSAÇÃO ===
-    await client.query("BEGIN");
-
-    // 2. Hash da Senha
+    // 3. Criptografar senha
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(senha, salt);
 
-    // 3. Criar Usuário (Query direta ou via Model adaptado para receber 'client')
-    // Nota: Adaptamos a query aqui para usar o 'client' da transação
-    const insertUserQuery = `
-      INSERT INTO users (
-        name, email, password_hash, role, plan_id, active, email_verified, provider, created_at, updated_at
-      )
-      VALUES ($1, $2, $3, 'user', 1, true, false, 'email', NOW(), NOW())
-      RETURNING id, name, email;
-    `;
-    const userRes = await client.query(insertUserQuery, [nome, email, passwordHash]);
-    const newUser = userRes.rows[0];
+    // 4. Salvar no banco (usando a função nova do model)
+    const newUser = await createPublicUser({
+      nome,
+      email,
+      passwordHash
+    });
 
-    // 4. Gerar e Salvar Token de Verificação
-    const token = generateEmailToken();
-    const tokenHash = hashToken(token);
+    // 5. Enviar e-mail de confirmação (depois a gente faz isso direito)
+    try {
+        const token = generateEmailToken();
+        const tokenHash = hashToken(token);
 
-    await client.query(`
-      INSERT INTO email_verifications (user_id, token_hash, expires_at)
-      VALUES ($1, $2, NOW() + INTERVAL '24 hours')
-    `, [newUser.id, tokenHash]);
+        await db.query(`
+          INSERT INTO email_verifications (user_id, token_hash, expires_at)
+          VALUES ($1, $2, NOW() + INTERVAL '24 hours')
+        `, [newUser.id, tokenHash]);
 
-    // 5. Tentar Enviar o E-mail
-    // Se isso falhar, cairá no catch e fará ROLLBACK de tudo (usuário não será criado)
-    await reSendMail(newUser.email, token);
+        await reSendMail(newUser.email, token); // agora manda token
+    } catch (mailError) {
+        console.error("Erro ao enviar email de boas-vindas:", mailError);
+        // Não bloqueamos o cadastro se o email falhar
+    }
 
-    // === COMMIT (Salva tudo) ===
-    await client.query("COMMIT");
+    // 6. Gerar Token JWT para já logar o usuário direto
+    const token = generateAccessToken({
+      id: newUser.id,
+      email: newUser.email,
+      role: newUser.role
+    });
+    
+    // Registrar log de login (já que ele entrou ao se cadastrar)
+    await db.query("INSERT INTO login_logs (user_id) VALUES ($1)", [newUser.id]);
 
-    // 6. Retorno (SEM TOKEN JWT)
-    // O usuário é obrigado a verificar o e-mail antes de logar
     return res.status(201).json({
-      message: "Conta criada com sucesso! Verifique sua caixa de entrada para ativar sua conta.",
-      user: {
-        id: newUser.id,
-        email: newUser.email
-      }
+      message: "Usuário cadastrado com sucesso! Verifique seu e-mail.",
+      token,
+      user: newUser
     });
 
   } catch (error) {
-    // === ROLLBACK (Desfaz tudo se der erro) ===
-    await client.query("ROLLBACK");
-    
-    console.error("Erro crítico no registro:", error);
-    return res.status(500).json({ error: "Erro ao processar o cadastro. Tente novamente." });
-  } finally {
-    client.release(); // Libera conexão do pool
+    console.error("Erro no registro:", error);
+    return res.status(500).json({ error: "Erro interno ao criar conta." });
   }
 };
 
 export async function verifyMail(req, res) {
-  const { token } = req.query; // Pega ?token=XYZ da URL
+  const { token } = req.query;
 
   if (!token) {
-    return res.status(400).json({ error: "Token de verificação não informado." });
+    return res.status(400).json({ error: "Token não informado." });
   }
 
-  try {
-    const tokenHash = hashToken(token);
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
 
-    // 1. Busca Token Válido e Não Expirado
-    const { rows } = await db.query(`
-      SELECT ev.id, ev.user_id, u.email_verified
-      FROM email_verifications ev
-      JOIN users u ON u.id = ev.user_id
-      WHERE ev.token_hash = $1
-        AND ev.expires_at > NOW()
-        AND ev.used_at IS NULL  -- Garante que token não foi usado
-    `, [tokenHash]);
+  // 1️⃣ Busca o token (mesmo que já tenha sido usado)
+  const { rows } = await db.query(`
+    SELECT ev.id, ev.user_id, ev.used_at, u.email_verified
+    FROM email_verifications ev
+    JOIN users u ON u.id = ev.user_id
+    WHERE ev.token_hash = $1
+      AND ev.expires_at > NOW()
+    LIMIT 1
+  `, [tokenHash]);
 
-    if (rows.length === 0) {
-      return res.status(400).json({ error: "Link inválido, expirado ou já utilizado." });
-    }
-
-    const verification = rows[0];
-
-    // 2. Atualiza User e Token em Transação (opcional)
-    // Como são updates simples, pode ser sequencial
-    await db.query(`UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1`, [verification.user_id]);
-    await db.query(`UPDATE email_verifications SET used_at = NOW() WHERE id = $1`, [verification.id]);
-
-    // 3. Sucesso
-    return res.status(200).json({ message: "E-mail confirmado com sucesso! Você já pode fazer login." });
-
-  } catch (error) {
-    console.error("Erro na verificação de e-mail:", error);
-    return res.status(500).json({ error: "Erro interno ao verificar e-mail." });
+  if (!rows.length) {
+    return res.status(400).json({
+      error: "Token inválido ou expirado."
+    });
   }
+
+  const verification = rows[0];
+  console.log(verification);
+  // 2️⃣ Se já estiver confirmado, responde sucesso (IDEMPOTENTE)
+  if (verification.email_verified) {
+    return res.status(200).json({
+      message: "E-mail já confirmado."
+    });
+  }
+
+  // 3️⃣ Confirma usuário
+  await db.query(`
+    UPDATE users
+    SET email_verified = true,
+        updated_at = NOW()
+    WHERE id = $1
+  `, [verification.user_id]);
+
+  // 4️⃣ Marca token como usado (se ainda não estiver)
+  if (!verification.used_at) {
+    await db.query(`
+      UPDATE email_verifications
+      SET used_at = NOW()
+      WHERE id = $1
+    `, [verification.id]);
+  }
+
+  return res.status(200).json({
+    message: "E-mail confirmado com sucesso."
+  });
 }
+
 
 export async function resendVerification(req, res) {
   const { email } = req.body;

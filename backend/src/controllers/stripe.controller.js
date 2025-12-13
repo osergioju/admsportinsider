@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import { db } from "../config/db.js";
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 const PRICE_IDS = {
   2: "price_1ScyEsGpvzwsEpHhVnmLViFU", // Premium
   3: "price_1ScyFiGpvzwsEpHh70blpgpx", // Business
@@ -8,9 +10,6 @@ const PRICE_IDS = {
 
 export const createCheckoutSession = async (req, res) => {
   try {
-    
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
     const { userId, plan_id } = req.body;
 
     if (!userId || !plan_id) {
@@ -55,8 +54,8 @@ export const createCheckoutSession = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.FRONTEND_URL}/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/pagamento-cancelado`,
+      success_url: `http://localhost:5173/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:5173/pagamento-cancelado`,
       metadata: {
         userId: user.id,
         plan_id,
@@ -66,7 +65,7 @@ export const createCheckoutSession = async (req, res) => {
     return res.json({ url: session.url });
 
   } catch (error) {
-    console.error("Erro ao criar checkout session:", error);
+    console.error("❌ Erro ao criar checkout session:", error);
     res.status(500).json({ error: "Erro ao criar session" });
   }
 };

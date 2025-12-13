@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import { db } from "./src/config/db.js";
 
 import authRoutes from "./src/routes/auth.routes.js";
@@ -11,6 +12,7 @@ import uploadRoutes from "./src/routes/upload.routes.js";
 import stripeRoutes from "./src/routes/stripe.routes.js";
 import stripeWebhookRoutes from "./src/routes/stripeWebhook.routes.js";
 
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

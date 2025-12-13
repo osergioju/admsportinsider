@@ -4,6 +4,7 @@ import { importLeagueBalance } from "../utils/importLeagueBalance.service.js";
 import { reSendMail } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
 import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Pegar o admin, mas nem faz nada isso agora
 export const getAdminDashboard = (req, res) => {
@@ -717,9 +718,6 @@ export async function updateUser(req, res) {
 
 // Troca o plan 
 export async function changeUserPlan(req, res) {
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
     const { id } = req.params;
     const { plan_id } = req.body;
 

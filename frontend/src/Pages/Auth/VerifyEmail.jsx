@@ -1,117 +1,99 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { api } from "../../services/api"; 
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
   const navigate = useNavigate();
 
-  // Recupera o e-mail salvo no cadastro (do Código 1)
   const storedEmail = localStorage.getItem("pending_email_verification");
-  const [email] = useState(storedEmail || "");
+  const [email, setEmail] = useState(storedEmail || "");
+
+  const token = searchParams.get("token");
 
   const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("Verificando seu e-mail...");
+  const [message, setMessage] = useState("");
 
-  // TRAVA DE SEGURANÇA (Do Código 2)
-  const dataFetchedRef = useRef(false);
+    useEffect(() => {
+        if (!token) {
+            setStatus("error");
+            setMessage("Token não informado.");
+            return;
+        }
 
-  useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage("Token inválido ou não fornecido.");
-      return;
+        async function verify() {
+            console.log(token);
+            try {
+                const { data } = await api.get(`/auth/verify-email?token=${token}`);
+
+                setStatus("success");
+                setMessage(data.message);
+            } catch (err) {
+                console.log(err);
+                setStatus("error");
+                setMessage(err.response.data.error);
+
+            }
+        }
+
+
+        verify();
+    }, [token]);
+
+
+    async function resend() {
+        try {
+            await api.post("/auth/resend-verification", {
+                email: email
+            });
+
+            alert("E-mail reenviado. Verifique sua caixa de entrada.");
+        } catch (err) {
+            alert(
+            err.response?.data?.error || "Erro ao reenviar confirmação."
+            );
+        }
     }
 
-    // Impede execução dupla
-    if (dataFetchedRef.current) return;
-    dataFetchedRef.current = true;
-
-    api.get(`/auth/verify-email?token=${token}`)
-      .then((response) => {
-        setStatus("success");
-        setMessage(response.data.message || "E-mail confirmado com sucesso!");
-        // Limpa o storage pois já verificou
-        localStorage.removeItem("pending_email_verification");
-        setTimeout(() => navigate("/login"), 3000);
-      })
-      .catch((error) => {
-        setStatus("error");
-        setMessage(error.response?.data?.error || "Erro ao verificar e-mail.");
-      });
-  }, [token, navigate]);
-
-  // Função de Reenviar (Do Código 1)
-  async function resend() {
-    if (!email) {
-        alert("E-mail não encontrado para reenvio. Tente fazer login.");
-        return;
-    }
-    try {
-        await api.post("/auth/resend-verification", { email });
-        alert("E-mail reenviado! Verifique sua caixa de entrada.");
-    } catch (err) {
-        alert(err.response?.data?.error || "Erro ao reenviar confirmação.");
-    }
-  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white px-4">
-      <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-lg text-center">
-        
-        {/* LOADING */}
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center space-y-4">
+
         {status === "loading" && (
           <>
-            <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Verificando...</h2>
-            <p className="text-gray-300">Aguarde um momento.</p>
+            <h1 className="text-xl font-semibold">Confirmando e-mail…</h1>
+            <p>Aguarde um momento.</p>
           </>
         )}
 
-        {/* SUCESSO */}
         {status === "success" && (
-          <>
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2 text-green-400">Tudo certo!</h2>
-            <p className="text-gray-300 mb-6">{message}</p>
+          <div>
+            <h1 className="text-2xl font-semibold text-green-600">
+              Tudo certo
+            </h1>
+            <p class="text-white">{message}</p>
             <button
               onClick={() => navigate("/login")}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition"
+              className="mt-4 px-4 py-2 rounded bg-black text-white"
             >
-              Ir para Login
+              Ir para login
             </button>
-          </>
+          </div>
         )}
 
-        {/* ERRO */}
         {status === "error" && (
-          <>
-            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2 text-red-400">Algo deu errado</h2>
-            <p className="text-gray-300 mb-6">{message}</p>
-            
-            <div className="flex flex-col gap-3">
-                {/* Botão de Reenviar (Só aparece se tivermos o e-mail) */}
-                {email && (
-                    <button 
-                        onClick={resend} 
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition"
-                    >
-                        Reenviar confirmação
-                    </button>
-                )}
-                
-                <button
-                    onClick={() => navigate("/login")}
-                    className="text-gray-400 hover:text-white underline transition"
-                >
-                    Voltar para Login
-                </button>
-            </div>
-          </>
+          <div>
+            <h1 className="text-2xl font-semibold text-red-600">
+                Algo deu errado
+            </h1>
+            <p className="text-white">{message}</p>
+            <button onClick={resend} className="text-white mt-4 px-4 py-2 rounded border">
+                Reenviar confirmação
+            </button>
+          </div>
         )}
+
       </div>
     </div>
   );
