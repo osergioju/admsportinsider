@@ -56,42 +56,59 @@ export default function Login() {
     }
 
     return (
-        <div className="mx-2">
-            <Panda className="w-10 h-10 text-white"></Panda>
-            <h1 className="font-bold mb-6 text-white font-light text-5xl">Entrar</h1>
+        <div class="w-full h-screen flex items-center">
+            <div className="container mx-auto px-6">
+                <div className="flex flex-wrap items-center space-y-8 py-10">
+                    <div className="w-full lg:w-1/2 h-[160px] lg:h-[80svh] relative">
+                        <div className="z-30 relative w-full h-full lg:max-w-[500px] lg:mx-auto bg-white rounded-3xl"></div>
+                        <div className="absolute left-0 top-0 bg-black h-full w-full flex items-end flex-col justify-center">
+                            <div className="w-100 h-100 bg-linear-to-l from-[#ffffff1f] to-[#ffffff] rounded-full"></div>
+                            <div className="w-100 h-100 bg-linear-to-l from-[#ffffff1f] to-[#ffffff] rounded-full"></div>
+                            <div className="w-100 h-100 bg-linear-to-l from-[#ffffff1f] to-[#ffffff] rounded-full"></div>
+                            <div className="w-100 h-100 bg-linear-to-l from-[#ffffff1f] to-[#ffffff] rounded-full"></div>                            
+                        </div>
+                    </div>
+                    <div className="w-full lg:w-1/2 px-8">
+                        <div className="w-full lg:max-w-[500px] lg:mx-auto">
+                            <h1 className="mb-6 bg-linear-to-l from-[#ffffff1f] to-[#ffffff] bg-clip-text text-4xl text-transparent text-center">Acesse sua conta</h1>
 
-            <form onSubmit={handleSubmit}>
-                <Input
-                    label="E-mail"
-                    labelColor="text-white"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    variant="dark"
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+                            <form onSubmit={handleSubmit}>
+                                <Input
+                                    label="E-mail"
+                                    labelColor="text-white"
+                                    type="email"
+                                    placeholder="seu@email.com"
+                                    value={email}
+                                    variant="dark"
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
 
-                <Input
-                    label="Senha"
-                    labelColor="text-white"
-                    type="password"
-                    placeholder="********"
-                    value={senha}
-                    variant="dark"
-                    onChange={(e) => setSenha(e.target.value)}
-                />
+                                <Input
+                                    label="Senha"
+                                    labelColor="text-white"
+                                    type="password"
+                                    placeholder="********"
+                                    value={senha}
+                                    variant="dark"
+                                    onChange={(e) => setSenha(e.target.value)}
+                                />
 
-                <Submit value="Entrar" />
-                <Link className="text-white mt-2 inline-block underline" to="/reset-password">esqueci minha senha</Link>
-                {error && <p className="text-red-500">{error}</p>}
-            </form>
-            <button 
-                onClick={() => window.location.href = "http://localhost:3000/auth/google"}
-                className="mt-4 w-full bg-white text-black py-2 rounded-md flex items-center justify-center gap-2"
-                >
-                <img src="/google-logo.svg" alt="Google" className="w-5 h-5" />
-                Entrar com Google
-            </button>
+                                <Submit value="Entrar" />
+                                <Link className="text-white mt-2 inline-block underline" to="/reset-password">esqueci minha senha</Link>
+                                {error && <p className="text-red-500">{error}</p>}
+                            </form>
+                            <button 
+                                onClick={() => window.location.href = "http://localhost:3000/auth/google"}
+                                className="mt-4 w-full bg-white text-black py-2 rounded-md flex items-center justify-center gap-2"
+                                >
+                                <img src="/google-logo.svg" alt="Google" className="w-5 h-5" />
+                                Entrar com Google
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+      
     );
 }
