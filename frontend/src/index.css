@@ -141,3 +141,34 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+
+@theme {
+  /* LEFT */
+  --animate-recoil-left-1: recoil-left 1s ease-out forwards;
+  --animate-recoil-left-2: recoil-left 1s ease-out forwards 120ms;
+  --animate-recoil-left-3: recoil-left 1s ease-out forwards 240ms;
+
+  /* RIGHT */
+  --animate-recoil-right-1: recoil-right 1s ease-out forwards;
+  --animate-recoil-right-2: recoil-right 1s ease-out forwards 120ms;
+  --animate-recoil-right-3: recoil-right 1s ease-out forwards 240ms;
+
+  @keyframes recoil-left {
+    from {
+      transform: rotate(90deg) translateX(0);
+    }
+    to {
+      transform: rotate(90deg) translateX(var(--recoil-distance));
+    }
+  }
+
+  @keyframes recoil-right {
+    from {
+      transform: rotate(90deg) translateX(0);
+    }
+    to {
+      transform: rotate(90deg) translateX(var(--recoil-distance));
+    }
+  }
+}

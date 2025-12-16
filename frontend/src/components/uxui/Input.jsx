@@ -10,16 +10,16 @@ export default function Input({ label, labelColor, type = "text", variant = "def
   };
 
   return (
-    <div className="flex flex-col gap-1 mb-4">
+    <div className="flex flex-col gap-1 mb-1">
       {label && (
-        <label className={`${labelColor} bg-linear-to-l from-[#ffffff1f] to-[#ffffff] bg-clip-text text-lg mb-2 text-transparent`}>
+        <label className={`${labelColor} bg-linear-to-l from-[#ffffff1f] to-[#ffffff] bg-clip-text text-lg mb-0 text-transparent`}>
           {label}
         </label>
       )}
 
       <input
         type={type}
-        className={`${variants[variant]} focus:outline-none focus:ring-2 focus:ring-primary`}
+        className={`${variants[variant]} focus:outline-none focus:ring-2 focus:ring-primary font-light`}
         {...props}
       />
     </div>
