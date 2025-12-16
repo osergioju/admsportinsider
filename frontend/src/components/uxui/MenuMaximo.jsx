@@ -37,7 +37,7 @@ export default function SideMenu() {
           <li>
             <button
               onClick={() => setOpenLigas(!openLigas)}
-              className="w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
+              className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
             >
               <div className="flex items-center gap-3">
                 <Trophy strokeWidth={1} className="text-gray-400" size={20} />
@@ -66,7 +66,7 @@ export default function SideMenu() {
           <li>
             <button
               onClick={() => setOpenClubes(!openClubes)}
-              className="w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
+              className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
             >
               <div className="flex items-center gap-3">
                 <Shield strokeWidth={1} className="text-gray-400" size={20} />
@@ -109,8 +109,8 @@ export default function SideMenu() {
       </div>
 
       <div>
-        <ul className="space-y-2">
-            <button className="hover:text-gray-400 transition-all cursor-pointer text-sm font-[300] text-[#0A0A0A]" onClick={logout}>Sair</button>
+        <ul className="space-y-2 mt-10">
+            <button className="hover:text-gray-400 transition-all cursor-pointer text-sm font-[300] text-[#7F33D9] underline" onClick={logout}>Sair</button>
         </ul>
       </div>
 
