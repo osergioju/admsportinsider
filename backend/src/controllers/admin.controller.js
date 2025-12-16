@@ -1,9 +1,9 @@
 import { db } from "../config/db.js";
-import multer from "multer";
-import { importLeagueBalance } from "../utils/importLeagueBalance.service.js";
+import XLSX from "xlsx";
 import { reSendMail } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
 import Stripe from "stripe";
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Pegar o admin, mas nem faz nada isso agora
@@ -186,19 +186,26 @@ export async function getAllClubs(req, res) {
     // Listar clubes com JOIN da liga
     const clubsQuery = await db.query(`
       SELECT 
-        c.id_club,
-        c.name,
-        c.description,
-        c.crest_url,
-        c.id_league,
-        c.active,
-        c.created_at,
-        l.name AS league_name
-      FROM clubs c
-      LEFT JOIN leagues l ON l.id_league = c.id_league
-      WHERE c.active = TRUE
-      ORDER BY c.name ASC
-      LIMIT $1 OFFSET $2
+      c.id_club,
+      c.name,
+      c.description,
+      c.crest_url,
+      c.primary_color,
+      c.secondary_color,
+      c.active,
+      c.created_at,
+
+      co.id_country,
+      co.name AS country_name,
+      co.flag_url
+
+    FROM clubs c
+    JOIN countries co 
+      ON co.id_country = c.id_country
+
+    WHERE c.active = TRUE
+    ORDER BY c.name ASC
+    LIMIT $1 OFFSET $2;
     `, [limit, offset]);
 
     // Contagem total p/ paginação
@@ -221,49 +228,50 @@ export async function getAllClubs(req, res) {
 }
 
 export async function getClubById(req, res) {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        // Buscar o clube
-        const clubResult = await db.query(`
-            SELECT 
-                c.*,
-                l.name AS league_name
-            FROM clubs c
-            LEFT JOIN leagues l ON l.id_league = c.id_league
-            WHERE c.id_club = $1
-        `, [id]);
+  try {
+    // Buscar o clube + país
+    const clubResult = await db.query(`
+      SELECT 
+        c.*,
+        co.id_country,
+        co.name AS country_name,
+        co.flag_url
+      FROM clubs c
+      JOIN countries co 
+        ON co.id_country = c.id_country
+      WHERE c.id_club = $1
+    `, [id]);
 
-        if (clubResult.rows.length === 0) {
-            return res.status(404).json({ message: "Clube não encontrado" });
-        }
-
-        const club = clubResult.rows[0];
-
-        // Buscar atributos dinâmicos
-        const attrResult = await db.query(`
-            SELECT 
-                key,
-                value,
-                value_type
-            FROM club_attributes
-            WHERE id_club = $1
-            ORDER BY key ASC
-        `, [id]);
-
-        const attributes = attrResult.rows;
-
-        // Retorna tudo junto
-        return res.json({
-            club,
-            attributes
-        });
-
-    } catch (err) {
-        console.error("Erro ao buscar clube:", err);
-        return res.status(500).json({ message: "Erro ao buscar clube" });
+    if (clubResult.rows.length === 0) {
+      return res.status(404).json({ message: "Clube não encontrado" });
     }
-} 
+
+    const club = clubResult.rows[0];
+
+    // Buscar atributos dinâmicos
+    const attrResult = await db.query(`
+      SELECT 
+        key,
+        value,
+        value_type
+      FROM club_attributes
+      WHERE id_club = $1
+      ORDER BY key ASC
+    `, [id]);
+
+    return res.json({
+      club,
+      attributes: attrResult.rows
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar clube:", err);
+    return res.status(500).json({ message: "Erro ao buscar clube" });
+  }
+}
+
 
 export async function getAttributeKeys(req, res) {
     try {
@@ -284,7 +292,7 @@ export async function getAttributeKeys(req, res) {
 
 export async function createClub(req, res) {
   const {
-    id_league,
+    id_country,
     name,
     description,
     crest_url,
@@ -295,7 +303,7 @@ export async function createClub(req, res) {
     attributes = [] // array vindo do front
   } = req.body;
 
-  if (!id_league || !name) {
+  if (!id_country || !name) {
     return res.status(400).json({ message: "Liga e nome são obrigatórios." });
   }
 
@@ -308,14 +316,14 @@ export async function createClub(req, res) {
     const insertClub = await client.query(
       `
       INSERT INTO clubs (
-        id_league, name, description, crest_url,
+        id_country, name, description, crest_url,
         founded_at, stadium_name, stadium_capacity, ownership_model
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING id_club
       `,
       [
-        id_league,
+        id_country,
         name,
         description,
         crest_url,
@@ -893,44 +901,117 @@ export async function createUser(req, res) {
   }
 }
 
-////// IMPORT DE XMLS 
-// IMPORT LIGA
-const upload = multer({ dest: "uploads/" });
+export async function uploadClubXlsx(req, res) {
+  const { id_country } = req.body;
 
-export const uploadLeagueBalance = [
-  upload.single("file"),
+  if (!req.file) {
+    return res.status(400).json({ error: "Arquivo XLSX não enviado" });
+  }
 
-  async (req, res) => {
-    try {
-      const { countryId, leagueName } = req.body;
-      const filePath = req.file?.path;
+  if (!id_country) {
+    return res.status(400).json({ error: "País não informado" });
+  }
 
-      if (!countryId || !leagueName || !filePath) {
-        return res.status(400).json({
-          success: false,
-          error: "countryId, leagueName e file são obrigatórios.",
-        });
-      }
+  try {
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
 
-      const result = await importLeagueBalance({
-        countryId: Number(countryId),
-        leagueName,
-        filePath,
-      });
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-      return res.json({
-        success: true,
-        message: "Balanço da liga importado com sucesso.",
-        ...result,
-      });
-    } catch (error) {
-      console.error("Erro ao importar balanço:", error);
-      return res.status(500).json({
-        success: false,
-        error: "Erro ao processar balanço da liga.",
+    if (!rows.length) {
+      return res.status(400).json({ error: "Arquivo vazio" });
+    }
+
+    // 🔍 Validação mínima
+    const requiredColumns = ["name", "primary_color"];
+    const missingColumns = requiredColumns.filter(
+      (col) => !(col in rows[0])
+    );
+
+    if (missingColumns.length) {
+      return res.status(400).json({
+        error: "Colunas obrigatórias ausentes",
+        missingColumns
       });
     }
-  },
-];
 
+    let inserted = 0;
+    let skipped = 0;
 
+    await db.query("BEGIN");
+
+    for (const row of rows) {
+      if (!row.name) {
+        skipped++;
+        continue;
+      }
+
+      // evita duplicidade
+      const exists = await db.query(
+        `
+        SELECT 1
+        FROM clubs
+        WHERE name ILIKE $1
+          AND id_country = $2
+        `,
+        [row.name, id_country]
+      );
+
+      if (exists.rows.length) {
+        skipped++;
+        continue;
+      }
+
+      await db.query(
+        `
+        INSERT INTO clubs (
+          id_country,
+          name,
+          description,
+          crest_url,
+          primary_color,
+          secondary_color,
+          active,
+          founded_at,
+          stadium_name,
+          stadium_capacity,
+          ownership_model
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        `,
+        [
+          id_country,
+          row.name,
+          row.description || null,
+          row.crest_url || null,
+          row.primary_color || null,
+          row.secondary_color || null,
+          row.active !== "" ? row.active : true,
+          row.founded_at || null,
+          row.stadium_name || null,
+          row.stadium_capacity || null,
+          row.ownership_model || null
+        ]
+      );
+
+      inserted++;
+    }
+
+    await db.query("COMMIT");
+
+    return res.json({
+      message: "Importação concluída",
+      inserted,
+      skipped
+    });
+
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.error("Erro ao importar XLSX:", err);
+
+    return res.status(500).json({
+      error: "Erro ao importar clubes"
+    });
+  }
+}

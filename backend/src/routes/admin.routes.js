@@ -1,9 +1,12 @@
 import { Router } from "express";
-import {getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, uploadLeagueBalance, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, getClubById, createClub, updateClub, disableClub} from "../controllers/admin.controller.js";
+import {uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, getClubById, createClub, updateClub, disableClub} from "../controllers/admin.controller.js";
 import { getUsersInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
-import { upload } from "../middlewares/upload.js";
+import { uploadXlsx } from "../middlewares/uploadXlsx.js";
+import { uploadImage } from "../middlewares/uploadImage.js";
 import { uploadClubLogo } from "../controllers/upload.controller.js";
+import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
+import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage } from "../controllers/banner.controller.js";
 
 const router = Router();
 
@@ -32,6 +35,7 @@ router.post("/send-club", createClub);
 router.put("/clubs/:id/update", updateClub);
 router.delete("/disable-club/:id", disableClub);
 router.get("/attribute-keys", getAttributeKeys);
+router.post("/import-clubs-xlsx", uploadXlsx, uploadClubXlsx);
 
 // USUÁRIOS - GESTÃO
 router.get("/users", getAllUsers);
@@ -46,7 +50,7 @@ router.put("/users/:id/update-password", updateUserPassword);
 router.post("/create-user", createUser); // Criar usuaário 
 
 // Subir foto do clube
-router.post("/upload-club-logo", upload.single("file"), uploadClubLogo);
+router.post("/upload-club-logo",uploadImage,uploadClubLogo);
 
 // PLANOS - CRUD
 router.get("/plans", getAllPlans);
@@ -55,8 +59,20 @@ router.post("/plans", createPlan);
 router.put("/plans/:id", updatePlan);
 router.delete("/plans/:id", disablePlan);
 
-// IMPORT DO XML - LIGAS
-router.post("/leagues/import-balance", uploadLeagueBalance);
+// Notificações 
+router.post("/new-notification", newNotification);
+router.get("/notifications", listNotifications);
+router.put("/notifications/:id", updateNotification);
+router.delete("/notifications/:id", deleteNotification);
+
+// Banners 
+// BANNERS
+router.get("/banners", getAllBanners);
+router.get("/banners/:id", getBannerById);
+router.post("/banners", createBanner);
+router.put("/banners/:id", updateBanner);
+router.delete("/banners/:id", deleteBanner);
+router.post("/banners/upload-image", uploadImage, uploadBannerImage);
 
 export default router;
 

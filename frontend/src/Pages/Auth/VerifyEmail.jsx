@@ -72,7 +72,7 @@ export default function VerifyEmail() {
             <h1 className="text-2xl font-semibold text-green-600">
               Tudo certo
             </h1>
-            <p class="text-white">{message}</p>
+            <p className="text-white">{message}</p>
             <button
               onClick={() => navigate("/login")}
               className="mt-4 px-4 py-2 rounded bg-black text-white"

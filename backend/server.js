@@ -11,6 +11,9 @@ import financeiroRoutes from "./src/routes/financeiro.routes.js";
 import uploadRoutes from "./src/routes/upload.routes.js";
 import stripeRoutes from "./src/routes/stripe.routes.js";
 import stripeWebhookRoutes from "./src/routes/stripeWebhook.routes.js";
+import { startNotificationCron } from "./src/jobs/notificationCron.js"
+
+startNotificationCron();
 
 dotenv.config();
 
