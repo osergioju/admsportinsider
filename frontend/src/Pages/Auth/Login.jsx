@@ -47,7 +47,7 @@ export default function Login() {
 
     return (
         <div className="relative z-40 w-full h-screen text-white bg-[#0C0718]">
-            <div className="w-80 h-80 absolute top-0 left-0  bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] blur-[137px] rounded-full hidden lg:block -translate-x-1/2 -translate-y-1/2"></div>
+            <div className="w-80 h-80 lg:w-120 lg:h-120 absolute top-0 left-0  bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] blur-[137px] rounded-full hidden lg:block -translate-x-1/2 -translate-y-1/2"></div>
             <div className="flex flex-col min-h-screen">
                 <div className="flex-grow flex items-center justify-center py-10 lg:py-20">
                     <div className="container mx-auto px-6">
@@ -55,20 +55,19 @@ export default function Login() {
                         
                             <div className="w-full lg:w-1/2 h-[400px] lg:h-[80svh] relative flex items-center justify-center">
                                 {/* ANimação das bolinhasss */}
-                                <div className="absolute top-0 translate-x-10 lg:translate-x-20 right-0 bottom-0 flex items-center justify-center opacity-30">
+                                <div className="absolute top-0 right-0 bottom-0 flex items-center justify-center opacity-30">
 
                                     {/* do meio paradinho */}
-                                    <div className="z-50 lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-l from-[#7E34D9] to-[#ffffff00] rotate-90"/>
 
                                     {/* sobe */}
-                                    <div style={{ "--recoil-distance": "50px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-l from-[#7e34d98a] to-[#7E34D9] animate-recoil-left-1"/>
-                                    <div style={{ "--recoil-distance": "150px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-l from-[#7e34d98a] to-[#ffffff00] animate-recoil-left-2"/>
-                                    <div style={{ "--recoil-distance": "300px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-l from-[#7E34D9] to-[#ffffff00] animate-recoil-left-3"/>
+                                    <div style={{ "--recoil-distance": "50px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#7E34D9] animate-recoil-left-1"/>
+                                    <div style={{ "--recoil-distance": "150px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#ffffff00] animate-recoil-left-2"/>
+                                    <div style={{ "--recoil-distance": "300px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7E34D9] to-[#ffffff00] animate-recoil-left-3"/>
 
                                     {/* desce */}
-                                    <div style={{ "--recoil-distance": "-50px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-l from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-1"/>
-                                    <div style={{ "--recoil-distance": "-150px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-l from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-2"/>
-                                    <div style={{ "--recoil-distance": "-300px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-l from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-3"/>
+                                    <div style={{ "--recoil-distance": "-50px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-1"/>
+                                    <div style={{ "--recoil-distance": "-150px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-2"/>
+                                    <div style={{ "--recoil-distance": "-300px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-3"/>
 
                                 </div>
                                 
