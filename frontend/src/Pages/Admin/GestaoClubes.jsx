@@ -3,9 +3,14 @@ import { api } from "../../services/api";
 import { Trash2, Loader, Check } from "lucide-react";
 
 export default function GestaoClubes() {
+    // grupao pra importar os clubes via excel 
+    const [importModal, setImportModal] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importCountry, setImportCountry] = useState("");
+    const [importing, setImporting] = useState(false);
     
     const [clubs, setClubs] = useState([]);
-    const [leagues, setLeagues] = useState([]);
+    const [countries, setCountries] = useState([]);
     const [attributeKeys, setAttributeKeys] = useState([]);
 
     const [modal, setModal] = useState(false);
@@ -13,7 +18,7 @@ export default function GestaoClubes() {
 
     const [currentClub, setCurrentClub] = useState(null);
     const [newClub, setNewClub] = useState({
-        id_league: "",
+        id_country: "",
         name: "",
         description: "",
         crest_url: "",
@@ -35,16 +40,16 @@ export default function GestaoClubes() {
     const [uploading, setUploading] = useState(false);
 
     // ============================
-    // CARREGA LIGAS + CLUBES
+    // CARREGA Paísesses + CLUBES
     // ============================
     async function loadData() {
         try {
-            const clubsResp = await api.get(`/admin/clubs?page=${page}&limit=6`);
+            const clubsResp = await api.get(`/admin/clubs?page=${page}&limit=20`);
             setClubs(clubsResp.data.clubs);
             setPagination(clubsResp.data.pagination);
 
-            const leaguesResp = await api.get(`/admin/leagues?onlyActive=true`);
-            setLeagues(leaguesResp.data.leagues);
+            const countriesResp = await api.get(`/admin/countries?onlyActive=true`);
+            setCountries(countriesResp.data.countries);
 
         } catch (err) {
             console.error("Erro ao carregar dados:", err);
@@ -102,7 +107,7 @@ export default function GestaoClubes() {
     // ============================
     const openCreateModal = () => {
         setNewClub({
-            id_league: "",
+            id_country: "",
             name: "",
             description: "",
             crest_url: "",
@@ -131,7 +136,7 @@ export default function GestaoClubes() {
             setCurrentClub(data.club);
             
             setNewClub({
-                id_league: data.club.id_league,
+                id_country: data.club.id_country,
                 name: data.club.name,
                 description: data.club.description,
                 crest_url: data.club.crest_url,
@@ -225,17 +230,63 @@ export default function GestaoClubes() {
         }
     };
 
+    const handleImportClubs = async () => {
+        if (!importFile) {
+            alert("Selecione um arquivo XLSX.");
+            return;
+        }
+
+        if (!importCountry) {
+            alert("Selecione um país.");
+            return;
+        }
+
+        setImporting(true);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", importFile);
+            formData.append("id_country", importCountry);
+
+            await api.post("/admin/import-clubs-xlsx", formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+            });
+
+            alert("Clubes importados com sucesso!");
+            setImportModal(false);
+            setImportFile(null);
+            setImportCountry("");
+
+            await loadData();
+
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao importar clubes.");
+        } finally {
+            setImporting(false);
+        }
+    };
+
+
     return (
         <div>
 
             <div className="pb-2 mb-4 border-b border-gray-200 flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Clubes</h1>
-                <button 
-                    onClick={openCreateModal}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
-                >
+                <div className="flex gap-3">
+                   <button 
+                    onClick={() => setImportModal(true)}
+                    className="bg-blue-800 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+                    >
+                    Importar clubes <small>(xlsx)</small>
+                    </button>
+                    <button 
+                        onClick={openCreateModal}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+                    >
                     Cadastrar Clube
                 </button>
+                </div>
             </div>
 
             <div className="p-4 bg-white rounded-3xl">
@@ -249,12 +300,29 @@ export default function GestaoClubes() {
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-50 h-16 bg-black rounded-lg overflow-hidden">
-                                      <img src={club.crest_url} className="w-full h-full object-cover" />
+                                        {
+                                            club.crest_url ? (
+                                                <img src={club.crest_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div
+                                                    className="w-full h-full rounded-lg"
+                                                    style={{
+                                                        background: `linear-gradient(
+                                                        135deg,
+                                                        ${club.primary_color},
+                                                        ${club.secondary_color || "#ffffff"}
+                                                        )`
+                                                    }}
+                                                ></div>
+                                            )
+                                        }
+                                        
+
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="font-bold">{club.name}</span>
                                         <span className="text-sm text-gray-500">
-                                            {club.league_name}
+                                            {club.country_name}
                                         </span>
                                     </div>
                                 </div>
@@ -313,17 +381,17 @@ export default function GestaoClubes() {
                         </h2>
 
                         {/* LIGA */}
-                        <label className="block text-sm text-gray-600 mb-1">Liga</label>
+                        <label className="block text-sm text-gray-600 mb-1">País</label>
                         <select
-                            value={newClub.id_league}
+                            value={newClub.id_country}
                             onChange={(e) =>
-                                setNewClub({ ...newClub, id_league: e.target.value })
+                                setNewClub({ ...newClub, id_country: e.target.value })
                             }
                             className="w-full border px-3 py-2 rounded mb-3"
                         >
-                            <option value="">Selecione uma liga</option>
-                            {leagues.map((l) => (
-                                <option key={l.id_league} value={l.id_league}>
+                            <option value="">Selecione um país</option>
+                            {countries.map((l) => (
+                                <option key={l.id_country} value={l.id_country}>
                                     {l.name}
                                 </option>
                             ))}
@@ -544,6 +612,67 @@ export default function GestaoClubes() {
                 </div>
             )}
 
+            {importModal && (
+                <div 
+                    className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+                    onClick={() => setImportModal(false)}
+                >
+                    <div 
+                    className="bg-white w-full max-w-md p-6 rounded-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                    >
+                    <h2 className="text-xl font-bold mb-4">
+                        Importar clubes (XLSX)
+                    </h2>
+
+                    {/* Arquivo */}
+                    <label className="block text-sm text-gray-600 mb-1">
+                        Arquivo XLSX
+                    </label>
+                    <input
+                        type="file"
+                        accept=".xlsx"
+                        className="w-full border px-3 py-2 rounded mb-4"
+                        onChange={(e) => setImportFile(e.target.files[0])}
+                    />
+
+                    {/* País */}
+                    <label className="block text-sm text-gray-600 mb-1">
+                        País dos clubes
+                    </label>
+                    <select
+                        value={importCountry}
+                        onChange={(e) => setImportCountry(e.target.value)}
+                        className="w-full border px-3 py-2 rounded mb-6"
+                    >
+                        <option value="">Selecione um país</option>
+                        {countries.map((c) => (
+                        <option key={c.id_country} value={c.id_country}>
+                            {c.name}
+                        </option>
+                        ))}
+                    </select>
+
+                    {/* Ações */}
+                    <div className="flex justify-between items-center">
+                        <button
+                        onClick={() => setImportModal(false)}
+                        className="text-gray-600 hover:underline"
+                        >
+                        Cancelar
+                        </button>
+
+                        <button
+                        onClick={handleImportClubs}
+                        disabled={importing}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-40"
+                        >
+                        {importing ? "Importando..." : "Importar"}
+                        </button>
+                    </div>
+                    </div>
+                </div>
+                )}
 
         </div>
     );

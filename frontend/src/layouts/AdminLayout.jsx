@@ -2,6 +2,7 @@ import { Outlet, Link, useNavigate } from "react-router-dom";
 import { useContext, useState} from "react";
 import { AuthContext } from "../context/AuthContext";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import HomeBanners from "../components/uxui/banner";
 
 export default function AdminLayout() {
   // Pega as infos do user
@@ -41,6 +42,17 @@ export default function AdminLayout() {
                   <span className="text-xl font-bold mb-1">Dados</span>
                   <Link to="/admin/upload/ligas" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Ligas</Link>
                   <Link to="/admin/upload/ligas" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Clubes</Link>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold mb-1">Conteúdo</span>
+                  <Link to="/admin/banners" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Banners</Link>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold mb-1">Notificações</span>
+                  <Link to="/admin/new-notification" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Nova notificação</Link>
+                  <Link to="/admin/notifications" className="text-sm mb-2 font-light hover:underline hover:text-gray-300">Lista de notificações</Link>
                 </div>
 
                 <div className="flex flex-col">

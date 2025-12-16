@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+// Básicos
 import Login from "./Pages/Auth/Login";
 import Register from "./Pages/Auth/Register";
 import ResetPass from "./Pages/Auth/ResetPass";
@@ -33,9 +34,15 @@ import GestaoPlanos from "./Pages/Admin/Planos/GestaoPlanos";
 import NovoPlano from "./Pages/Admin/Planos/NovoPlano";
 import EditarPlano from "./Pages/Admin/Planos/EditarPlano";
 
-
 // ADMIN - Insights 
 import InsightUsuarios from "./Pages/Admin/Insights/Users/Index"
+
+// ADMIN - Notificações 
+import Notifications from "./Pages/Admin/Notificacoes/Index";
+import NewNotification from "./Pages/Admin/Notificacoes/NewNotification";
+
+// Banners 
+import Banners from "./Pages/Admin/Banners/Banners";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
@@ -61,7 +68,6 @@ export default function App() {
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
-
 
         {/* ---- Apenas para usuários - Dashboard e afins ---- */}
         <Route element={<PrivateRoute />}>
@@ -100,17 +106,23 @@ export default function App() {
               <Route path="/admin/gestao-planos/novo" element={<NovoPlano />} />
               <Route path="/admin/gestao-planos/:id" element={<EditarPlano />} />
 
-              {/*--------- INSIGHTS -----------*/}
               {/* Insights - Usuários */}
               <Route path="/admin/insights/usuarios" element={<InsightUsuarios />} />
 
               {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
               <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
+
+              {/* Notificações */}
+              <Route path="/admin/new-notification" element={<NewNotification />} />
+              <Route path="/admin/notifications" element={<Notifications />} />
+
+              {/* Banners */}
+              <Route path="/admin/banners" element={<Banners />} />
             </Route>
+
 
           </Route>
         </Route>
-
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

@@ -80,6 +80,25 @@ body {
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+.custom-pagination {
+    top: 13px !important;
+    padding-left:13px !important;
+}
+
+.custom-pagination .swiper-pagination-bullet {
+  width: 48px;
+  height: 4px;
+  margin:0 !important;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  transition: all 0.3s ease;
+  opacity: 1;
+}
+
+.custom-pagination .swiper-pagination-bullet-active {
+  width: 48px;
+  background: #ffffff;
+}
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

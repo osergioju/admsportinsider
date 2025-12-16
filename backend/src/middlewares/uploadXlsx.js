@@ -1,0 +1,8 @@
+import multer from "multer";
+
+export const uploadXlsx = multer({
+  storage: multer.memoryStorage(), // arquivo em buffer
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  }
+}).single("file");

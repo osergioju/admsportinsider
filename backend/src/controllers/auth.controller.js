@@ -180,7 +180,7 @@ export async function verifyMail(req, res) {
   }
 
   const verification = rows[0];
-  console.log(verification);
+
   // 2️⃣ Se já estiver confirmado, responde sucesso (IDEMPOTENTE)
   if (verification.email_verified) {
     return res.status(200).json({
@@ -308,8 +308,7 @@ export const me = async (req, res) => {
 export async function resetPasswordRequest(req, res) {
   try {
     const { email } = req.body;
-    console.log(req.body);
-    console.log(email);
+
     const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
 
     // Esquema de limitar quantas vezes ele pode fazer isso, 5 é máximo e expira em 1h
