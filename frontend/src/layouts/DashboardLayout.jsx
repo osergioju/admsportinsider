@@ -139,10 +139,7 @@ export default function DashboardLayout() {
 
             </div>
 
-            <div className="
-              lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto
-              lg:px-10
-              w-full p-5">
+            <div className="lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
                   {/* Top Bar */}
                   <div className="hidden lg:block py-1 mb-5">
                     <div className="flex items-center flex-wrap justify-end">
@@ -169,34 +166,8 @@ export default function DashboardLayout() {
 
                   {/* Menu Fixo */}
                   <FixedMenu mode={user.active}></FixedMenu>
-                  xxxxx
-
-                  <div className="w-full bg-black h-[3300px]"></div>
+                  
             </div>
-
-
-
-      {/* Sidebar 
-      <aside className="w-64 bg-gray-900 text-white p-5">
-        <h2 className="text-lg flex items-center gap-2 font-bold mb-6">
-          
-          Bem vindo, {user.name.split(" ")[0]}</h2>
-
-        <nav className="flex flex-col space-y-3">
-          <Link to="/dashboard" className="hover:text-gray-300">Dashboard</Link>
-          <Link to="/user" className="hover:text-gray-300">Usuário</Link>
-          <Link to="/user/perfil" className="hover:text-gray-300">Perfil</Link>
-          <Link to="/user/configuracoes" className="hover:text-gray-300">Configurações</Link>
-          <Link to="/admin" className="hover:text-gray-300">Admin</Link>
-          <button onClick={logout}>Sair</button>
-        </nav>
-      </aside>
-
-
-      <div className="flex-1 p-10">
-        
-      </div>
-      */}
     </div>
   );
 }

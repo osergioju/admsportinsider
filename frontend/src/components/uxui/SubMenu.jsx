@@ -2,7 +2,7 @@
 export default function SubItemSubItem({ label }) {
   return (
     <li>
-      <button className="text-sm text-gray-600 hover:text-black transition">
+      <button className="cursor-pointer text-sm text-gray-600 hover:text-[#7F33D9] transition">
         {label}
       </button>
     </li>
