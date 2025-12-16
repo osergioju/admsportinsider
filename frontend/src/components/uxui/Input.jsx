@@ -19,7 +19,7 @@ export default function Input({ label, labelColor, type = "text", variant = "def
 
       <input
         type={type}
-        className={`${variants[variant]} focus:outline-none focus:ring-2 focus:ring-primary font-light`}
+        className={`${variants[variant]} autofill:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-primary font-light`}
         {...props}
       />
     </div>

@@ -142,6 +142,7 @@ export default function Login() {
                                             </div>
                                         </div>
 
+                                        {/*
                                         <div className="flex items-center gap-2 mt-1 text-[#FFFFFF99]">
                                             <input
                                                 type="checkbox"
@@ -154,7 +155,7 @@ export default function Login() {
                                                 Lembrar meu acesso
                                             </label>
                                         </div>
-
+                                        */}
                                         <div className="mt-2">
                                             <button
                                                 type="submit"
@@ -195,6 +196,13 @@ export default function Login() {
                                         </svg>
                                         <span className="cursor-pointer text-sm lg:text-base xl:text-xl font-light text-[#FFFFFF]">Entrar com o Google</span>
                                     </button>
+
+                                    
+                                    {/* cadastrar se n tem conta */}
+                                    <Link to="/register" className="inline-block text-center w-full py-2 lg:py-4 lg:text-sm lg:text-xl lg:font-light bg-gradient-to-l from-[#7e34d90] via-[#271E3F] to-[#c53ed40] mt-4">
+                                        Novo por aqui? <span className="text-[#9F50FF] underline">crie sua conta</span>
+                                    </Link>
+                                    
                                 </div>
                             </div>
                         </div>

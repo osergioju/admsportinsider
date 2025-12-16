@@ -49,7 +49,7 @@ export default function Register() {
     }
 
     return (
-        <div className="w-full min-h-screen flex flex-col top-0 left-0 bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] text-white font-sans overflow-x-hidden">
+        <div className="w-full min-h-screen flex flex-col top-0 left-0 bg-[#0C0718] text-white overflow-x-hidden">
             
             <div className="w-full flex justify-center pt-8 px-4 sm:px-6 lg:px-8 z-20">
                 <div className="w-full max-w-[1740px] h-[68px] bg-[#FFFFFF05] border border-white/10 rounded-full flex justify-between items-center px-6 lg:px-16 backdrop-blur-md">

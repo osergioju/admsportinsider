@@ -4,6 +4,7 @@ import LogoWatermark from "../assets/img/footer-logo.png"
 export default function AuthLayout() {
   return (
     <div className="min-h-screen w-full bg-black relative overflow-hidden flex flex-col justify-center items-center">
+      <div className="xl:w-180 xl:h-180 xl:blur-4xl blur-3xl lg:w-120 lg:h-120 w-100 h-100 bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] rounded-full absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
       <Outlet />
 
       {/* Rodapé */}
