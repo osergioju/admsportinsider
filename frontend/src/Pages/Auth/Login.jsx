@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import Input from "../../components/uxui/Input";
 import useTitle from '../../hooks/useTitle'
 import { AuthContext } from "../../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import LoadingSkeleton from "../../components/uxui/LoadingSkeleton";
 import { api } from "../../services/api";
 import ContainerLogo from "../../assets/img/container-logo.png";
@@ -12,6 +12,8 @@ import LogoHome from "../../assets/img/sportinsider-logo.png"
 export default function Login() {
     useTitle("Entre na sua conta");
     
+
+    
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -20,6 +22,23 @@ export default function Login() {
     const [error, setError] = useState("");
     const [lembrar, setLembrar] = useState(false);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const errorParam = searchParams.get("error");
+
+        if (!errorParam) return;
+
+        const messages = {
+        google_cancelled: "Login com Google cancelado.",
+        google_failed: "Erro ao autenticar com o Google. Tente novamente.",
+        };
+
+        setError(messages[errorParam] || "Erro inesperado.");
+    }, [searchParams]);
+
+
+
 
     const handleSubmit = async (event) => {
         event.preventDefault();

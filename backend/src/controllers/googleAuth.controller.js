@@ -27,8 +27,11 @@ export const startGoogleAuth = (req, res) => {
 export const googleAuthCallback = async (req, res) => {
   const { code } = req.query;
 
+  // Deu ruim
   if (!code) {
-    return res.status(400).json({ error: "Código não fornecido pelo Google" });
+    return res.redirect(
+      "http://localhost:5173/login?error=google_failed"
+    );
   }
 
   try {
@@ -146,7 +149,7 @@ export const googleAuthCallback = async (req, res) => {
       role: user.role
     });
 
-    // 🔥 modelo A: backend resolve tudo e manda só o token pro front
+    // modelo A: backend resolve tudo e manda só o token pro front
     const redirectUrl = `http://localhost:5173/auth/google/callback?token=${token}`;
     return res.redirect(redirectUrl);
 
