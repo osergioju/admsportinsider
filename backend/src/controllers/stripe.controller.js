@@ -69,3 +69,44 @@ export const createCheckoutSession = async (req, res) => {
     res.status(500).json({ error: "Erro ao criar session" });
   }
 };
+
+
+export async function createBillingPortal(req, res) {
+  try {
+    const userId = req.user.id;
+
+    // Busca usuário
+    const { rows } = await db.query(
+      `
+      SELECT stripe_customer_id
+      FROM users
+      WHERE id = $1
+      `,
+      [userId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = rows[0];
+
+    if (!user.stripe_customer_id) {
+      return res.status(403).json({
+        error: "Billing portal is available only for active subscriptions"
+      });
+    }
+
+    // Cria sessão do portal
+    const session = await stripe.billingPortal.sessions.create({
+      customer: user.stripe_customer_id,
+      return_url: "http://localhost:5173/me/subscription"
+    });
+
+    return res.json({ url: session.url });
+
+  } catch (err) {
+    console.error("❌ Billing portal error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
