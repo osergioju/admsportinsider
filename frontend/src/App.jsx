@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./Pages/Auth/Login";
 import Register from "./Pages/Auth/Register";
 import ResetPass from "./Pages/Auth/ResetPass";
+import Pricing from "./Pages/Auth/Pricing";
+import PaymentSuccess from "./Pages/Auth/SucessPayment";
 import Dashboard from "./Pages/Dashboard/Main";
 import NotFound from "./Pages/Errors/NotFound";
 import FrontPage from "./Pages/FrontPage";
@@ -70,6 +72,8 @@ export default function App() {
           <Route path="/" element={<FrontPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/pagamento-sucesso" element={<PaymentSuccess />} />
           <Route path="/reset-password" element={<ResetPass />} />
           <Route path="/reset" element={<ResetPassConfirm />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />

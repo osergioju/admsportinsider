@@ -1,18 +1,5 @@
 import { useState, useContext } from "react";
-import {
-  Home,
-  Trophy,
-  Shield,
-  BarChart2,
-  Heart,
-  FileText,
-  User,
-  CreditCard,
-  DollarSign,
-  ChevronDown,
-  Settings,
-  Lock
-} from "lucide-react";
+import { Home, Trophy, Shield, BarChart2, Heart, FileText, User, CreditCard, ChevronDown, Lock } from "lucide-react";
 import MenuItem from "./MenuItem";
 import SubItem from "./SubMenu";
 import { AuthContext } from "../../context/AuthContext"
@@ -121,7 +108,7 @@ export default function SideMenu() {
               <div className="flex items-center gap-3">
                 <User strokeWidth={1} className="text-gray-400" size={20} />
                 <span className="text-sm font-light text-[#0A0A0A]">
-                  Perfil
+                  Meu Perfil
                 </span>
               </div>
 
@@ -138,36 +125,6 @@ export default function SideMenu() {
               <ul className="ml-12 mt-2 space-y-2">
                 <SubItem label="Dados do perfil" to="/me/profile" />
                 <SubItem label="Preferências" to="me/profile/preferences" />
-              </ul>
-            )}
-          </li>
-
-          {/* SEGURANÇA */}
-          <li>
-            <button
-              onClick={() => setOpenSeguranca(!openSeguranca)}
-              className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
-            >
-              <div className="flex items-center gap-3">
-                <Shield strokeWidth={1} className="text-gray-400" size={20} />
-                <span className="text-sm font-light text-[#0A0A0A]">
-                  Segurança
-                </span>
-              </div>
-
-              <ChevronDown
-                strokeWidth={1}
-                size={18}
-                className={`transition-transform ${
-                  openSeguranca ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {openSeguranca && (
-              <ul className="ml-12 mt-2 space-y-2">
-                <SubItem label="Alterar senha" to="me/security/password" />
-                <SubItem label="Sessões ativas - Breve" />
               </ul>
             )}
           </li>
@@ -226,7 +183,7 @@ export default function SideMenu() {
 
             {openPrivacidade && (
               <ul className="ml-12 mt-2 space-y-2">
-                <SubItem label="Meus dados" to="me/privacy/data" />
+                <SubItem label="Alterar senha" to="me/security/password" />
                 <SubItem label="Excluir conta" to="me/privacy/delete" />
               </ul>
             )}

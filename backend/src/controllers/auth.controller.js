@@ -267,7 +267,7 @@ export const me = async (req, res) => {
   try {
     // Buscar dados atualizados no banco
     const result = await db.query(
-      `SELECT id, name, email, role, email_verified, active, avatar_url, provider
+      `SELECT *
        FROM users 
        WHERE id = $1`,
       [req.user.id]
