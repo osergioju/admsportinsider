@@ -38,7 +38,7 @@ export default function SideMenu() {
         <ul className="space-y-2">
 
           {/* Página inicial */}
-          <MenuItem icon={<Home strokeWidth={1} size={20} />} label="Página inicial" />
+          <MenuItem to="/dashboard" icon={<Home strokeWidth={1} size={20}/>} label="Página inicial" />
 
           {/* Ligas */}
           <li>
