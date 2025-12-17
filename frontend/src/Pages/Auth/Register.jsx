@@ -72,24 +72,30 @@ export default function Register() {
 
     return (
         <div className="w-full min-h-screen flex flex-col top-0 left-0 bg-[#0C0718] text-white overflow-x-hidden">
+
+             { 
+                !registerOk && (
+                    <div className="w-full flex justify-center pt-8 px-4 sm:px-6 lg:px-8 z-20">
+                        <div className="w-full max-w-[1740px] h-[68px] rounded-full flex justify-between items-center px-4 lg:px-12 backdrop-blur-md border border-white/10 bg-gradient-to-l from-[#1C142F] via-[#3D315D] to-[#c53ed40] to-transparent">
+                            <div className="flex items-center gap-3">
+                                <img 
+                                    src={SportinsiderIcon} 
+                                    alt="Logo Sportinsider" 
+                                    className="w-36 h-auto" 
+                                />
+                            </div>
+                            <div className="flex items-center text-sm text-gray-300 bg-[#0C0718] px-8 py-3 rounded-full border border-white/10 shadow-lg">
+                                <span className="mr-1 hidden sm:inline font-light">Já tem uma conta?</span>
+                                <Link to="/login" className="text-[#9F50FF] hover:text-[#B475FF] font-medium transition-colors underline decoration-[#9F50FF] underline-offset-4 hover:decoration-[#B475FF]">
+                                    Login aqui
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )
+
+             }   
             
-            <div className="w-full flex justify-center pt-8 px-4 sm:px-6 lg:px-8 z-20">
-                <div className="w-full max-w-[1740px] h-[68px] rounded-full flex justify-between items-center px-4 lg:px-12 backdrop-blur-md border border-white/10 bg-gradient-to-l from-[#1C142F] via-[#3D315D] to-[#c53ed40] to-transparent">
-                    <div className="flex items-center gap-3">
-                        <img 
-                            src={SportinsiderIcon} 
-                            alt="Logo Sportinsider" 
-                            className="w-36 h-auto" 
-                        />
-                    </div>
-                    <div className="flex items-center text-sm text-gray-300 bg-[#0C0718] px-8 py-3 rounded-full border border-white/10 shadow-lg">
-                        <span className="mr-1 hidden sm:inline font-light">Já tem uma conta?</span>
-                        <Link to="/login" className="text-[#9F50FF] hover:text-[#B475FF] font-medium transition-colors underline decoration-[#9F50FF] underline-offset-4 hover:decoration-[#B475FF]">
-                            Login aqui
-                        </Link>
-                    </div>
-                </div>
-            </div>
 
             {/* Conteúdo Principal Centralizado */}
             {
