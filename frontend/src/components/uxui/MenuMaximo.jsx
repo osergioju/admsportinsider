@@ -1,18 +1,5 @@
 import { useState, useContext } from "react";
-import {
-  Home,
-  Trophy,
-  Shield,
-  BarChart2,
-  Heart,
-  FileText,
-  User,
-  CreditCard,
-  DollarSign,
-  ChevronDown,
-  Settings,
-  Lock
-} from "lucide-react";
+import { Home, Trophy, Shield, BarChart2, Heart, FileText, User, CreditCard, ChevronDown, Lock } from "lucide-react";
 import MenuItem from "./MenuItem";
 import SubItem from "./SubMenu";
 import { AuthContext } from "../../context/AuthContext"
