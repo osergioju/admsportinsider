@@ -40,6 +40,11 @@ export default function Register() {
             return; 
         }
 
+        if (strength < 3) {
+            setError("A senha precisa ser mais forte.");
+            return;
+        }
+
         setIsRegistering(true);
 
         try {
@@ -128,7 +133,10 @@ export default function Register() {
                                 placeholder="********"
                                 value={senha}
                                 variant="dark"
-                                onChange={(e) => setSenha(e.target.value)}
+                                onChange={(e) => {
+                                    setSenha(e.target.value);
+                                    setStrength(checkPasswordStrength(e.target.value));
+                                }}
                             />
                             
                             {senha.length > 0 && (
