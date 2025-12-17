@@ -109,10 +109,9 @@ export const googleAuthCallback = async (req, res) => {
     // CASO B: existe mas provider=email → bloquear
     // ---------------------------
     else if (user.provider === "email") {
-      return res.status(409).json({
-        error:
-          "Este e-mail já está cadastrado com senha. Faça login usando e-mail e senha."
-      });
+      return res.redirect(
+        "http://localhost:5173/login?error=email_in_used"
+      );
     }
 
     // ---------------------------
@@ -155,6 +154,8 @@ export const googleAuthCallback = async (req, res) => {
 
   } catch (err) {
     console.error("Erro no Google Auth:", err.response?.data || err);
-    return res.status(500).json({ error: "Erro ao autenticar com o Google" });
+    return res.redirect(
+      "http://localhost:5173/login?error=google_error"
+    );
   }
 };
