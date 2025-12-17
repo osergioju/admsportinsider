@@ -149,8 +149,8 @@ export default function DashboardLayout() {
                         <div className="gap-2 flex items-center justify-end flex-wrap">
                             <NotificationDropdown />
                             <div className="text-center">
-                                <button className="cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full w-[50px] h-[50px] flex flex-col items-center justify-center">
-                                    <Cog strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[30px]"></Cog>
+                                <button className="cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full lg:w-[36px] lg:h-[36px] w-[50px] h-[50px] flex flex-col items-center justify-center">
+                                    <Cog strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[30px] lg:w-[20px]"></Cog>
                                 </button>
                             </div>
                         </div>
