@@ -39,7 +39,7 @@ export default function ResetPass() {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col bg-[#0C0718] text-white font-sans overflow-x-hidden">
+    <div className="w-full min-h-screen flex flex-col bg-[#0C0718] text-white overflow-x-hidden">
 
       <div className="flex-grow flex flex-col items-center justify-center w-full py-12 lg:py-24 relative z-10">
         
