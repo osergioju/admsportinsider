@@ -31,8 +31,10 @@ export default function Login() {
         if (!errorParam) return;
 
         const messages = {
-        google_cancelled: "Login com Google cancelado.",
-        google_failed: "Erro ao autenticar com o Google. Tente novamente.",
+            google_cancelled: "Login com Google cancelado.",
+            google_failed: "Erro ao autenticar com o Google. Tente novamente.",
+            email_in_used : "O e-mail da sua conta Google já está em uso.",
+            google_error : "Erro ao autenticar com o Google. Tente novamente."
         };
 
         setError(messages[errorParam] || "Erro inesperado.");

@@ -2,7 +2,6 @@ import { Outlet, Link } from "react-router-dom";
 import { useContext, useState, useRef, useEffect} from "react";
 import { AuthContext } from "../context/AuthContext";
 import brand from "../assets/svg/brand-full.svg"
-import HomeBanners from "../components/uxui/banner"
 import FixedMenu from "../components/uxui/FixedMenu"
 import MenuMaximo from "../components/uxui/MenuMaximo"
 import { CircleX, Heart, Search, Cog } from "lucide-react";
@@ -139,7 +138,7 @@ export default function DashboardLayout() {
 
             </div>
 
-            <div className="lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
+            <div className="bg-white lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
                   {/* Top Bar */}
                   <div className="hidden lg:block py-1 mb-5">
                     <div className="flex items-center flex-wrap justify-end">
@@ -158,9 +157,6 @@ export default function DashboardLayout() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Banners */}
-                  <HomeBanners></HomeBanners>
 
                   <Outlet />
 
