@@ -97,8 +97,23 @@ export default function Register() {
             <div className="flex-grow flex flex-col items-center justify-center w-full py-12 lg:py-24 relative z-10">
                 
                 <div className="w-full max-w-[500px] px-6 flex flex-col gap-10">
-                    
-                    <div className="w-full">
+                     {/* ANimação das bolinhasss */}
+                    <div className="absolute top-0 right-0 left-0 rotate-90 bottom-0 flex items-center justify-center opacity-10">
+
+                        {/* do meio paradinho */}
+
+                        {/* sobe */}
+                        <div style={{ "--recoil-distance": "50px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#7E34D9] animate-recoil-left-1"/>
+                        <div style={{ "--recoil-distance": "150px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#ffffff00] animate-recoil-left-2"/>
+                        <div style={{ "--recoil-distance": "300px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7E34D9] to-[#ffffff00] animate-recoil-left-3"/>
+
+                        {/* desce */}
+                        <div style={{ "--recoil-distance": "-50px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-1"/>
+                        <div style={{ "--recoil-distance": "-150px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-2"/>
+                        <div style={{ "--recoil-distance": "-300px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-3"/>
+
+                    </div>
+                    <div className="w-full z-40">
                         {/* Título com Gradiente de Texto */}
                         <h1 className="mb-6 bg-linear-to-l from-[#ffffff1f] to-[#ffffff] bg-clip-text text-4xl text-transparent text-center font-semibold">
                             Crie sua conta

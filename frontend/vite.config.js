@@ -4,9 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import path from "path";
 
-export default defineConfig({
-  // 🔥 ESSENCIAL PARA RODAR EM /6942015c/
-  // base: "/6942015c/",
+export default defineConfig(({ mode }) => ({
+  // 🔥 base só em build de produção
+  base: mode === "production" ? "/" : "/",
 
   plugins: [
     react({
@@ -16,7 +16,7 @@ export default defineConfig({
     }),
     tailwindcss(),
     tsconfigPaths({
-      loose: true, // ignora case sensitive nos imports
+      loose: true,
     }),
   ],
 
@@ -25,4 +25,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
-});
+}));
