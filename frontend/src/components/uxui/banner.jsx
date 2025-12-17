@@ -31,23 +31,24 @@ export default function HomeBanners() {
             <a
               key={banner.id_banner}
               href={banner.link_url || "#"}
-              className="inline-block w-full h-full"
+              className="z-50 cursor-pointer absolute inline-block w-full h-full"
               target="_blank"
             >
-              {/* Desktop */}
-              <img
-                src={banner.image_desktop_url}
-                className="hidden md:block w-full"
-                alt={banner.title}
-              />
-
-              {/* Mobile */}
-              <img
-                src={banner.image_mobile_url}
-                className="block md:hidden w-full"
-                alt={banner.title}
-              />
             </a>
+            {/* Desktop */}
+            <img
+              src={banner.image_desktop_url}
+              className="hidden md:block w-full"
+              alt={banner.title}
+            />
+
+            {/* Mobile */}
+            <img
+              src={banner.image_mobile_url}
+              className="block md:hidden w-full"
+              alt={banner.title}
+            />
+            
           </SwiperSlide>
           ))}
           {/* PAGINAÇÃO */}
