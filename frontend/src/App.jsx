@@ -12,9 +12,16 @@ import GoogleCallback from "./Pages/Auth/GoogleCallback";
 
 // User pages
 import UserIndex from "./Pages/User/Index";
-import UserPerfil from "./Pages/User/Perfil";
-import UserConfiguracoes from "./Pages/User/Configuracoes";
 import VerifyEmail from "./Pages/Auth/VerifyEmail";
+import ProfileDetails from "Pages/User/Profile/ProfileDetails";
+import ProfilePreferences from "Pages/User/Profile/ProfilePreferences";
+import SecurityPassword from "Pages/User/Profile/SecurityPassword";
+import SubscriptionPlan from "Pages/User/Profile/SubscriptionPlan";
+import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
+import PrivacyData from "Pages/User/Profile/PrivacyData";
+import PrivacyDelete from "Pages/User/Profile/PrivacyDelete";
+
+
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
@@ -76,8 +83,14 @@ export default function App() {
             <Route element={<RoleRoute allowedRoles={["user", "admin_master"]} />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user" element={<UserIndex />} />
-              <Route path="/user/perfil" element={<UserPerfil />} />
-              <Route path="/user/configuracoes" element={<UserConfiguracoes />} />
+              
+              <Route path="me/profile" element={<ProfileDetails />} />
+              <Route path="me/profile/preferences" element={<ProfilePreferences />} />
+              <Route path="me/security/password" element={<SecurityPassword />} />
+              <Route path="me/subscription" element={<SubscriptionPlan />} />
+              <Route path="me/subscription/invoices" element={<SubscriptionInvoices />} />
+              <Route path="me/privacy/data" element={<PrivacyData />} />
+              <Route path="me/privacy/delete" element={<PrivacyDelete />} />
             </Route>
 
           </Route>

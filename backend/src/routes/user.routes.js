@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getProfile, updateProfile } from "../controllers/user.controller.js";
+import { updatePassword, getProfile, updateProfile, getPreferences, updatePreferences } from "../controllers/user.controller.js";
 import { getNotifications, markAsRead } from "../controllers/user.notification.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
@@ -8,14 +8,19 @@ const router = Router();
 // Aplica a proteção em todas as rotas deste arquivo
 router.use(authGuard);
 
-// GET /user/profile
+// Atualizar e ver perfil
 router.get("/profile", getProfile);
-
-// PUT /user/profile
 router.put("/profile", updateProfile);
+
+// Preferências
+router.get("/preferences", getPreferences);
+router.put("/preferences", updatePreferences);
 
 // Notificações 
 router.get("/notifications", getNotifications);
 router.patch("/notifications/:id/read", markAsRead);
+
+// Alterar senha 
+router.put("/security/password", updatePassword);
 
 export default router;
