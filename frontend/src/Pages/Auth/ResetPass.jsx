@@ -46,7 +46,7 @@ export default function ResetPass() {
         <div className="w-full max-w-[480px] px-6 flex flex-col gap-8">
           
           <div className="w-full text-center">
-            <h1 className="mb-4 bg-[linear-gradient(90deg,#FFFFFF_0%,#E2D6FF_100%)] bg-clip-text text-3xl lg:text-4xl text-transparent font-semibold">
+            <h1 className="mb-6 bg-linear-to-l from-[#ffffff1f] to-[#ffffff] bg-clip-text text-4xl text-transparent text-center font-semibold">
               Esqueceu a senha?
             </h1>
             <p className="text-[#FFFFFF99] text-base leading-relaxed">
@@ -66,7 +66,7 @@ export default function ResetPass() {
             />
 
             <SubmitButton disabled={loading}>
-                <span className="text-[#7F33D9] font-semibold text-lg cursor-pointer">
+                <span className="text-[#7F33D9] text-lg cursor-pointer">
                     {loading ? "Enviando..." : "Enviar link de recuperação"}
                 </span>
             </SubmitButton>

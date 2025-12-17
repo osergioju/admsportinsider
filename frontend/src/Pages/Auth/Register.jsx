@@ -19,6 +19,17 @@ export default function Register() {
     const [confirmarSenha, setConfirmarSenha] = useState(""); 
     const [error, setError] = useState("");
     const [isRegistering, setIsRegistering] = useState(false);
+    const [strength, setStrength] = useState(0);
+
+    function checkPasswordStrength(password) {
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++; // símbolos
+        return score;
+    }
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -119,6 +130,33 @@ export default function Register() {
                                 variant="dark"
                                 onChange={(e) => setSenha(e.target.value)}
                             />
+                            
+                            {senha.length > 0 && (
+                                    <div className="flex items-center justify-between px-1 mb-3">
+                                        <div className="flex gap-1 h-1 flex-grow mr-4">
+                                            {[1, 2, 3, 4, 5].map((level) => (
+                                                <div 
+                                                    key={level} 
+                                                    className={`h-full flex-grow rounded-full transition-all duration-300 ${
+                                                        strength >= level 
+                                                            ? (strength < 3 ? 'bg-red-500' : strength < 4 ? 'bg-yellow-400' : 'bg-green-400') 
+                                                            : 'bg-[#FFFFFF1A]'
+                                                    }`}
+                                                />
+                                            ))}
+                                        </div>
+                                        <span className={`text-xs font-medium ${
+                                            strength < 3 ? 'text-red-400' : strength < 4 ? 'text-yellow-400' : 'text-green-400'
+                                        }`}>
+                                            {strength === 0 && "Muito fraca"}
+                                            {strength === 1 && "Fraca"}
+                                            {strength === 2 && "Média"}
+                                            {strength === 3 && "Boa"}
+                                            {strength === 4 && "Forte"}
+                                            {strength === 5 && "Muito forte!"}
+                                        </span>
+                                    </div>
+                                )}
 
                             <Input
                                 label="Confirme a Senha"
