@@ -131,10 +131,7 @@ export default function Register() {
                             />
 
                             {/* Botão Submit Gradiente */}
-                            <SubmitButton>
-                                <span className="text-[#7F33D9] text-lg cursor-pointer">Criar conta</span>
-                            </SubmitButton>
-                            
+                            <SubmitButton text="Criar conta" />
 
                             {error && (
                                 <p className="text-[#F44336] text-sm text-center mt-1 bg-[#F44336]/10 py-2 rounded-md border border-[#F44336]/20">

@@ -164,8 +164,7 @@ export default function Login() {
                                         </div>
                                         */}
 
-                                            <SubmitButton>
-                                                <span className="text-[#7F33D9] text-lg cursor-pointer">Entrar</span>
+                                            <SubmitButton text="Entrar">
                                                 
                                                 {/*seta*/}
                                                 <svg 
