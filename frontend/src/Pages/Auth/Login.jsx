@@ -72,7 +72,7 @@ export default function Login() {
     };
 
     return (
-        <div className="relative z-40 w-full h-screen text-white bg-[#0C0718]">
+        <div className="relative z-40 w-full min-h-screen text-white bg-[#0C0718]">
             <div className="w-80 h-80 lg:w-120 lg:h-120 absolute top-0 left-0  bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] blur-[137px] rounded-full hidden lg:block -translate-x-1/2 -translate-y-1/2"></div>
             <div className="flex flex-col min-h-screen">
                 <div className="flex-grow flex items-center justify-center py-10 lg:py-20">

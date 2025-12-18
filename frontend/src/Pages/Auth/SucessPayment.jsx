@@ -25,7 +25,7 @@ export default function PaymentSuccess() {
     <div className="min-h-[60vh] flex items-center justify-center px-6">
       <div className="max-w-md text-center space-y-4">
         <h1 className="text-2xl font-medium">
-          Payment successful 🎉
+          Payment successful
         </h1>
 
         <p className="text-sm text-gray-600">

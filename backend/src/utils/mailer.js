@@ -180,14 +180,14 @@ export async function reSendMail(to, token) {
   const transporter = createTransporter();
   const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
   const body =  `
-    <div style="font-family: Arial, sans-serif; padding: 20px;">
+    <div style="font-family: Arial, sans-serif;">
       <h2>Confirme seu e-mail</h2>
       <p>Confirme seu e-mail clicando no botão abaixo:</p>
 
       <a href="${verifyUrl}" 
-        style="background:#4c6ef5; padding:10px 18px; color:white; 
+        style="background:#6d28d9; padding:10px 18px; color:white; 
               border-radius:6px; text-decoration:none;">
-        confirmar e-mail
+        Confirmar e-mail
       </a>
 
       <p style="margin-top:20px; font-size:12px; color:#777;">

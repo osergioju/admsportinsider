@@ -330,7 +330,7 @@ export async function resetPasswordRequest(req, res) {
       return res.json({
         status: "ok",
         message:
-          "Se o e-mail existir, você receberá um link de redefinição em instantes."
+          "Se o e-mail estiver atrelado a uma conta, você receberá um link de redefinição em instantes."
       });
     }
 
@@ -367,7 +367,7 @@ export async function resetPasswordRequest(req, res) {
     return res.json({
       status: "ok",
       message:
-        "Se o e-mail existir, você receberá um link de redefinição em instantes."
+        "Se o e-mail estiver atrelado a uma conta, você receberá um link de redefinição em instantes."
     });
 
   } catch (error) {

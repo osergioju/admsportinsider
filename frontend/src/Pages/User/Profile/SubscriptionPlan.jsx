@@ -17,35 +17,34 @@ export default function SubscriptionPlan() {
   return (
     <div>
       <h1 className="text-xl font-medium mb-2">
-        My subscription
+        Minha assinatura
       </h1>
 
       <p className="text-sm text-gray-500 mb-6">
-        Manage your subscription and billing details.
+        Gerencie sua assinatura e veja o histórico de pagamentos.
       </p>
 
       {/* ================= FREE PLAN ================= */}
       {isFree && (
         <div className="border rounded-lg p-6 space-y-4 max-w-lg">
           <h2 className="text-lg font-medium">
-            Free plan
+            Plano básico
           </h2>
 
           <p className="text-sm text-gray-500">
-            You are currently on the free plan.
+            Você está utilizando o plano básico.
           </p>
 
           <ul className="text-sm list-disc ml-5 text-gray-600">
-            <li>Basic access</li>
-            <li>Limited features</li>
-            <li>No billing history</li>
+            <li>Acesso limitado</li>
+            <li>Sem histórico de pagamentos</li>
           </ul>
 
           <button
             onClick={() => navigate("/pricing")}
             className="mt-4 px-5 py-2 bg-black text-white rounded-md"
           >
-            Upgrade plan
+            Atualizar assiantura
           </button>
         </div>
       )}
