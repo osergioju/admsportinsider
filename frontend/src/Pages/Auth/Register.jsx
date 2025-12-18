@@ -100,15 +100,40 @@ export default function Register() {
             {/* Conteúdo Principal Centralizado */}
             {
                 registerOk ? (
-                    <div class="w-full h-full flex flex-col items-center justify-center">
-                        <h2>
-                            Cadastro realizado com sucesso!
-                        </h2>
-                        <p>
-                            verifique seu e-mail para confirmar o cadastro
-                        </p>
-                        <span>Se já confirmou seu email,  <Link to="/login">faça login aqui</Link></span>
-                    </div>
+                    <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center text-center px-4 animate-fade-in">
+                            
+                            <div className="w-24 h-24 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-8 shadow-[0_0_30px_-10px_rgba(34,197,94,0.3)]">
+                                <svg 
+                                    width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                                    className="text-green-400"
+                                >
+                                    <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </div>
+
+                            
+                            <h2 className="mb-4 text-3xl lg:text-4xl font-bold bg-[linear-gradient(90deg,#FFFFFF_0%,#E2D6FF_100%)] bg-clip-text text-transparent">
+                                Cadastro realizado!
+                            </h2>
+
+                            
+                            <p className="text-[#FFFFFF99] text-lg mb-2 max-w-md leading-relaxed">
+                                Sua conta foi criada com sucesso.
+                            </p>
+                            <p className="text-[#FFFFFF99] text-base mb-10 max-w-md leading-relaxed">
+                                Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada (e o spam).
+                            </p>
+
+                            
+                            <div className="bg-[#FFFFFF05] border border-[#FFFFFF10] rounded-2xl p-6 w-full max-w-sm backdrop-blur-sm">
+                                <span className="text-sm text-[#FFFFFF99] block mb-2">
+                                    Já confirmou seu e-mail?
+                                </span>
+                                <Link to="/login" className="text-[#9F50FF] hover:text-[#B475FF] font-medium transition-colors underline decoration-[#9F50FF] underline-offset-4 hover:decoration-[#B475FF]">
+                                    Login aqui
+                                </Link>
+                            </div>
+                        </div>
                 ) : (
                     <div className="flex-grow flex flex-col items-center justify-center w-full py-12 lg:py-24 relative z-10">
                         <div className="w-full max-w-[500px] px-6 flex flex-col gap-10">

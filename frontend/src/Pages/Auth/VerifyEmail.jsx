@@ -50,7 +50,7 @@ export default function VerifyEmail() {
             alert("E-mail reenviado. Verifique sua caixa de entrada.");
         } catch (err) {
             alert(
-            err.response?.data?.error || "Erro ao reenviar confirmação."
+              err.response?.data?.error || "Erro ao reenviar confirmação."
             );
         }
     }
