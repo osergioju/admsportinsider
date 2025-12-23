@@ -15,9 +15,9 @@ import GoogleCallback from "./Pages/Auth/GoogleCallback";
 // User pages
 import UserIndex from "./Pages/User/Index";
 import VerifyEmail from "./Pages/Auth/VerifyEmail";
+import PageNotifications from "./Pages/User/Notifications";
 import ProfileDetails from "Pages/User/Profile/ProfileDetails";
 import ProfilePreferences from "Pages/User/Profile/ProfilePreferences";
-import SecurityPassword from "Pages/User/Profile/SecurityPassword";
 import SubscriptionPlan from "Pages/User/Profile/SubscriptionPlan";
 import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
 import PrivacyData from "Pages/User/Profile/PrivacyData";
@@ -91,10 +91,10 @@ export default function App() {
             <Route element={<RoleRoute allowedRoles={["user", "admin_master"]} />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user" element={<UserIndex />} />
+              <Route path="/me/notifications" element={<PageNotifications />} />
               
               <Route path="me/profile" element={<ProfileDetails />} />
               <Route path="me/profile/preferences" element={<ProfilePreferences />} />
-              <Route path="me/security/password" element={<SecurityPassword />} />
               <Route path="me/subscription" element={<SubscriptionPlan />} />
               <Route path="me/subscription/invoices" element={<SubscriptionInvoices />} />
               <Route path="me/privacy/data" element={<PrivacyData />} />

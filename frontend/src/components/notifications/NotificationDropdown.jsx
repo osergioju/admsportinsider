@@ -4,7 +4,7 @@ import { useNotificationPolling } from "../../hooks/useNotificationPolling"
 import NotificationModal from "./NotificationModal";
 import { AuthContext } from "../../context/AuthContext"
 import { Bell } from "lucide-react";
-
+import { Link } from "react-router-dom";
 
 export default function NotificationDropdown() {
   const [open, setOpen] = useState(false);
@@ -15,7 +15,7 @@ export default function NotificationDropdown() {
   async function fetchNotifications() {
     try {
       const { data } = await api.get("/user/notifications?limit=3");
-      setNotifications(data);
+      setNotifications(data.data);
     } catch (error) {
       console.error(error);
     }
@@ -86,12 +86,12 @@ export default function NotificationDropdown() {
           )}
 
           <div className="p-3 text-center border-t text-sm">
-            <a
-              href="/user/notifications"
+            <Link
+              to="/me/notifications"
               className="text-blue-600 hover:underline"
             >
               Ver todas
-            </a>
+            </Link>
           </div>
         </div>
       )}
