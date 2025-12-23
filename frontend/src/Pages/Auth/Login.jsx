@@ -13,8 +13,6 @@ import SubmitButton from "../../components/uxui/SubmitButton";
 export default function Login() {
     useTitle("Entre na sua conta");
     
-
-    
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -68,7 +66,7 @@ export default function Login() {
     }
 
     const handleGoogleLogin = () => {
-        window.location.href = "http://localhost:3000/auth/google";
+        window.location.href = api.defaults.baseURL + "/auth/google";
     };
 
     return (
@@ -79,7 +77,7 @@ export default function Login() {
                     <div className="container mx-auto px-6">
                         <div className="flex flex-wrap items-center justify-center space-y-8 lg:space-y-0">
                         
-                            <div className="w-full lg:w-1/2 h-[400px] lg:h-[80svh] relative flex items-center justify-center">
+                            <div className="w-full lg:w-1/2 h-[160px] lg:h-[80svh] relative flex items-center justify-center">
                                 {/* ANimação das bolinhasss */}
                                 <div className="absolute top-0 right-0 bottom-0 flex items-center justify-center opacity-30">
 

@@ -36,9 +36,9 @@ export default function NotificationDropdown() {
       <div className="text-right lg:relative">
         <button
             onClick={() => setOpen(!open)}
-            className="relative cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full w-[50px] h-[50px] lg:w-[36px] lg:h-[36px] flex flex-col items-center justify-center"
+            className="relative cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full w-[36px] h-[36px] lg:w-[36px] lg:h-[36px] flex flex-col items-center justify-center"
         >
-            <Bell strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[30px] lg:w-[20px]"></Bell>
+            <Bell strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[18px] lg:w-[18px]"></Bell>
             {unreadCount > 0 && (
             <span className="absolute -top-1 -right-0 w-4 h-4 bg-[#7F33D9] text-white text-xs rounded-full px-1">
                 {unreadCount}

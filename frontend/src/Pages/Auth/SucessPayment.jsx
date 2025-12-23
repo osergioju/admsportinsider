@@ -15,7 +15,7 @@ export default function PaymentSuccess() {
     }
 
     const timer = setTimeout(() => {
-      navigate("/me/subscription/invoices");
+      navigate("/me/subscription");
     }, 4000); // 4 segundos
 
     return () => clearTimeout(timer);

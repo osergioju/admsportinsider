@@ -267,9 +267,12 @@ export const me = async (req, res) => {
   try {
     // Buscar dados atualizados no banco
     const result = await db.query(
-      `SELECT *
-       FROM users 
-       WHERE id = $1`,
+      `SELECT 
+        u.*,
+        p.name AS plan_name
+      FROM users u
+      LEFT JOIN plans p ON p.id = u.plan_id
+      WHERE u.id = $1;`,
       [req.user.id]
     );
 

@@ -62,9 +62,13 @@ import AdminLayout from "./layouts/AdminLayout";
 import PrivateRoute from "./routes/PrivateRoute";
 import RoleRoute from "./routes/RoleRoute";
 
+import ScrollToTop from "./components/uxui/ScrollTop";
+
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
 
         {/* ---- Abertos para todos ---- */}

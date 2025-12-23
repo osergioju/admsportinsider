@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { Home, Trophy, Shield, BarChart2, Heart, FileText, User, CreditCard, ChevronDown, Lock } from "lucide-react";
+import { Home, Trophy, Shield, BarChart2, Heart, MessagesSquare, BadgeQuestionMark, FileText, Wallet, User, ChevronDown } from "lucide-react";
 import MenuItem from "./MenuItem";
 import SubItem from "./SubMenu";
 import { AuthContext } from "../../context/AuthContext"
@@ -18,11 +18,10 @@ export default function SideMenu() {
   return (
     <aside className="w-full h-full px-4 py-6 text-[#111]">
       
-      {/* ================= MENU ================= */}
-      <div className="mb-10">
+      <div className="mb-4">
         <span className="text-xs lg:text-sm text-[#AFAFB2] mb-1 font-light block">Menu</span>
 
-        <ul className="space-y-2">
+        <ul>
 
           {/* Página inicial */}
           <MenuItem to="/dashboard" icon={<Home strokeWidth={1} size={20}/>} label="Página inicial" />
@@ -35,7 +34,7 @@ export default function SideMenu() {
             >
               <div className="flex items-center gap-3">
                 <Trophy strokeWidth={1} className="text-gray-400" size={20} />
-                <span className="text-sm font-[300] text-[#0A0A0A]">Ligas</span>
+                <span className="text-sm font-[400] text-[#0A0A0A]">Ligas</span>
               </div>
 
               <ChevronDown
@@ -64,7 +63,7 @@ export default function SideMenu() {
             >
               <div className="flex items-center gap-3">
                 <Shield strokeWidth={1} className="text-gray-400" size={20} />
-                <span className="text-sm font-[300] text-[#0A0A0A]">Clubes</span>
+                <span className="text-sm font-[400] text-[#0A0A0A]">Clubes</span>
               </div>
 
               <ChevronDown
@@ -91,115 +90,33 @@ export default function SideMenu() {
         </ul>
       </div>
 
-      {/* ================= MEU PERFIL ================= */}
-      <div>
+      <div className="mb-4">
         <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block">
           Minha conta
         </span>
 
-        <ul className="space-y-2">
+        <ul>
 
           {/* PERFIL */}
-          <li>
-            <button
-              onClick={() => setOpenPerfil(!openPerfil)}
-              className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
-            >
-              <div className="flex items-center gap-3">
-                <User strokeWidth={1} className="text-gray-400" size={20} />
-                <span className="text-sm font-light text-[#0A0A0A]">
-                  Meu Perfil
-                </span>
-              </div>
-
-              <ChevronDown
-                strokeWidth={1}
-                size={18}
-                className={`transition-transform ${
-                  openPerfil ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {openPerfil && (
-              <ul className="ml-12 mt-2 space-y-2">
-                <SubItem label="Dados do perfil" to="/me/profile" />
-                <SubItem label="Preferências" to="me/profile/preferences" />
-              </ul>
-            )}
-          </li>
-
-          {/* ASSINATURA */}
-          <li>
-            <button
-              onClick={() => setOpenPlano(!openPlano)}
-              className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
-            >
-              <div className="flex items-center gap-3">
-                <CreditCard strokeWidth={1} className="text-gray-400" size={20} />
-                <span className="text-sm font-light text-[#0A0A0A]">
-                  Assinatura
-                </span>
-              </div>
-
-              <ChevronDown
-                strokeWidth={1}
-                size={18}
-                className={`transition-transform ${
-                  openPlano ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {openPlano && (
-              <ul className="ml-12 mt-2 space-y-2">
-                <SubItem label="Meu plano" to="me/subscription" />
-                <SubItem label="Faturas" to="me/subscription/invoices" />
-              </ul>
-            )}
-          </li>
-
-          {/* PRIVACIDADE */}
-          <li>
-            <button
-              onClick={() => setOpenPrivacidade(!openPrivacidade)}
-              className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-white/60 transition"
-            >
-              <div className="flex items-center gap-3">
-                <Lock strokeWidth={1} className="text-gray-400" size={20} />
-                <span className="text-sm font-light text-[#0A0A0A]">
-                  Privacidade
-                </span>
-              </div>
-
-              <ChevronDown
-                strokeWidth={1}
-                size={18}
-                className={`transition-transform ${
-                  openPrivacidade ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {openPrivacidade && (
-              <ul className="ml-12 mt-2 space-y-2">
-                <SubItem label="Alterar senha" to="me/security/password" />
-                <SubItem label="Excluir conta" to="me/privacy/delete" />
-              </ul>
-            )}
-          </li>
+          <MenuItem to="/me/profile" icon={<User strokeWidth={1} size={20}/>} label="Perfil" />
+          <MenuItem to="/dashboard" icon={<Wallet strokeWidth={1} size={20}/>} label="Financeiro" />
 
         </ul>
       </div>
 
       <div>
-        <ul className="space-y-2 mt-10">
-            <button className="hover:text-gray-400 transition-all cursor-pointer text-sm font-[300] text-[#7F33D9] underline" onClick={logout}>Sair</button>
+        <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block">
+          Suporte
+        </span>
+
+        <ul>
+
+          {/* PERFIL */}
+          <MenuItem to="/dashboard" icon={<BadgeQuestionMark strokeWidth={1} size={20}/>} label="Perguntas frequentes" />
+          <MenuItem to="/dashboard" icon={<MessagesSquare strokeWidth={1} size={20}/>} label="Fale conosco" />
+
         </ul>
       </div>
-
-
-
     </aside>
   );
 }

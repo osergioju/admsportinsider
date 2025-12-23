@@ -17,6 +17,8 @@ export default function DashboardLayout() {
     setStartX(e.touches[0].clientX);
   };
 
+
+
   const handleTouchMove = (e) => {
     const currentX = e.touches[0].clientX;
     const diff = currentX - startX;
@@ -46,6 +48,7 @@ export default function DashboardLayout() {
 
   // Sair 
   const { logout, user } = useContext(AuthContext);
+
     return (
         <div className="
           lg:flex lg:overflow-y-auto
@@ -54,7 +57,7 @@ export default function DashboardLayout() {
             {/* Sidebar */}
             <div className="
                 lg:border-r lg:relative top-0 lg:w-[300px]
-                w-full ">
+                w-full pb-4">
                 <div className="lg:hidden flex flex-wrap items-center p-5">
                     <div className="w-1/2">
                         {/* Pega o logo da pasta assets */}
@@ -81,7 +84,7 @@ export default function DashboardLayout() {
 
                     <div className="w-3/4 flex gap-2 items-center justify-end">
                         <h1 className="font-light text-base text-[#AFAFB2]">Bem vindo, <span className="text-[#0A0A0A]">{user.name.split(" ")[0]}</span></h1>
-                        <span className="inline-block bg-[#CCF5C9] text-sm rounded-sm px-4 py-1">Plano X</span>
+                        <span className="inline-block bg-[#CCF5C9] text-sm rounded-sm px-4 py-1">{user.plan_name}</span>
                     </div>
                 </div>
 
@@ -104,7 +107,7 @@ export default function DashboardLayout() {
                           lg:border-r
                           fixed top-0 left-0 z-50 bg-[#F6F5FA] h-screen w-3/4 
                           flex flex-col gap-2 items-center justify-start
-                          transition-transform duration-300"
+                          transition-transform duration-300 overflow-y-scroll"
                           style={{ transform: `translateX(${translateX}px)` }}
                           onTouchStart={handleTouchStart}
                           onTouchMove={handleTouchMove}
@@ -125,7 +128,7 @@ export default function DashboardLayout() {
                             <div className="mt-2 w-full border-b border-[#DADADA]"></div>
                               <div className="w-full flex gap-2 items-center justify-start py-4">
                                 <h1 className="lg:text-lg font-light text-base text-[#AFAFB2]">Bem vindo, <span className="text-[#0A0A0A]">{user.name.split(" ")[0]}</span></h1>
-                                <span className="inline-block bg-[#CCF5C9] text-sm rounded-sm px-4 py-1">Plano X</span>
+                                <span className="inline-block bg-[#CCF5C9] text-sm rounded-sm px-4 py-1">{user.plan_name}</span>
                             </div>
 
                             {/* Super Menu */}
@@ -138,7 +141,7 @@ export default function DashboardLayout() {
 
             </div>
 
-            <div className="bg-white lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
+            <div className="lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
                   {/* Top Bar */}
                   <div className="hidden lg:block py-1 mb-5">
                     <div className="flex items-center flex-wrap justify-end">
@@ -161,7 +164,7 @@ export default function DashboardLayout() {
                   <Outlet />
 
                   {/* Menu Fixo */}
-                  <FixedMenu mode={user.active}></FixedMenu>
+                  <FixedMenu mode={user?.active ? "active" : "inactive"} />
                   
             </div>
     </div>

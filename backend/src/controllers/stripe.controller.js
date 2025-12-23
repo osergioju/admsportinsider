@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { db } from "../config/db.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
+const prod_url = process.env.PROD_URL;
 const PRICE_IDS = {
   2: "price_1ScyEsGpvzwsEpHhVnmLViFU", // Premium
   3: "price_1ScyFiGpvzwsEpHh70blpgpx", // Business
@@ -54,8 +54,8 @@ export const createCheckoutSession = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `http://localhost:5173/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:5173/pagamento-cancelado`,
+      success_url: prod_url + `/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: prod_url + `/pagamento-cancelado`,
       metadata: {
         userId: user.id,
         plan_id,
@@ -100,7 +100,7 @@ export async function createBillingPortal(req, res) {
     // Cria sessão do portal
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripe_customer_id,
-      return_url: "http://localhost:5173/me/subscription"
+      return_url: prod_url + "/me/subscription"
     });
 
     return res.json({ url: session.url });

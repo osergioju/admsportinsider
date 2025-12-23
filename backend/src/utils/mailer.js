@@ -18,7 +18,7 @@ export function createTransporter() {
 export async function sendResetEmail(to, token) {
   const transporter = createTransporter();
 
-  const resetUrl = `${process.env.FRONTEND_URL}/reset?token=${token}`;
+  const resetUrl = `${process.env.PROD_URL}/reset?token=${token}`;
   const body = `
     <div style="font-family:Arial, sans-serif; color:#111111;">
 
@@ -94,7 +94,7 @@ export async function sendResetEmail(to, token) {
 
 export async function sendResetEmailSucess(to) {
   const transporter = createTransporter();
-  const siteUrl_send = `${process.env.FRONTEND_URL}/login`;
+  const siteUrl_send = `${process.env.PROD_URL}/login`;
   const body = ` 
     <div style="font-family:Arial, sans-serif; color:#111111;">
 
@@ -178,7 +178,7 @@ export async function sendResetEmailSucess(to) {
 
 export async function reSendMail(to, token) {
   const transporter = createTransporter();
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${process.env.PROD_URL}/verify-email?token=${token}`;
   const body =  `
     <div style="font-family: Arial, sans-serif;">
       <h2>Confirme seu e-mail</h2>

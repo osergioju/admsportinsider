@@ -25,7 +25,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://sportinsider.com",
   "https://dashboard.sportinsider.com",
-  "https://dash.crtcomunicacao.com.br.com"
+  "https://dash.crtcomunicacao.com.br"
 ];
 
 app.use(cors({

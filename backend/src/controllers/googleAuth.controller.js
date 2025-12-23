@@ -3,6 +3,7 @@ import { db } from "../config/db.js";
 import { findUserByEmail } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 
+const prod_url = process.env.PROD_URL;
 // ==============================================
 // 1) Redireciona para o Google
 // ==============================================
@@ -30,7 +31,7 @@ export const googleAuthCallback = async (req, res) => {
   // Deu ruim
   if (!code) {
     return res.redirect(
-      "http://localhost:5173/login?error=google_failed"
+      prod_url + "/login?error=google_failed"
     );
   }
 
@@ -110,7 +111,7 @@ export const googleAuthCallback = async (req, res) => {
     // ---------------------------
     else if (user.provider === "email") {
       return res.redirect(
-        "http://localhost:5173/login?error=email_in_used"
+        prod_url + "login?error=email_in_used"
       );
     }
 
@@ -149,13 +150,13 @@ export const googleAuthCallback = async (req, res) => {
     });
 
     // modelo A: backend resolve tudo e manda só o token pro front
-    const redirectUrl = `http://localhost:5173/auth/google/callback?token=${token}`;
+    const redirectUrl = prod_url + `/auth/google/callback?token=${token}`;
     return res.redirect(redirectUrl);
 
   } catch (err) {
     console.error("Erro no Google Auth:", err.response?.data || err);
     return res.redirect(
-      "http://localhost:5173/login?error=google_error"
+      prod_url + "/login?error=google_error"
     );
   }
 };
