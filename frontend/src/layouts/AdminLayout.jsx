@@ -241,7 +241,7 @@ export default function AdminLayout() {
                     >
                          <div className="w-full flex flex-col items-start p-3">
                             <div className="w-full flex justify-between items-center mb-4">
-                                <img src={brand} alt="Brand" className="h-10 ml-2" />
+                                <img src={brand} alt="Brand" className="w-full lg:max-w-[100px] lg:max-w-[180px]" />
                                 <CircleX className="lg:hidden cursor-pointer" onClick={() => setOpenMenu(false)} strokeWidth={1} size={24} color="#BA7FFF" />
                             </div>
                             <div className="w-full border-b border-[#DADADA] mb-4"></div>
