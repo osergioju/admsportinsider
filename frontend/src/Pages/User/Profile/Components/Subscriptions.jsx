@@ -44,7 +44,7 @@ export default function Subscriptions() {
             onClick={() => navigate("/pricing")}
             className="mt-4 px-5 py-2 bg-black text-white rounded-md"
           >
-            Atualizar assiantura
+            Atualizar assinatura
           </button>
         </div>
       )}

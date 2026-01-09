@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../../../context/AuthContext";
-import { api } from "../../../services/api";
+import { AuthContext } from "../../../../context/AuthContext";
+import { api } from "../../../../services/api";
 
 export default function ProfilePreferences() {
   const { user, setUser } = useContext(AuthContext);
@@ -28,7 +28,8 @@ export default function ProfilePreferences() {
           setForm({
             email_notifications: !!user.preferences.email_notifications,
             product_updates: !!user.preferences.product_updates,
-            language: user.preferences.language || "en"
+            language: user.preferences.language || "en",
+            region: user.preferences.region || "Brasil"
           });
           setFetching(false);
           return;
@@ -40,7 +41,8 @@ export default function ProfilePreferences() {
         setForm({
           email_notifications: !!response.data.email_notifications,
           product_updates: !!response.data.product_updates,
-          language: response.data.language || "en"
+          language: response.data.language || "en",
+          region: response.data.region || "Brasil"
         });
 
         // 🔥 sincroniza contexto
@@ -102,6 +104,10 @@ export default function ProfilePreferences() {
 
     if (form.language !== user.preferences?.language) {
       payload.language = form.language;
+    }
+
+    if (form.region !== user.preferences?.region) {
+      payload.region = form.region;
     }
 
     if (!Object.keys(payload).length) {
@@ -178,6 +184,24 @@ export default function ProfilePreferences() {
             onChange={handleToggle}
           />
         </label>
+
+        {/* Region */}
+        <div>
+          <label className="block text-sm mb-1">
+            Região
+          </label>
+
+          <select
+            name="region"
+            value={form.region}
+            onChange={handleChange}
+            className="w-full border rounded-md px-3 py-2"
+          >
+            <option value="en">Brasil</option>
+            <option value="es">Inglaterra</option>
+            <option value="pt-BR">Portugal</option>
+          </select>
+        </div>
 
         {/* Language */}
         <div>

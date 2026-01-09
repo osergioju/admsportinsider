@@ -17,11 +17,7 @@ import UserIndex from "./Pages/User/Index";
 import VerifyEmail from "./Pages/Auth/VerifyEmail";
 import PageNotifications from "./Pages/User/Notifications";
 import ProfileDetails from "Pages/User/Profile/ProfileDetails";
-import ProfilePreferences from "Pages/User/Profile/ProfilePreferences";
-import SubscriptionPlan from "Pages/User/Profile/SubscriptionPlan";
 import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
-import PrivacyData from "Pages/User/Profile/PrivacyData";
-import PrivacyDelete from "Pages/User/Profile/PrivacyDelete";
 
 
 // ADMIN PAGES // 
@@ -94,11 +90,7 @@ export default function App() {
               <Route path="/me/notifications" element={<PageNotifications />} />
               
               <Route path="me/profile" element={<ProfileDetails />} />
-              <Route path="me/profile/preferences" element={<ProfilePreferences />} />
-              <Route path="me/subscription" element={<SubscriptionPlan />} />
               <Route path="me/subscription/invoices" element={<SubscriptionInvoices />} />
-              <Route path="me/privacy/data" element={<PrivacyData />} />
-              <Route path="me/privacy/delete" element={<PrivacyDelete />} />
             </Route>
 
           </Route>
