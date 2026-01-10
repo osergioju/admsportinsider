@@ -36,19 +36,17 @@ export default function HomeBanners() {
             >
             </a>
             {/* Desktop */}
-            <img
-              src={banner.image_desktop_url}
-              className="hidden md:block w-full"
-              alt={banner.title}
-            />
+            <div
+              className="hidden md:block w-full h-[200px] rounded-xl bg-cover bg-center bg-black"
+              style={{ backgroundImage: `url(${banner.image_desktop_url})` }}
+            ></div>
 
             {/* Mobile */}
-            <img
-              src={banner.image_mobile_url}
-              className="block md:hidden w-full"
-              alt={banner.title}
-            />
-            
+            <div
+              className="md:hidden w-full h-[200px] rounded-xl bg-cover bg-center"
+              style={{ backgroundImage: `url(${banner.image_mobile_url})` }}
+            ></div>
+
           </SwiperSlide>
           ))}
           {/* PAGINAÇÃO */}
