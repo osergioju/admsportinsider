@@ -90,7 +90,7 @@ export default function App() {
               <Route path="/me/notifications" element={<PageNotifications />} />
               
               <Route path="me/profile" element={<ProfileDetails />} />
-              <Route path="me/subscription/invoices" element={<SubscriptionInvoices />} />
+              <Route path="me/financial" element={<SubscriptionInvoices />} />
             </Route>
 
           </Route>

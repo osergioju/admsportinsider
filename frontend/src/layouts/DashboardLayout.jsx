@@ -140,7 +140,7 @@ export default function DashboardLayout() {
                 <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Minha conta</span>
                 <ul>
                     <MenuItem to="/me/profile" onClick={() => handleGoPerfil(user.id)} icon={<User strokeWidth={1} size={20}/>} label="Perfil" />
-                    <MenuItem to="/financeiro" icon={<Wallet strokeWidth={1} size={20}/>} label="Financeiro" />
+                    <MenuItem to="/me/financial" icon={<Wallet strokeWidth={1} size={20}/>} label="Financeiro" />
                 </ul>
             </div>
 
