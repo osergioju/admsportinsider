@@ -37,7 +37,7 @@ router.delete("/disable-club/:id", disableClub);
 router.get("/attribute-keys", getAttributeKeys);
 router.post("/import-clubs-xlsx", uploadXlsx, uploadClubXlsx);
 
-// USUÁRIOS - GESTÃO
+// USUÁRIOS - GESTÃO gns;smvr
 router.get("/users", getAllUsers);
 router.post("/users/:id", getUserById);
 router.post("/users/:id/disable", disableUser);
