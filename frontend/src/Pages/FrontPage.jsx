@@ -153,6 +153,41 @@ export default function FrontPage() {
                     </div>
                 </div>
 
+                <div className="grid lg:grid-cols-3 gap-4 mt-4 lg:mt-8">
+                    <div className="flex items-center justify-center gap-3 py-4 lg:py-6 rounded-sm bg-white border p-2">
+                        <span className="font-light text-[#4E4E4F] lg:text-lg">Dados estruturados e comparáveis</span>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-3 py-4 lg:py-6 rounded-sm bg-white border p-2">
+                        <span className="font-light text-[#4E4E4F] lg:text-lg">Visualização clara e interativa</span>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-3 py-4 lg:py-6 rounded-sm bg-white border p-2">
+                        <span className="font-light text-[#4E4E4F] lg:text-lg">Atualizações constantes</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div className="py-20 bg-black">
+            <div className="container mx-auto px-6">
+                <div className="w-full relative flex flex-col items-center">
+                    <div className="lg:mb-6 mb-4 flex items-center gap-2 lg:gap-3 lg:px-6 lg:text-xl py-2 lg:py-3 px-4 bg-gradient-to-r from-[#FFFFFF00] to-[#99999953] rounded-full">
+                        <img src={Icone}></img>
+                        <span className="text-[#BFB2CD]">Por dentro</span>
+                    </div>
+
+                    <h1 class="font-light text-center lg:text-4xl xl:text-6xl xl:mb-4 text-center text-2xl leading-none bg-gradient-to-r from-[#FFFFFF] to-[#ffffff41] bg-clip-text text-transparent ">
+                        O futebol evoluiu. <br/>
+                        A análise financeira também<br/>
+                         precisa evoluir.     
+                    </h1>
+                    <p className="lg:text-xl text-[#ffffffa6] text-center">
+                        Dados financeiros, operacionais e comerciais de clubes e ligas do mundo 
+                        inteiro — organizados, comparáveis e prontos para decisão.
+                    </p>
+                </div>
             </div>
         </div>
 
