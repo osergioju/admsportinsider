@@ -131,6 +131,10 @@ body {
     opacity: 0;
 }
 
+.bg-gradient-home {
+  background: linear-gradient(180deg, rgba(242, 241, 241, 0) 0%, rgba(242, 241, 241, 0.1) 13.4%, #F2F1F1 34.29%, #F2F1F1 91.72%, #F2F1F1 100%);
+}
+
 .plan_box:hover {
     border:1px solid #9259F8;
     transition: 1.4s ease all;
