@@ -2,11 +2,11 @@ import { Router } from "express";
 import { login, register, resendVerification, verifyMail, me, resetPasswordRequest, resetPasswordConfirm } from "../controllers/auth.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 import { startGoogleAuth, googleAuthCallback } from "../controllers/googleAuth.controller.js";
-
+import { loginRateLimiter } from "../middlewares/rateLimiter.middleware.js";
 const router = Router();
 
 // Login e register
-router.post("/login", login);
+router.post("/login", loginRateLimiter, login);  
 router.post("/register", register);
 
 // Verifica e-mail e reenvia caso a pessoa tenha expirado e tal

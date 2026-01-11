@@ -11,11 +11,12 @@ import financeiroRoutes from "./src/routes/financeiro.routes.js";
 import uploadRoutes from "./src/routes/upload.routes.js";
 import stripeRoutes from "./src/routes/stripe.routes.js";
 import stripeWebhookRoutes from "./src/routes/stripeWebhook.routes.js";
-import { startNotificationCron } from "./src/jobs/notificationCron.js"
 
-startNotificationCron();
+import { multerErrorHandler } from "./src/middlewares/multerErrorHandler.js";
+import { startNotificationCron } from "./src/jobs/notificationCron.js";
 
 dotenv.config();
+startNotificationCron();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -63,6 +64,9 @@ app.use("/upload", uploadRoutes);
 
 // ===== ROTA DE CHECKOUT =====
 app.use("/stripe", stripeRoutes);
+
+// 🔴 MIDDLEWARE DE ERRO (SEMPRE NO FINAL)
+app.use(multerErrorHandler);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);

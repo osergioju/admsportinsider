@@ -1,98 +1,253 @@
 import { useState, useEffect } from "react";
 import { api } from "../../../services/api";
 
-export default function SendLeaguePage() {
+export default function UploadLeagueBalancePage() {
+  const [file, setFile] = useState(null);
+  const [step, setStep] = useState("upload");
+  const [analysis, setAnalysis] = useState(null);
+  const [selectedSheet, setSelectedSheet] = useState(null);
 
   const [leagues, setLeagues] = useState([]);
-  const [leagueId, setLeagueId] = useState("");
-  const [file, setFile] = useState(null);
+  const [loadingLeagues, setLoadingLeagues] = useState(false);
 
-  // Carrega ligas ao abrir a página
-  useEffect(() => {
-    async function loadLeagues() {
-      try {
-        const { data } = await api.get("/admin/leagues");
-        setLeagues(data.leagues);
-      } catch (err) {
-        console.error("Erro ao carregar ligas:", err);
-      }
-    }
-    loadLeagues();
-  }, []);
+  const [mapping, setMapping] = useState({
+    leagueId: "",
+    years: []
+  });
 
-  const handleSubmit = async () => {
-    if (!leagueId || !file) {
-      alert("Selecione a liga e envie o arquivo.");
+  async function handleUpload() {
+    if (!file) {
+      alert("Selecione um arquivo XLSX");
       return;
     }
 
     const formData = new FormData();
-    formData.append("leagueId", leagueId);
     formData.append("file", file);
 
     try {
       const { data } = await api.post(
-        "/upload/leagues/import-balance",
+        "/upload/xlsx/analyze",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert("Dados da liga importados com sucesso!");
-      console.log(data);
+      setAnalysis(data);
+      setStep("mapping");
 
     } catch (err) {
       console.error(err);
-      alert("Erro ao importar balanço da liga.");
+      alert("Erro ao ler o arquivo");
     }
-  };
+  }
+
+  // 🔹 Carregar ligas quando entrar no mapping
+  useEffect(() => {
+    if (step !== "mapping") return;
+
+    async function loadLeagues() {
+      try {
+        setLoadingLeagues(true);
+        const { data } = await api.get("/admin/leagues");
+        setLeagues(data.leagues);
+      } catch (err) {
+        console.error("Erro ao carregar ligas", err);
+        alert("Erro ao carregar ligas");
+      } finally {
+        setLoadingLeagues(false);
+      }
+    }
+
+    loadLeagues();
+  }, [step]);
+
+  function toggleYear(year) {
+    setMapping((prev) => ({
+      ...prev,
+      years: prev.years.includes(year)
+        ? prev.years.filter((y) => y !== year)
+        : [...prev.years, year]
+    }));
+  }
+
+  const currentSheet = analysis?.sheets.find(
+    s => s.sheetName === selectedSheet
+  );
+    
+  async function handleConfirmImport() {
+    if (!file || !selectedSheet || !mapping.leagueId) {
+      alert("Mapeamento incompleto.");
+      return;
+    }
+
+    const confirm = window.confirm(
+      "Você tem certeza que deseja IMPORTAR esses dados?\n\n" +
+      "Essa ação irá gravar os dados no banco e pode sobrescrever valores existentes."
+    );
+
+    if (!confirm) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("sheetName", selectedSheet);
+    formData.append("leagueId", mapping.leagueId);
+
+    try {
+      const { data } = await api.post(
+        "/upload/xlsx/import-country",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      console.log("✅ IMPORTAÇÃO CONCLUÍDA:", data);
+
+      alert(
+        `Importação concluída com sucesso!\n\n` +
+        `Indicadores: ${data.summary.indicators}\n` +
+        `Registros financeiros: ${data.summary.financialRows}`
+      );
+
+      // 🔄 Reset de estado
+      setStep("upload");
+      setFile(null);
+      setAnalysis(null);
+      setSelectedSheet(null);
+      setMapping({ leagueId: "", years: [] });
+
+    } catch (err) {
+      console.error("❌ Erro na importação:", err);
+      alert("Erro ao importar dados da liga.");
+    }
+  }
+
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Upload Financeiro da Liga</h1>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-semibold mb-6">
+        Importação Financeira
+      </h1>
 
-      <div className="bg-white rounded-xl p-6 shadow">
+      {/* STEP 1 — UPLOAD */}
+      {step === "upload" && (
+        <div className="bg-white rounded-xl p-6 shadow space-y-4">
+          <label className="block text-sm font-medium">
+            Arquivo XLSX
+          </label>
 
-        <div className="flex flex-col gap-4">
+          <input
+            type="file"
+            accept=".xlsx"
+            className="border rounded w-full p-2"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
 
-          {/* Selecionar Liga */}
+          <button
+            onClick={handleUpload}
+            className="bg-primary text-white px-4 py-2 rounded w-full"
+          >
+            Ler arquivo
+          </button>
+        </div>
+      )}
+
+      {/* STEP 2 — MAPEAMENTO */}
+      {step === "mapping" && analysis && (
+        <div className="bg-white rounded-xl p-6 shadow space-y-6">
+
+          {/* Aba */}
           <div>
-            <label className="block text-sm font-medium mb-1">Liga</label>
+            <h2 className="font-medium mb-2">Aba do arquivo</h2>
             <select
               className="border rounded w-full p-2"
-              value={leagueId}
-              onChange={(e) => setLeagueId(e.target.value)}
+              value={selectedSheet || ""}
+              onChange={(e) => {
+                setSelectedSheet(e.target.value);
+                setMapping({ leagueId: "", years: [] });
+              }}
             >
-              <option value="">Selecione uma liga</option>
-
-              {leagues.map((l) => (
-                <option key={l.id_league} value={l.id_league}>
-                  {l.name}
+              <option value="">Selecione uma aba</option>
+              {analysis.sheets.map((sheet) => (
+                <option
+                  key={sheet.sheetName}
+                  value={sheet.sheetName}
+                >
+                  {sheet.sheetName}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Arquivo XLSX */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Arquivo XLSX</label>
-            <input
-              type="file"
-              accept=".xlsx"
-              className="border rounded w-full p-2"
-              onChange={(e) => setFile(e.target.files[0])}
-            />
-          </div>
+          {/* Liga */}
+          {selectedSheet && (
+            <div>
+              <h2 className="font-medium mb-2">Liga</h2>
 
-          {/* Botão */}
+              <select
+                className="border rounded w-full p-2"
+                value={mapping.leagueId}
+                onChange={(e) =>
+                  setMapping({
+                    ...mapping,
+                    leagueId: e.target.value
+                  })
+                }
+                disabled={loadingLeagues}
+              >
+                <option value="">Selecione a liga</option>
+
+                {leagues.map((league) => (
+                  <option
+                    key={league.id_league}
+                    value={league.id_league}
+                  >
+                    {league.name}
+                  </option>
+                ))}
+              </select>
+
+              {loadingLeagues && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Carregando ligas...
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Anos */}
+          {currentSheet && currentSheet.detectedYears.length > 0 && (
+            <div>
+              <h2 className="font-medium mb-2">Anos detectados</h2>
+
+              <div className="grid grid-cols-4 gap-3">
+                {currentSheet.detectedYears.map((year) => (
+                  <label
+                    key={year}
+                    className="flex items-center gap-2 border rounded p-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={mapping.years.includes(year)}
+                      onChange={() => toggleYear(year)}
+                    />
+                    {year}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           <button
-            onClick={handleSubmit}
-            className="bg-primary text-white px-4 py-2 rounded"
+            onClick={handleConfirmImport}
+            disabled={
+              !selectedSheet ||
+              !mapping.leagueId ||
+              mapping.years.length === 0
+            }
+            className="bg-green-600 text-white px-4 py-2 rounded w-full disabled:opacity-50"
           >
-            Enviar
+            Confirmar importação
           </button>
-
         </div>
-      </div>
+      )}
     </div>
   );
 }

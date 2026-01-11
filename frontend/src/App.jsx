@@ -96,6 +96,11 @@ export default function App() {
           </Route>
         </Route>
 
+        {/*--- Dashboard publico ---*/}
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard-public" element={<Dashboard />} />
+        </Route>
+
         {/* ---- Adm - páginas do admin comum e do admin master ---- */}
         <Route element={<PrivateRoute />}>
           <Route element={<AdminLayout />}>

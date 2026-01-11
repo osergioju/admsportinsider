@@ -44,6 +44,7 @@ export default function Login() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError("");
+        setIsLoggingIn(true);
 
         try {
             const { data } = await api.post("/auth/login", { email, senha });

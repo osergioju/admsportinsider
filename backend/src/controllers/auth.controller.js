@@ -23,29 +23,18 @@ export const login = async (req, res) => {
     // 1. Buscar usuário no banco
     const user = await findUserByEmail(email);
 
-    if (!user) {
-      return res.status(401).json({ error: "O e-mail informado não pertence a nenhuma conta" });
-    }
-
-    // 2. Verificar se está ativo
-    if (!user.active) {
-      return res.status(403).json({
-        error: "Sua conta está desativada. Entre em contato com o suporte."
+    if (!user || !user.active || !user.email_verified) {
+      return res.status(401).json({
+        error: "Credenciais inválidas"
       });
     }
 
-    // 3. Verificar se o e-mail foi confirmado
-    if (!user.email_verified) {
-      return res.status(403).json({
-        error: "Você precisa confirmar seu e-mail antes de acessar o sistema."
-      });
-    }
-
-    // 4. Verificar senha
     const passwordMatch = await bcrypt.compare(senha, user.password_hash);
 
     if (!passwordMatch) {
-      return res.status(401).json({ error: "E-mail ou senha incorretos" });
+      return res.status(401).json({
+        error: "Credenciais inválidas"
+      });
     }
 
     // 5. Gerar JWT
@@ -53,7 +42,7 @@ export const login = async (req, res) => {
       id: user.id,
       email: user.email,
       role: user.role
-    });
+    }); 
 
     // 6. Atualizar last_login
     await db.query(

@@ -1,4 +1,5 @@
-import jwt from "jsonwebtoken";
+// middlewares/auth.middleware.js
+import { verifyAccessToken } from "../config/jwt.js";
 
 export function authGuard(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -7,15 +8,39 @@ export function authGuard(req, res, next) {
     return res.status(401).json({ error: "Token não informado" });
   }
 
-  const [, token] = authHeader.split(" ");
+  const [type, token] = authHeader.split(" ");
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  if (type !== "Bearer" || !token) {
+    return res.status(401).json({ error: "Token malformado" });
+  }
 
-    req.user = decoded; // <-- aqui armazenamos infos do token
+  const decoded = verifyAccessToken(token);
 
-    next();
-  } catch (error) {
+  if (!decoded) {
     return res.status(401).json({ error: "Token inválido ou expirado" });
   }
+
+  req.user = decoded;
+  return next();
+}
+
+export function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    req.user = null;
+    return next();
+  }
+
+  const [type, token] = authHeader.split(" ");
+
+  if (type !== "Bearer" || !token) {
+    req.user = null;
+    return next();
+  }
+
+  const decoded = verifyAccessToken(token);
+  req.user = decoded || null;
+
+  return next();
 }
