@@ -110,7 +110,7 @@ export default function AdminLayout() {
                 <div>
                     <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Conteúdo & Dados</span>
                     <ul>
-                        <MenuItem to="/admin/upload/ligas" icon={<Upload strokeWidth={1} size={20}/>} label="Upload Ligas/Clubes" />
+                        <MenuItem to="/admin/upload/ligas" icon={<Upload strokeWidth={1} size={20}/>} label="Upload de dados" />
                         <MenuItem to="/admin/banners" icon={<ImageIcon strokeWidth={1} size={20}/>} label="Banners" />
                         <MenuItem to="/admin/notifications" icon={<Bell strokeWidth={1} size={20}/>} label="Notificações" />
                     </ul>
