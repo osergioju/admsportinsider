@@ -3,36 +3,66 @@ import { ArrowUpRight } from "lucide-react";
 import Blackout from "../assets/img/blackout.png";
 import Tela from "../assets/img/tela.png";
 import Icone from "../assets/img/icone.png";
+import SportinsiderIcon from "../assets/img/sportinsider-logo.png";
 
 export default function FrontPage() {
   return (
 
     <div className="w-full bg-[#030015]">
+        <div className="w-full flex justify-center pt-8 px-4 sm:px-6 lg:px-8 z-20">
+            <div className="relative w-full max-w-[1740px] h-[68px] rounded-full flex justify-between items-center pl-4 lg:pl-12 pr-2 backdrop-blur-md border border-white/10 bg-gradient-to-l from-[#1C142F] via-[#3D315D] to-[#c53ed40] to-transparent">
+                <div className="flex items-center gap-3">
+                    <img 
+                        src={SportinsiderIcon} 
+                        alt="Logo Sportinsider" 
+                        className="w-36 h-auto" 
+                    />
+                </div>
+                <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
+                    <div className="cursor-pointer hover:text-white transition-colors">
+                        Dados
+                    </div>
+                    <div className="cursor-pointer hover:text-white transition-colors">
+                        Planos
+                    </div>
+                    <div className="cursor-pointer hover:text-white transition-colors">
+                        Ajuda
+                    </div>
+                </div>
+                <div className="flex items-center">
+                    <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">
+                        Começar Agora <ArrowUpRight className="w-4 ml-2"></ArrowUpRight>
+                    </Link>
+                </div>
+            </div>
+        </div>
         <div className="pt-20 pb-2 w-full relative ">
-            <h1 class="font-light text-center lg:text-4xl xl:text-6xl xl:mb-4 text-center text-2xl leading-none bg-gradient-to-r from-[#FFFFFF] to-[#ffffff41] bg-clip-text text-transparent ">
+            <h1 class="font-medium text-center lg:text-4xl xl:text-6xl xl:mb-4 text-center text-2xl leading-none bg-gradient-to-r from-[#ffffff1f] to-[#ffffff] bg-clip-text text-transparent ">
                 O centro global de inteligência<br />
                 financeira do futebol                
             </h1>
-            <p className="lg:text-xl text-[#ffffffa6] text-center">
+            <p className="font-light lg:text-xl text-[#ffffffa6] text-center">
                 Dados financeiros, operacionais e comerciais de clubes e ligas do mundo 
                 inteiro — organizados, comparáveis e prontos para decisão.
             </p>
             <div className="flex mt-4 gap-2 lg:gap-5 lg:mt-8 items-center justify-center">
-                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] px-6 flex items-center gap-3 py-4 border border-[#A572E1] text-[#ffffff] rounded-full" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
-                <Link className="px-6 flex items-center gap-3 py-4 border border-[#A572E1] text-[#A572E1] rounded-full" to="">Cadastre-se <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                <Link className="px-6 flex items-center gap-4 py-3 border border-[#A572E1] text-[#A572E1] rounded-full" to="">Cadastre-se <ArrowUpRight className="w-3"></ArrowUpRight></Link>
             </div>
         </div>
         
-        <div className="w-full bg-white bg-gradient-home relative mt-">
+        <div className="w-full bg-white bg-gradient-home relative mt-20">
             <img className="mx-auto w-full max-w-[600px]" src={Blackout}></img>
-            <img className="mx-auto w-full max-w-[1200px] -mt-14" src={Tela}></img>
+            <img className="mx-auto w-full max-w-[1200px] -mt-26" src={Tela}></img>
         </div>
 
         <div className="py-20 bg-[#F2F1F1] w-full">
             <div className="container mx-auto px-6">
                 <div className="text-left flex flex-col items-start">
-                    <div className="lg:mb-6 mb-4 flex items-center gap-2 lg:gap-3 lg:px-6 lg:text-xl py-2 px-4 border bg-white rounded-full">
-                        <img src={Icone}></img>
+                    <div className="lg:mb-6 mb-4 flex items-center gap-2 lg:gap-3 lg:px-6 lg:text-xl py-3 px-3 border bg-white rounded-full">
+                        <img src={Icone}
+                        className="h-3 mt-2"
+                        />
                         <span className="text-[#8033D9]">Informação existe. Inteligência, não.</span>
                     </div>
                     
@@ -114,7 +144,7 @@ export default function FrontPage() {
                             </h2>
                         </div>
                         <div className="text-left">
-                            <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] px-6 flex items-center gap-3 py-4 border border-[#A572E1] text-[#ffffff] rounded-full" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                            <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
                         </div>
                     </div>
                 </div>
@@ -131,7 +161,7 @@ export default function FrontPage() {
                                 </h2>
                             </div>
                             <div className="text-left">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] px-6 flex items-center gap-3 py-4 border border-[#A572E1] text-[#ffffff] rounded-full" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
                             </div>
                         </div>
                     </div>
@@ -147,7 +177,7 @@ export default function FrontPage() {
                                 </h2>
                             </div>
                             <div className="text-left">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] px-6 flex items-center gap-3 py-4 border border-[#A572E1] text-[#ffffff] rounded-full" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
                             </div>
                         </div>
                     </div>
