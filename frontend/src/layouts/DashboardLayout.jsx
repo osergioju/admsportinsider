@@ -273,22 +273,6 @@ export default function DashboardLayout() {
 
         {/* --- CONTEÚDO PRINCIPAL --- */}
         <div className="lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
-            
-            {/* Top Bar Desktop */}
-            <div className="hidden lg:block py-1 mb-5">
-                <div className="flex items-center flex-wrap justify-end">
-                    <div className="w-1/2 flex justify-end gap-3">
-                         <div className="gap-2 flex items-center justify-end flex-wrap">
-                            <NotificationDropdown />
-                            <div className="text-center">
-                                <button className="cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full lg:w-[36px] lg:h-[36px] w-[50px] h-[50px] flex flex-col items-center justify-center">
-                                    <Cog strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[30px] lg:w-[20px]"></Cog>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <Outlet />
 

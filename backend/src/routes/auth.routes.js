@@ -1,26 +1,44 @@
 import { Router } from "express";
-import { login, register, resendVerification, verifyMail, me, resetPasswordRequest, resetPasswordConfirm } from "../controllers/auth.controller.js";
+import {
+  login,
+  register,
+  resendVerification,
+  verifyMail,
+  me,
+  resetPasswordRequest,
+  resetPasswordConfirm
+} from "../controllers/auth.controller.js";
+
 import { authGuard } from "../middlewares/auth.middleware.js";
-import { startGoogleAuth, googleAuthCallback } from "../controllers/googleAuth.controller.js";
-import { loginRateLimiter } from "../middlewares/rateLimiter.middleware.js";
+import {
+  loginRateLimiter,
+  mailRateLimiter,
+  tokenRateLimiter
+} from "../middlewares/rateLimiter.middleware.js";
+
+import {
+  startGoogleAuth,
+  googleAuthCallback
+} from "../controllers/googleAuth.controller.js";
+
 const router = Router();
 
-// Login e register
-router.post("/login", loginRateLimiter, login);  
+// 🔐 Login e cadastro
+router.post("/login", loginRateLimiter, login);
 router.post("/register", register);
 
-// Verifica e-mail e reenvia caso a pessoa tenha expirado e tal
-router.get("/verify-email", verifyMail);
-router.post("/resend-verification", resendVerification);
+// 📧 Verificação de e-mail
+router.get("/verify-email", tokenRateLimiter, verifyMail);
+router.post("/resend-verification", mailRateLimiter, resendVerification);
 
-// Troca a senha. envia e-mail de troca e troca de verdade
-router.post("/reset-password", resetPasswordRequest);
-router.post("/reset-password/confirm", resetPasswordConfirm);
+// 🔑 Recuperação de senha
+router.post("/reset-password", mailRateLimiter, resetPasswordRequest);
+router.post("/reset-password/confirm", tokenRateLimiter, resetPasswordConfirm);
 
-// Se atutentica, garante que vc é vc
+// 👤 Usuário autenticado
 router.get("/me", authGuard, me);
 
-// Login com Google
+// 🔐 Login com Google
 router.get("/google", startGoogleAuth);
 router.get("/google/callback", googleAuthCallback);
 

@@ -90,6 +90,7 @@ export default function UploadLeagueBalancePage() {
     formData.append("file", file);
     formData.append("sheetName", selectedSheet);
     formData.append("leagueId", mapping.leagueId);
+    formData.append("years", JSON.stringify(mapping.years));
 
     try {
       const { data } = await api.post(
@@ -98,13 +99,7 @@ export default function UploadLeagueBalancePage() {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      console.log("✅ IMPORTAÇÃO CONCLUÍDA:", data);
-
-      alert(
-        `Importação concluída com sucesso!\n\n` +
-        `Indicadores: ${data.summary.indicators}\n` +
-        `Registros financeiros: ${data.summary.financialRows}`
-      );
+      alert("✅ IMPORTAÇÃO CONCLUÍDA:", data);
 
       // 🔄 Reset de estado
       setStep("upload");
@@ -112,7 +107,7 @@ export default function UploadLeagueBalancePage() {
       setAnalysis(null);
       setSelectedSheet(null);
       setMapping({ leagueId: "", years: [] });
-
+      
     } catch (err) {
       console.error("❌ Erro na importação:", err);
       alert("Erro ao importar dados da liga.");
