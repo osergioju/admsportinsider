@@ -6,7 +6,7 @@ import MenuItem from "@/Components/uxui/MenuItem";
 import SubItem from "@/Components/uxui/SubMenu";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
 import FixedMenu from "../components/uxui/FixedMenu"; 
-
+import LinkButton from "../components/uxui/LinkButton";
 // Ícones do Usuário
 import { 
   Home, 
@@ -37,6 +37,8 @@ export default function DashboardLayout() {
   const [openClubes, setOpenClubes] = useState(false);
 
   const { logout, user } = useContext(AuthContext);
+
+  // Se user for null, entra como convidado 
 
   // --- GESTOS (Swipe) ---
   const handleTouchStart = (e) => {
@@ -75,12 +77,17 @@ export default function DashboardLayout() {
         {/* Cabeçalho Perfil */}
         <div className="mb-6 flex items-center gap-3 px-2 mt-2">
             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold shrink-0">
-                {user.name.charAt(0)}
+                {user?.name ? user.name.charAt(0) : "C"}
             </div>
+
             <div className="flex flex-col">
-                <span className="text-sm font-semibold text-[#0A0A0A]">{user.name.split(' ')[0]}</span>
-                {/* Diferença: Mostra o Plano em vez de "Administrador" */}
-                <span className="text-xs text-gray-500">{user.plan_name || "Plano Gratuito"}</span>
+                <span className="text-sm font-semibold text-[#0A0A0A]">
+                    {user?.name ? user.name.split(" ")[0] : "Convidado"}
+                </span>
+
+                <span className="text-xs text-gray-500">
+                    {user?.plan_name ?? "Plano Gratuito"}
+                </span>
             </div>
         </div>
 
@@ -130,21 +137,39 @@ export default function DashboardLayout() {
 
                     {/* Outros itens */}
                     <MenuItem to="/comparativo" icon={<BarChart2 strokeWidth={1} size={20}/>} label="Comparativo" />
-                    <MenuItem to="/meu-dashboard" icon={<Heart strokeWidth={1} size={20}/>} label="Meu Dashboard" />
+                    { user ? ( <MenuItem to="/meu-dashboard" icon={<Heart strokeWidth={1} size={20}/>} label="Meu Dashboard" /> ) : ( null ) }
                     <MenuItem to="/relatorios" icon={<FileText strokeWidth={1} size={20}/>} label="Relatórios" />
                 </ul>
             </div>
 
             {/* SEÇÃO: MINHA CONTA */}
-            <div>
-                <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Minha conta</span>
-                <ul>
-                    <MenuItem to="/me/profile" onClick={() => handleGoPerfil(user.id)} icon={<User strokeWidth={1} size={20}/>} label="Perfil" />
-                    <MenuItem to="/me/financial" icon={<Wallet strokeWidth={1} size={20}/>} label="Financeiro" />
-                </ul>
-            </div>
+            {
+                user ? (
+                    <div>
+                        <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Minha conta</span>
+                        <ul>
+                            <MenuItem
+                                to="/me/profile"
+                                onClick={() => handleGoPerfil(user.id)}
+                                icon={<User strokeWidth={1} size={20} />}
+                                label="Perfil"
+                            />
+                            <MenuItem
+                                to="/me/financial"
+                                icon={<Wallet strokeWidth={1} size={20} />}
+                                label="Financeiro"
+                            />
+                        </ul>
+                    </div>
+                ) : (
+                    <div className="mt-4 pt-4 border-t">
+                        <LinkButton to="/register" text="Crie sua conta"></LinkButton>
+                    </div>
+                )
+            }
 
             {/* SEÇÃO: SUPORTE */}
+            { user ? (
             <div>
                 <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Suporte</span>
                 <ul>
@@ -152,16 +177,19 @@ export default function DashboardLayout() {
                     <MenuItem to="/fale-conosco" icon={<MessagesSquare strokeWidth={1} size={20}/>} label="Fale conosco" />
                 </ul>
             </div>
+            ) : null }
 
         </div>
 
         {/* Footer Sair */}
+        { user ? (
         <div className="mt-8 pt-4 border-t border-gray-100">
             <button onClick={logout} className="w-full flex items-center gap-3 px-5 py-3 rounded-full text-red-500 hover:bg-red-50 transition">
                 <LogOut strokeWidth={1} size={20} />
                 <span className="text-sm font-medium">Sair</span>
             </button>
         </div>
+        ) : null }
     </div>
   );
 
@@ -193,8 +221,14 @@ export default function DashboardLayout() {
                     </button>
                 </div>
                 <div className="w-3/4 flex gap-2 items-center justify-end">
-                    <h1 className="font-light text-base text-[#AFAFB2]">Bem vindo, <span className="text-[#0A0A0A]">{user.name.split(" ")[0]}</span></h1>
-                    <span className="inline-block bg-[#CCF5C9] text-xs rounded-sm px-2 py-1">{user.plan_name}</span>
+                    <h1 className="font-light text-base text-[#AFAFB2]">
+                        Bem-vindo,{" "}
+                        <span className="text-[#0A0A0A]">
+                            {user?.name ? user.name.split(" ")[0] : "Convidado"}
+                        </span>
+                    </h1>
+
+                    <span className="inline-block bg-[#CCF5C9] text-xs rounded-sm px-2 py-1">{user?.plan_name ?? "Gratuito"}</span>
                 </div>
             </div>
 
@@ -213,7 +247,7 @@ export default function DashboardLayout() {
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
                     >
-                         <div className="w-full flex flex-col items-start p-3">
+                        <div className="w-full flex flex-col items-start p-3">
                             <div className="w-full flex justify-between items-center mb-4">
                                 <img src={brand} alt="Brand" className="w-full lg:max-w-[100px] lg:max-w-[180px]" />
                                 <CircleX className="lg:hidden cursor-pointer" onClick={() => setOpenMenu(false)} strokeWidth={1} size={24} color="#BA7FFF" />
