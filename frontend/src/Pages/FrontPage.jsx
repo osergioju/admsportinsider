@@ -4,6 +4,8 @@ import Tela from "../assets/img/tela.png";
 import Icone from "../assets/img/icone.png";
 import Icone2 from "../assets/img/icone2.png";
 import SportinsiderIcon from "../assets/img/sportinsider-logo.png";
+import SlideImage from "../assets/img/slide.png";
+import ShieldsImage from "../assets/img/2shields.png";
 import { 
     ArrowUpRight, 
     Database, 
@@ -26,28 +28,6 @@ export default function FrontPage() {
     const cardClass = "bg-[#FFF5F5] rounded-2xl p-6 lg:p-8 flex flex-col justify-between h-full border border-pink-50 hover:shadow-lg transition-shadow duration-300";
     const titleClass = "text-[#8033D9] font-medium text-sm lg:text-base mb-2";
     const descClass = "text-[#1B1917] font-medium text-xl lg:text-2xl leading-tight";
-    const logos = [
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="w-16 h-16 text-gray-400">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            <circle cx="12" cy="10" r="3" />
-        </svg>,
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16 text-gray-300">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm2-4h-2V7h2v6z" /> 
-        </svg>,
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-16 h-16 text-gray-400">
-            <path d="M7 20l10-16l-4 16l-8-8" />
-        </svg>,
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16 text-gray-300">
-             <path d="M19 13l-4.5-9-3 2.5 1.5 3L9 12l-2-1-3 5h3l3.5-3 2 4 4.5-2z"/>
-        </svg>,
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="w-16 h-16 text-gray-400">
-            <path d="M12 2L2 22h20L12 2zm0 4l6 12H6l6-12z" />
-        </svg>,
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="w-16 h-16 text-gray-400">
-            <path d="M12 22s-8-4-8-10V5l8-3 8 3v7c0 6-8 10-8 10z" />
-            <path d="M8 10h8M12 10v6" />
-        </svg>,
-    ];
 
   return (
 
@@ -361,8 +341,9 @@ export default function FrontPage() {
                         </div>
                     </div>
                 </div>
-                {/* === CARD 3: COMPARATIVOS === */}
+                {/* === CARD 3: COMPARATIVOS INTELIGENTES === */}
                 <div className={cardClass}>
+    
                     <div className="mb-6">
                         <span className={titleClass}>Comparativos inteligentes</span>
                         <h3 className={descClass}>
@@ -370,56 +351,22 @@ export default function FrontPage() {
                         </h3>
                     </div>
 
-                    {/* Comparação Visual (Dois Cards Lado a Lado) */}
-                    <div className="flex gap-4 mt-auto h-52">
+
+                    <div className="mt-auto w-full h-48 flex items-end justify-center">
                         
-                        {/* === CARD ESQUERDA: Brasileirão === */}
-                        <div className="flex-1 rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-[#F8F2FC] relative flex flex-col items-center justify-center overflow-hidden opacity-95">
-                            
-                            {/* Wireframe Logo (MAIOR e MAIS TRANSPARENTE) */}
-                            {/* Aumentei para w-50 h-40 e reduzi opacity para 20 */}
-                            <div className="w-50 h-50 rounded-full border-[1.5px] border-gray-200 flex items-center justify-center opacity-20 mb-8 scale-110">
-                                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-gray-500">
-                                    {/* Escudo mais largo */}
-                                    <path d="M12 22s9-4 9-10V5l-9-3-9 3v7c0 6 9 10 9 10z" />
-                                    <path d="M12 22c0-6-9-10-9-10V5l9-3" opacity="0.5"/>
-                                </svg>
-                            </div>
-
-                            {/* Tag Flutuante */}
-                            <div className="absolute bottom-5 bg-white px-3 py-1.5 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-gray-100 flex items-center gap-2 z-10">
-                                <div className="w-2 h-2 bg-[#86D29A] rounded-[1px]"></div>
-                                <span className="text-[10px] font-semibold text-gray-700 whitespace-nowrap">Brasileirao Serie A</span>
-                            </div>
-                        </div>
-
-                        {/* === CARD DIREITA: Premier League === */}
-                        <div className="flex-1 rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-[#F8F2FC] relative flex flex-col items-center justify-center overflow-hidden">
-                            
-                            {/* Wireframe Logo (MAIOR e MAIS TRANSPARENTE) */}
-                            <div className="w-40 h-40 rounded-full border-[1.5px] border-gray-200 flex items-center justify-center opacity-20 mb-8 relative scale-110">
-                                <div className="absolute inset-3 rounded-full border border-gray-300"></div>
-                                <svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-gray-500">
-                                    <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3z" />
-                                    <path d="M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" opacity="0.5"/>
-                                </svg>
-                            </div>
-
-                            {/* Tag Flutuante */}
-                            <div className="absolute bottom-5 bg-white px-3 py-1.5 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-gray-100 flex items-center gap-2 z-10">
-                                <div className="w-2 h-2 bg-[#FFB6C1] rounded-[1px]"></div>
-                                <span className="text-[10px] font-semibold text-gray-700 whitespace-nowrap">Premier League</span>
-                            </div>
-                        </div>
-
                     </div>
+                    <img 
+                            src={ShieldsImage} 
+                            alt="Comparativo Shields" 
+                            className="h-full w-auto object-contain pointer-events-none" 
+                        />
+
                 </div>
             </div>
         </div>
 
-        <div className="container mx-auto mt-10 bg-[#FFF5F5] border border-pink-50 rounded-2xl p-8 relative overflow-hidden group shadow-sm">
+        <div className="container mx-auto mt-5 bg-[#FFF5F5] border border-pink-50 rounded-2xl p-15 relative overflow-hidden group shadow-sm">
                 
-                {/* Texto Central */}
                 <div className="relative z-10 text-center mb-8">
                      <span className="text-[#8033D9] font-medium text-xl tracking-wide">Cobertura global</span>
                      <h3 className="text-[#1B1917] font-medium text-xl lg:text-2xl mt-2 max-w-2xl mx-auto">
@@ -429,22 +376,30 @@ export default function FrontPage() {
 
                 {/* Slider Infinito */}
                 <div className="relative w-full overflow-hidden mask-linear-fade">
-                    {/* Degradê lateral para suavizar o corte */}
+                    
+                    {/* Degradês laterais (mantive para suavizar as pontas) */}
                     <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#FFF5F5] to-transparent z-10 pointer-events-none"></div>
                     <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#FFF5F5] to-transparent z-10 pointer-events-none"></div>
 
-                    <div className="flex gap-6 animate-marquee items-center">
-                        {/* Renderiza a lista 4x para garantir o loop infinito suave */}
-                        {[...logos, ...logos, ...logos, ...logos].map((logo, index) => (
-                            <div 
-                                key={index} 
-                                className="w-20 h-20 bg-white rounded-xl border border-pink-100 flex items-center justify-center shadow-sm shrink-0 hover:scale-105 transition-transform duration-300 opacity-60 hover:opacity-100 grayscale hover:grayscale-0 cursor-pointer"
-                            >
-                                <div className="scale-90">
-                                    {logo}
-                                </div>
-                            </div>
-                        ))}
+                    {/* Container da Animação */}
+                    <div className="flex animate-marquee items-center">
+                        
+                        <img 
+                            src={SlideImage} 
+                            alt="Cobertura Global de Ligas" 
+                            className="h-24 w-auto max-w-none opacity-70 grayscale hover:grayscale-0 transition-all duration-500 mr-10" 
+                        />
+                        <img 
+                            src={SlideImage} 
+                            alt="Cobertura Global de Ligas" 
+                            className="h-24 w-auto max-w-none opacity-70 grayscale hover:grayscale-0 transition-all duration-500 mr-10" 
+                        />
+                        
+                        <img 
+                            src={SlideImage} 
+                            alt="Cobertura Global de Ligas" 
+                            className="h-24 w-auto max-w-none opacity-70 grayscale hover:grayscale-0 transition-all duration-500 mr-10 hidden xl:block" 
+                        />
                     </div>
                 </div>
             </div>
@@ -552,28 +507,6 @@ export default function FrontPage() {
                 </div>
             </div>
         </div>
-
-
-      <div className="py-20 w-full">
-        <div className="w-5/6 max-w-3xl mx-auto p-10 bg-white rounded-3xl ">
-            <h3 className="mb-5 text-3xl font-bold">Links maneiros pra testar</h3>
-            <ul className="border-b border-[#e5e7eb] pb-3 mb-3">
-                <span className="text-xl font-bold mb-2">Usuário comum</span>
-                <li><Link to="/login" className="py-2 inline-block py-2 inline-block cursor-pointer hover:text-gray-300">Login</Link></li>
-                <li><Link to="/register" className="py-2 inline-block cursor-pointer hover:text-gray-300">Cadastrar</Link></li>
-                <li><Link to="/pricing" className="py-2 inline-block cursor-pointer hover:text-gray-300">Planos</Link></li>
-                <li><Link to="/reset-password" className="py-2 inline-block cursor-pointer hover:text-gray-300">Trocar a senha</Link></li>
-                <li><Link to="/login" className="py-2 inline-block cursor-pointer hover:text-gray-300">Dashboard user (página logada)</Link></li>
-            </ul>
-
-            <ul className="border-b border-[#e5e7eb] pb-3 mb-3">
-                <span className="text-xl font-bold mb-2">Admin</span>
-                <li><Link to="/login" className="py-2 inline-block cursor-pointer hover:text-gray-300">Login</Link></li>
-                <li><Link to="/login" className="py-2 inline-block cursor-pointer hover:text-gray-300">Trocar a senha</Link></li>
-                <li><Link to="/login" className="py-2 inline-block cursor-pointer hover:text-gray-300">Dashboard adm (página logada)</Link></li>
-            </ul>
-        </div>
-      </div>
     </div>
     
     
