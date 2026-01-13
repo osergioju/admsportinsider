@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../../services/api";
+import { Loader2 } from "lucide-react";
 
 export default function UploadLeagueBalancePage() {
   const [file, setFile] = useState(null);
@@ -10,16 +11,21 @@ export default function UploadLeagueBalancePage() {
   const [leagues, setLeagues] = useState([]);
   const [loadingLeagues, setLoadingLeagues] = useState(false);
 
+  const [uploading, setUploading] = useState(false);
+  const [importing, setImporting] = useState(false);
+
   const [mapping, setMapping] = useState({
     leagueId: "",
     years: []
   });
-
+    
   async function handleUpload() {
     if (!file) {
       alert("Selecione um arquivo XLSX");
       return;
     }
+
+    setUploading(true);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -37,8 +43,11 @@ export default function UploadLeagueBalancePage() {
     } catch (err) {
       console.error(err);
       alert("Erro ao ler o arquivo");
+    } finally {
+      setUploading(false);
     }
   }
+
 
   // 🔹 Carregar ligas quando entrar no mapping
   useEffect(() => {
@@ -86,6 +95,8 @@ export default function UploadLeagueBalancePage() {
 
     if (!confirm) return;
 
+    setImporting(true);
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("sheetName", selectedSheet);
@@ -93,26 +104,28 @@ export default function UploadLeagueBalancePage() {
     formData.append("years", JSON.stringify(mapping.years));
 
     try {
-      const { data } = await api.post(
+      await api.post(
         "/upload/xlsx/import-country",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert("✅ IMPORTAÇÃO CONCLUÍDA:", data);
+      alert("✅ Importação concluída com sucesso!");
 
-      // 🔄 Reset de estado
       setStep("upload");
       setFile(null);
       setAnalysis(null);
       setSelectedSheet(null);
       setMapping({ leagueId: "", years: [] });
-      
+
     } catch (err) {
       console.error("❌ Erro na importação:", err);
       alert("Erro ao importar dados da liga.");
+    } finally {
+      setImporting(false);
     }
   }
+
 
 
   return (
@@ -137,9 +150,17 @@ export default function UploadLeagueBalancePage() {
 
           <button
             onClick={handleUpload}
-            className="bg-primary text-white px-4 py-2 rounded w-full"
+            disabled={uploading}
+            className="bg-primary text-white px-4 py-2 rounded w-full flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            Ler arquivo
+            {uploading ? (
+              <>
+                <Loader2 className="animate-spin w-4 h-4" />
+                Lendo arquivo...
+              </>
+            ) : (
+              "Ler arquivo"
+            )}
           </button>
         </div>
       )}
@@ -233,13 +254,21 @@ export default function UploadLeagueBalancePage() {
           <button
             onClick={handleConfirmImport}
             disabled={
+              importing ||
               !selectedSheet ||
               !mapping.leagueId ||
               mapping.years.length === 0
             }
-            className="bg-green-600 text-white px-4 py-2 rounded w-full disabled:opacity-50"
+            className="bg-green-600 text-white px-4 py-2 rounded w-full flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            Confirmar importação
+            {importing ? (
+              <>
+                <Loader2 className="animate-spin w-4 h-4" />
+                Importando...
+              </>
+            ) : (
+              "Confirmar importação"
+            )}
           </button>
         </div>
       )}
