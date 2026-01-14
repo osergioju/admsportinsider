@@ -335,9 +335,9 @@ export default function FrontPage() {
 
             </div>
 
-                <div className="w-full mt-6 bg-[#FFF5F5] border border-pink-50 rounded-[32px] relative overflow-hidden group shadow-sm flex flex-col justify-center h-[408px]">
+                <div className="w-full mt-6 bg-[#FFF5F5] border border-pink-50 rounded-[32px] relative overflow-hidden group shadow-sm flex flex-col justify-center">
     
-                    <div className="relative z-10 text-center mb-12 px-4">
+                    <div className="relative pt-4 lg:pt-8 z-10 text-center mb-12 px-4">
                         <span className="text-[#8033D9] font-medium text-sm tracking-wide uppercase">Cobertura global</span>
                         <h3 className="text-[#1B1917] font-medium text-2xl lg:text-4xl mt-3 max-w-4xl mx-auto leading-tight">
                             Dados de praticamente todas as grandes ligas do mundo.
@@ -345,7 +345,7 @@ export default function FrontPage() {
                     </div>
 
                     {/* Área do Slide Infinito */}
-                    <div className="relative w-full">
+                    <div className="relative w-full -mb-25">
                         
                         {/* Degradês laterais para suavizar a entrada e saída com Fade Effect */}
                         <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#FFF5F5] via-[#FFF5F5]/80 to-transparent z-20 pointer-events-none"></div>
@@ -353,7 +353,14 @@ export default function FrontPage() {
 
                         <Swiper
                             modules={[Autoplay]}
-                            spaceBetween={24} 
+                            spaceBetween={4} 
+                            breakpoints={
+                                {
+                                    1000:{
+                                        spaceBetween: 24,
+                                    }
+                                }
+                            }
                             slidesPerView="auto"
                             loop={true}
                             speed={5000}
@@ -363,18 +370,18 @@ export default function FrontPage() {
                                 disableOnInteraction: false,
                                 pauseOnMouseEnter: false,
                             }}
-                            className="w-full py-4 [&>.swiper-wrapper]:transition-timing-function-linear" 
+                            className="w-full [&>.swiper-wrapper]:transition-timing-function-linear" 
                             style={{
                                 "--swiper-wrapper-transition-timing-function": "linear" 
                             }}
                         >
                             {[Time, Time1, Time2, Time3, Time4, Time5, Time, Time1, Time2, Time3, Time4, Time5, Time, Time1].map((logo, index) => (
                                 <SwiperSlide key={index} className="!w-auto">
-                                    <div className="w-[160px] h-[160px] bg-white border border-[#F0F0F0] rounded-2xl flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:border-purple-100 transition-colors">
+                                    <div className="w-[160px] h-[160px] lg:w-[220px] lg:h-[220px] xl:w-[300px] xl:h-[300px] bg-white border border-[#F0F0F0] rounded-2xl flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:border-purple-100 transition-colors">
                                         <img 
                                             src={logo} 
                                             alt={`Time ${index}`} 
-                                            className="w-24 h-24 object-contain opacity-40 hover:opacity-100 hover:grayscale-0 grayscale transition-all duration-300"
+                                            className="w-24 h-24 lg:w-32 lg:h-32 xl:w-40 xl:h-40 object-contain opacity-40 hover:opacity-100 hover:grayscale-0 grayscale transition-all duration-300"
                                         />
                                     </div>
                                 </SwiperSlide>
