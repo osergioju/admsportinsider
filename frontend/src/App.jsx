@@ -19,7 +19,6 @@ import PageNotifications from "./Pages/User/Notifications";
 import ProfileDetails from "Pages/User/Profile/ProfileDetails";
 import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
 
-
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
@@ -60,6 +59,9 @@ import RoleRoute from "./routes/RoleRoute";
 
 import ScrollToTop from "./components/uxui/ScrollTop";
 
+// Páginas do dashboard 
+import DashClubs from "./Pages/Dashboard/Clubs/Index";
+import DashClubUniques from "./Pages/Dashboard/Clubs/DashClubUniques";
 
 export default function App() {
   return (
@@ -91,6 +93,10 @@ export default function App() {
               
               <Route path="me/profile" element={<ProfileDetails />} />
               <Route path="me/financial" element={<SubscriptionInvoices />} />
+
+              {/* Dados - páginas de gráficos */}
+              <Route path="/dashboard/clubs" element={<DashClubs />} />
+              <Route path="/dashboard/clubs/:id" element={<DashClubUniques />} />
             </Route>
 
           </Route>

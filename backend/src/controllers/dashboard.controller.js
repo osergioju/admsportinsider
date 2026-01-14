@@ -60,7 +60,6 @@ export const getReceita = (req, res) => {
   return res.json({ labels, series, data });
 };
 
-
 // Retorna evolução da receita de todas as ligas
 export async function getRevenueEvolutionByLeague(req, res) {
   try {
@@ -104,5 +103,287 @@ export async function getRevenueEvolutionByLeague(req, res) {
   } catch (err) {
     console.error("Erro ao carregar gráfico:", err);
     return res.status(500).json({ message: "Erro ao gerar gráfico." });
+  }
+}
+
+
+// Controller original, aqui pega para a página de clube único 
+export async function getAvailableYears(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT DISTINCT year
+      FROM club_financials
+      WHERE id_club = $1
+      ORDER BY year ASC;
+    `, [id]);
+
+    return res.json({
+      years: result.rows.map(r => r.year)
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar anos disponíveis:", err);
+    return res.status(500).json({ message: "Erro ao buscar anos disponíveis" });
+  }
+}
+
+export async function getRevenues(req, res) {
+  try {
+    const { id } = req.params;
+    const { fromYear, toYear } = req.query;
+
+    const values = [id];
+    let idx = 2;
+    let yearFilter = "";
+
+    if (fromYear) {
+      yearFilter += ` AND cf.year >= $${idx}`;
+      values.push(fromYear);
+      idx++;
+    }
+
+    if (toYear) {
+      yearFilter += ` AND cf.year <= $${idx}`;
+      values.push(toYear);
+      idx++;
+    }
+
+    const result = await db.query(`
+      SELECT
+        cf.year,
+        fi.code,
+        fi.name_pt,
+        cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi 
+        ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code IN ('revenue', 'recurring_revenue')
+        ${yearFilter}
+      ORDER BY cf.year ASC;
+    `, values);
+
+    return res.json({
+      data: result.rows
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar receitas:", err);
+    return res.status(500).json({ message: "Erro ao buscar receitas" });
+  }
+}
+
+
+export async function getRevenuesBreakdown(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT
+        fi.code,
+        fi.name_pt,
+        cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi 
+        ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code IN (
+          'media',
+          'commercial',
+          'matchday',
+          'prizes',
+          'other_revenue',
+          'transfers_revenue'
+        )
+        AND cf.year = (
+          SELECT MAX(year)
+          FROM club_financials
+          WHERE id_club = $1
+        )
+      ORDER BY fi.name_pt;
+    `, [id]);
+
+    return res.json({
+      year: result.rows[0]?.year || null,
+      data: result.rows
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar breakdown de receitas:", err);
+    return res.status(500).json({ message: "Erro ao buscar breakdown de receitas" });
+  }
+}
+
+export async function getPayrollCosts(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT cf.year, cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code = 'wages'
+      ORDER BY cf.year ASC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar folha salarial" });
+  }
+}
+
+export async function getCostsBreakdown(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code IN (
+          'wages',
+          'administrative',
+          'infrastructure',
+          'other_expense',
+          'transfers_costs'
+        )
+        AND cf.year = (
+          SELECT MAX(year) FROM club_financials WHERE id_club = $1
+        )
+      ORDER BY fi.name_pt;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar breakdown de custos" });
+  }
+}
+
+export async function getNetResult(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code IN ('revenue', 'costs', 'net_income')
+      ORDER BY cf.year DESC
+      LIMIT 15;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar resultado líquido" });
+  }
+}
+
+export async function getNetResultEvolution(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT cf.year, cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code = 'net_income'
+      ORDER BY cf.year ASC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar evolução do resultado líquido" });
+  }
+}
+
+export async function getDebtsBreakdown(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code IN (
+          'loans_debt',
+          'tax_debt',
+          'payroll_debt',
+          'other_debt'
+        )
+        AND cf.year = (
+          SELECT MAX(year) FROM club_financials WHERE id_club = $1
+        )
+      ORDER BY fi.name_pt;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar breakdown de dívidas" });
+  }
+}
+
+
+export async function getDebtsEvolution(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT cf.year, cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code = 'net_debt'
+      ORDER BY cf.year ASC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar evolução da dívida" });
+  }
+}
+
+
+export async function getFinancialIndicators(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      FROM club_financials cf
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      WHERE cf.id_club = $1
+        AND fi.code IN (
+          'ebitda',
+          'recurring_ebitda',
+          'debt_revenue_ratio',
+          'debt_ebitda_ratio'
+        )
+      ORDER BY cf.year DESC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar indicadores financeiros" });
   }
 }

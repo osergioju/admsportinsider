@@ -129,8 +129,8 @@ export default function DashboardLayout() {
                         </button>
                         {openClubes && (
                             <ul className="ml-12 mt-2 space-y-2">
+                                <SubItem to="/dashboard/clubs" label="Todos os clubes" />
                                 <SubItem to="/clubes/favoritos" label="Favoritos" />
-                                <SubItem to="/clubes/todos" label="Todos os clubes" />
                             </ul>
                         )}
                     </li>
