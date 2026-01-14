@@ -10,6 +10,7 @@ import dashboardRoutes from "./src/routes/dashboard.routes.js";
 import financeiroRoutes from "./src/routes/financeiro.routes.js";
 import uploadRoutes from "./src/routes/upload.routes.js";
 import stripeRoutes from "./src/routes/stripe.routes.js";
+import chartRoutes from "./src/routes/chart.routes.js";
 import stripeWebhookRoutes from "./src/routes/stripeWebhook.routes.js";
 
 import { multerErrorHandler } from "./src/middlewares/multerErrorHandler.js";
@@ -61,6 +62,7 @@ app.use("/admin", adminRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/financeiro", financeiroRoutes);
 app.use("/upload", uploadRoutes);
+app.use("/chart", chartRoutes);
 
 // ===== ROTA DE CHECKOUT =====
 app.use("/stripe", stripeRoutes);

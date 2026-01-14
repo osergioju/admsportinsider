@@ -236,7 +236,6 @@ export async function importLeagueCountry(req, res) {
 
   try {
     const { sheetName, leagueId } = req.body;
-
     const selectedYears = req.body.years
       ? JSON.parse(req.body.years)
       : [];
@@ -265,7 +264,6 @@ export async function importLeagueCountry(req, res) {
     });
 
     const leagueSheet = workbook.Sheets[sheetName];
-
     if (!leagueSheet) {
       return res.status(400).json({
         message: `Sheet '${sheetName}' não encontrada`
@@ -277,87 +275,64 @@ export async function importLeagueCountry(req, res) {
       defval: null
     });
 
-    // ===============================
-    // HEADER DA LIGA (ANOS)
-    // ===============================
     const headerRow = leagueRows[0];
     const leagueYears = headerRow
       .slice(5)
       .filter(v => typeof v === "number" && Number.isInteger(v));
 
-    if (!leagueYears.length) {
-      return res.status(400).json({
-        message: "Nenhum ano válido encontrado no header da liga"
-      });
-    }
-
     await client.query("BEGIN");
 
-    // ===============================
-    // 1️⃣ FINANCIAL_INDICATORS (UPSERT)
-    // ===============================
+    // ======================================================
+    // CACHE GLOBAL DE INDICADORES
+    // ======================================================
     const indicatorIdByCode = {};
 
+    // ======================================================
+    // 1️⃣ INDICADORES DA LIGA
+    // ======================================================
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
 
       const name_pt = row[0];
-      const category = row[1];
-      const rawPlan = row[2];
-      const plans = parsePlans(rawPlan);
+      const code = row[1];
       const level = row[3];
+      const plans = parsePlans(row[2]);
 
       if (
+        !code ||
+        typeof code !== "string" ||
         !name_pt ||
-        typeof name_pt !== "string" ||
-        category == null ||
-        !plans ||
-        !plans.length ||
         level == null
-      ) {
-        continue;
-      }
-
-      const code = slugify(name_pt, {
-        lower: true,
-        strict: true
-      }).replace(/-/g, "_");
+      ) continue;
 
       if (indicatorIdByCode[code]) continue;
 
       const result = await client.query(
         `
         INSERT INTO financial_indicators
-          (code, name_pt, category, plans, level)
+          (code, name_pt, level, plans)
         VALUES
-          ($1, $2, $3, $4, $5)
+          ($1, $2, $3, $4)
         ON CONFLICT (code)
         DO UPDATE SET
           name_pt = EXCLUDED.name_pt,
-          category = EXCLUDED.category,
-          plans = EXCLUDED.plans,
-          level = EXCLUDED.level
+          level = EXCLUDED.level,
+          plans = EXCLUDED.plans
         RETURNING id
         `,
-        [code, name_pt, category, plans, level]
+        [code, name_pt, level, plans]
       );
 
       indicatorIdByCode[code] = result.rows[0].id;
     }
 
-    // ===============================
+    // ======================================================
     // 2️⃣ LEAGUE_FINANCIALS
-    // ===============================
+    // ======================================================
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
-      const name_pt = row[0];
-
-      if (!name_pt || typeof name_pt !== "string") continue;
-
-      const code = slugify(name_pt, {
-        lower: true,
-        strict: true
-      }).replace(/-/g, "_");
+      const code = row[1];
+      if (!code) continue;
 
       const id_indicator = indicatorIdByCode[code];
       if (!id_indicator) continue;
@@ -365,7 +340,6 @@ export async function importLeagueCountry(req, res) {
       for (let idx = 0; idx < leagueYears.length; idx++) {
         const year = leagueYears[idx];
         const value = row[5 + idx];
-
         if (typeof value !== "number") continue;
 
         await client.query(
@@ -375,8 +349,7 @@ export async function importLeagueCountry(req, res) {
           VALUES
             ($1, $2, $3, $4)
           ON CONFLICT (id_league, id_indicator, year)
-          DO UPDATE SET
-            value = EXCLUDED.value
+          DO UPDATE SET value = EXCLUDED.value
           `,
           [leagueId, id_indicator, year, value]
         );
@@ -384,34 +357,66 @@ export async function importLeagueCountry(req, res) {
     }
 
     // ======================================================
-    // 3️⃣ CLUBES + CLUB_SEASONS + CLUB_FINANCIALS
+    // FUNÇÃO AUXILIAR — INDICADOR DOS CLUBES
+    // ======================================================
+    async function getOrCreateIndicatorFromClubRow(row) {
+      const name_pt = row[0];
+      const code = row[1];
+      const level = row[2] ?? 1;
+      const plan = row[3];
+
+      if (!code || typeof code !== "string") return null;
+
+      if (indicatorIdByCode[code]) {
+        return indicatorIdByCode[code];
+      }
+
+      const result = await client.query(
+        `
+        INSERT INTO financial_indicators
+          (code, name_pt, level, plans)
+        VALUES
+          ($1, $2, $3, $4)
+        ON CONFLICT (code)
+        DO UPDATE SET
+          name_pt = EXCLUDED.name_pt,
+          level = EXCLUDED.level,
+          plans = EXCLUDED.plans
+        RETURNING id
+        `,
+        [
+          code,
+          name_pt || code,
+          level,
+          plan ? [plan] : []
+        ]
+      );
+
+      indicatorIdByCode[code] = result.rows[0].id;
+      return indicatorIdByCode[code];
+    }
+
+    // ======================================================
+    // 3️⃣ CLUBES / SEASONS / FINANCIALS
     // ======================================================
     const CLUBS_START_COL = 4;
     const DATA_START_ROW = 7;
 
     for (const year of selectedYears) {
-      const yearSheet = workbook.Sheets[String(year)];
-      if (!yearSheet) continue;
+      const sheet = workbook.Sheets[String(year)];
+      if (!sheet) continue;
 
-      const rows = xlsx.utils.sheet_to_json(yearSheet, {
+      const rows = xlsx.utils.sheet_to_json(sheet, {
         header: 1,
         defval: null
       });
 
-      // Slugs dos clubes
       const clubSlugs = rows[1]
         .slice(CLUBS_START_COL)
         .filter(Boolean);
 
-      // ===============================
-      // Buscar clubes existentes
-      // ===============================
       const existingClubs = await client.query(
-        `
-        SELECT id_club, slug
-        FROM clubs
-        WHERE slug = ANY($1)
-        `,
+        `SELECT id_club, slug FROM clubs WHERE slug = ANY($1)`,
         [clubSlugs]
       );
 
@@ -420,46 +425,29 @@ export async function importLeagueCountry(req, res) {
         clubIdBySlug[r.slug] = r.id_club;
       }
 
-      // ===============================
-      // Criar clubes ausentes
-      // ===============================
       for (const slug of clubSlugs) {
         if (clubIdBySlug[slug]) continue;
 
         const result = await client.query(
           `
-          INSERT INTO clubs
-            (slug, name, active, id_country, created_at)
-          SELECT
-            $1,
-            $2,
-            true,
-            l.id_country,
-            NOW()
-          FROM leagues l
-          WHERE l.id_league = $3
+          INSERT INTO clubs (slug, name, active, id_country, created_at)
+          SELECT $1, $2, true, l.id_country, NOW()
+          FROM leagues l WHERE l.id_league = $3
           RETURNING id_club
           `,
-          [
-            slug,
-            humanizeSlug(slug),
-            leagueId
-          ]
+          [slug, humanizeSlug(slug), leagueId]
         );
 
         clubIdBySlug[slug] = result.rows[0].id_club;
       }
 
-      // ===============================
-      // CLUB_SEASONS (DIVISÃO)
-      // ===============================
+      // CLUB_SEASONS
       const divisionRow = rows[3];
 
       for (let col = CLUBS_START_COL; col < divisionRow.length; col++) {
         const slug = clubSlugs[col - CLUBS_START_COL];
         const division = divisionRow[col];
         const id_club = clubIdBySlug[slug];
-
         if (!id_club || !division) continue;
 
         await client.query(
@@ -469,23 +457,17 @@ export async function importLeagueCountry(req, res) {
           VALUES
             ($1, $2, $3, $4)
           ON CONFLICT (id_club, id_league, year)
-          DO UPDATE SET
-            division = EXCLUDED.division,
-            updated_at = NOW()
+          DO UPDATE SET division = EXCLUDED.division
           `,
           [id_club, leagueId, year, String(division)]
         );
       }
 
-      // ===============================
       // CLUB_FINANCIALS
-      // ===============================
       for (let i = DATA_START_ROW; i < rows.length; i++) {
         const row = rows[i];
-        const indicatorCode = row[1];
-        if (!indicatorCode) continue;
 
-        const id_indicator = indicatorIdByCode[indicatorCode];
+        const id_indicator = await getOrCreateIndicatorFromClubRow(row);
         if (!id_indicator) continue;
 
         for (let col = CLUBS_START_COL; col < row.length; col++) {
@@ -494,16 +476,12 @@ export async function importLeagueCountry(req, res) {
           if (!id_club) continue;
 
           const rawValue = row[col];
-
           let value = null;
+
           if (typeof rawValue === "number") {
             value = rawValue;
-          } else if (typeof rawValue === "string" && rawValue.trim() !== "") {
-            value = Number(
-              rawValue
-                .replace(/\./g, "")
-                .replace(",", ".")
-            );
+          } else if (typeof rawValue === "string" && rawValue.trim()) {
+            value = Number(rawValue.replace(/\./g, "").replace(",", "."));
           }
 
           if (value === null || Number.isNaN(value)) continue;
@@ -515,8 +493,7 @@ export async function importLeagueCountry(req, res) {
             VALUES
               ($1, $2, $3, $4)
             ON CONFLICT (id_club, id_indicator, year)
-            DO UPDATE SET
-              value = EXCLUDED.value
+            DO UPDATE SET value = EXCLUDED.value
             `,
             [id_club, id_indicator, year, value]
           );
@@ -533,7 +510,6 @@ export async function importLeagueCountry(req, res) {
 
   } catch (error) {
     await client.query("ROLLBACK");
-
     console.error("❌ Erro na importação:", error);
 
     return res.status(500).json({
@@ -545,12 +521,12 @@ export async function importLeagueCountry(req, res) {
   }
 }
 
+
 function humanizeSlug(slug) {
   return slug
     .replace(/_/g, " ")
     .replace(/\b\w/g, l => l.toUpperCase());
 }
-
 /*
 export async function importLeagueBalance(req, res) {
     const { leagueId } = req.body;
