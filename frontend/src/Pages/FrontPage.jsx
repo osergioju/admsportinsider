@@ -58,12 +58,12 @@ export default function FrontPage() {
                 </div>
                 <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
                     <Link to="/dados"><div className="cursor-pointer hover:text-white transition-colors">Dados</div></Link>
-                    <Link to="/planos"><div className="cursor-pointer hover:text-white transition-colors">Planos</div></Link>
+                    <Link to="/pricing"><div className="cursor-pointer hover:text-white transition-colors">Planos</div></Link>
                     <Link to="/ajuda"><div className="cursor-pointer hover:text-white transition-colors">Ajuda</div></Link>
                 </div>
                 <div className="flex items-center">
                     <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/login">
-                        Começar Agora <ArrowUpRight className="w-4 ml-2"></ArrowUpRight>
+                        Acesse sua conta <ArrowUpRight className="w-4 ml-2"></ArrowUpRight>
                     </Link>
                 </div>
             </div>

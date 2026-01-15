@@ -100,7 +100,7 @@ export async function createBillingPortal(req, res) {
     // Cria sessão do portal
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripe_customer_id,
-      return_url: prod_url + "/me/subscription"
+      return_url: prod_url + "/dashboard"
     });
 
     return res.json({ url: session.url });
