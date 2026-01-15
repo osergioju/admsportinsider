@@ -57,12 +57,12 @@ export default function FrontPage() {
                     />
                 </div>
                 <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
-                    <div className="cursor-pointer hover:text-white transition-colors">Dados</div>
-                    <div className="cursor-pointer hover:text-white transition-colors">Planos</div>
-                    <div className="cursor-pointer hover:text-white transition-colors">Ajuda</div>
+                    <Link to="/dados"><div className="cursor-pointer hover:text-white transition-colors">Dados</div></Link>
+                    <Link to="/planos"><div className="cursor-pointer hover:text-white transition-colors">Planos</div></Link>
+                    <Link to="/ajuda"><div className="cursor-pointer hover:text-white transition-colors">Ajuda</div></Link>
                 </div>
                 <div className="flex items-center">
-                    <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">
+                    <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/login">
                         Começar Agora <ArrowUpRight className="w-4 ml-2"></ArrowUpRight>
                     </Link>
                 </div>
@@ -80,8 +80,8 @@ export default function FrontPage() {
                 inteiro — organizados, comparáveis e prontos para decisão.
             </p>
             <div className="flex mt-4 gap-2 lg:gap-5 lg:mt-8 items-center justify-center">
-                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
-                <Link className="px-6 flex items-center gap-4 py-3 border border-[#A572E1] text-[#A572E1] rounded-full" to="">Cadastre-se <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                <Link className="px-6 flex items-center gap-4 py-3 border border-[#A572E1] text-[#A572E1] rounded-full" to="/register">Cadastre-se <ArrowUpRight className="w-3"></ArrowUpRight></Link>
             </div>
         </div>
         
@@ -429,7 +429,7 @@ export default function FrontPage() {
                             </div>
                             
                             <div className="text-left w-max lg:w-auto">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 px-6 py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all flex items-center justify-center lg:justify-start w-full lg:w-auto" to="">
+                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 px-6 py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all flex items-center justify-center lg:justify-start w-full lg:w-auto" to="/dashboard-public">
                                     Teste gratuito <ArrowUpRight className="w-4 h-4" />
                                 </Link>
                             </div>
@@ -459,7 +459,7 @@ export default function FrontPage() {
                                 </h2>
                             </div>
                             <div className="text-left">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">
+                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">
                                     Teste gratuito <ArrowUpRight className="w-3" />
                                 </Link>
                             </div>
@@ -486,7 +486,7 @@ export default function FrontPage() {
                                 </h2>
                             </div>
                             <div className="text-left">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">
+                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">
                                     Teste gratuito <ArrowUpRight className="w-3" />
                                 </Link>
                             </div>
@@ -579,10 +579,10 @@ export default function FrontPage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="">
+                        <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">
                             Teste gratuito <ArrowUpRight className="w-3" />
                         </Link>
-                        <Link className="px-6 flex items-center gap-4 py-3 border border-[#A572E1] text-[#A572E1] rounded-full hover:bg-white/5 transition-colors" to="">
+                        <Link className="px-6 flex items-center gap-4 py-3 border border-[#A572E1] text-[#A572E1] rounded-full hover:bg-white/5 transition-colors" to="/register">
                             Cadastre-se <ArrowUpRight className="w-3" />
                         </Link>
                     </div>
