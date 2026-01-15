@@ -4,6 +4,7 @@ import { api } from "../../../services/api";
 
 // Gráficos 
 import RevenueLineChart from "./components/revenue/RevenueLineChart";
+import RevenueTableChart from "./components/revenue/RevenueTableChart";
 import RevenueBreakdownBarChart from "./components/revenueBreak/RevenueBreakdownBarChart";
 import PayrollLineChart from "./components/payroll/PayrollLineChart";
 import CostsPieChart from "./components/costs/CostsPieChart";
@@ -109,6 +110,7 @@ export default function DashClubUniques() {
                     <div className="w-full bg-white border p-6 rounded-xl"> 
                         <h2>Receitas</h2> 
                         <RevenueLineChart data={revenues} />
+                        <RevenueTableChart data={revenues} />
                     </div> 
 
                     <div className="w-full bg-white border p-6 rounded-xl"> 

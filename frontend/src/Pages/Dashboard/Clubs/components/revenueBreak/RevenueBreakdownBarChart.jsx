@@ -16,27 +16,31 @@ export default function RevenueBreakdownBarChart({ data }) {
         `R$ ${Number(value).toLocaleString("pt-BR")}`
     },
     grid: {
-      left: 10,
-      right: 20,
-      bottom: 20,
+      left: 0,
+      right: 0,
+      bottom: 0,
       top: 20,
       containLabel: true
     },
-    xAxis: {
+    yAxis: {
       type: "value",
       axisLabel: {
         formatter: value => `R$ ${(value / 1e6).toFixed(0)}M`
       }
     },
-    yAxis: {
+   xAxis: {
       type: "category",
-      data: adapted.categories
+      data: adapted.categories,
+      axisLabel: {
+        rotate: 30, // ou 45
+        interval: 0 // força mostrar todos
+      }
     },
     series: [
       {
         type: "bar",
         data: adapted.values,
-        barWidth: "60%",
+        barWidth: "30%",
         itemStyle: {
           borderRadius: [6, 6, 6, 6]
         }
