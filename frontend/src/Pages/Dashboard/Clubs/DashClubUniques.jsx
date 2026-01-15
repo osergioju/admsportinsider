@@ -2,6 +2,15 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 
+// Gráficos 
+import RevenueLineChart from "./components/revenue/RevenueLineChart";
+import RevenueBreakdownBarChart from "./components/revenueBreak/RevenueBreakdownBarChart";
+import PayrollLineChart from "./components/payroll/PayrollLineChart";
+import CostsPieChart from "./components/costs/CostsPieChart";
+import NetResultTable from "./components/netResult/NetResultTable";
+import NetResultLineChart from "./components/netResult/NetResultLineChart";
+import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
+
 export default function DashClubUniques() {
     const { id } = useParams();
 
@@ -79,47 +88,61 @@ export default function DashClubUniques() {
 
             <div> 
                 <div className="w-full"> 
-                    <div className="w-full p-4 lg:p-10 bg-white rounded-2xl border"> 
-                        <h3 className="text-2xl mb-3 lg:text-3xl font-light flex items-center gap-2">{theClub.club.name} - {theClub.club.country_name} <img className="w-6" src={theClub.club.flag_url}></img></h3> 
-                        <ul className="flex items-center gap-4"> 
-                            <li className="border-r pr-6 text-sm">Data de fundação: 21 de agosto de 1898 (127 anos)</li> 
-                            <li className="border-r pr-6 text-sm">Estádio: São Januário (21.880 lugares)</li> 
-                            <li className="text-sm">Estrutura societária: SAF</li> 
-                        </ul> 
+                    <div className="w-full p-4 flex items-center lg:p-10 bg-white rounded-2xl border"> 
+                        <div className="flex items-center">
+                            <img src={theClub.club.crest_url} className="w-20" alt="" />
+                        </div>
+                        <div className="ml-4 lg:ml-10">
+                            <h3 className="text-2xl mb-3 lg:text-3xl font-light flex items-center gap-2">{theClub.club.name} - {theClub.club.country_name} <img className="w-6" src={theClub.club.flag_url}></img></h3> 
+                            <ul className="flex items-center gap-4"> 
+                                <li className="border-r pr-6 text-sm">Data de fundação: {theClub.club.founded_at }</li> 
+                                <li className="border-r pr-6 text-sm">Estádio: {theClub.club.stadium_name} ({theClub.club.stadium_capacity} lugares)</li> 
+                                <li className="text-sm">Estrutura societária: {theClub.club.ownership_model}</li> 
+                            </ul> 
+                        </div>
+                       
                     </div>
                 </div> 
                 
                 <div className="w-full grid lg:grid-cols-2 gap-4 mt-4 lg:mt-8"> 
+
                     <div className="w-full bg-white border p-6 rounded-xl"> 
                         <h2>Receitas</h2> 
-                        <p> Gráfico em linha e tabela (padrão: 5 anos) Moeda: R$ Período: +- anos Comparação: Outro clube (até quatro) </p> 
+                        <RevenueLineChart data={revenues} />
                     </div> 
+
                     <div className="w-full bg-white border p-6 rounded-xl"> 
                         <h2>Gráfico em barras (padrão: mais recente)</h2> 
+                        <RevenueBreakdownBarChart data={revenuesBreakdown} />
                         <p> Direito de transmissão Comercial Matchday Outros Atletas </p> 
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
                         <h2>Custos </h2> 
+                        <PayrollLineChart data={payrollCosts} />
                         <p> Gráfico em linha e tabela para folha salarial (padrão: 5 anos) Moeda: R$ Período: +- anos Comparação: Outro clube (até quatro) </p> 
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
                         <h2>Gráfico em pizza (padrão: mais recente)</h2> 
+                        <CostsPieChart data={costsBreakdown} />
                         <p> Folha salarial Outros custos </p> 
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
                         <h2>Resultado líquido</h2> 
+                        <NetResultTable data={netResult} />
                         <p> Tabela (padrão: 5 anos) Moeda: R$ Período: +- anos </p> 
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
-                        <h2>Resultado líquido</h2> <p> Gráfico em linha e tabela (padrão: 5 anos) Moeda: R$ Período: +- anos Comparação: Outro clube (até quatro) Comparação: Inserir receita </p> 
+                        <h2>Resultado líquido</h2> 
+                        <NetResultLineChart data={netResultEvolution} />
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
                         <h2>Gráfico em barras (padrão: mais recente)</h2> 
+                        <DebtsBreakdownBarChart data={debtsBreakdown} />
                         <p> Fiscal Trabalhista Bancária Outros </p> 
                     </div> 
                 </div> 
