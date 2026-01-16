@@ -99,7 +99,7 @@ export default function SideMenu() {
 
           {/* PERFIL */}
           <MenuItem to="/me/profile" icon={<User strokeWidth={1} size={20}/>} label="Perfil" />
-          <MenuItem to="/dashboard" icon={<Wallet strokeWidth={1} size={20}/>} label="Financeiro" />
+          <MenuItem to="/me/financial" icon={<Wallet strokeWidth={1} size={20}/>} label="Financeiro" />
 
         </ul>
       </div>

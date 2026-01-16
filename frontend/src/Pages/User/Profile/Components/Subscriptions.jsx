@@ -187,7 +187,7 @@ export default function Subscriptions() {
                 {/* Ações */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     <button
-                        onClick={() => navigate("/me/subscription/invoices")}
+                        onClick={() => navigate("/me/financial")}
                         className={btnSecondaryClass}
                     >
                         <FileText size={16} />

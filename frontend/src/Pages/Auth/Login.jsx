@@ -62,10 +62,6 @@ export default function Login() {
         }
     };
 
-    if (isLoggingIn) {
-        return <LoadingSkeleton />;
-    }
-
     const handleGoogleLogin = () => {
         window.location.href = api.defaults.baseURL + "/auth/google";
     };

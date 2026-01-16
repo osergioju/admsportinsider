@@ -25,7 +25,9 @@ export default function GestaoClubes() {
         founded_at: "",
         stadium_name: "",
         stadium_capacity: "",
-        ownership_model: ""
+        ownership_model: "",
+        primary_color: "",
+        secondary_color: ""
     });
     const [attributes, setAttributes] = useState([]);
 
@@ -114,7 +116,9 @@ export default function GestaoClubes() {
             founded_at: "",
             stadium_name: "",
             stadium_capacity: "",
-            ownership_model: ""
+            ownership_model: "",
+            primary_color: "",
+            secondary_color: ""
         });
         setIsEditing(false);
         setModal(true);
@@ -143,7 +147,9 @@ export default function GestaoClubes() {
                 founded_at: clube_foundation,
                 stadium_name: data.club.stadium_name,
                 stadium_capacity: data.club.stadium_capacity,
-                ownership_model: data.club.ownership_model
+                ownership_model: data.club.ownership_model,
+                primary_color: data.club.primary_color,
+                secondary_color: data.club.secondary_color
             });
 
             setAttributes(data.attributes || []);
@@ -380,39 +386,49 @@ export default function GestaoClubes() {
                             {isEditing ? "Editar Clube" : "Cadastrar Clube"}
                         </h2>
 
-                        {/* LIGA */}
-                        <label className="block text-sm text-gray-600 mb-1">País</label>
-                        <select
-                            value={newClub.id_country}
-                            onChange={(e) =>
-                                setNewClub({ ...newClub, id_country: e.target.value })
-                            }
-                            className="w-full border px-3 py-2 rounded mb-3"
-                        >
-                            <option value="">Selecione um país</option>
-                            {countries.map((l) => (
-                                <option key={l.id_country} value={l.id_country}>
-                                    {l.name}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="grid lg:grid-cols-2 lg:gap-4">
+                            <div>
+                                {/* LIGA */}
+                                <label className="block text-sm text-gray-600 mb-1">País</label>
+                                <select
+                                    value={newClub?.id_country}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, id_country: e.target.value })
+                                    }
+                                    className="w-full border px-3 py-2 rounded mb-3"
+                                >
+                                    <option value="">Selecione um país</option>
+                                    {countries.map((l) => (
+                                        <option key={l.id_country} value={l.id_country}>
+                                            {l.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                        {/* NOME */}
-                        <label className="block text-sm text-gray-600 mb-1">Nome do Clube</label>
-                        <input
-                            type="text"
-                            className="w-full border px-3 py-2 rounded mb-3"
-                            value={newClub.name}
-                            onChange={(e) =>
-                                setNewClub({ ...newClub, name: e.target.value })
-                            }
-                        />
+                            <div>
+                                {/* NOME */}
+                                <label className="block text-sm text-gray-600 mb-1">Nome do Clube</label>
+                                <input
+                                    type="text"
+                                    className="w-full border px-3 py-2 rounded mb-3"
+                                    value={newClub?.name}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, name: e.target.value })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        
+                        
+
+                       
 
                         {/* DESCRIÇÃO */}
                         <label className="block text-sm text-gray-600 mb-1">Descrição</label>
                         <textarea
                             className="w-full border px-3 py-2 rounded mb-3"
-                            value={newClub.description}
+                            value={newClub?.description ?? ""}
                             onChange={(e) =>
                                 setNewClub({ ...newClub, description: e.target.value })
                             }
@@ -427,7 +443,7 @@ export default function GestaoClubes() {
                                 <input
                                     type="date"
                                     className="w-full border px-3 py-2 rounded"
-                                    value={newClub.founded_at || ""}
+                                    value={newClub?.founded_at || ""}
                                     onChange={(e) =>
                                         setNewClub({ ...newClub, founded_at: e.target.value })
                                     }
@@ -439,7 +455,7 @@ export default function GestaoClubes() {
                                 <label className="block text-sm text-gray-600 mb-1">Modelo societário</label>
                                 <select
                                     className="w-full border px-3 py-2 rounded"
-                                    value={newClub.ownership_model || ""}
+                                    value={newClub?.ownership_model || ""}
                                     onChange={(e) =>
                                         setNewClub({ ...newClub, ownership_model: e.target.value })
                                     }
@@ -457,7 +473,7 @@ export default function GestaoClubes() {
                                 <input
                                     type="text"
                                     className="w-full border px-3 py-2 rounded"
-                                    value={newClub.stadium_name || ""}
+                                    value={newClub?.stadium_name || ""}
                                     onChange={(e) =>
                                         setNewClub({ ...newClub, stadium_name: e.target.value })
                                     }
@@ -470,9 +486,33 @@ export default function GestaoClubes() {
                                 <input
                                     type="number"
                                     className="w-full border px-3 py-2 rounded"
-                                    value={newClub.stadium_capacity || ""}
+                                    value={newClub?.stadium_capacity || ""}
                                     onChange={(e) =>
                                         setNewClub({ ...newClub, stadium_capacity: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">Cor primária</label>
+                                <input
+                                    type="color"
+                                    className="w-full h-10 border px-3 py-2 rounded"
+                                    value={newClub?.primary_color || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, primary_color: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1">Cor secundária</label>
+                                <input
+                                    type="color"
+                                    className="w-full h-10 border px-3 py-2 rounded"
+                                    value={newClub?.secondary_color || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, secondary_color: e.target.value })
                                     }
                                 />
                             </div>
@@ -496,9 +536,9 @@ export default function GestaoClubes() {
                             {uploading ? "Enviando..." : "Enviar Logo"}
                         </button>
 
-                        {newClub.crest_url && (
+                        {newClub?.crest_url && (
                             <div className="w-24 h-24 border rounded-lg overflow-hidden mb-4">
-                                <img src={newClub.crest_url} className="w-full h-full object-cover" />
+                                <img src={newClub?.crest_url} className="w-full h-full object-cover" />
                             </div>
                         )}
 

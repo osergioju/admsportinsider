@@ -23,7 +23,7 @@ export default function Pricing() {
     }
 
     if (isPaid) {
-      navigate("/me/subscription");
+      navigate("/me/profile");
       return;
     }
 
@@ -375,7 +375,7 @@ export default function Pricing() {
         <p className="text-center text-sm text-gray-500 mt-8">
           Você já tem uma assinatura.{" "}
           <button
-            onClick={() => navigate("/me/subscription")}
+            onClick={() => navigate("/me/profile")}
             className="underline"
           >
             Gerenciar assinatura

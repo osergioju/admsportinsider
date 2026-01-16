@@ -448,7 +448,6 @@ export async function updateClub(req, res) {
   const id = req.params.id;
 
   const {
-    id_league,
     name,
     description,
     crest_url,
@@ -456,6 +455,8 @@ export async function updateClub(req, res) {
     stadium_name,
     stadium_capacity,
     ownership_model,
+    primary_color,
+    secondary_color,
     attributes = [] // array de atributos novos/atualizados
   } = req.body;
 
@@ -468,18 +469,18 @@ export async function updateClub(req, res) {
     await client.query(
       `
       UPDATE clubs SET
-        id_league = $1,
-        name = $2,
-        description = $3,
-        crest_url = $4,
-        founded_at = $5,
-        stadium_name = $6,
-        stadium_capacity = $7,
-        ownership_model = $8
-      WHERE id_club = $9
+        name = $1,
+        description = $2,
+        crest_url = $3,
+        founded_at = $4,
+        stadium_name = $5,
+        stadium_capacity = $6,
+        ownership_model = $7,
+        primary_color = $8,
+        secondary_color = $9
+      WHERE id_club = $10
       `,
       [
-        id_league,
         name,
         description,
         crest_url,
@@ -487,6 +488,8 @@ export async function updateClub(req, res) {
         stadium_name || null,
         stadium_capacity || null,
         ownership_model || null,
+        primary_color || null,
+        secondary_color || null,
         id
       ]
     );

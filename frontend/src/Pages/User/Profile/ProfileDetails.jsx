@@ -138,7 +138,7 @@ export default function ProfileDetails() {
               <span className="text-sm text-gray-500 font-medium">Plano atual</span> 
               <div className="sm:col-span-2">
                   <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-green-50 text-green-700 border border-green-200">
-                      {user.stripe_subscription_id || "Plano Básico"}
+                      {user.plan_name}
                   </span>
               </div>
             </div>

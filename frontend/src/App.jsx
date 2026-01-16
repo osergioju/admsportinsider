@@ -18,6 +18,7 @@ import VerifyEmail from "./Pages/Auth/VerifyEmail";
 import PageNotifications from "./Pages/User/Notifications";
 import ProfileDetails from "Pages/User/Profile/ProfileDetails";
 import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
+import SubscriptionPlan from "Pages/User/Profile/SubscriptionPlan";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
@@ -93,6 +94,7 @@ export default function App() {
               
               <Route path="me/profile" element={<ProfileDetails />} />
               <Route path="me/financial" element={<SubscriptionInvoices />} />
+              <Route path="me/subscription" element={<SubscriptionPlan />} />
 
               {/* Dados - páginas de gráficos */}
               <Route path="/dashboard/clubs" element={<DashClubs />} />

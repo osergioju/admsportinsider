@@ -8,13 +8,13 @@ export default function SubscriptionInvoices() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🛑 BLOQUEIA FREE USER
+    // BLOQUEIA FREE USER
     const isPaid =
       user?.stripe_subscription_id &&
       ["active", "trialing"].includes(user.subscription_status);
 
     if (!isPaid) {
-      navigate("/me/subscription");
+      navigate("/me/profile");
       return;
     }
 
@@ -24,7 +24,7 @@ export default function SubscriptionInvoices() {
         window.location.href = response.data.url;
       } catch (err) {
         console.error("Error redirecting to billing portal", err);
-        navigate("/me/subscription");
+        navigate("/me/profile");
       }
     }
 

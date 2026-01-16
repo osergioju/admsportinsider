@@ -46,7 +46,7 @@ export default function ResetPassConfirm() {
     }
 
     if (strength < 3) {
-      setError("A senha precisa ser mais forte (pelo menos nível média).");
+      setError("A senha precisa ser mais forte (pelo menos nível médio).");
       return;
     }
 

@@ -20,8 +20,7 @@ export default function PrivacyDelete() {
     setError("");
 
     try {
-      // Exemplo de chamada API (Ajuste a rota conforme seu backend)
-      // await api.delete(`/user/${user.id}`); 
+      await api.delete(`/user/${user.id}`); 
       
       // Simulação de delay para UX
       await new Promise(resolve => setTimeout(resolve, 1500));

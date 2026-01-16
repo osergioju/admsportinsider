@@ -10,13 +10,13 @@ export default function PaymentSuccess() {
   useEffect(() => {
     // fallback de segurança
     if (!sessionId) {
-      navigate("/me/subscription");
+      navigate("/me/profile");
       return;
     }
 
     const timer = setTimeout(() => {
       navigate("/me/subscription");
-    }, 10000); // 10 segundos
+    }, 4000); // 4 segundos
 
     return () => clearTimeout(timer);
   }, [sessionId, navigate]);
