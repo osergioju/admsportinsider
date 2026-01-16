@@ -16,6 +16,9 @@ import Time3 from "../assets/img/slide/time3.png";
 import Time4 from "../assets/img/slide/time4.png";
 import Time5 from "../assets/img/slide/time5.png";
 
+// Importa o redirect 
+import { useRedirectIfAuthenticated } from "../services/checkUser";
+
 // Swiper Imports
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
@@ -35,12 +38,16 @@ import {
 } from "lucide-react";
 
 export default function FrontPage() {
+    const { loadingAuth, user } = useRedirectIfAuthenticated();
+
+    
 
     const leftPillStyle = "flex items-center gap-2 px-4 py-2 bg-[#E5E5E5] border border-[#D4D4D4] rounded-full text-[#404040] text-xs lg:text-sm font-medium shadow-sm z-10 relative whitespace-nowrap hover:scale-105 transition-transform cursor-default";
     const rightPillStyle = "flex items-center gap-3 px-5 py-3 bg-white border border-[#F0F0F0] rounded-full text-[#404040] text-sm font-medium shadow-lg shadow-purple-500/5 z-10 relative whitespace-nowrap min-w-[220px] hover:border-purple-200 transition-colors cursor-default";
     const cardClass = "bg-[#FFF5F5] rounded-2xl p-6 lg:p-8 flex flex-col justify-between h-full border border-pink-50 hover:shadow-lg transition-shadow duration-300";
     const titleClass = "text-[#8033D9] font-medium text-sm lg:text-base mb-2";
     const descClass = "text-[#1B1917] font-medium text-xl lg:text-2xl leading-tight";
+    if (loadingAuth || user) return null;
 
   return (
 

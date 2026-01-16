@@ -36,7 +36,7 @@ export default function PayrollLineChart({ data }) {
         name: "Folha salarial",
         type: "line",
         data: adapted.values,
-        smooth: true,
+        smooth: false,
         symbol: "circle",
         symbolSize: 8,
         lineStyle: {

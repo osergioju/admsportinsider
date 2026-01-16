@@ -85,7 +85,7 @@ export default function Pricing() {
                         <SubmitButtonMini 
                             onClick={() => handleSubscribe(1)}
                             disabled={loadingPlan === 1}
-                            text="Contratar plano"></SubmitButtonMini>
+                            text="Acessar"></SubmitButtonMini>
                         <div className="my-5 lg:my-10 w-full border border-[#ffffff38]"></div>
                         <p className="mb-2 lg:mb-5 text-white font-medium text-base lg:text-lg">Você recebe</p>
                         <ul>

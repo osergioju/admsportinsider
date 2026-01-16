@@ -44,7 +44,7 @@ export default function RevenueLineChart({ data }) {
     series: adapted.series.map(s => ({
       ...s,
       type: "line",
-      smooth: true,
+      smooth: false,
       symbol: "circle",
       symbolSize: 0,
       emphasis: { focus: "series" }

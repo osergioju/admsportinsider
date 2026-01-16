@@ -1,7 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRedirectIfAuthenticated } from "../../services/checkUser";
+
 
 export default function PaymentSuccess() {
+  const { loadingAuth, user } = useRedirectIfAuthenticated();  
+
   const navigate = useNavigate();
   const [params] = useSearchParams();
 
@@ -20,6 +24,8 @@ export default function PaymentSuccess() {
 
     return () => clearTimeout(timer);
   }, [sessionId, navigate]);
+
+  if (loadingAuth || user) return null;
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-[#0C0718] text-white font-sans overflow-x-hidden">

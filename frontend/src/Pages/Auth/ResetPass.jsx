@@ -4,9 +4,12 @@ import Input from "../../components/uxui/Input";
 import SubmitButton from "../../components/uxui/SubmitButton";
 import useTitle from '../../hooks/useTitle';
 import { api } from "../../services/api";
+import { useRedirectIfAuthenticated } from "../../services/checkUser";
 
 export default function ResetPass() {
   useTitle("Redefinir Senha");
+
+  const { loadingAuth, user } = useRedirectIfAuthenticated();
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,8 @@ export default function ResetPass() {
       setLoading(false);
     }
   };
+
+  if (loadingAuth || user) return null;
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-[#0C0718] text-white overflow-x-hidden">

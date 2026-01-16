@@ -106,7 +106,6 @@ export async function getRevenueEvolutionByLeague(req, res) {
   }
 }
 
-
 // Controller original, aqui pega para a página de clube único 
 export async function getAvailableYears(req, res) {
   try {

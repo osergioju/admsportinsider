@@ -10,9 +10,14 @@ import LogoHome from "../../assets/img/sportinsider-logo.png"
 import GoogleButton from "../../components/uxui/googleButton";
 import SubmitButton from "../../components/uxui/SubmitButton";
 
+// Importa o redirect 
+import { useRedirectIfAuthenticated } from "../../services/checkUser";
+
 export default function Login() {
     useTitle("Entre na sua conta");
     
+    const { loadingAuth, user } = useRedirectIfAuthenticated();
+
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -65,6 +70,8 @@ export default function Login() {
     const handleGoogleLogin = () => {
         window.location.href = api.defaults.baseURL + "/auth/google";
     };
+
+    if (loadingAuth || user) return null;
 
     return (
         <div className="relative z-40 w-full min-h-screen text-white bg-[#0C0718]">

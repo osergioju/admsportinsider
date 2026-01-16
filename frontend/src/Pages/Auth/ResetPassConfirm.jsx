@@ -4,9 +4,12 @@ import Input from "../../components/uxui/Input";
 import SubmitButton from "../../components/uxui/SubmitButton";
 import useTitle from '../../hooks/useTitle';
 import { api } from "../../services/api";
+import { useRedirectIfAuthenticated } from "../../services/checkUser";
 
 export default function ResetPassConfirm() {
   useTitle("Nova Senha");
+  const { loadingAuth, user } = useRedirectIfAuthenticated();
+
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
@@ -77,6 +80,8 @@ export default function ResetPassConfirm() {
       setLoading(false);
     }
   };
+
+  if (loadingAuth || user) return null;
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-[#0C0718] text-/10 overflow-x-hidden">

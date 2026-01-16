@@ -120,13 +120,13 @@ export default function DashClubUniques() {
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
-                        <h2>Custos </h2> 
+                        <h2>Folha salarial </h2> 
                         <PayrollLineChart data={payrollCosts} />
                         <p> Gráfico em linha e tabela para folha salarial (padrão: 5 anos) Moeda: R$ Período: +- anos Comparação: Outro clube (até quatro) </p> 
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
-                        <h2>Gráfico em pizza (padrão: mais recente)</h2> 
+                        <h2>Custos</h2> 
                         <CostsPieChart data={costsBreakdown} />
                         <p> Folha salarial Outros custos </p> 
                     </div> 
@@ -138,7 +138,7 @@ export default function DashClubUniques() {
                     </div> 
                     
                     <div className="w-full bg-white border p-6 rounded-xl"> 
-                        <h2>Resultado líquido</h2> 
+                        <h2>Dívidas</h2> 
                         <NetResultLineChart data={netResultEvolution} />
                     </div> 
                     

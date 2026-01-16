@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
+import { useRedirectIfAuthenticated } from "../../services/checkUser";
+
 
 export default function VerifyEmail() {
+    const { loadingAuth, user } = useRedirectIfAuthenticated();  
+    
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -58,6 +62,8 @@ export default function VerifyEmail() {
             });
         }
     }
+
+    if (loadingAuth || user) return null;
 
     return (
         <div className="w-full min-h-screen flex flex-col bg-[#0C0718] text-white font-sans overflow-x-hidden">

@@ -7,10 +7,13 @@ import { api } from "../../services/api";
 import GoogleButton from "@/Components/uxui/googleButton";
 import SubmitButton from "../../components/uxui/submitButton";
 import SportinsiderIcon from "../../assets/img/sportinsider-logo.png";
+import { useRedirectIfAuthenticated } from "../../services/checkUser";
 
 export default function Register() {
     useTitle("Crie sua conta");
-    
+
+    const { loadingAuth, user } = useRedirectIfAuthenticated();
+        
     const navigate = useNavigate();
 
     const [nome, setNome] = useState("");
@@ -69,6 +72,8 @@ export default function Register() {
     const handleGoogleLogin = () => {
         window.location.href = api.defaults.baseURL + "/auth/google";
     };
+
+    if (loadingAuth || user) return null;
 
     return (
         <div className="w-full min-h-screen flex flex-col top-0 left-0 bg-[#0C0718] text-white overflow-x-hidden">
