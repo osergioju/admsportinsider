@@ -173,8 +173,15 @@ export default function DashboardLayout() {
             <div>
                 <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Suporte</span>
                 <ul>
-                    <MenuItem to="/faq" icon={<BadgeQuestionMark strokeWidth={1} size={20}/>} label="Perguntas frequentes" />
-                    <MenuItem to="/fale-conosco" icon={<MessagesSquare strokeWidth={1} size={20}/>} label="Fale conosco" />
+                    <MenuItem
+                     to="/faq" 
+                     icon={<BadgeQuestionMark strokeWidth={1} size={20}/>} 
+                     label="Perguntas frequentes" 
+                    />
+                    <MenuItem 
+                    to="/fale-conosco" 
+                    icon={<MessagesSquare strokeWidth={1} size={20}/>} 
+                    label="Fale conosco" />
                 </ul>
             </div>
             ) : null }
