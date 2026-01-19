@@ -8,6 +8,8 @@ const { Pool } = pkg;
 export const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false, // Supabase exige SSL
+    require: true,
+    rejectUnauthorized: false, // aceita o cert da DigitalOcean
   },
+  family: 4, // 🔥 força IPv4 (evita ENETUNREACH)
 });
