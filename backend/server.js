@@ -22,6 +22,9 @@ startNotificationCron();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 🔥 CONFIA EM 1 PROXY (NGINX)
+app.set("trust proxy", 1);
+
 // ===== CORS =====
 const allowedOrigins = [
   "http://localhost:5173",
@@ -34,6 +37,7 @@ const allowedOrigins = [
   "https://146.190.159.239",
   "http://146.190.159.239:3000"
 ];
+
 
 app.use(cors({
   origin: (origin, callback) => {
