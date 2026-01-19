@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/uxui/skeleton";
+import { Skeleton } from "../components/uxui/skeleton";
 
 export default function LoadingSkeleton() {
   return (

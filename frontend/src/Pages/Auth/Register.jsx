@@ -3,7 +3,7 @@ import Input from "../../components/uxui/Input";
 import useTitle from '../../hooks/useTitle'
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../../services/api";
-import GoogleButton from "@/components/uxui/GoogleButton";
+import GoogleButton from "../../components/uxui/GoogleButton";
 import SubmitButton from "../../components/uxui/SubmitButton";
 import SportinsiderIcon from "../../assets/img/sportinsider-logo.png";
 import { useRedirectIfAuthenticated } from "../../services/checkUser";

@@ -2,8 +2,8 @@ import { Outlet, Link } from "react-router-dom";
 import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import brand from "../assets/svg/brand-full.svg"; 
-import MenuItem from "@/Components/uxui/MenuItem"; 
-import SubItem from "@/Components/uxui/SubMenu";
+import MenuItem from "../components/uxui/MenuItem"; 
+import SubItem from "../components/uxui/SubMenu";
 import NotificationDropdown from "../components/notifications/NotificationDropdown"; 
 
 import { 
