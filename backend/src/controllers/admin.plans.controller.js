@@ -1,4 +1,4 @@
-import db from  from "../config/db.js";
+import db from  "../config/db.js";
 
 // Pega planos 
 export async function getAllPlans(req, res) {

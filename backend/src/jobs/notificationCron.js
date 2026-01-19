@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import db from  from "../config/db.js";
+import db from  "../config/db.js";
 
 export function startNotificationCron() {
   // roda a cada 1 minuto

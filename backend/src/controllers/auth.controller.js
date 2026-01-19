@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { findUserByEmail, createPublicUser } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 import { checkResetLimit } from "../utils/resetLimiter.js";
-import db from  from "../config/db.js";
+import db from  "../config/db.js";
 import { sendResetEmail, sendResetEmailSucess, reSendMail } from "../utils/mailer.js";
 
 // Tokens pro cadastro, pra chegar no e-mail e confirmar e tal

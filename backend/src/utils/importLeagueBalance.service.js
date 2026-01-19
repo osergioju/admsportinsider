@@ -1,5 +1,5 @@
 import XLSX from "xlsx";
-import db from  from "../config/db.js";
+import db from  "../config/db.js";
 
 function normalizeNumber(value) {
   if (value === null || value === undefined) return null;

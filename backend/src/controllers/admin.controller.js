@@ -1,4 +1,4 @@
-import db from  from "../config/db.js";
+import db from  "../config/db.js";
 import XLSX from "xlsx";
 import { reSendMail } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
