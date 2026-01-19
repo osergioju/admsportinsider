@@ -1,5 +1,4 @@
-import { Skeleton } from "../components/uxui/skeleton";
-
+import { Skeleton } from "../uxui/skeleton";
 export default function LoadingSkeleton() {
   return (
     <div className="absolute top-0 left-0 right-0 bottom-0 p-10 space-y-6">
