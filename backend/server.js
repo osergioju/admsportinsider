@@ -25,9 +25,14 @@ const PORT = process.env.PORT || 3000;
 // ===== CORS =====
 const allowedOrigins = [
   "http://localhost:5173",
+
   "https://sportinsider.com",
   "https://dashboard.sportinsider.com",
-  "https://dash.crtcomunicacao.com.br"
+  "https://dash.crtcomunicacao.com.br",
+
+  "http://146.190.159.239",
+  "https://146.190.159.239",
+  "http://146.190.159.239:3000"
 ];
 
 app.use(cors({
