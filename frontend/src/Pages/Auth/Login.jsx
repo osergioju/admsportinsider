@@ -7,7 +7,7 @@ import LoadingSkeleton from "../../components/uxui/LoadingSkeleton";
 import { api } from "../../services/api";
 import ContainerLogo from "../../assets/img/container-logo.png";
 import LogoHome from "../../assets/img/sportinsider-logo.png"
-import GoogleButton from "../../components/uxui/googleButton";
+import GoogleButton from "../../components/uxui/GoogleButton";
 import SubmitButton from "../../components/uxui/SubmitButton";
 
 // Importa o redirect 
