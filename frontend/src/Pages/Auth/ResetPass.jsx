@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Input from "../../components/uxui/Input";
-import SubmitButton from "../../components/uxui/SubmitButton";
+import SubmitButton from "../../components/uxui/submitButton";
 import useTitle from '../../hooks/useTitle';
 import { api } from "../../services/api";
 import { useRedirectIfAuthenticated } from "../../services/checkUser";
