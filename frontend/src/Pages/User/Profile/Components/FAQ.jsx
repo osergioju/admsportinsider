@@ -7,7 +7,7 @@ import {
   Search 
 } from "lucide-react";
 
-export default function FAQ() {
+export default function Faq() {
   const [openIndices, setOpenIndices] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 

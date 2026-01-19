@@ -20,7 +20,7 @@ import ProfileDetails from "Pages/User/Profile/ProfileDetails";
 import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
 import SubscriptionPlan from "Pages/User/Profile/SubscriptionPlan";
 import Onboarding from "Pages/User/Onboarding";
-import FAQ from "Pages/User/Profile/Components/Faq";
+import Faq from "@/Pages/User/Profile/Components/Faq";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
@@ -93,7 +93,7 @@ export default function App() {
             <Route element={<RoleRoute allowedRoles={["user", "admin_master"]} />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user" element={<UserIndex />} />
-              <Route path="/faq" element={<FAQ />} />
+              <Route path="/faq" element={<Faq />} />
               <Route path="/me/notifications" element={<PageNotifications />} />
 
               {/* Aqui é pro usuário compeltar o cadastro dele no site */}
