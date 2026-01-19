@@ -16,11 +16,11 @@ import GoogleCallback from "./Pages/Auth/GoogleCallback";
 import UserIndex from "./Pages/User/Index";
 import VerifyEmail from "./Pages/Auth/VerifyEmail";
 import PageNotifications from "./Pages/User/Notifications";
-import ProfileDetails from "Pages/User/Profile/ProfileDetails";
-import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
-import SubscriptionPlan from "Pages/User/Profile/SubscriptionPlan";
-import Onboarding from "Pages/User/Onboarding";
-import Faq from "@/Pages/User/Profile/Components/Faq";
+import ProfileDetails from "./Pages/User/Profile/ProfileDetails";
+import SubscriptionInvoices from "./Pages/User/Profile/SubscriptionInvoices";
+import SubscriptionPlan from "./Pages/User/Profile/SubscriptionPlan";
+import Onboarding from "./Pages/User/Onboarding";
+import Faq from "./Pages/User/Profile/Components/Faq";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
