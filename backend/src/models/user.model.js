@@ -1,4 +1,4 @@
-import { db } from "../config/db.js";
+import db from  from "../config/db.js";
 
 export async function findUserByEmail(email) {
   const query = "SELECT * FROM users WHERE email = $1 LIMIT 1";

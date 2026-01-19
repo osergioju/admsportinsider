@@ -1,5 +1,5 @@
 import { supabase } from "../utils/supabase.js";
-import { db } from "../config/db.js";
+import db from  from "../config/db.js";
 
 export async function uploadBannerImage(req, res) {
   try {

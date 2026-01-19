@@ -1,5 +1,5 @@
 import axios from "axios";
-import { db } from "../config/db.js";
+import db from  from "../config/db.js";
 import { findUserByEmail } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 
