@@ -4,13 +4,16 @@ import { api } from "../../../../services/api";
 import { Check, AlertCircle, Loader2 } from "lucide-react";
 
 export default function ProfilePreferences() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, updateUser } = useContext(AuthContext);
+
+  const [regions, setRegions] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
 
   const [form, setForm] = useState({
     email_notifications: false,
     product_updates: false,
-    language: "en",
-    region: "Brasil"
+    region_id: "",
+    currency_id: ""
   });
 
   const [loading, setLoading] = useState(false);
@@ -21,59 +24,81 @@ export default function ProfilePreferences() {
   if (!user) return null;
 
   /* =========================
-     Hydrate / Fetch preferences
+     Hydrate (somente do contexto)
   ========================= */
   useEffect(() => {
-    async function loadPreferences() {
-      try {
-        if (user.preferences) {
-          setForm({
-            email_notifications: !!user.preferences.email_notifications,
-            product_updates: !!user.preferences.product_updates,
-            language: user.preferences.language || "en",
-            region: user.preferences.region || "Brasil"
-          });
-          setFetching(false);
-          return;
-        }
+    let isMounted = true;
 
-        const response = await api.get("/user/preferences");
+    async function loadData() {
+      try {
+        // Busca listas auxiliares
+        const [regionsRes, currenciesRes] = await Promise.all([
+          api.get("/user/regions"),
+          api.get("/user/currencies")
+        ]);
+
+        if (!isMounted) return;
+
+        setRegions(regionsRes.data);
+        setCurrencies(currenciesRes.data);
+
+        // Preferências DEVEM vir do AuthContext
+        if (!user.preferences) {
+          setError("Preferências do usuário não encontradas.");
+          return;
+        } 
+
+        console.log(user);
 
         setForm({
-          email_notifications: !!response.data.email_notifications,
-          product_updates: !!response.data.product_updates,
-          language: response.data.language || "en",
-          region: response.data.region || "Brasil"
+          email_notifications: !!user.email_notifications,
+          product_updates: !!user.product_updates,
+          region_id: user.preferences.region_id || "",
+          currency_id: user.preferences.currency_id || ""
         });
 
-        setUser(prev => ({
-          ...prev,
-          preferences: response.data
-        }));
-
       } catch (err) {
-        console.error("Error fetching preferences", err);
+        console.error("Erro ao carregar preferências", err);
+        if (isMounted) {
+          setError("Não foi possível carregar suas preferências.");
+        }
       } finally {
-        setFetching(false);
+        if (isMounted) {
+          setFetching(false);
+        }
       }
     }
 
-    loadPreferences();
-  }, [user, setUser]);
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   /* =========================
      Handlers
   ========================= */
   function handleToggle(e) {
     const { name, checked } = e.target;
-    setForm(prev => ({ ...prev, [name]: checked }));
+
+    setForm(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+
     setSuccess(false);
     setError("");
   }
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+
+    setForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
     setSuccess(false);
     setError("");
   }
@@ -89,17 +114,20 @@ export default function ProfilePreferences() {
 
     const payload = {};
 
-    if (form.email_notifications !== user.preferences?.email_notifications) {
+    if (form.email_notifications !== user.email_notifications) {
       payload.email_notifications = form.email_notifications;
     }
-    if (form.product_updates !== user.preferences?.product_updates) {
+
+    if (form.product_updates !== user.product_updates) {
       payload.product_updates = form.product_updates;
     }
-    if (form.language !== user.preferences?.language) {
-      payload.language = form.language;
+
+    if (form.region_id !== user.preferences.region_id) {
+      payload.region_id = form.region_id;
     }
-    if (form.region !== user.preferences?.region) {
-      payload.region = form.region;
+
+    if (form.currency_id !== user.preferences.currency_id) {
+      payload.currency_id = form.currency_id;
     }
 
     if (!Object.keys(payload).length) {
@@ -109,19 +137,25 @@ export default function ProfilePreferences() {
 
     try {
       const response = await api.put("/user/preferences", payload);
+      const updatedPreferences = response.data.preferences || response.data;
 
-      setUser(prev => ({
+      updateUser(prev => ({
         ...prev,
-        preferences: response.data.preferences || response.data
+        email_notifications: updatedPreferences.email_notifications,
+        product_updates: updatedPreferences.product_updates,
+        preferences: {
+          ...prev.preferences,
+          region_id: updatedPreferences.region_id,
+          currency_id: updatedPreferences.currency_id
+        }
       }));
 
       setSuccess(true);
-      
       setTimeout(() => setSuccess(false), 3000);
 
     } catch (err) {
-      console.error("Error updating preferences", err);
-      setError("Ocorreu um erro ao salvar as suas preferências. Tente novamente.");
+      console.error("Erro ao atualizar preferências", err);
+      setError("Ocorreu um erro ao salvar as suas preferências.");
     } finally {
       setLoading(false);
     }
@@ -143,7 +177,7 @@ export default function ProfilePreferences() {
       <div className="mb-6 text-center sm:text-left">
         <h1 className="text-xl font-bold text-[#111]">Preferências</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Personalize como recebe notificações e o idioma da plataforma.
+          Personalize notificações, região e moeda.
         </p>
       </div>
 
@@ -155,100 +189,102 @@ export default function ProfilePreferences() {
       )}
 
       {success && (
-        <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 flex items-center gap-3 text-green-700 text-sm animate-fade-in">
+        <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 flex items-center gap-3 text-green-700 text-sm">
           <Check size={18} />
           Preferências atualizadas com sucesso!
         </div>
       )}
 
-      {/* AQUI: Removido 'max-w-lg' e adicionado 'w-full' para ocupar todo o modal e centralizar */}
       <form onSubmit={handleSubmit} className="space-y-8 w-full">
-        
-        {/* Bloco de Notificações */}
-        <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Notificações</h3>
-            
-            <label className="flex items-center justify-between p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 transition-colors bg-gray-50/50">
-            <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-900">Notificações por e-mail</span>
-                <span className="text-xs text-gray-500">Receba resumos e alertas importantes</span>
-            </div>
-            <div className="relative inline-flex items-center cursor-pointer">
-                <input 
-                    type="checkbox" 
-                    name="email_notifications"
-                    checked={form.email_notifications}
-                    onChange={handleToggle}
-                    className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7F33D9]"></div>
-            </div>
-            </label>
 
-            <label className="flex items-center justify-between p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 transition-colors bg-gray-50/50">
-            <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-900">Atualizações de Produto</span>
-                <span className="text-xs text-gray-500">Novidades e melhorias do Sport Insider</span>
-            </div>
-            <div className="relative inline-flex items-center cursor-pointer">
-                <input 
-                    type="checkbox" 
-                    name="product_updates"
-                    checked={form.product_updates}
-                    onChange={handleToggle}
-                    className="sr-only peer" 
+        {/* Notificações */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+            Notificações
+          </h3>
+
+          {[
+            { key: "email_notifications", label: "Notificações por e-mail" },
+            { key: "product_updates", label: "Atualizações de Produto" }
+          ].map(({ key, label }) => {
+            const checked = !!form[key];
+
+            return (
+              <label
+                key={key}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 transition-colors bg-gray-50/50"
+              >
+                <span className="text-sm font-medium text-gray-900">
+                  {label}
+                </span>
+
+                <input
+                  type="checkbox"
+                  name={key}
+                  checked={checked}
+                  onChange={handleToggle}
+                  className="sr-only"
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7F33D9]"></div>
-            </div>
-            </label>
+
+                <div
+                  className={`w-11 h-6 rounded-full relative transition-colors
+                    ${checked ? "bg-[#7F33D9]" : "bg-gray-200"}
+                  `}
+                >
+                  <div
+                    className={`absolute top-[2px] left-[2px] h-5 w-5 bg-white rounded-full transition-transform
+                      ${checked ? "translate-x-full" : ""}
+                    `}
+                  />
+                </div>
+              </label>
+            );
+          })}
         </div>
 
         <hr className="border-gray-100" />
 
-        {/* Bloco de Localização */}
+        {/* Região e moeda */}
         <div className="space-y-5">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Localização</h3>
-            
-            {/* O Grid agora ocupará 100% da largura do modal, ficando balanceado */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Região</label>
-                    <div className="relative">
-                        <select
-                            name="region"
-                            value={form.region}
-                            onChange={handleChange}
-                            className="w-full appearance-none bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#7F33D9] focus:border-[#7F33D9] block p-2.5 pr-8"
-                        >
-                            <option value="Brasil">Brasil</option>
-                            <option value="Inglaterra">Inglaterra</option>
-                            <option value="Portugal">Portugal</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                            <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                        </div>
-                    </div>
-                </div>
+          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+            Região e moeda
+          </h3>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Idioma</label>
-                    <div className="relative">
-                        <select
-                            name="language"
-                            value={form.language}
-                            onChange={handleChange}
-                            className="w-full appearance-none bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-[#7F33D9] focus:border-[#7F33D9] block p-2.5 pr-8"
-                        >
-                            <option value="en">English</option>
-                            <option value="es">Espanhol</option>
-                            <option value="pt-BR">Português (Brasil)</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                            <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                        </div>
-                    </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium mb-1">Região</label>
+              <select
+                name="region_id"
+                value={form.region_id}
+                onChange={handleChange}
+                className="w-full border rounded-lg p-2.5"
+              >
+                <option value="">Selecione</option>
+                {regions.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Moeda</label>
+              <select
+                name="currency_id"
+                value={form.currency_id}
+                onChange={handleChange}
+                className="w-full border rounded-lg p-2.5"
+              >
+                <option value="">Selecione</option>
+                {currencies.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Actions */}
@@ -256,16 +292,10 @@ export default function ProfilePreferences() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-medium hover:bg-[#6025A8] transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20"
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-medium disabled:opacity-70"
           >
-            {loading ? (
-                <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Salvando...
-                </>
-            ) : (
-                "Salvar preferências"
-            )}
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {loading ? "Salvando..." : "Salvar preferências"}
           </button>
         </div>
 

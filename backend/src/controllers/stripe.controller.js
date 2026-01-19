@@ -55,7 +55,7 @@ export const createCheckoutSession = async (req, res) => {
         },
       ],
       success_url: prod_url + `/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: prod_url + `/pagamento-cancelado`,
+      cancel_url: prod_url + `/dashboard`,
       metadata: {
         userId: user.id,
         plan_id,

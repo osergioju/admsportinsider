@@ -174,7 +174,6 @@ export async function getRevenues(req, res) {
   }
 }
 
-
 export async function getRevenuesBreakdown(req, res) {
   try {
     const { id } = req.params;
@@ -338,7 +337,6 @@ export async function getDebtsBreakdown(req, res) {
   }
 }
 
-
 export async function getDebtsEvolution(req, res) {
   try {
     const { id } = req.params;
@@ -359,7 +357,6 @@ export async function getDebtsEvolution(req, res) {
     return res.status(500).json({ message: "Erro ao buscar evolução da dívida" });
   }
 }
-
 
 export async function getFinancialIndicators(req, res) {
   try {
@@ -384,5 +381,283 @@ export async function getFinancialIndicators(req, res) {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar indicadores financeiros" });
+  }
+}
+
+
+// MEsma coisa!!! mas só que para as ligas que seguem o mesmo padrão!!!!
+// Controller para página de liga única
+export async function getLeagueAvailableYears(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT DISTINCT year
+      FROM league_financials
+      WHERE id_league = $1
+      ORDER BY year ASC;
+    `, [id]);
+
+    return res.json({
+      years: result.rows.map(r => r.year)
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar anos disponíveis da liga:", err);
+    return res.status(500).json({ message: "Erro ao buscar anos disponíveis da liga" });
+  }
+}
+
+export async function getLeagueRevenues(req, res) {
+  try {
+    const { id } = req.params;
+    const { fromYear, toYear } = req.query;
+
+    const values = [id];
+    let idx = 2;
+    let yearFilter = "";
+
+    if (fromYear) {
+      yearFilter += ` AND lf.year >= $${idx}`;
+      values.push(fromYear);
+      idx++;
+    }
+
+    if (toYear) {
+      yearFilter += ` AND lf.year <= $${idx}`;
+      values.push(toYear);
+      idx++;
+    }
+
+    const result = await db.query(`
+      SELECT
+        lf.year,
+        fi.code,
+        fi.name_pt,
+        lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi 
+        ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code IN ('revenue', 'recurring_revenue')
+        ${yearFilter}
+      ORDER BY lf.year ASC;
+    `, values);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error("Erro ao buscar receitas da liga:", err);
+    return res.status(500).json({ message: "Erro ao buscar receitas da liga" });
+  }
+}
+
+export async function getLeagueRevenuesBreakdown(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT
+        fi.code,
+        fi.name_pt,
+        lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi 
+        ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code IN (
+          'media',
+          'commercial',
+          'matchday',
+          'prizes',
+          'other_revenue',
+          'transfers_revenue'
+        )
+        AND lf.year = (
+          SELECT MAX(year)
+          FROM league_financials
+          WHERE id_league = $1
+        )
+      ORDER BY fi.name_pt;
+    `, [id]);
+
+    return res.json({
+      year: result.rows[0]?.year || null,
+      data: result.rows
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar breakdown de receitas da liga:", err);
+    return res.status(500).json({ message: "Erro ao buscar breakdown de receitas da liga" });
+  }
+}
+
+export async function getLeaguePayrollCosts(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT lf.year, lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code = 'wages'
+      ORDER BY lf.year ASC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar folha salarial da liga" });
+  }
+}
+
+export async function getLeagueCostsBreakdown(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT lf.year, fi.code, fi.name_pt, lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code IN (
+          'wages',
+          'administrative',
+          'infrastructure',
+          'other_expense',
+          'transfers_costs'
+        )
+        AND lf.year = (
+          SELECT MAX(year) FROM league_financials WHERE id_league = $1
+        )
+      ORDER BY fi.name_pt;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar breakdown de custos da liga" });
+  }
+}
+
+export async function getLeagueNetResult(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT lf.year, fi.code, fi.name_pt, lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code IN ('revenue', 'costs', 'net_income')
+      ORDER BY lf.year DESC
+      LIMIT 15;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar resultado líquido da liga" });
+  }
+}
+
+export async function getLeagueNetResultEvolution(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT lf.year, lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code = 'net_income'
+      ORDER BY lf.year ASC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar evolução do resultado líquido da liga" });
+  }
+}
+
+export async function getLeagueDebtsBreakdown(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT lf.year, fi.code, fi.name_pt, lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code IN (
+          'loans_debt',
+          'tax_debt',
+          'payroll_debt',
+          'other_debt'
+        )
+        AND lf.year = (
+          SELECT MAX(year) FROM league_financials WHERE id_league = $1
+        )
+      ORDER BY fi.name_pt;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar breakdown de dívidas da liga" });
+  }
+}
+
+export async function getLeagueDebtsEvolution(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT lf.year, lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code = 'net_debt'
+      ORDER BY lf.year ASC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar evolução da dívida da liga" });
+  }
+}
+
+export async function getLeagueFinancialIndicators(req, res) {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(`
+      SELECT lf.year, fi.code, fi.name_pt, lf.value
+      FROM league_financials lf
+      JOIN financial_indicators fi ON fi.id = lf.id_indicator
+      WHERE lf.id_league = $1
+        AND fi.code IN (
+          'ebitda',
+          'recurring_ebitda',
+          'debt_revenue_ratio',
+          'debt_ebitda_ratio'
+        )
+      ORDER BY lf.year DESC;
+    `, [id]);
+
+    return res.json({ data: result.rows });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao buscar indicadores financeiros da liga" });
   }
 }

@@ -90,7 +90,7 @@ export const googleAuthCallback = async (req, res) => {
           email,
           null,          // não tem senha
           "user",
-          null,
+          1,
           now,
           now,
           now,

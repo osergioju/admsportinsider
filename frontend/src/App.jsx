@@ -19,7 +19,7 @@ import PageNotifications from "./Pages/User/Notifications";
 import ProfileDetails from "Pages/User/Profile/ProfileDetails";
 import SubscriptionInvoices from "Pages/User/Profile/SubscriptionInvoices";
 import SubscriptionPlan from "Pages/User/Profile/SubscriptionPlan";
-
+import Onboarding from "Pages/User/Onboarding";
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
@@ -57,12 +57,13 @@ import AdminLayout from "./layouts/AdminLayout";
 // Rotas 
 import PrivateRoute from "./routes/PrivateRoute";
 import RoleRoute from "./routes/RoleRoute";
-
 import ScrollToTop from "./components/uxui/ScrollTop";
 
 // Páginas do dashboard 
 import DashClubs from "./Pages/Dashboard/Clubs/Index";
 import DashClubUniques from "./Pages/Dashboard/Clubs/DashClubUniques";
+import DashLeagues from "./Pages/Dashboard/Leagues/Index";
+import DashLeagueUniques from "./Pages/Dashboard/Leagues/DashLeagueUniques";
 
 export default function App() {
   return (
@@ -91,14 +92,21 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user" element={<UserIndex />} />
               <Route path="/me/notifications" element={<PageNotifications />} />
-              
+
+              {/* Aqui é pro usuário compeltar o cadastro dele no site */}
+              <Route path="/onboarding/preferences" element={<Onboarding />} />
+
               <Route path="me/profile" element={<ProfileDetails />} />
               <Route path="me/financial" element={<SubscriptionInvoices />} />
               <Route path="me/subscription" element={<SubscriptionPlan />} />
 
-              {/* Dados - páginas de gráficos */}
+              {/* Dados - páginas de gráficos de clubes */}
               <Route path="/dashboard/clubs" element={<DashClubs />} />
               <Route path="/dashboard/clubs/:id" element={<DashClubUniques />} />
+
+              {/* Dados - páginas de gráficos de ligas */}
+              <Route path="/dashboard/leagues" element={<DashLeagues />} />
+              <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
             </Route>
 
           </Route>

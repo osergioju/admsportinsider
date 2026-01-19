@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsSearch, getClubById, createClub, updateClub, disableClub} from "../controllers/admin.controller.js";
+import {uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub} from "../controllers/admin.controller.js";
 import { getUsersInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -27,6 +27,7 @@ router.get("/leagues/:id", getLeagueById);
 router.post("/send-league", createLeague);
 router.put("/leagues/:id/update", updateLeague);
 router.delete("/disable-league/:id", disableLeague);
+router.post("/leagues/search", leaguesSearch);
 
 // CLUBES - GESTÃO CRUD
 router.get("/clubs", getAllClubs);
@@ -39,7 +40,7 @@ router.post("/import-clubs-xlsx", uploadXlsx, uploadClubXlsx);
 router.post("/clubs/search", clubsSearch);
 
 
-// USUÁRIOS - GESTÃO gns;smvr
+// USUÁRIOS - GESTÃO
 router.get("/users", getAllUsers);
 router.post("/users/:id", getUserById);
 router.post("/users/:id/disable", disableUser);

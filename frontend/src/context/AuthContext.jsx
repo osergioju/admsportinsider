@@ -4,7 +4,7 @@ import { api } from "../services/api";
 export const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined); // undefined = carregando
   const [loading, setLoading] = useState(true);
 
   /* =========================
@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem("token");
 
     if (!token) {
+      setUser(null);
       setLoading(false);
       return;
     }
@@ -24,12 +25,9 @@ export function AuthProvider({ children }) {
       try {
         const response = await api.get("/auth/me");
 
-        // garante shape consistente
         setUser(response.data.user);
       } catch (err) {
         console.error("Auth bootstrap failed", err);
-
-        // token inválido / expirado
         logout();
       } finally {
         setLoading(false);
@@ -50,6 +48,24 @@ export function AuthProvider({ children }) {
   }
 
   /* =========================
+     Update user (perfil, preferences, onboarding)
+  ========================= */
+  function updateUser(updates) {
+    setUser(prev => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        ...updates,
+        preferences: {
+          ...prev.preferences,
+          ...updates.preferences,
+        },
+      };
+    });
+  }
+
+  /* =========================
      Logout
   ========================= */
   function logout() {
@@ -66,11 +82,11 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         user,
-        setUser,      // 🔥 ESSENCIAL (sync de perfil)
         loading,
         login,
         logout,
-        isAuthenticated: !!user
+        updateUser, // 🔥 use isso no onboarding
+        isAuthenticated: !!user,
       }}
     >
       {children}

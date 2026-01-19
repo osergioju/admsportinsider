@@ -12,9 +12,9 @@ export default function Pricing() {
   const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState(null);
 
-  const isPaid =
-    user?.stripe_subscription_id &&
-    ["active", "trialing"].includes(user.subscription_status);
+
+  const isPaid = user.plan_id !== 1;
+
 
   async function handleSubscribe(plan_id) {
     if (!user) {

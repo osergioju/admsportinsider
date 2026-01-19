@@ -254,14 +254,32 @@ export async function resendVerification(req, res) {
 // Check no middleware pra ver quem sou eu
 export const me = async (req, res) => {
   try {
-    // Buscar dados atualizados no banco
     const result = await db.query(
-      `SELECT 
+      `
+        SELECT
         u.*,
-        p.name AS plan_name
+        p.name AS plan_name,
+
+        up.first_login_completed,
+        up.email_notifications,
+        up.product_updates,
+
+        r.id   AS region_id,
+        r.code AS region_code,
+        r.name AS region_name,
+
+        c.id   AS currency_id,
+        c.code AS currency_code,
+        c.name AS currency_name,
+        c.symbol AS currency_symbol
+
       FROM users u
       LEFT JOIN plans p ON p.id = u.plan_id
-      WHERE u.id = $1;`,
+      LEFT JOIN user_preferences up ON up.user_id = u.id
+      LEFT JOIN regions r ON r.id = up.region_id
+      LEFT JOIN currencies c ON c.id = up.currency_id
+      WHERE u.id = $1;
+      `,
       [req.user.id]
     );
 
@@ -269,25 +287,41 @@ export const me = async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    const user = result.rows[0];
+    const row = result.rows[0];
 
-    // Verifica se usuário está ativo
-    if (!user.active) {
+    if (!row.active) {
       return res.status(403).json({
         error: "Conta desativada. Entre em contato com o suporte."
       });
     }
 
-    // Verifica se e-mail foi confirmado
-    if (!user.email_verified) {
+    if (!row.email_verified) {
       return res.status(403).json({
         error: "E-mail ainda não foi verificado."
       });
     }
 
+    // Monta objeto de preferências
+    const preferences =
+      row.first_login_completed === null
+        ? null
+        : {
+            region_id: row.region_id,
+            currency_id: row.currency_id,
+            first_login_completed: row.first_login_completed
+          };
+
+    // Remove campos que não pertencem ao user direto
+    delete row.region_id;
+    delete row.currency_id;
+    delete row.first_login_completed;
+
     return res.json({
       authenticated: true,
-      user
+      user: {
+        ...row,
+        preferences
+      }
     });
 
   } catch (error) {
@@ -295,6 +329,7 @@ export const me = async (req, res) => {
     return res.status(500).json({ error: "Erro interno no servidor" });
   }
 };
+
 
 // RESET PASSWORD PADRÃO 
 export async function resetPasswordRequest(req, res) {

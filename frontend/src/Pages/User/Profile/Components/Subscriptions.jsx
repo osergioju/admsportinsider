@@ -18,10 +18,9 @@ export default function Subscriptions() {
 
   if (!user) return null;
 
-  const isPaid =
-    user.stripe_subscription_id &&
-    ["active", "trialing"].includes(user.subscription_status);
-
+  // Se o plano for free, que é de id 1 do plan_id, o is paid é false
+  const isPaid = user.plan_id !== 1;
+  
   const isFree = !isPaid;
 
   // --- CLASSES CSS PADRÃO ---

@@ -1,29 +1,13 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import brand from "../assets/svg/brand-full.svg"; 
 import MenuItem from "@/Components/uxui/MenuItem"; 
 import SubItem from "@/Components/uxui/SubMenu";
-import NotificationDropdown from "../components/notifications/NotificationDropdown";
 import FixedMenu from "../components/uxui/FixedMenu"; 
 import LinkButton from "../components/uxui/LinkButton";
 // Ícones do Usuário
-import { 
-  Home, 
-  Trophy, 
-  Shield, 
-  BarChart2, 
-  Heart, 
-  FileText, 
-  User, 
-  Wallet, 
-  BadgeQuestionMark, 
-  MessagesSquare,
-  ChevronDown,
-  LogOut,
-  CircleX,
-  Cog
-} from "lucide-react";
+import { Home, Trophy, Shield, BarChart2, Heart, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare,ChevronDown,LogOut,CircleX, } from "lucide-react";
 
 export default function DashboardLayout() {
   // --- LÓGICA DE LAYOUT (Idêntica ao Admin) ---
@@ -37,9 +21,24 @@ export default function DashboardLayout() {
   const [openClubes, setOpenClubes] = useState(false);
 
   const { logout, user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   // Se user for null, entra como convidado 
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
+    console.log(user);
+    if (
+      !user.preferences ||
+      !user.preferences.first_login_completed
+    ) {
+      navigate("/onboarding/preferences");
+    }
+  }, [user, navigate]);
+  
   // --- GESTOS (Swipe) ---
   const handleTouchStart = (e) => {
     setStartX(e.touches[0].clientX);
@@ -70,6 +69,8 @@ export default function DashboardLayout() {
     console.log("Ir para perfil do usuário", id);
   };
 
+  
+  
   // --- CONTEÚDO DO MENU ---
   const UserMenuContent = () => (
     <div className="w-full px-4 text-[#111] pb-20 lg:pb-0">
@@ -110,10 +111,9 @@ export default function DashboardLayout() {
                             <ChevronDown strokeWidth={1} size={18} className={`transition-transform ${openLigas ? "rotate-180" : ""}`} />
                         </button>
                         {openLigas && (
-                            <ul className="ml-12 mt-2 space-y-2">
-                                <SubItem to="/ligas/brasileirao" label="Brasileirão" />
-                                <SubItem to="/ligas/premier-league" label="Premier League" />
-                                <SubItem to="/ligas/laliga" label="La Liga" />
+                            <ul className="ml-12 space-y-2 mb-4">
+                                <SubItem to="/dashboard/leagues" label="Todas as ligas" />
+                                <SubItem to="/dashboard/leagues" label="Favoritas" />
                             </ul>
                         )}
                     </li>
@@ -128,7 +128,7 @@ export default function DashboardLayout() {
                             <ChevronDown strokeWidth={1} size={18} className={`transition-transform ${openClubes ? "rotate-180" : ""}`} />
                         </button>
                         {openClubes && (
-                            <ul className="ml-12 mt-2 space-y-2">
+                            <ul className="ml-12 space-y-2 mb-4">
                                 <SubItem to="/dashboard/clubs" label="Todos os clubes" />
                                 <SubItem to="/clubes/favoritos" label="Favoritos" />
                             </ul>

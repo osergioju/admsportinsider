@@ -303,6 +303,80 @@ export async function clubsSearch(req, res) {
   }
 }
 
+export async function leaguesSearch(req, res) {
+  try {
+    const { name, country } = req.body;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const values = [];
+    let whereClause = `WHERE l.active = TRUE`;
+    let idx = 1;
+
+    if (name) {
+      whereClause += ` AND l.name ILIKE $${idx}`;
+      values.push(`%${name}%`);
+      idx++;
+    }
+
+    if (country) {
+      whereClause += ` AND l.id_country = $${idx}`;
+      values.push(country);
+      idx++;
+    }
+
+    // Query principal
+    const leaguesQuery = await db.query(
+      `
+      SELECT 
+        l.id_league,
+        l.name,
+        l.description,
+        l.logo_url,
+        l.active,
+        l.created_at,
+
+        co.id_country,
+        co.name AS country_name,
+        co.flag_url
+
+      FROM leagues l
+      JOIN countries co 
+        ON co.id_country = l.id_country
+
+      ${whereClause}
+      ORDER BY l.name ASC
+      LIMIT $${idx} OFFSET $${idx + 1};
+      `,
+      [...values, limit, offset]
+    );
+
+    // Contagem total (mesmos filtros)
+    const countQuery = await db.query(
+      `
+      SELECT COUNT(*) 
+      FROM leagues l
+      ${whereClause};
+      `,
+      values
+    );
+
+    const total = parseInt(countQuery.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      leagues: leaguesQuery.rows,
+      pagination: { total, page, totalPages }
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar ligas:", err);
+    return res.status(500).json({ message: "Erro ao buscar ligas" });
+  }
+}
+
 
 export async function getClubById(req, res) {
   const { id } = req.params;
