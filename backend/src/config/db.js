@@ -1,4 +1,3 @@
-import fs from "fs";
 import pkg from "pg";
 import dotenv from "dotenv";
 
@@ -9,10 +8,9 @@ const { Pool } = pkg;
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    ca: fs.readFileSync("./certs/ca-certificate.crt").toString(),
-    rejectUnauthorized: true,
+    rejectUnauthorized: false
   },
-  family: 4,
+  family: 4
 });
 
 export default db;
