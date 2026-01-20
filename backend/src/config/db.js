@@ -9,7 +9,7 @@ const { Pool } = pkg;
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    ca: fs.readFileSync("./certs/ca.crt").toString(),
+    ca: fs.readFileSync('/var/www/admsportinsider/backend/certs/ca.crt').toString(),
     rejectUnauthorized: true,
   },
   family: 4,
