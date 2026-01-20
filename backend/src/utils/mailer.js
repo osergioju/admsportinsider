@@ -7,13 +7,16 @@ import { emailLayout } from "../utils/templatemail/auth/mailLayout.js";
 
 export function createTransporter() {
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false, // obrigatório na 587
     auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS 
-    }
+      user: process.env.BREVO_USER,      // normalmente seu e-mail cadastrado no Brevo
+      pass: process.env.BREVO_SMTP_KEY,  // chave SMTP (NÃO é senha de login)
+    },
   });
 }
+
 
 export async function sendResetEmail(to, token) {
   const transporter = createTransporter();
