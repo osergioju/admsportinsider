@@ -1,15 +1,16 @@
+import fs from "fs";
 import pkg from "pg";
 import dotenv from "dotenv";
 
-dotenv.config({ override: true }); // 🔥 força usar o .env
+dotenv.config({ override: true });
 
 const { Pool } = pkg;
 
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    require: true,
-    rejectUnauthorized: false,
+    ca: fs.readFileSync("./certs/ca.crt").toString(),
+    rejectUnauthorized: true,
   },
   family: 4,
 });
