@@ -6,8 +6,6 @@ export default function Main() {
     <div className="space-y-8">
       {/* Banners */}
       <HomeBanners></HomeBanners>
-
-      <RevenuesChart />
     
     </div>
   );
