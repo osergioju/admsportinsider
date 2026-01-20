@@ -149,8 +149,10 @@ export const googleAuthCallback = async (req, res) => {
       role: user.role
     });
 
+    console.log(prod_url);
+    
     // modelo A: backend resolve tudo e manda só o token pro front
-    const redirectUrl = prod_url + `/auth/google/callback?token=${token}`;
+    const redirectUrl = prod_url + `/autauth/google/callbackh/google/callback?token=${token}`;
     return res.redirect(redirectUrl);
 
   } catch (err) {

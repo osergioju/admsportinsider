@@ -17,6 +17,34 @@ export function createTransporter() {
   });
 }
 
+export async function sendEmailBrevo({ to, subject, html }) {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": process.env.BREVO_API_KEY,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: {
+        name: "Sport Insider",
+        email: "editorial@sportinsider.com.br",
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(JSON.stringify(data));
+  }
+
+  return data;
+}
+
 
 export async function sendResetEmail(to, token) {
   const transporter = createTransporter();
