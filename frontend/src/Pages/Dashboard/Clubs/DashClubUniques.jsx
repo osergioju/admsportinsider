@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
-
+import { CalendarDays, Castle, Handshake, X } from "lucide-react";
 // Gráficos 
 import RevenueLineChart from "./components/revenue/RevenueLineChart";
 import RevenueTableChart from "./components/revenue/RevenueTableChart";
@@ -89,16 +89,25 @@ export default function DashClubUniques() {
 
             <div> 
                 <div className="w-full"> 
-                    <div className="w-full p-4 flex items-center lg:p-10 bg-white rounded-2xl border"> 
-                        <div className="flex items-center">
-                            <img src={theClub.club.crest_url} className="w-20" alt="" />
+                    <div className="relative w-full p-4 flex items-center lg:px-6 bg-[{${theClub.club.primary_color}] rounded-2xl border"
+                        style={{
+                            background: `linear-gradient(135deg, ${theClub.club.primary_color} 85%, ${theClub.club.secondary_color || '#FFF5F5' } 106%)`
+                        }}
+                    > 
+                        <div className="overflow-hidden absolute bg-black rounded-full w-10 h-10 right-4 top-4">
+                            <img className="h-full" src={theClub.club.flag_url}></img>
                         </div>
-                        <div className="ml-4 lg:ml-10">
-                            <h3 className="text-2xl mb-3 lg:text-3xl font-light flex items-center gap-2">{theClub.club.name} - {theClub.club.country_name} <img className="w-6" src={theClub.club.flag_url}></img></h3> 
+                        <div className="flex items-center">
+                            <img src={theClub.club.crest_url} className="w-20 lg:w-36" alt="" />
+                        </div>
+                        <div className="ml-4 lg:ml-10 border-b border-white pb-4 lg:pb-6">
+                            <h3 className="text-white text-2xl mb-3 lg:text-3xl font-light flex items-center gap-2">
+                                {theClub.club.name}  
+                            </h3> 
                             <ul className="flex items-center gap-4"> 
-                                <li className="border-r pr-6 text-sm">Data de fundação: {theClub.club.founded_at }</li> 
-                                <li className="border-r pr-6 text-sm">Estádio: {theClub.club.stadium_name} ({theClub.club.stadium_capacity} lugares)</li> 
-                                <li className="text-sm">Estrutura societária: {theClub.club.ownership_model}</li> 
+                                <li className="text-white font-light border border-[#ffffff56] px-4 py-1 rounded-full text-sm flex items-center gap-2"><CalendarDays className="text-white w-4"/> Data de fundação: <span className="font-[500]">{theClub.club.founded_at.split('T')[0].split('-').reverse().join('/') }</span></li> 
+                                <li className="text-white font-light border border-[#ffffff56] px-4 py-1 rounded-full text-sm flex items-center gap-2"><Castle className="text-white w-4"/> Estádio: <span className="font-[500]">{theClub.club.stadium_name} ({theClub.club.stadium_capacity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} lugares)</span></li> 
+                                <li className="text-white font-light border border-[#ffffff56] px-4 py-1 rounded-full text-sm flex items-center gap-2"><Handshake className="text-white w-4"/> Estrutura societária: <span className="font-[500]">{theClub.club.ownership_model}</span></li> 
                             </ul> 
                         </div>
                        
@@ -108,9 +117,37 @@ export default function DashClubUniques() {
                 <div className="w-full grid lg:grid-cols-2 gap-4 mt-4 lg:mt-8"> 
 
                     <div className="w-full bg-white border p-6 rounded-xl"> 
-                        <h2>Receitas</h2> 
+                        <div className="text-left mb-2 p-2 lg:p-3">
+                            <h2 className="mb-2 text-[#0A0A0A] font-[400] text-xl">Receitas | Por ano</h2> 
+                            <div className="flex gap-4 lg:gap-10">
+                                <div className="div">
+                                    <span className="inline-block w-full text-[#AFAFB2]">Comparar clubes</span>
+                                    <select name="" id="">
+                                        <option value="">--</option>
+                                        <option value="">5 anos</option>
+                                        <option value="">10 anos</option>
+                                        <option value="">15 anos</option>
+                                    </select>
+                                </div>
+                                <div className="div">
+                                    <span className="inline-block w-full text-[#AFAFB2]">Período</span>
+                                    <select name="" id="">
+                                        <option value="">--</option>
+                                        <option value="">5 anos</option>
+                                        <option value="">10 anos</option>
+                                        <option value="">15 anos</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <RevenueLineChart data={revenues} />
                         <RevenueTableChart data={revenues} />
+
+                        <div className="mt-4">
+                            {/* Aqui vem os clubes a se comparar */}
+                            <button className="cursor-pointer hover:bg-[#7f34d9] hover:text-white transition-all bg-[#EDE6F6] flex items-center gap-2 px-4 py-1 rounded-lg text-sm text-[#8D6C6C]">Flamengo <X className="w-4"/></button>
+                        </div>
                     </div> 
 
                     <div className="w-full bg-white border p-6 rounded-xl"> 
