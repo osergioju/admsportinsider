@@ -1,11 +1,26 @@
+import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueLineData } from "./revenue.adapter";
 
-export default function RevenueLineChart({ data }) {
-  const adapted = adaptRevenueLineData(data);
+export default function RevenueLineChart({ data, clubesSelecionados }) {
+  /**
+   * data agora é um objeto:
+   * {
+   *   [clubId]: [{ year, value, ... }]
+   * }
+   */
+  const adapted = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    return adaptRevenueLineData(data, clubesSelecionados);
+  }, [data, clubesSelecionados]);
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">Sem dados de receita</p>;
+    return (
+      <p className="text-sm text-gray-400">
+        Sem dados de receita para exibição
+      </p>
+    );
   }
 
   const option = {
@@ -38,11 +53,11 @@ export default function RevenueLineChart({ data }) {
     yAxis: {
       type: "value",
       axisLabel: {
-        formatter: value => `R$ ${(value / 1000).toFixed(0)}M`
+        formatter: (value) => `R$ ${(value / 1000).toFixed(0)}M`
       }
     },
-    series: adapted.series.map(s => ({
-      ...s,
+    series: adapted.series.map((serie) => ({
+      ...serie,
       type: "line",
       smooth: false,
       symbol: "circle",

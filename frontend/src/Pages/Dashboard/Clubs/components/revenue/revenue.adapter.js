@@ -1,27 +1,41 @@
-export function adaptRevenueLineData(apiData) {
-  if (!apiData?.data) return null;
+export function adaptRevenueLineData(dataByClub, clubMap = {}) {
+  if (!dataByClub || Object.keys(dataByClub).length === 0) {
+    return null;
+  }
 
-  const years = [...new Set(apiData.data.map(item => item.year))].sort();
+  // 1️⃣ União de todos os anos
+  const yearsSet = new Set();
 
-  const revenue = {};
-  const recurring = {};
-
-  apiData.data.forEach(item => {
-    if (item.code === "revenue") revenue[item.year] = item.value;
-    if (item.code === "recurring_revenue") recurring[item.year] = item.value;
+  Object.values(dataByClub).forEach((clubData) => {
+    clubData.forEach((item) => {
+      if (item.code === "revenue") {
+        yearsSet.add(item.year);
+      }
+    });
   });
+
+  const years = Array.from(yearsSet).sort();
+
+  // 2️⃣ Séries por clube
+  const series = Object.entries(dataByClub).map(
+    ([clubId, clubData]) => {
+      const revenueByYear = {};
+
+      clubData.forEach((item) => {
+        if (item.code === "revenue") {
+          revenueByYear[item.year] = item.value;
+        }
+      });
+
+      return {
+        name: clubMap[clubId] || `Clube ${clubId}`,
+        data: years.map((year) => revenueByYear[year] ?? 0)
+      };
+    }
+  );
 
   return {
     years,
-    series: [
-      {
-        name: "Receita",
-        data: years.map(y => revenue[y] ?? 0)
-      },
-      {
-        name: "Receita recorrente",
-        data: years.map(y => recurring[y] ?? 0)
-      }
-    ]
+    series
   };
 }

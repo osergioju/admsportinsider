@@ -10,9 +10,7 @@ export default function RevenueTableChart({ data }) {
   }
 
   console.log(adapted);
-  if (!adapted.series.length) {
-    return <p className="text-sm text-gray-400">Sem dados de receita</p>;
-  }
+ 
 
   return (
     <div className="overflow-x-auto">

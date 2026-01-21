@@ -159,7 +159,7 @@ export async function getRevenues(req, res) {
       JOIN financial_indicators fi 
         ON fi.id = cf.id_indicator
       WHERE cf.id_club = $1
-        AND fi.code IN ('revenue', 'recurring_revenue')
+        AND fi.code IN ('revenue')
         ${yearFilter}
       ORDER BY cf.year ASC;
     `, values);

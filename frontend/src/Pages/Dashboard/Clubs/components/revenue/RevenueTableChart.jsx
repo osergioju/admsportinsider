@@ -1,53 +1,65 @@
-import ReactECharts from "echarts-for-react";
+// components/revenue/RevenueTableChart.jsx
+import { useMemo } from "react";
 import { adaptRevenueLineData } from "./revenue.adapter";
 
-export default function RevenueTableChart({ data }) {
-  const adapted = adaptRevenueLineData(data);
+export default function RevenueTableChart({ data, clubesSelecionados }) {
+  /**
+   * Reutiliza o MESMO adapter do gráfico
+   * garantindo consistência entre visualizações
+   */
+  const adapted = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    return adaptRevenueLineData(data, clubesSelecionados);
+  }, [data, clubesSelecionados]);
 
   function formatMoney(value) {
     if (value === null || value === undefined) return "—";
     return `R$ ${Number(value).toLocaleString("pt-BR")}`;
   }
 
-  console.log(adapted);
-  if (!adapted.series.length) {
+  if (!adapted || adapted.series.length === 0) {
     return <p className="text-sm text-gray-400">Sem dados de receita</p>;
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto mt-4">
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b text-gray-500">
             <th className="text-left py-2">Ano</th>
-            <th className="text-right py-2">Receita</th>
-            <th className="text-right py-2">Receita recorrente</th>
+
+            {adapted.series.map((serie) => (
+              <th
+                key={serie.name}
+                className="text-right py-2 whitespace-nowrap"
+              >
+                {serie.name}
+              </th>
+            ))}
           </tr>
         </thead>
 
         <tbody>
-        {adapted.years.map((year, index) => {
-            const receita = Number(adapted.series[0].data[index]);
-            const receitaRecorrente = Number(adapted.series[1].data[index]);
+          {adapted.years.map((year, yearIndex) => (
+            <tr key={year} className="border-b last:border-0">
+              <td className="py-2">{year}</td>
 
-            return (
-                <tr key={year} className="border-b last:border-0">
-                    <td className="py-2">
-                        {year}
-                    </td>
+              {adapted.series.map((serie) => {
+                const value = serie.data[yearIndex];
 
-                    <td className="py-2 text-right">
-                        {formatMoney(receita)}
-                    </td>
-
-                    <td className="py-2 text-right">
-                        {formatMoney(receitaRecorrente)}
-                    </td>
-                </tr>
-            );
-        })}
+                return (
+                  <td
+                    key={`${serie.name}-${year}`}
+                    className="py-2 text-right"
+                  >
+                    {formatMoney(value)}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
         </tbody>
-
       </table>
     </div>
   );
