@@ -5,13 +5,15 @@ export default function RevenueBreakdownBarChart({
   data,
   clubesSelecionados,
   clubMap,
-  mainClubId
+  mainClubId,
+  clubColorMap
 }) {
   const adapted = adaptRevenueBreakdown(
     data,
     clubesSelecionados,
     mainClubId,
-    clubMap
+    clubMap,
+    clubColorMap
   );
 
   if (!adapted) {
@@ -19,11 +21,28 @@ export default function RevenueBreakdownBarChart({
   }
 
   const option = {
+    textStyle: {
+      fontFamily: "Effra Trial",
+      fontSize: 12
+    },
     tooltip: {
       trigger: "axis",
-      axisPointer: { type: "shadow" },
-      valueFormatter: (value) =>
-        `R$ ${Number(value).toLocaleString("pt-BR")}`
+      backgroundColor: "#fff",
+      borderColor: "#ddd",
+      borderWidth: 1,
+      textStyle: {
+        color: "#000",
+        fontFamily: "Effra Trial",
+        fontWeight: "normal"
+      },
+      formatter: (params) => {
+        return params
+          .map(
+            (p) =>
+              `${p.marker} ${p.seriesName}: R$ ${Number(p.value).toLocaleString("pt-BR")}`
+          )
+          .join("<br/>");
+      }
     },
     grid: {
       left: 0,
@@ -42,15 +61,18 @@ export default function RevenueBreakdownBarChart({
       type: "category",
       data: adapted.categories,
       axisLabel: {
-        rotate: 30,
-        interval: 0
+        interval: 0,
+        rotate: 0,
+        width: 80,          
+        overflow: "break",
+        lineHeight: 16
       }
     },
     series: adapted.series
   };
 
   return (
-    <div className="w-full h-72">
+    <div className="w-full h-[300px]">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}

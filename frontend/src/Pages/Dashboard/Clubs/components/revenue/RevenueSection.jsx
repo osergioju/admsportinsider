@@ -10,7 +10,8 @@ export default function RevenueSection({
   clubMap,
   setClubMap,
   mainClubId,
-
+  clubColorMap,
+  setClubColorMap,
   // ⬇️ AGORA VEM DO PAI
   selectedClubs,
   setSelectedClubs
@@ -26,6 +27,15 @@ export default function RevenueSection({
       ...prev,
       [clube.id_club]: clube.name
     }));
+
+    setClubColorMap((prev) => ({
+      ...prev,
+      [clube.id_club]: {
+        color_one: clube.primary_color,
+        color_two: clube.secondary_color
+      }
+    }));
+
   }
 
   function handleRemoveClub(clubeId) {
@@ -35,8 +45,8 @@ export default function RevenueSection({
   }
 
   return (
-    <div className="w-full bg-white border p-6 rounded-xl">
-      <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
+    <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
+      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
         Receitas | Por ano
       </h2>
 
@@ -50,6 +60,7 @@ export default function RevenueSection({
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}
         mainClubId={mainClubId}
+        clubColorMap={clubColorMap}
       />
 
       <RevenueTableChart

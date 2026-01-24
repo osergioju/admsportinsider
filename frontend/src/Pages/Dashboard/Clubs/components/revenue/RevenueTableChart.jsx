@@ -31,7 +31,7 @@ export default function RevenueTableChart({
   }
 
   return (
-    <div className="overflow-x-auto mt-4">
+    <div className="hidden overflow-x-auto mt-4">
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b text-gray-500">

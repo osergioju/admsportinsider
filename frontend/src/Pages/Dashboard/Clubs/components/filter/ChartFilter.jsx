@@ -55,10 +55,10 @@ export default function ChartFilter({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full mb-2">
       <div className="flex gap-4 lg:gap-10">
         <div className="relative w-64">
-          <span className="inline-block w-full text-[#AFAFB2] mb-1">
+          <span className="inline-block font-light w-full text-[#AFAFB2] mb-2">
             Comparar clubes (max. 5)
           </span>
 
@@ -76,7 +76,7 @@ export default function ChartFilter({
                 ? "Limite de 5 clubes atingido"
                 : "Digite o nome do clube"
             }
-            className={`w-full border rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 
+            className={`w-full border rounded-full px-4 py-4 font-light text-sm focus:outline-none focus:ring-2 
               ${
                 clubesSelecionados.length >= LIMITE_CLUBES
                   ? "bg-gray-100 cursor-not-allowed"
@@ -117,8 +117,8 @@ export default function ChartFilter({
           )}
         </div>
 
-        <div>
-          <span className="inline-block w-full text-[#AFAFB2]">Período</span>
+        <div className="hidden">
+          <span className="inline-block w-full text-[#AFAFB2] font-light">Período</span>
           <select className="w-full border rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#7f34d9]">
             <option value="">--</option>
             <option value="5">5 anos</option>

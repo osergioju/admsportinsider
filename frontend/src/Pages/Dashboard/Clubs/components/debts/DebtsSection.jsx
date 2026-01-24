@@ -33,7 +33,7 @@ export default function DebtsSection({
   return (
     <div className="w-full bg-white border p-6 rounded-xl">
       <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
-        Dívidas | Composição
+        Dívidas
       </h2>
 
       <ChartFilter

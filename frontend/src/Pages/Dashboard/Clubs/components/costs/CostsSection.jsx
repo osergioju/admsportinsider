@@ -33,7 +33,7 @@ export default function CostsSection({
   return (
     <div className="w-full bg-white border p-6 rounded-xl">
       <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
-        Custos | Composição
+        Custos
       </h2>
 
       <ChartFilter

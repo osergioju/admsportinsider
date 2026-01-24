@@ -9,7 +9,9 @@ export default function PayrollSection({
   setClubMap,
   mainClubId,
   selectedClubs,
-  setSelectedClubs
+  setSelectedClubs,
+  clubColorMap,
+  setClubColorMap
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -22,6 +24,15 @@ export default function PayrollSection({
       ...prev,
       [clube.id_club]: clube.name
     }));
+
+    setClubColorMap((prev) => ({
+      ...prev,
+      [clube.id_club]: {
+        color_one: clube.primary_color,
+        color_two: clube.secondary_color
+      }
+    }));
+
   }
 
   function handleRemoveClub(clubeId) {
@@ -33,7 +44,7 @@ export default function PayrollSection({
   return (
     <div className="w-full bg-white border p-6 rounded-xl">
       <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
-        Folha salarial | Por ano
+        Folha salarial
       </h2>
 
       <ChartFilter
@@ -46,6 +57,7 @@ export default function PayrollSection({
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}
         mainClubId={mainClubId}
+        clubColorMap={clubColorMap}
       />
 
       {selectedClubs.length > 0 && (

@@ -1,8 +1,11 @@
+import * as echarts from "echarts";
+
 export function adaptRevenueBreakdown(
   dataByClub,
   clubesSelecionados,
   mainClubId,
-  clubMap
+  clubMap,
+  clubColorMap
 ) {
   if (!dataByClub || Object.keys(dataByClub).length === 0) {
     return null;
@@ -37,16 +40,26 @@ export function adaptRevenueBreakdown(
       return found ? Number(found.value) : 0;
     });
 
+    const DEFAULT_COLOR = "#999999";
+
+    const clubColor =
+      clubColorMap?.[String(clubId)]?.color_one || DEFAULT_COLOR;
+
     return {
       name: clubMap[clubId] || `Clube ${clubId}`,
       type: "bar",
       barGap: "20%",
       barWidth: "20%",
       itemStyle: {
-        borderRadius: [6, 6, 6, 6]
+        borderRadius: [6, 6, 0, 0],
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: clubColor }, // 👈 cor do clube no topo
+          { offset: 1, color: "#ffffff" }  // base branca
+        ])
       },
       data: values
     };
+
   });
 
   return { categories, series };

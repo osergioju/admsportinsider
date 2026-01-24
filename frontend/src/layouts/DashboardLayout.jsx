@@ -30,7 +30,6 @@ export default function DashboardLayout() {
       return;
     }
 
-    console.log(user);
     if (
       !user.preferences ||
       !user.preferences.first_login_completed

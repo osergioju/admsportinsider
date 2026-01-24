@@ -1,4 +1,4 @@
-export function adaptRevenueLineData(dataByClub,mainClubId,clubesSelecionados,clubMap = {}) {
+export function adaptRevenueLineData(dataByClub,mainClubId, clubesSelecionados, clubMap, clubColorMap = {}) {
   if (
     !dataByClub ||
     !mainClubId ||
@@ -32,6 +32,8 @@ export function adaptRevenueLineData(dataByClub,mainClubId,clubesSelecionados,cl
   const years = Array.from(yearsSet).sort();
 
   // Séries APENAS dos clubes do gráfico
+  const DEFAULT_COLOR = "#999999"; // cor genérica
+
   const series = clubesNoGrafico.map((clubId) => {
     const revenueByYear = {};
 
@@ -41,11 +43,16 @@ export function adaptRevenueLineData(dataByClub,mainClubId,clubesSelecionados,cl
       }
     });
 
+    const clubColor =
+      clubColorMap?.[clubId]?.color_one || DEFAULT_COLOR;
+
     return {
       name: clubMap?.[clubId] || `Clube ${clubId}`,
-      data: years.map((year) => revenueByYear[year] ?? 0)
+      data: years.map((year) => revenueByYear[year] ?? 0),
+      color: clubColor 
     };
   });
+
 
   return { years, series };
 }

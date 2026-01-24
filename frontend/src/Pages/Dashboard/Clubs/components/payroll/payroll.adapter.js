@@ -2,7 +2,8 @@ export function adaptPayrollLineData(
   dataByClub,
   clubesSelecionados,
   mainClubId,
-  clubMap
+  clubMap,
+  clubColorMap
 ) {
   if (!dataByClub || Object.keys(dataByClub).length === 0) {
     return null;
@@ -24,6 +25,8 @@ export function adaptPayrollLineData(
 
   const years = Array.from(yearsSet).sort((a, b) => a - b);
 
+  const DEFAULT_COLOR = "#999999";
+
   const series = clubIds.map((clubId) => {
     const apiData = dataByClub[clubId];
 
@@ -36,6 +39,9 @@ export function adaptPayrollLineData(
       return found ? found.value : 0;
     });
 
+    const clubColor =
+      clubColorMap?.[String(clubId)]?.color_one || DEFAULT_COLOR;
+
     return {
       name: clubMap[clubId] || `Clube ${clubId}`,
       type: "line",
@@ -43,10 +49,20 @@ export function adaptPayrollLineData(
       smooth: false,
       symbol: "circle",
       symbolSize: 8,
-      lineStyle: { width: 3 },
-      areaStyle: { opacity: 0.1 }
+      lineStyle: {
+        width: 3,
+        color: clubColor // 👈 cor da linha
+      },
+      itemStyle: {
+        color: clubColor // 👈 cor dos pontos
+      },
+      areaStyle: {
+        opacity: 0.1,
+        color: clubColor // 👈 cor da área
+      }
     };
   });
+
 
   return { years, series };
 }
