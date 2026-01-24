@@ -1,17 +1,13 @@
-// components/revenue/RevenueSection.jsx
+// components/netResult/NetResultTableSection.jsx
 import { X } from "lucide-react";
-
-import RevenueLineChart from "./RevenueLineChart";
-import RevenueTableChart from "./RevenueTableChart";
+import NetResultTable from "./NetResultTable";
 import ChartFilter from "../filter/ChartFilter";
 
-export default function RevenueSection({
+export default function NetResultTableSection({
   data,
   clubMap,
   setClubMap,
   mainClubId,
-
-  // ⬇️ AGORA VEM DO PAI
   selectedClubs,
   setSelectedClubs
 }) {
@@ -37,7 +33,7 @@ export default function RevenueSection({
   return (
     <div className="w-full bg-white border p-6 rounded-xl">
       <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
-        Receitas | Por ano
+        Resultado financeiro | Tabela
       </h2>
 
       <ChartFilter
@@ -45,14 +41,7 @@ export default function RevenueSection({
         onAddClub={handleAddClub}
       />
 
-      <RevenueLineChart
-        data={data}
-        clubesSelecionados={selectedClubs}
-        clubMap={clubMap}
-        mainClubId={mainClubId}
-      />
-
-      <RevenueTableChart
+      <NetResultTable
         data={data}
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}

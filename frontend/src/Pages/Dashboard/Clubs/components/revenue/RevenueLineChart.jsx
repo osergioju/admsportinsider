@@ -2,18 +2,30 @@ import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueLineData } from "./revenue.adapter";
 
-export default function RevenueLineChart({ data, clubesSelecionados }) {
+export default function RevenueLineChart({
+  data,
+  clubesSelecionados,
+  clubMap,
+  mainClubId
+}) {
+
   /**
    * data agora é um objeto:
    * {
    *   [clubId]: [{ year, value, ... }]
    * }
    */
-  const adapted = useMemo(() => {
-    if (!data || Object.keys(data).length === 0) return null;
+    const adapted = useMemo(() => {
+      if (!data || Object.keys(data).length === 0) return null;
 
-    return adaptRevenueLineData(data, clubesSelecionados);
-  }, [data, clubesSelecionados]);
+      return adaptRevenueLineData(
+        data,
+        mainClubId,
+        clubesSelecionados,
+        clubMap
+      );
+    }, [data, mainClubId, clubesSelecionados, clubMap]);
+
 
   if (!adapted) {
     return (

@@ -1,28 +1,53 @@
-const LABELS = {
-  media: "Direitos de transmissão",
-  commercial: "Comercial",
-  matchday: "Matchday",
-  prizes: "Premiações",
-  transfers_revenue: "Atletas",
-  other_revenue: "Outros"
-};
+export function adaptRevenueBreakdown(
+  dataByClub,
+  clubesSelecionados,
+  mainClubId,
+  clubMap
+) {
+  if (!dataByClub || Object.keys(dataByClub).length === 0) {
+    return null;
+  }
 
-export function adaptRevenueBreakdown(apiData) {
-  if (!apiData?.data) return null;
+  const clubIds = [mainClubId, ...clubesSelecionados];
 
-  const categories = [];
-  const values = [];
+  // juntar todas as categorias existentes
+  const categorySet = new Set();
 
-  apiData.data.forEach(item => {
-    const label = item.name_pt;
-    if (!label) return;
+  clubIds.forEach((clubId) => {
+    const apiData = dataByClub[clubId];
+    if (!Array.isArray(apiData)) return;
 
-    categories.push(label);
-    values.push(item.value);
+    apiData.forEach((item) => {
+      if (item.name_pt) {
+        categorySet.add(item.name_pt);
+      }
+    });
   });
 
-  return {
-    categories,
-    values
-  };
+  const categories = Array.from(categorySet);
+
+  const series = clubIds.map((clubId) => {
+    const apiData = dataByClub[clubId];
+
+    const values = categories.map((category) => {
+      const found = Array.isArray(apiData)
+        ? apiData.find((item) => item.name_pt === category)
+        : null;
+
+      return found ? Number(found.value) : 0;
+    });
+
+    return {
+      name: clubMap[clubId] || `Clube ${clubId}`,
+      type: "bar",
+      barGap: "20%",
+      barWidth: "20%",
+      itemStyle: {
+        borderRadius: [6, 6, 6, 6]
+      },
+      data: values
+    };
+  });
+
+  return { categories, series };
 }

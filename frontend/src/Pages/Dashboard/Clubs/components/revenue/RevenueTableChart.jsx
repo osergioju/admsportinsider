@@ -2,16 +2,24 @@
 import { useMemo } from "react";
 import { adaptRevenueLineData } from "./revenue.adapter";
 
-export default function RevenueTableChart({ data, clubesSelecionados }) {
-  /**
-   * Reutiliza o MESMO adapter do gráfico
-   * garantindo consistência entre visualizações
-   */
+export default function RevenueTableChart({
+  data,
+  clubesSelecionados,
+  clubMap,
+  mainClubId
+}) {
+  
   const adapted = useMemo(() => {
-    if (!data || Object.keys(data).length === 0) return null;
+  if (!data || Object.keys(data).length === 0) return null;
 
-    return adaptRevenueLineData(data, clubesSelecionados);
-  }, [data, clubesSelecionados]);
+  return adaptRevenueLineData(
+    data,
+    mainClubId,
+    clubesSelecionados,
+    clubMap
+  );
+}, [data, mainClubId, clubesSelecionados, clubMap]);
+
 
   function formatMoney(value) {
     if (value === null || value === undefined) return "—";

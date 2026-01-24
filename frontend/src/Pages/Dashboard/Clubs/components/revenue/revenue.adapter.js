@@ -1,13 +1,28 @@
-export function adaptRevenueLineData(dataByClub, clubMap = {}) {
-  if (!dataByClub || Object.keys(dataByClub).length === 0) {
+export function adaptRevenueLineData(dataByClub,mainClubId,clubesSelecionados,clubMap = {}) {
+  if (
+    !dataByClub ||
+    !mainClubId ||
+    Object.keys(dataByClub).length === 0
+  ) {
     return null;
   }
 
-  // 1️⃣ União de todos os anos
+  const safeClubesSelecionados = Array.isArray(clubesSelecionados)
+    ? clubesSelecionados
+    : [];
+
+  // 🟢 Fonte ÚNICA de verdade
+  const clubesNoGrafico = [
+    mainClubId,
+    ...safeClubesSelecionados.filter(
+      (id) => String(id) !== String(mainClubId)
+    )
+  ];
+
   const yearsSet = new Set();
 
-  Object.values(dataByClub).forEach((clubData) => {
-    clubData.forEach((item) => {
+  clubesNoGrafico.forEach((clubId) => {
+    (dataByClub[clubId] || []).forEach((item) => {
       if (item.code === "revenue") {
         yearsSet.add(item.year);
       }
@@ -16,26 +31,21 @@ export function adaptRevenueLineData(dataByClub, clubMap = {}) {
 
   const years = Array.from(yearsSet).sort();
 
-  // 2️⃣ Séries por clube
-  const series = Object.entries(dataByClub).map(
-    ([clubId, clubData]) => {
-      const revenueByYear = {};
+  // Séries APENAS dos clubes do gráfico
+  const series = clubesNoGrafico.map((clubId) => {
+    const revenueByYear = {};
 
-      clubData.forEach((item) => {
-        if (item.code === "revenue") {
-          revenueByYear[item.year] = item.value;
-        }
-      });
+    (dataByClub[clubId] || []).forEach((item) => {
+      if (item.code === "revenue") {
+        revenueByYear[item.year] = item.value;
+      }
+    });
 
-      return {
-        name: clubMap[clubId] || `Clube ${clubId}`,
-        data: years.map((year) => revenueByYear[year] ?? 0)
-      };
-    }
-  );
+    return {
+      name: clubMap?.[clubId] || `Clube ${clubId}`,
+      data: years.map((year) => revenueByYear[year] ?? 0)
+    };
+  });
 
-  return {
-    years,
-    series
-  };
+  return { years, series };
 }

@@ -5,14 +5,12 @@ import { CalendarDays, Castle, Handshake } from "lucide-react";
 
 // Sections
 import RevenueSection from "./components/revenue/RevenueSection";
-
-// Outros gráficos
-import RevenueBreakdownBarChart from "./components/revenueBreak/RevenueBreakdownBarChart";
-import PayrollLineChart from "./components/payroll/PayrollLineChart";
-import CostsPieChart from "./components/costs/CostsPieChart";
-import NetResultTable from "./components/netResult/NetResultTable";
-import NetResultLineChart from "./components/netResult/NetResultLineChart";
-import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
+import RevenueBreakdownSection from "./components/revenueBreak/RevenueBreakdownSection";
+import PayrollSection from "./components/payroll/PayrollSection";
+import CostsSection from "./components/costs/CostsSection";
+import NetResultTableSection from "./components/netResult/NetResultTableSection";
+import NetResultSection from "./components/netResult/NetResultSection";
+import DebtsSection from "./components/debts/DebtsSection";
 
 export default function DashClubUniques() {
   const { id } = useParams();
@@ -22,22 +20,36 @@ export default function DashClubUniques() {
   const [theClub, setTheClub] = useState(null);
 
   /**
-   * clubes adicionados para comparação (NÃO inclui o principal)
-   */
-  const [clubesSelecionados, setClubesSelecionados] = useState([]);
-
-  /**
-   * receitas por clube
-   * { [clubId]: [] }
-   */
-  const [revenues, setRevenues] = useState({});
-
-  /**
-   * 🔑 mapa id → nome do clube
+   * 🔑 mapa id → nome do clube (global, reaproveitado)
    */
   const [clubMap, setClubMap] = useState({});
 
-  // outros dados (mantidos)
+  /**
+   * 🎯 clubes selecionados POR GRÁFICO
+   */
+  const [chartComparisons, setChartComparisons] = useState({
+    revenue: [],
+    payroll: [],
+    costs: [],
+    netResult: [],
+    debts: [],
+    revenueBreakdown: []
+  });
+
+  /**
+   * 📦 dados POR GRÁFICO
+   * ex: chartData.revenue = { 1: [...], 3: [...] }
+   */
+  const [chartData, setChartData] = useState({
+    revenue: {},
+    payroll: {},
+    costs: {},
+    netResult: {},
+    debts: {},
+    revenueBreakdown: {}
+  });
+
+  // dados fixos (sem comparação)
   const [revenuesBreakdown, setRevenuesBreakdown] = useState(null);
   const [payrollCosts, setPayrollCosts] = useState(null);
   const [costsBreakdown, setCostsBreakdown] = useState(null);
@@ -49,19 +61,19 @@ export default function DashClubUniques() {
   const [availableYears, setAvailableYears] = useState(null);
 
   /**
-   * lista FINAL de clubes para comparação
+   * 🔁 clubes por gráfico (sempre inclui o principal)
    */
-  const clubesParaComparar = useMemo(() => {
+  const clubsForChart = (chartKey) => {
     return [
       mainClubId,
-      ...clubesSelecionados.filter(
+      ...chartComparisons[chartKey].filter(
         (clubId) => Number(clubId) !== mainClubId
       )
     ];
-  }, [mainClubId, clubesSelecionados]);
+  };
 
   /**
-   * Load inicial (dados fixos do clube)
+   * 🚀 load inicial (dados fixos do clube)
    */
   useEffect(() => {
     async function loadDashboard() {
@@ -94,7 +106,6 @@ export default function DashClubUniques() {
 
         setTheClub(theclubData.data);
 
-        // registra nome do clube principal
         setClubMap({
           [mainClubId]: theclubData.data.club.name
         });
@@ -118,52 +129,98 @@ export default function DashClubUniques() {
     loadDashboard();
   }, [id, mainClubId]);
 
-  useEffect(() => {
-    console.log("clubMap atualizado:", clubMap);
-  }, [clubMap]);
-
   /**
-   * Busca receitas para todos os clubes da comparação
+   * 🔁 fetch genérico por gráfico
    */
-  useEffect(() => {
-    async function fetchRevenues() {
-      const clubesParaBuscar = clubesParaComparar.filter(
-        (clubId) => !revenues[clubId]
+  async function fetchChartData(chartKey, endpointBuilder) {
+    const clubs = clubsForChart(chartKey);
+    const existingData = chartData[chartKey];
+
+    const clubsToFetch = clubs.filter(
+      (clubId) => !existingData[clubId]
+    );
+
+    if (clubsToFetch.length === 0) return;
+
+    try {
+      const responses = await Promise.all(
+        clubsToFetch.map((clubId) =>
+          api.get(endpointBuilder(clubId))
+        )
       );
 
-      if (clubesParaBuscar.length === 0) return;
+      const newData = {};
+      responses.forEach((res, index) => {
+        newData[clubsToFetch[index]] = res.data.data;
+      });
 
-      try {
-        const responses = await Promise.all(
-          clubesParaBuscar.map((clubId) =>
-            api.get(`/dashboard/clubs/${clubId}/financials/revenues`)
-          )
-        );
-
-        const novosDados = {};
-        responses.forEach((res, index) => {
-          novosDados[clubesParaBuscar[index]] = res.data.data;
-        });
-
-        setRevenues((prev) => ({
-          ...prev,
-          ...novosDados
-        }));
-      } catch (err) {
-        console.error("Erro ao buscar receitas:", err);
-      }
+      setChartData((prev) => ({
+        ...prev,
+        [chartKey]: {
+          ...prev[chartKey],
+          ...newData
+        }
+      }));
+    } catch (err) {
+      console.error(`Erro ao buscar dados do gráfico ${chartKey}:`, err);
     }
+  }
 
-    fetchRevenues();
-  }, [clubesParaComparar, revenues]);
+  /**
+   * 📊 efeitos por gráfico
+   */
+  useEffect(() => {
+    fetchChartData("revenue", (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/revenues`
+    );
+  }, [chartComparisons.revenue, mainClubId]);
+
+  useEffect(() => {
+    fetchChartData("payroll", (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/costs/payroll`
+    );
+  }, [chartComparisons.payroll, mainClubId]);
+
+  useEffect(() => {
+    fetchChartData("costs", (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/costs/breakdown`
+    );
+  }, [chartComparisons.costs, mainClubId]);
+
+  useEffect(() => {
+    fetchChartData("netResult", (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/net-result`
+    );
+  }, [chartComparisons.netResult, mainClubId]);
+
+  useEffect(() => {
+    fetchChartData("debts", (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/debts/breakdown`
+    );
+  }, [chartComparisons.debts, mainClubId]);
+
+  useEffect(() => {
+    fetchChartData("revenueBreakdown", (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/revenues/breakdown`
+    );
+  }, [chartComparisons.revenueBreakdown, mainClubId]);
+
 
   if (loading || !theClub) {
     return <p className="text-sm text-gray-500">Carregando dashboard…</p>;
   }
 
+  const foundedAt = theClub?.club?.founded_at
+    ? theClub.club.founded_at
+        .split("T")[0]
+        .split("-")
+        .reverse()
+        .join("/")
+    : "—";
+
   return (
     <div className="space-y-6">
-      {/* HEADER DO CLUBE */}
+      {/* HEADER */}
       <div
         className="relative w-full p-4 flex items-center lg:px-6 rounded-2xl border"
         style={{
@@ -178,11 +235,7 @@ export default function DashClubUniques() {
           <img className="h-full" src={theClub.club.flag_url} alt="" />
         </div>
 
-        <img
-          src={theClub.club.crest_url}
-          className="w-20 lg:w-36"
-          alt=""
-        />
+        <img src={theClub.club.crest_url} className="w-20 lg:w-36" alt="" />
 
         <div className="ml-4 lg:ml-10 border-b border-white pb-4 lg:pb-6">
           <h3 className="text-white text-2xl mb-3 lg:text-3xl font-light">
@@ -192,44 +245,146 @@ export default function DashClubUniques() {
           <ul className="flex items-center gap-4">
             <li className="text-white text-sm flex items-center gap-2">
               <CalendarDays className="w-4" />
-              Fundação:{" "}
-              <strong>
-                {theClub.club.founded_at
-                  .split("T")[0]
-                  .split("-")
-                  .reverse()
-                  .join("/")}
-              </strong>
+              Fundação: <strong>{foundedAt}</strong>
             </li>
 
             <li className="text-white text-sm flex items-center gap-2">
               <Castle className="w-4" />
-              {theClub.club.stadium_name}
+              {theClub.club?.stadium_name || "Estádio não informado"}
             </li>
 
             <li className="text-white text-sm flex items-center gap-2">
               <Handshake className="w-4" />
-              {theClub.club.ownership_model}
+              {theClub.club?.ownership_model || "Modelo não informado"}
             </li>
           </ul>
         </div>
       </div>
 
-      {/* GRID DE GRÁFICOS */}
+      {/* GRÁFICOS */}
       <div className="w-full grid lg:grid-cols-1 gap-4">
         <RevenueSection
-          data={revenues}
-          clubesSelecionados={clubesSelecionados}
-          setClubesSelecionados={setClubesSelecionados}
+          data={chartData.revenue}
+          selectedClubs={chartComparisons.revenue}
+          setSelectedClubs={(updater) =>
+            setChartComparisons((prev) => ({
+              ...prev,
+              revenue:
+                typeof updater === "function"
+                  ? updater(prev.revenue)
+                  : updater
+            }))
+          }
           clubMap={clubMap}
+          setClubMap={setClubMap}
+          mainClubId={mainClubId}
         />
 
-        <RevenueBreakdownBarChart data={revenuesBreakdown} />
-        <PayrollLineChart data={payrollCosts} />
-        <CostsPieChart data={costsBreakdown} />
-        <NetResultTable data={netResult} />
-        <NetResultLineChart data={netResultEvolution} />
-        <DebtsBreakdownBarChart data={debtsBreakdown} />
+        <PayrollSection
+          data={chartData.payroll}
+          selectedClubs={chartComparisons.payroll}
+          setSelectedClubs={(updater) =>
+            setChartComparisons((prev) => ({
+              ...prev,
+              payroll:
+                typeof updater === "function"
+                  ? updater(prev.payroll)
+                  : updater
+            }))
+          }
+          clubMap={clubMap}
+          setClubMap={setClubMap}
+          mainClubId={mainClubId}
+        />
+
+        <CostsSection
+          data={chartData.costs}
+          selectedClubs={chartComparisons.costs}
+          setSelectedClubs={(updater) =>
+            setChartComparisons((prev) => ({
+              ...prev,
+              costs:
+                typeof updater === "function"
+                  ? updater(prev.costs)
+                  : updater
+            }))
+          }
+          clubMap={clubMap}
+          setClubMap={setClubMap}
+          mainClubId={mainClubId}
+        />
+
+
+        <NetResultSection
+          data={chartData.netResult}
+          selectedClubs={chartComparisons.netResult}
+          setSelectedClubs={(updater) =>
+            setChartComparisons((prev) => ({
+              ...prev,
+              netResult:
+                typeof updater === "function"
+                  ? updater(prev.netResult)
+                  : updater
+            }))
+          }
+          clubMap={clubMap}
+          setClubMap={setClubMap}
+          mainClubId={mainClubId}
+        />
+
+
+        <DebtsSection
+          data={chartData.debts}
+          selectedClubs={chartComparisons.debts}
+          setSelectedClubs={(updater) =>
+            setChartComparisons((prev) => ({
+              ...prev,
+              debts:
+                typeof updater === "function"
+                  ? updater(prev.debts)
+                  : updater
+            }))
+          }
+          clubMap={clubMap}
+          setClubMap={setClubMap}
+          mainClubId={mainClubId}
+        />
+
+        <RevenueBreakdownSection
+          data={chartData.revenueBreakdown}
+          selectedClubs={chartComparisons.revenueBreakdown}
+          setSelectedClubs={(updater) =>
+            setChartComparisons((prev) => ({
+              ...prev,
+              revenueBreakdown:
+                typeof updater === "function"
+                  ? updater(prev.revenueBreakdown)
+                  : updater
+            }))
+          }
+          clubMap={clubMap}
+          setClubMap={setClubMap}
+          mainClubId={mainClubId}
+        />
+
+        <NetResultTableSection
+          data={chartData.netResult}
+          selectedClubs={chartComparisons.netResult}
+          setSelectedClubs={(updater) =>
+            setChartComparisons((prev) => ({
+              ...prev,
+              netResult:
+                typeof updater === "function"
+                  ? updater(prev.netResult)
+                  : updater
+            }))
+          }
+          clubMap={clubMap}
+          setClubMap={setClubMap}
+          mainClubId={mainClubId}
+        />
+
+
       </div>
     </div>
   );

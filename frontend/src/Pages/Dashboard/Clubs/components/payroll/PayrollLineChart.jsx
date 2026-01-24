@@ -1,17 +1,32 @@
 import ReactECharts from "echarts-for-react";
 import { adaptPayrollLineData } from "./payroll.adapter";
 
-export default function PayrollLineChart({ data }) {
-  const adapted = adaptPayrollLineData(data);
+export default function PayrollLineChart({
+  data,
+  clubesSelecionados,
+  clubMap,
+  mainClubId
+}) {
+  const adapted = adaptPayrollLineData(
+    data,
+    clubesSelecionados,
+    mainClubId,
+    clubMap
+  );
+
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">Sem dados de folha salarial</p>;
+    return (
+      <p className="text-sm text-gray-400">
+        Sem dados de folha salarial
+      </p>
+    );
   }
 
   const option = {
     tooltip: {
       trigger: "axis",
-      valueFormatter: value =>
+      valueFormatter: (value) =>
         `R$ ${Number(value).toLocaleString("pt-BR")}`
     },
     grid: {
@@ -28,25 +43,10 @@ export default function PayrollLineChart({ data }) {
     yAxis: {
       type: "value",
       axisLabel: {
-        formatter: value => `R$ ${(value / 1e6).toFixed(0)}M`
+        formatter: (value) => `R$ ${(value / 1e6).toFixed(0)}M`
       }
     },
-    series: [
-      {
-        name: "Folha salarial",
-        type: "line",
-        data: adapted.values,
-        smooth: false,
-        symbol: "circle",
-        symbolSize: 8,
-        lineStyle: {
-          width: 3
-        },
-        areaStyle: {
-          opacity: 0.1
-        }
-      }
-    ]
+    series: adapted.series
   };
 
   return (

@@ -1,17 +1,13 @@
-// components/revenue/RevenueSection.jsx
+// components/payroll/PayrollSection.jsx
 import { X } from "lucide-react";
-
-import RevenueLineChart from "./RevenueLineChart";
-import RevenueTableChart from "./RevenueTableChart";
+import PayrollLineChart from "./PayrollLineChart";
 import ChartFilter from "../filter/ChartFilter";
 
-export default function RevenueSection({
+export default function PayrollSection({
   data,
   clubMap,
   setClubMap,
   mainClubId,
-
-  // ⬇️ AGORA VEM DO PAI
   selectedClubs,
   setSelectedClubs
 }) {
@@ -37,7 +33,7 @@ export default function RevenueSection({
   return (
     <div className="w-full bg-white border p-6 rounded-xl">
       <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
-        Receitas | Por ano
+        Folha salarial | Por ano
       </h2>
 
       <ChartFilter
@@ -45,14 +41,7 @@ export default function RevenueSection({
         onAddClub={handleAddClub}
       />
 
-      <RevenueLineChart
-        data={data}
-        clubesSelecionados={selectedClubs}
-        clubMap={clubMap}
-        mainClubId={mainClubId}
-      />
-
-      <RevenueTableChart
+      <PayrollLineChart
         data={data}
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}

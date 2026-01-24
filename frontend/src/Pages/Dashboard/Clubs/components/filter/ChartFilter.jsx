@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../../../../../services/api";
 
-const LIMITE_CLUBES = 5;
+const LIMITE_CLUBES = 4;
 
 export default function ChartFilter({
   clubesSelecionados,
