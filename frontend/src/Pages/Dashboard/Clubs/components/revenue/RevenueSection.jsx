@@ -61,13 +61,16 @@ export default function RevenueSection({
         clubMap={clubMap}
         mainClubId={mainClubId}
         clubColorMap={clubColorMap}
-      />
+      />  
+
+      <div className="h-6"></div>
 
       <RevenueTableChart
         data={data}
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}
         mainClubId={mainClubId}
+        clubColorMap={clubColorMap}
       />
 
       {selectedClubs.length > 0 && (

@@ -21,25 +21,29 @@ export function adaptRevenueBreakdown(
     if (!Array.isArray(apiData)) return;
 
     apiData.forEach((item) => {
-      if (item.name_pt) {
-        categorySet.add(item.name_pt);
+      if (item.name) {
+        categorySet.add(item.name);
       }
     });
   });
 
-  const categories = Array.from(categorySet);
+  
 
+  const categories = Array.from(categorySet);
+  
   const series = clubIds.map((clubId) => {
+    
     const apiData = dataByClub[clubId];
 
     const values = categories.map((category) => {
       const found = Array.isArray(apiData)
-        ? apiData.find((item) => item.name_pt === category)
+        ? apiData.find((item) => item.name === category)
         : null;
 
       return found ? Number(found.value) : 0;
     });
 
+    // Se o valor for negativo  
     const DEFAULT_COLOR = "#999999";
 
     const clubColor =
@@ -50,15 +54,30 @@ export function adaptRevenueBreakdown(
       type: "bar",
       barGap: "20%",
       barWidth: "20%",
-      itemStyle: {
-        borderRadius: [6, 6, 0, 0],
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: clubColor }, // 👈 cor do clube no topo
-          { offset: 1, color: "#ffffff" }  // base branca
-        ])
-      },
-      data: values
+      data: values.map(v => {
+        const isNegative = v < 0;
+
+        return {
+          value: v,
+          itemStyle: {
+            borderRadius: isNegative 
+              ? [0, 0, 6, 6]   // negativo: arredonda embaixo
+              : [6, 6, 0, 0],  // positivo: arredonda em cima
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, isNegative
+              ? [
+                  { offset: 0, color: "#ffffff" },
+                  { offset: 1, color: clubColor }
+                ]
+              : [
+                  { offset: 0, color: clubColor },
+                  { offset: 1, color: "#ffffff" }
+                ]
+            )
+          }
+        };
+      })
     };
+
 
   });
 

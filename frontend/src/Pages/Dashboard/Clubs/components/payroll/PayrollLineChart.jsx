@@ -100,12 +100,16 @@ export default function PayrollLineChart({
       }
     },
 
+    areaStyle: {
+      opacity: 0
+    },
+    
     series: adapted.series.map((serie) => ({
       ...serie,
       type: "line",
       smooth: false,
       symbol: "circle",
-      symbolSize: 0,
+      symbolSize: 9,
       lineStyle: {
         width: 3
       },

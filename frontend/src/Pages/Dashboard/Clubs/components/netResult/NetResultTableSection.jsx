@@ -1,6 +1,7 @@
 // components/netResult/NetResultTableSection.jsx
 import { X } from "lucide-react";
 import NetResultTable from "./NetResultTable";
+import NetResultLine from "./NetResultLine";
 import ChartFilter from "../filter/ChartFilter";
 
 export default function NetResultTableSection({
@@ -9,7 +10,9 @@ export default function NetResultTableSection({
   setClubMap,
   mainClubId,
   selectedClubs,
-  setSelectedClubs
+  setSelectedClubs,
+  clubColorMap,
+  setClubColorMap
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -22,6 +25,14 @@ export default function NetResultTableSection({
       ...prev,
       [clube.id_club]: clube.name
     }));
+
+    setClubColorMap((prev) => ({
+      ...prev,
+      [clube.id_club]: {
+        color_one: clube.primary_color,
+        color_two: clube.secondary_color
+      }
+    }));
   }
 
   function handleRemoveClub(clubeId) {
@@ -31,8 +42,8 @@ export default function NetResultTableSection({
   }
 
   return (
-    <div className="w-full bg-white border p-6 rounded-xl">
-      <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
+    <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
+      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
         Resultado financeiro
       </h2>
 
@@ -41,11 +52,22 @@ export default function NetResultTableSection({
         onAddClub={handleAddClub}
       />
 
+      <NetResultLine
+        data={data}
+        clubesSelecionados={selectedClubs}
+        clubMap={clubMap}
+        mainClubId={mainClubId}
+        clubColorMap={clubColorMap}
+      />
+        
+      <div className="my-10"></div>
+
       <NetResultTable
         data={data}
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}
         mainClubId={mainClubId}
+        clubColorMap={clubColorMap}
       />
 
       {selectedClubs.length > 0 && (

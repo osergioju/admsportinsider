@@ -47,6 +47,7 @@ export function adaptRevenueLineData(dataByClub,mainClubId, clubesSelecionados, 
       clubColorMap?.[clubId]?.color_one || DEFAULT_COLOR;
 
     return {
+      id: clubId,
       name: clubMap?.[clubId] || `Clube ${clubId}`,
       data: years.map((year) => revenueByYear[year] ?? 0),
       color: clubColor 

@@ -1169,3 +1169,153 @@ export async function uploadClubXlsx(req, res) {
     });
   }
 }
+
+
+// FAQ 
+/**
+ * LISTAR (admin vê tudo)
+ */
+export async function getAllFaqs(req, res) {
+  try {
+    const result = await db.query(`
+      SELECT id, question, answer, is_active, sort_order
+      FROM faqs
+      ORDER BY sort_order ASC, id ASC
+    `);
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("Erro ao listar FAQs:", error);
+    return res.status(500).json({ message: "Erro ao listar FAQs" });
+  }
+}
+
+/**
+ * CRIAR
+ */
+export async function createFaq(req, res) {
+  const { question, answer, sort_order = 0, is_active = true } = req.body;
+
+  if (!question || !answer) {
+    return res.status(400).json({ message: "Pergunta e resposta são obrigatórias" });
+  }
+
+  try {
+    const result = await db.query(
+      `
+      INSERT INTO faqs (question, answer, sort_order, is_active)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id
+      `,
+      [question, answer, sort_order, is_active]
+    );
+
+    return res.status(201).json({
+      message: "FAQ criado com sucesso",
+      id: result.rows[0].id
+    });
+  } catch (error) {
+    console.error("Erro ao criar FAQ:", error);
+    return res.status(500).json({ message: "Erro ao criar FAQ" });
+  }
+}
+
+/**
+ * ATUALIZAR
+ */
+export async function updateFaq(req, res) {
+  const { id } = req.params;
+  const { question, answer, sort_order, is_active } = req.body;
+
+  if (!question || !answer) {
+    return res.status(400).json({ message: "Pergunta e resposta são obrigatórias" });
+  }
+
+  try {
+    await db.query(
+      `
+      UPDATE faqs
+      SET question = $1,
+          answer = $2,
+          sort_order = $3,
+          is_active = $4,
+          updated_at = NOW()
+      WHERE id = $5
+      `,
+      [question, answer, sort_order, is_active, id]
+    );
+
+    return res.json({ message: "FAQ atualizado com sucesso" });
+  } catch (error) {
+    console.error("Erro ao atualizar FAQ:", error);
+    return res.status(500).json({ message: "Erro ao atualizar FAQ" });
+  }
+}
+
+/**
+ * DELETAR (soft delete)
+ */
+export async function deleteFaq(req, res) {
+  const { id } = req.params;
+
+  try {
+    await db.query(
+      `
+      UPDATE faqs
+      SET is_active = false,
+          updated_at = NOW()
+      WHERE id = $1
+      `,
+      [id]
+    );
+
+    return res.json({ message: "FAQ desativado com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover FAQ:", error);
+    return res.status(500).json({ message: "Erro ao remover FAQ" });
+  }
+}
+
+/**
+ * ATUALIZAR ORDEM (para drag & drop)
+ * Espera:
+ * [
+ *   { id: 3, sort_order: 1 },
+ *   { id: 5, sort_order: 2 }
+ * ]
+ */
+export async function updateFaqOrder(req, res) {
+  const { items } = req.body;
+
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ message: "Formato inválido" });
+  }
+
+  const client = await db.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    for (const item of items) {
+      await client.query(
+        `
+        UPDATE faqs
+        SET sort_order = $1,
+            updated_at = NOW()
+        WHERE id = $2
+        `,
+        [item.sort_order, item.id]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return res.json({ message: "Ordem atualizada com sucesso" });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Erro ao reordenar FAQ:", error);
+    return res.status(500).json({ message: "Erro ao atualizar ordem" });
+  } finally {
+    client.release();
+  }
+}

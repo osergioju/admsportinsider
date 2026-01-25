@@ -177,15 +177,24 @@ export async function getRevenues(req, res) {
 export async function getRevenuesBreakdown(req, res) {
   try {
     const { id } = req.params;
-
+    // const { locale = "pt" } = req.query;
+    const locale = "CN";
+    
+    console.log(req.query); 
     const result = await db.query(`
       SELECT
         fi.code,
-        fi.name_pt,
-        cf.value
+        COALESCE(fit.name, fi.name_pt) AS name,
+        cf.value,
+        cf.year
       FROM club_financials cf
       JOIN financial_indicators fi 
         ON fi.id = cf.id_indicator
+
+      LEFT JOIN financial_indicator_translations fit
+        ON fit.financial_indicator_id = fi.id
+       AND fit.locale = $2
+
       WHERE cf.id_club = $1
         AND fi.code IN (
           'media',
@@ -200,12 +209,16 @@ export async function getRevenuesBreakdown(req, res) {
           FROM club_financials
           WHERE id_club = $1
         )
-      ORDER BY fi.name_pt;
-    `, [id]);
+      ORDER BY name;
+    `, [id, locale]);
 
     return res.json({
       year: result.rows[0]?.year || null,
-      data: result.rows
+      data: result.rows.map(row => ({
+        code: row.code,
+        name: row.name,
+        value: row.value
+      }))
     });
 
   } catch (err) {
@@ -213,6 +226,7 @@ export async function getRevenuesBreakdown(req, res) {
     return res.status(500).json({ message: "Erro ao buscar breakdown de receitas" });
   }
 }
+
 
 export async function getPayrollCosts(req, res) {
   try {
@@ -274,9 +288,9 @@ export async function getNetResult(req, res) {
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
       WHERE cf.id_club = $1
-        AND fi.code IN ('revenue', 'costs', 'net_income')
+        AND fi.code IN ('ebitda', 'revenue', 'costs', 'net_income')
       ORDER BY cf.year DESC
-      LIMIT 15;
+      LIMIT 12;
     `, [id]);
 
     return res.json({ data: result.rows });
@@ -293,7 +307,7 @@ export async function getNetResultEvolution(req, res) {
 
     const result = await db.query(`
       SELECT cf.year, cf.value
-      FROM club_financials cf
+      FROM club_financials cf 
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
       WHERE cf.id_club = $1
         AND fi.code = 'net_income'
@@ -552,7 +566,7 @@ export async function getLeagueNetResult(req, res) {
       FROM league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
-        AND fi.code IN ('revenue', 'costs', 'net_income')
+        AND fi.code IN ('revenue', 'costs', 'net_income', 'ebitda')
       ORDER BY lf.year DESC
       LIMIT 15;
     `, [id]);

@@ -10,13 +10,14 @@ export default function NetResultTable({
   data,
   clubesSelecionados,
   clubMap,
-  mainClubId
+  mainClubId,
+  clubColorMap
 }) {
   const table = adaptNetResultTable(
     data,
     clubesSelecionados,
     mainClubId,
-    clubMap
+    clubMap,
   );
 
   if (!table || table.rows.length === 0) {
@@ -28,64 +29,72 @@ export default function NetResultTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b text-gray-500">
-            <th className="text-left py-2">Ano</th>
-            {table.clubs.map((clubId) => (
-              <th
-                key={clubId}
-                colSpan={3}
-                className="text-center py-2"
-              >
-                {clubMap[clubId] || `Clube ${clubId}`}
-              </th>
-            ))}
-          </tr>
-          <tr className="border-b text-gray-400">
-            <th></th>
-            {table.clubs.map((clubId) => (
-              <React.Fragment key={clubId}>
-                <th className="text-right py-1">Receita</th>
-                <th className="text-right py-1">Custos</th>
-                <th className="text-right py-1">Resultado</th>
-              </React.Fragment>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
+  <div className="overflow-x-auto border rounded-xl">
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="bg-[#F8F9FB] border-b">
+          <th className="sticky left-0 z-10 bg-[#F8F9FB] text-left py-2 pl-4 font-[400] text-base text-[#B1B6BA]">
+            Clube
+          </th>
+
           {table.rows.map((row) => (
-            <tr key={row.year} className="border-b last:border-0">
-              <td className="py-2">{row.year}</td>
-
-              {table.clubs.map((clubId) => {
-                const cell = row.byClub[clubId] || {};
-
-                return (
-                  <React.Fragment key={clubId}>
-                    <td className="py-2 text-right">
-                      {formatMoney(cell.revenue)}
-                    </td>
-                    <td className="py-2 text-right">
-                      {formatMoney(cell.costs)}
-                    </td>
-                    <td
-                      className={`py-2 text-right font-medium ${
-                        cell.net >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {formatMoney(cell.net)}
-                    </td>
-                  </React.Fragment>
-                );
-              })}
-            </tr>
+            <th
+              key={row.year}
+              className="text-right py-2 pr-4 font-[400] text-sm text-[#626262]"
+            >
+              {row.year}
+            </th>
           ))}
-        </tbody>
-      </table>
-    </div>
-  );
+        </tr>
+
+        <tr className="border-b text-gray-400">
+          <th className="sticky left-0 z-10 bg-[#F8F9FB]"></th>
+          {table.rows.map((row) => (
+            <th
+              key={row.year}
+              className="text-right py-1 pr-4 font-medium"
+            >
+              Ebitda
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {table.clubs.map((clubId) => (
+          <tr key={clubId} className="border-b last:border-0">
+            <td className="sticky left-0  bg-white py-2 pl-4">
+              <span className="flex gap-2 items-center">
+                <div
+                  className="w-2 h-2 rounded-lg"
+                  style={{
+                    backgroundColor: clubColorMap[clubId]?.color_one
+                  }}
+                />
+                {clubMap[clubId] || `Clube ${clubId}`}
+              </span>
+            </td>
+
+            {table.rows.map((row) => {
+              const cell = row.byClub[clubId] || {};
+
+              return (
+                <td
+                  key={`${clubId}-${row.year}`}
+                  className={`text-xs pr-4 py-2 text-right font-medium ${
+                    cell.ebitda >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {formatMoney(cell.ebitda)}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
 }

@@ -1,8 +1,18 @@
 import ReactECharts from "echarts-for-react";
-import { adaptDebtsBreakdown } from "./debtsBreakdown.adapter";
+import { adaptDebtsBreakdown } from "./debtsBreakdownLeague.adapter";
 
-export default function DebtsBreakdownBarChart({ data }) {
-  const adapted = adaptDebtsBreakdown(data);
+export default function DebtsBreakdownBarChart({
+  data,
+  ligasSelecionadas,
+  leagueMap,
+  mainLeagueId
+}) {
+  const adapted = adaptDebtsBreakdown(
+    data,
+    ligasSelecionadas,
+    mainLeagueId,
+    leagueMap
+  );
 
   if (!adapted) {
     return <p className="text-sm text-gray-400">Sem dados de dívidas</p>;
@@ -12,7 +22,7 @@ export default function DebtsBreakdownBarChart({ data }) {
     tooltip: {
       trigger: "axis",
       axisPointer: { type: "shadow" },
-      valueFormatter: value =>
+      valueFormatter: (value) =>
         `R$ ${Number(value).toLocaleString("pt-BR")}`
     },
     grid: {
@@ -25,24 +35,14 @@ export default function DebtsBreakdownBarChart({ data }) {
     xAxis: {
       type: "value",
       axisLabel: {
-        formatter: value => `R$ ${(value / 1e6).toFixed(0)}M`
+        formatter: (value) => `R$ ${(value / 1e6).toFixed(0)}M`
       }
     },
     yAxis: {
       type: "category",
       data: adapted.categories
     },
-    series: [
-      {
-        name: "Dívidas",
-        type: "bar",
-        data: adapted.values,
-        barWidth: "60%",
-        itemStyle: {
-          borderRadius: [6, 6, 6, 6]
-        }
-      }
-    ]
+    series: adapted.series
   };
 
   return (

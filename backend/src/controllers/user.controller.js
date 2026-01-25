@@ -443,3 +443,19 @@ export async function updatePassword(req, res) {
     return res.status(500).json({ error: "Internal server error" });
   }
 }
+
+export async function getFaqs(req, res) {
+  try {
+    const result = await db.query(`
+      SELECT id, question, answer
+      FROM faqs
+      WHERE is_active = true
+      ORDER BY sort_order ASC
+    `);
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("Erro ao buscar FAQs:", error);
+    return res.status(500).json({ message: "Erro ao buscar FAQs" });
+  }
+}

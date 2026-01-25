@@ -51,6 +51,14 @@ import NewNotification from "./Pages/Admin/Notificacoes/NewNotification";
 // Banners 
 import Banners from "./Pages/Admin/Banners/Banners";
 
+// Regiões e idiomas
+import Regions from "./Pages/Admin/Regions/Regions";
+import RegionsDetailPage from "./Pages/Admin/Regions/RegionsDetailPage";
+import FinancialTransPage from "./Pages/Admin/Regions/FinancialTransPage";
+
+// Faq Admin 
+import FaqAdmin from "./Pages/Admin/Faq/FaqAdmin";
+
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -155,6 +163,14 @@ export default function App() {
 
               {/* Banners */}
               <Route path="/admin/banners" element={<Banners />} />
+
+              {/* Regiões e idioma */}
+              <Route path="/admin/regions" element={<Regions />} />
+              <Route path="/admin/regions/:id" element={<RegionsDetailPage />} />
+              <Route path="/admin/regions/:id/financial-indicators" element={<FinancialTransPage />} />
+
+              {/* FAQ */}
+              <Route path="/admin/faq" element={<FaqAdmin />} />
             </Route>
 
 

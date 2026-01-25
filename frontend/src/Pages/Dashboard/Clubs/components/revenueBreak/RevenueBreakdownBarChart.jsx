@@ -16,7 +16,7 @@ export default function RevenueBreakdownBarChart({
     clubColorMap
   );
 
-  if (!adapted) {
+  if (!adapted) {;
     return <p className="text-sm text-gray-400">Sem dados de receita</p>;
   }
 
@@ -39,7 +39,7 @@ export default function RevenueBreakdownBarChart({
         return params
           .map(
             (p) =>
-              `${p.marker} ${p.seriesName}: R$ ${Number(p.value).toLocaleString("pt-BR")}`
+              `<b>${p.axisValue}</b>: R$ ${Number(p.value).toLocaleString("pt-BR")}`
           )
           .join("<br/>");
       }
@@ -72,7 +72,7 @@ export default function RevenueBreakdownBarChart({
   };
 
   return (
-    <div className="w-full h-[300px]">
+    <div className="w-full h-[420px]">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}

@@ -1,18 +1,49 @@
 import ReactECharts from "echarts-for-react";
-import { adaptRevenueLineData } from "./revenue.adapter";
+import { adaptRevenueLineData } from "./revenueLeague.adapter";
 
-export default function RevenueLineChart({ data }) {
-  const adapted = adaptRevenueLineData(data);
+export default function RevenueLineChart({
+  data,
+  mainLeagueId,
+  ligasSelecionadas,
+  leagueMap,
+  leagueColor
+}) {
+  const adapted = adaptRevenueLineData(
+    data,
+    mainLeagueId,
+    ligasSelecionadas,
+    leagueMap,
+    leagueColor
+  );
 
   if (!adapted) {
     return <p className="text-sm text-gray-400">Sem dados de receita</p>;
   }
 
   const option = {
+    textStyle: {
+      fontFamily: "Effra Trial",
+      fontSize: 12
+    },
+
     tooltip: {
       trigger: "axis",
-      valueFormatter: (value) =>
-        `R$ ${Number(value).toLocaleString("pt-BR")}`
+      backgroundColor: "#fff",
+      borderColor: "#ddd",
+      borderWidth: 1,
+      textStyle: {
+        color: "#000",
+        fontFamily: "Effra Trial",
+        fontWeight: "normal"
+      },
+      formatter: (params) => {
+        return params
+          .map(
+            (p) =>
+              `${p.marker} ${p.seriesName}: R$ ${Number(p.value).toLocaleString("pt-BR")}`
+          )
+          .join("<br/>");
+      }
     },
     legend: {
       top: 0,
@@ -20,10 +51,14 @@ export default function RevenueLineChart({ data }) {
       icon: "roundRect",
       itemWidth: 10,
       itemHeight: 10,
-      itemStyle: {
-        borderRadius: 3
+      itemStyle: { borderRadius: 3 },
+      textStyle: {
+        fontFamily: "Effra Trial",
+        fontSize: 12,
+        color: "#333"
       }
     },
+
     grid: {
       left: 0,
       right: 0,
@@ -31,26 +66,48 @@ export default function RevenueLineChart({ data }) {
       top: 50,
       containLabel: true
     },
+
     xAxis: {
       type: "category",
-      data: adapted.years
-    },
-    yAxis: {
-      type: "value",
+      data: adapted.years,
+      axisLine: { show: false },
+      axisTick: { show: false },
       axisLabel: {
-        formatter: value => `R$ ${(value / 1000).toFixed(0)}M`
+        color: "#666",
+        fontSize: 12,
+        fontFamily: "Effra Trial"
       }
     },
-    series: adapted.series.map(s => ({
-      ...s,
+
+    yAxis: {
+      type: "value",
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        formatter: (value) => `R$ ${(value / 1000).toFixed(0)}M`,
+        color: "#666",
+        fontFamily: "Effra Trial"
+      },
+      splitLine: {
+        lineStyle: {
+          color: "#eee"
+        }
+      }
+    },
+
+    series: adapted.series.map((serie) => ({
+      ...serie,
       type: "line",
       smooth: false,
       symbol: "circle",
-      symbolSize: 0,
+      symbolSize: 9,
+      lineStyle: {
+        width: 3
+      },
       emphasis: { focus: "series" }
     }))
   };
-
+  
   return (
     <div className="w-full h-80">
       <ReactECharts

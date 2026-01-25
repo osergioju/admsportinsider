@@ -117,7 +117,7 @@ export default function RevenueLineChart({
       type: "line",
       smooth: false,
       symbol: "circle",
-      symbolSize: 0,
+      symbolSize: 9,
       lineStyle: {
         width: 3
       },

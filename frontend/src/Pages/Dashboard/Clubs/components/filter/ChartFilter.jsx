@@ -55,11 +55,11 @@ export default function ChartFilter({
   }
 
   return (
-    <div className="w-full mb-2">
+    <div className="w-full mb-2 z-20 relative">
       <div className="flex gap-4 lg:gap-10">
         <div className="relative w-64">
           <span className="inline-block font-light w-full text-[#AFAFB2] mb-2">
-            Comparar clubes (max. 5)
+            Comparar clubes (max. 4)
           </span>
 
           <input

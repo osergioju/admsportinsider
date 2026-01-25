@@ -57,7 +57,7 @@ export function adaptPayrollLineData(
         color: clubColor // 👈 cor dos pontos
       },
       areaStyle: {
-        opacity: 0.1,
+        opacity: 0,
         color: clubColor // 👈 cor da área
       }
     };

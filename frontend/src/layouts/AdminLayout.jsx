@@ -18,7 +18,9 @@ import {
   LogOut,
   User,
   CircleX,
-  Cog
+  Cog,
+  Languages,
+  MessageCircleQuestionMark
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -113,6 +115,8 @@ export default function AdminLayout() {
                         <MenuItem to="/admin/upload/ligas" icon={<Upload strokeWidth={1} size={20}/>} label="Upload de dados" />
                         <MenuItem to="/admin/banners" icon={<ImageIcon strokeWidth={1} size={20}/>} label="Banners" />
                         <MenuItem to="/admin/notifications" icon={<Bell strokeWidth={1} size={20}/>} label="Notificações" />
+                        <MenuItem to="/admin/regions" icon={<Languages strokeWidth={1} size={20}/>} label="Regiões" />
+                        <MenuItem to="/admin/faq" icon={<MessageCircleQuestionMark strokeWidth={1} size={20}/>} label="Faqs" />
                     </ul>
                 </div>
 

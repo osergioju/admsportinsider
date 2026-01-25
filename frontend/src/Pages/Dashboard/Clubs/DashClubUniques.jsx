@@ -20,19 +20,20 @@ export default function DashClubUniques() {
   const [theClub, setTheClub] = useState(null);
 
   /**
-   * 🔑 mapa id → nome do clube (global, reaproveitado)
+   * apa id → nome do clube (global, reaproveitado)
    */
   const [clubMap, setClubMap] = useState({});
   const [clubColorMap, setClubColorMap] = useState({});
 
   /**
-   * 🎯 clubes selecionados POR GRÁFICO
+   * clubes selecionados POR GRÁFICO
    */
   const [chartComparisons, setChartComparisons] = useState({
     revenue: [],
     payroll: [],
     costs: [],
     netResult: [],
+    netEvolution: [],
     debts: [],
     revenueBreakdown: []
   });
@@ -46,6 +47,7 @@ export default function DashClubUniques() {
     payroll: {},
     costs: {},
     netResult: {},
+    netEvolution : {},
     debts: {},
     revenueBreakdown: {}
   });
@@ -55,7 +57,7 @@ export default function DashClubUniques() {
   const [payrollCosts, setPayrollCosts] = useState(null);
   const [costsBreakdown, setCostsBreakdown] = useState(null);
   const [netResult, setNetResult] = useState(null);
-  const [netResultEvolution, setNetResultEvolution] = useState(null);
+  const [netEvolution, setNetEvolution] = useState(null);
   const [debtsBreakdown, setDebtsBreakdown] = useState(null);
   const [debtsEvolution, setDebtsEvolution] = useState(null);
   const [indicators, setIndicators] = useState(null);
@@ -123,7 +125,7 @@ export default function DashClubUniques() {
         setPayrollCosts(payrollCostsRes.data);
         setCostsBreakdown(costsBreakdownRes.data);
         setNetResult(netResultRes.data);
-        setNetResultEvolution(netResultEvolutionRes.data);
+        setNetEvolution(netResultEvolutionRes.data);
         setDebtsBreakdown(debtsBreakdownRes.data);
         setDebtsEvolution(debtsEvolutionRes.data);
         setIndicators(indicatorsRes.data);
@@ -203,6 +205,13 @@ export default function DashClubUniques() {
   }, [chartComparisons.netResult, mainClubId]);
 
   useEffect(() => {
+    fetchChartData("netEvolution", (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/net-result/evolution`
+    );
+  }, [chartComparisons.netEvolution, mainClubId]);
+
+
+  useEffect(() => {
     fetchChartData("debts", (clubId) =>
       `/dashboard/clubs/${clubId}/financials/debts/breakdown`
     );
@@ -226,6 +235,7 @@ export default function DashClubUniques() {
         .reverse()
         .join("/")
     : "—";
+
 
   return (
     <div className="space-y-6">
@@ -351,21 +361,23 @@ export default function DashClubUniques() {
               mainClubId={mainClubId}
             />
 
-             <NetResultSection
-              data={chartData.netResult}
-              selectedClubs={chartComparisons.netResult}
+            <NetResultSection
+              data={chartData.netEvolution}
+              selectedClubs={chartComparisons.netEvolution}
               setSelectedClubs={(updater) =>
                 setChartComparisons((prev) => ({
                   ...prev,
-                  netResult:
+                  netEvolution:
                     typeof updater === "function"
-                      ? updater(prev.netResult)
+                      ? updater(prev.netEvolution)
                       : updater
                 }))
               }
               clubMap={clubMap}
               setClubMap={setClubMap}
               mainClubId={mainClubId}
+              clubColorMap={clubColorMap}
+              setClubColorMap={setClubColorMap}
             />
           </div>
         
@@ -404,6 +416,8 @@ export default function DashClubUniques() {
                 clubMap={clubMap}
                 setClubMap={setClubMap}
                 mainClubId={mainClubId}
+                clubColorMap={clubColorMap}
+                setClubColorMap={setClubColorMap}
               />
 
 

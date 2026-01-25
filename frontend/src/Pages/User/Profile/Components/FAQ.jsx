@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../../../../services/api";
 import { 
   HelpCircle, 
   Plus, 
@@ -10,8 +11,9 @@ import {
 export default function Faq() {
   const [openIndices, setOpenIndices] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [faqData, setFaqData] = useState([]);
 
-  const toggleFAQ = (index) => {
+  const toggleFAQ = (index) => { 
     setOpenIndices((prev) => 
       prev.includes(index) 
         ? prev.filter((i) => i !== index)
@@ -19,44 +21,10 @@ export default function Faq() {
     );
   };
 
-  const faqData = [
-    {
-      question: "Como funciona a cobrança da assinatura?",
-      answer: "A cobrança é realizada mensalmente ou anualmente no cartão de crédito cadastrado. Você pode alterar o método de pagamento a qualquer momento na aba 'Plano & Assinatura' do seu perfil."
-    },
-    {
-      question: "Meus dados de pagamento estão seguros?",
-      answer: "Totalmente. Não armazenamos números de cartão de crédito. Todo o processamento é feito através de gateways de pagamento certificados (como Stripe), que cumprem os mais altos padrões de segurança PCI-DSS."
-    },
-    {
-      question: "Posso cancelar minha conta a qualquer momento?",
-      answer: "Sim. O cancelamento pode ser feito diretamente pelo painel de configurações. Seu acesso permanecerá ativo até o final do ciclo de cobrança vigente."
-    },
-    {
-      question: "Os dados das ligas são atualizados em tempo real?",
-      answer: "Nossos dados são atualizados diariamente através de integrações oficiais. Estatísticas de partidas ao vivo têm um delay de aproximadamente 2 minutos."
-    },
-    {
-      question: "Os dados financeiros são oficiais?",
-      answer: "Sim. Utilizamos apenas fontes oficiais, como balanços auditados publicados pelos clubes, relatórios de transparência das ligas e documentos regulatórios de entidades como UEFA e FIFA."
-    },
-    {
-      question: "Posso solicitar relatórios personalizados?",
-      answer: "Assinantes do plano Enterprise podem solicitar a curadoria de dados específicos ou a criação de dashboards customizados com o apoio do nosso time de analistas."
-    },
-    {
-      question: "Como exportar os relatórios financeiros?",
-      answer: "Em cada dashboard de liga ou clube, você encontrará um botão 'Exportar' no canto superior direito. É possível baixar em PDF, CSV ou Excel."
-    },
-    {
-      question: "Existe limite de consultas ou visualizações?",
-      answer: "Não. Todos os planos ativos possuem visualização ilimitada dos dados disponíveis na sua região de cobertura. Você pode navegar e comparar clubes quantas vezes precisar."
-    },
-    {
-      question: "Consigo compartilhar minha conta com outra pessoa?",
-      answer: "O plano Individual é para uso único. Para equipes, recomendamos o plano Enterprise, que permite múltiplos assentos e gestão de permissões."
-    }
-  ];
+  useEffect(() => {
+    api.get("/user/faq").then(res => setFaqData(res.data));
+    console.log(faqData);
+  }, []);
 
   const filteredFaqs = faqData.filter(item => 
     item.question.toLowerCase().includes(searchTerm.toLowerCase()) ||

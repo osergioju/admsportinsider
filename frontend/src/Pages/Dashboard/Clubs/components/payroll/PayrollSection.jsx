@@ -42,8 +42,8 @@ export default function PayrollSection({
   }
 
   return (
-    <div className="w-full bg-white border p-6 rounded-xl">
-      <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
+    <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
+      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
         Folha salarial
       </h2>
 

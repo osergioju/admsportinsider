@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { updatePassword, getProfile, updateProfile, addPreferences,updatePreferences, getRegions, getCurrencies} from "../controllers/user.controller.js";
+import { updatePassword, getProfile, updateProfile, addPreferences,updatePreferences, getRegions, getCurrencies, getFaqs} from "../controllers/user.controller.js";
 import { getNotifications, markAsRead, getUnreadCount, markAllAsRead } from "../controllers/user.notification.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
@@ -28,5 +28,9 @@ router.patch("/notifications/read-all", markAllAsRead);
 
 // Alterar senha 
 router.put("/security/password", updatePassword);
+
+// Faq 
+router.get("/faq", getFaqs);
+
 
 export default router;

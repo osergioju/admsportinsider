@@ -1,52 +1,122 @@
 import ReactECharts from "echarts-for-react";
-import { adaptPayrollLineData } from "./payroll.adapter";
+import { adaptPayrollLineData } from "./payrollLeague.adapter";
 
-export default function PayrollLineChart({ data }) {
-  const adapted = adaptPayrollLineData(data);
+export default function PayrollLineChart({
+  data,
+  ligasSelecionadas,
+  leagueMap,
+  mainLeagueId,
+  leagueColor
+}) {
+  const adapted = adaptPayrollLineData(
+    data,
+    ligasSelecionadas,
+    mainLeagueId,
+    leagueMap,
+    leagueColor
+  );
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">Sem dados de folha salarial</p>;
+    return (
+      <p className="text-sm text-gray-400">
+        Sem dados de folha salarial
+      </p>
+    );
   }
 
   const option = {
+    textStyle: {
+      fontFamily: "Effra Trial",
+      fontSize: 12
+    },
+
     tooltip: {
       trigger: "axis",
-      valueFormatter: value =>
-        `R$ ${Number(value).toLocaleString("pt-BR")}`
+      backgroundColor: "#fff",
+      borderColor: "#ddd",
+      borderWidth: 1,
+      textStyle: {
+        color: "#000",
+        fontFamily: "Effra Trial",
+        fontWeight: "normal"
+      },
+      formatter: (params) => {
+        return params
+          .map(
+            (p) =>
+              `${p.marker} ${p.seriesName}: R$ ${Number(p.value).toLocaleString(
+                "pt-BR"
+              )}`
+          )
+          .join("<br/>");
+      }
     },
+
+    legend: {
+      top: 0,
+      right: 0,
+      icon: "roundRect",
+      itemWidth: 10,
+      itemHeight: 10,
+      itemStyle: { borderRadius: 3 },
+      textStyle: {
+        fontFamily: "Effra Trial",
+        fontSize: 12,
+        color: "#333"
+      }
+    },
+
     grid: {
-      left: 40,
-      right: 20,
-      bottom: 30,
-      top: 20,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      top: 50,
       containLabel: true
     },
+
     xAxis: {
       type: "category",
-      data: adapted.years
+      data: adapted.years,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: "#666",
+        fontSize: 12,
+        fontFamily: "Effra Trial"
+      }
     },
+
     yAxis: {
       type: "value",
+      axisLine: { show: false },
+      axisTick: { show: false },
       axisLabel: {
-        formatter: value => `R$ ${(value / 1e6).toFixed(0)}M`
-      }
-    },
-    series: [
-      {
-        name: "Folha salarial",
-        type: "line",
-        data: adapted.values,
-        smooth: false,
-        symbol: "circle",
-        symbolSize: 8,
+        formatter: (value) => `R$ ${(value / 1000).toFixed(0)}M`,
+        color: "#666",
+        fontFamily: "Effra Trial"
+      },
+      splitLine: {
         lineStyle: {
-          width: 3
-        },
-        areaStyle: {
-          opacity: 0.1
+          color: "#eee"
         }
       }
-    ]
+    },
+
+    areaStyle: {
+      opacity: 0
+    },
+
+    series: adapted.series.map((serie) => ({
+      ...serie,
+      type: "line",
+      smooth: false,
+      symbol: "circle",
+      symbolSize: 9,
+      lineStyle: {
+        width: 3
+      },
+      emphasis: { focus: "series" }
+    }))
   };
 
   return (

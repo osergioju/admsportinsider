@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub} from "../controllers/admin.controller.js";
+import {uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder} from "../controllers/admin.controller.js";
 import { getUsersInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -7,7 +7,7 @@ import { uploadImage } from "../middlewares/uploadImage.js";
 import { uploadClubLogo } from "../controllers/upload.controller.js";
 import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
 import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage } from "../controllers/banner.controller.js";
-
+import { getAllRegions, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations } from "../controllers/adminRegionsController.js";
 const router = Router();
 
 
@@ -77,9 +77,26 @@ router.put("/banners/:id", updateBanner);
 router.delete("/banners/:id", deleteBanner);
 router.post("/banners/upload-image", uploadImage, uploadBannerImage);
 
+// Regiões e idiomas
+router.get("/regions", getAllRegions);
+router.get("/regions/:id", getRegionById);
+router.post("/regions", createRegion);
+router.put("/regions/:id", updateRegion);
+router.get("/regions/:id/financial-indicators",getFinancialIndicatorsByRegion);
+router.post("/regions/:id/financial-indicators", saveFinancialIndicatorsTranslations);
+
+// Faq
+router.get("/faq", getAllFaqs);
+router.post("/faq", createFaq);
+router.put("/faq/:id", updateFaq);
+router.delete("/faq/:id", deleteFaq);
+router.patch("/faq/order", updateFaqOrder);
+
+
 export default router;
 
 
 /***
  * DEPPOS VER SE VAI SER MELHOR DIVIDIR OS CONTROLERS DO ADMIN PQ VAI FICAR ENORME
  */
+

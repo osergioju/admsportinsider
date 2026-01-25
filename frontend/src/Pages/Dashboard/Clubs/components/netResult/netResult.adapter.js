@@ -27,6 +27,9 @@ export function adaptNetResultTable(
     .sort((a, b) => b - a)
     .slice(0, limit);
 
+  // Inverter ordem do values 
+  years.reverse();
+
   const rows = years.map((year) => {
     const byClub = {};
 
@@ -42,10 +45,10 @@ export function adaptNetResultTable(
       if (Array.isArray(apiData)) {
         apiData.forEach((item) => {
           if (item.year !== year) return;
-
           if (item.code === "revenue") map.revenue = item.value;
           if (item.code === "costs") map.costs = item.value;
           if (item.code === "net_income") map.net = item.value;
+          if (item.code === "ebitda") map.ebitda = item.value;
         });
       }
 

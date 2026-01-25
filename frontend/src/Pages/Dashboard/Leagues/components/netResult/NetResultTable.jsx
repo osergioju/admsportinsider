@@ -1,45 +1,96 @@
-import { adaptNetResultTable } from "./netResult.adapter";
+import { adaptNetResultTable } from "./netResultLeague.adapter";
+import React from "react";
 
 function formatMoney(value) {
   if (value === null || value === undefined) return "—";
   return `R$ ${Number(value).toLocaleString("pt-BR")}`;
 }
 
-export default function NetResultTable({ data }) {
-  const rows = adaptNetResultTable(data);
+export default function NetResultTable({
+  data,
+  ligasSelecionadas,
+  leagueMap,
+  mainLeagueId,
+  leagueColor
+}) {
+  const table = adaptNetResultTable(
+    data,
+    ligasSelecionadas,
+    mainLeagueId,
+    leagueMap
+  );
 
-  if (!rows.length) {
-    return <p className="text-sm text-gray-400">Sem dados de resultado</p>;
+  if (!table || table.rows.length === 0) {
+    return (
+      <p className="text-sm text-gray-400">
+        Sem dados de resultado
+      </p>
+    );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+    <div className="overflow-x-auto border rounded-xl">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-gray-500">
-            <th className="text-left py-2">Ano</th>
-            <th className="text-right py-2">Receita</th>
-            <th className="text-right py-2">Custos</th>
-            <th className="text-right py-2">Resultado líquido</th>
+          <tr className="bg-[#F8F9FB] border-b">
+            <th className="sticky left-0 z-10 bg-[#F8F9FB] text-left py-2 pl-4 font-[400] text-base text-[#B1B6BA]">
+              Liga
+            </th>
+
+            {table.rows.map((row) => (
+              <th
+                key={row.year}
+                className="text-right py-2 pr-4 font-[400] text-sm text-[#626262]"
+              >
+                {row.year}
+              </th>
+            ))}
+          </tr>
+
+          <tr className="border-b text-gray-400">
+            <th className="sticky left-0 z-10 bg-[#F8F9FB]"></th>
+            {table.rows.map((row) => (
+              <th
+                key={row.year}
+                className="text-right py-1 pr-4 font-medium"
+              >
+                Ebitda
+              </th>
+            ))}
           </tr>
         </thead>
+
         <tbody>
-          {rows.map(row => (
-            <tr key={row.year} className="border-b last:border-0">
-              <td className="py-2">{row.year}</td>
-              <td className="py-2 text-right">
-                {formatMoney(row.revenue)}
+          {table.leagues.map((leagueId) => (
+            <tr key={leagueId} className="border-b last:border-0">
+              <td className="sticky left-0 bg-white py-2 pl-4">
+                <span className="flex gap-2 items-center">
+                  <div
+                    className="w-2 h-2 rounded-lg"
+                    style={{
+                      backgroundColor: leagueColor[leagueId]?.color_one
+                    }}
+                  />
+                  {leagueMap[leagueId] || `Liga ${leagueId}`}
+                </span>
               </td>
-              <td className="py-2 text-right">
-                {formatMoney(row.costs)}
-              </td>
-              <td
-                className={`py-2 text-right font-medium ${
-                  row.net >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {formatMoney(row.net)}
-              </td>
+
+              {table.rows.map((row) => {
+                const cell = row.byLeague[leagueId] || {};
+
+                return (
+                  <td
+                    key={`${leagueId}-${row.year}`}
+                    className={`text-xs pr-4 py-2 text-right font-medium ${
+                      cell.ebitda >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {formatMoney(cell.ebitda)}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

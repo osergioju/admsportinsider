@@ -1,19 +1,49 @@
 import ReactECharts from "echarts-for-react";
-import { adaptRevenueBreakdown } from "./revenueBreakdown.adapter";
+import { adaptRevenueBreakdown } from "./revenueBreakdownLeague.adapter";
 
-export default function RevenueBreakdownBarChart({ data }) {
-  const adapted = adaptRevenueBreakdown(data);
+export default function RevenueBreakdownBarChart({
+  data,
+  ligasSelecionadas,
+  leagueMap,
+  mainLeagueId,
+  leagueColor
+}) {
+  const adapted = adaptRevenueBreakdown(
+    data,
+    ligasSelecionadas,
+    mainLeagueId,
+    leagueMap,
+    leagueColor
+  );
 
   if (!adapted) {
     return <p className="text-sm text-gray-400">Sem dados de receita</p>;
   }
 
+
   const option = {
+    textStyle: {
+      fontFamily: "Effra Trial",
+      fontSize: 12
+    },
     tooltip: {
       trigger: "axis",
-      axisPointer: { type: "shadow" },
-      valueFormatter: value =>
-        `R$ ${Number(value).toLocaleString("pt-BR")}`
+      backgroundColor: "#fff",
+      borderColor: "#ddd",
+      borderWidth: 1,
+      textStyle: {
+        color: "#222222",
+        fontFamily: "Effra Trial",
+        fontWeight: "normal"
+      },
+      formatter: (params) => {
+        return params
+          .map(
+            (p) =>
+              `<b>${p.axisValue}</b>: R$ ${Number(p.value).toLocaleString("pt-BR")}`
+          )
+          .join("<br/>");
+      }
     },
     grid: {
       left: 0,
@@ -25,31 +55,25 @@ export default function RevenueBreakdownBarChart({ data }) {
     yAxis: {
       type: "value",
       axisLabel: {
-        formatter: value => `R$ ${(value / 1e6).toFixed(0)}M`
+        formatter: (value) => `R$ ${(value / 1e6).toFixed(0)}M`
       }
     },
-   xAxis: {
+    xAxis: {
       type: "category",
       data: adapted.categories,
       axisLabel: {
-        rotate: 30, // ou 45
-        interval: 0 // força mostrar todos
+        interval: 0,
+        rotate: 0,
+        width: 80,          
+        overflow: "break",
+        lineHeight: 16
       }
     },
-    series: [
-      {
-        type: "bar",
-        data: adapted.values,
-        barWidth: "30%",
-        itemStyle: {
-          borderRadius: [6, 6, 6, 6]
-        }
-      }
-    ]
+    series: adapted.series
   };
 
   return (
-    <div className="w-full h-72">
+    <div className="w-full h-[420px]">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}

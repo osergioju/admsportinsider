@@ -9,7 +9,9 @@ export default function NetResultSection({
   setClubMap,
   mainClubId,
   selectedClubs,
-  setSelectedClubs
+  setSelectedClubs,
+  clubColorMap,
+  setClubColorMap
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -19,8 +21,16 @@ export default function NetResultSection({
     );
 
     setClubMap((prev) => ({
-      ...prev,
+      ...prev, 
       [clube.id_club]: clube.name
+    }));
+
+    setClubColorMap((prev) => ({
+      ...prev,
+      [clube.id_club]: {
+        color_one: clube.primary_color,
+        color_two: clube.secondary_color
+      }
     }));
   }
 
@@ -31,8 +41,8 @@ export default function NetResultSection({
   }
 
   return (
-    <div className="w-full bg-white border p-6 rounded-xl">
-      <h2 className="mb-4 text-[#0A0A0A] font-[400] text-xl">
+    <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
+      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
         Resultado líquido
       </h2>
 
@@ -46,6 +56,7 @@ export default function NetResultSection({
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}
         mainClubId={mainClubId}
+        clubColorMap={clubColorMap}
       />
 
       {selectedClubs.length > 0 && (

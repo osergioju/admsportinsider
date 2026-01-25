@@ -5,13 +5,15 @@ export default function NetResultLineChart({
   data,
   clubesSelecionados,
   clubMap,
-  mainClubId
+  mainClubId,
+  clubColorMap
 }) {
   const adapted = adaptNetResultEvolution(
     data,
     clubesSelecionados,
     mainClubId,
-    clubMap
+    clubMap,
+    clubColorMap
   );
 
   if (!adapted) {
@@ -102,7 +104,7 @@ export default function NetResultLineChart({
       type: "line",
       smooth: false,
       symbol: "circle",
-      symbolSize: 0,
+      symbolSize: 9,
       lineStyle: {
         width: 3
       },
@@ -111,7 +113,7 @@ export default function NetResultLineChart({
   };
 
   return (
-    <div className="w-full h-72">
+    <div className="w-full h-[400px]">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}

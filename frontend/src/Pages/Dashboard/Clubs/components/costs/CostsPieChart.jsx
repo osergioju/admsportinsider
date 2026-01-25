@@ -14,6 +14,8 @@ export default function CostsPieChart({
     clubMap
   );
 
+  const sliceColors = ["#161616", "#6C6969", "#B2B1B1", "#D9D9D9"];
+
   if (!adapted) {
     return <p className="text-sm text-gray-400">Sem dados de custos</p>;
   }
@@ -41,9 +43,13 @@ export default function CostsPieChart({
       bottom: 0,
       left: "center",
       orient: "horizontal",
-      icon: "circle",
+      icon: "roundRect",
+      itemWidth: 12,
+      itemHeight: 12,
+      itemGap: 10,
+      padding: [0, 0, 0, 0], // 👈 top padding
       textStyle: {
-        fontSize: 13
+        fontSize: 12
       }
     },
 
@@ -51,9 +57,10 @@ export default function CostsPieChart({
       {
         name: "Receitas",
         type: "pie",
-        radius: ["75%", "85%"], // espessura do anel
+        radius: ["65%", "70%"],
+        center: ["50%", "42%"],
         avoidLabelOverlap: false,
-        startAngle: 90,
+        startAngle: 0,
         label: {
           show: true,
           position: "outside",
@@ -62,15 +69,18 @@ export default function CostsPieChart({
           color: "#000"
         },
         labelLine: {
-          show: true,
-          length: 10,
-          length2: 10
+          show: false
         },
         itemStyle: {
           borderWidth: 0,
           borderColor: "#fff"
         },
-        data: adapted.series[0].data
+        data: adapted.series[0].data.map((item, i) => ({
+          ...item,
+          itemStyle: {
+            color: sliceColors[i % sliceColors.length]
+          }
+        }))
       }
     ],
 
@@ -78,40 +88,33 @@ export default function CostsPieChart({
       {
         type: "text",
         left: "center",
-        top: "45%",
+        top: "34%",
         style: {
-          text: "R$",
-          fontSize: 22,
-          fill: "#000",
-          fontWeight: 300
+          text: Number(total).toLocaleString("pt-BR").split(",")[0],
+          fontSize: 62,
+          fontSpacing:130,
+          fill: "#0A0A0A",
+          fontWeight: 300,
+          fontFamily: "Effra Trial",
         }
       },
       {
         type: "text",
         left: "center",
-        top: "52%",
-        style: {
-          text: Number(total).toLocaleString("pt-BR"),
-          fontSize: 54,
-          fontWeight: 700,
-          fill: "#000"
-        }
-      },
-      {
-        type: "text",
-        left: "center",
-        top: "65%",
+        top: "50%",
         style: {
           text: "Milhões",
           fontSize: 18,
-          fill: "#000"
+          fontFamily: "Effra Trial",
+          fontWeight: 300,
+          fill: "#0A0A0A"
         }
       }
     ]
   };
 
   return (
-    <div className="w-full h-80">
+    <div className="w-full h-[400px]">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}

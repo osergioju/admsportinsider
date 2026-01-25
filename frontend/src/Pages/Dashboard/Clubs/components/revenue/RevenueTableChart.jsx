@@ -6,7 +6,8 @@ export default function RevenueTableChart({
   data,
   clubesSelecionados,
   clubMap,
-  mainClubId
+  mainClubId,
+  clubColorMap
 }) {
   
   const adapted = useMemo(() => {
@@ -16,9 +17,10 @@ export default function RevenueTableChart({
     data,
     mainClubId,
     clubesSelecionados,
-    clubMap
+    clubMap,
+    clubColorMap
   );
-}, [data, mainClubId, clubesSelecionados, clubMap]);
+}, [data, mainClubId, clubesSelecionados, clubColorMap, clubMap]);
 
 
   function formatMoney(value) {
@@ -31,44 +33,51 @@ export default function RevenueTableChart({
   }
 
   return (
-    <div className="hidden overflow-x-auto mt-4">
-      <table className="w-full text-sm border-collapse">
+    <div className="overflow-x-auto border rounded-xl">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-gray-500">
-            <th className="text-left py-2">Ano</th>
+          <tr className="bg-[#F8F9FB] border-b">
+            <th className="sticky left-0 z-10 bg-[#F8F9FB] text-left py-2 pl-4 font-[400] text-base text-[#B1B6BA]">Clube</th>
 
-            {adapted.series.map((serie) => (
+            {adapted.years.map((year) => (
               <th
-                key={serie.name}
-                className="text-right py-2 whitespace-nowrap"
+                key={year}
+                className="text-right py-2 pr-4 font-[400] text-sm text-[#626262]"
               >
-                {serie.name}
+                {year}
               </th>
             ))}
           </tr>
         </thead>
 
         <tbody>
-          {adapted.years.map((year, yearIndex) => (
-            <tr key={year} className="border-b last:border-0">
-              <td className="py-2">{year}</td>
+          {adapted.series.map((serie) => (
+            <tr key={serie.name} className="border-b last:border-0 sticky left-0  bg-white py-2 pl-4">
+              <td className="py-2 pl-4">
+                <span className="flex gap-2 items-center">
+                  <div
+                    className="w-2 h-2 rounded-lg"
+                    style={{
+                      backgroundColor: clubColorMap[serie.id]?.color_one
+                    }}
+                  />
+                  {serie.name}
+                </span>
+              </td>
 
-              {adapted.series.map((serie) => {
-                const value = serie.data[yearIndex];
-
-                return (
-                  <td
-                    key={`${serie.name}-${year}`}
-                    className="py-2 text-right"
-                  >
-                    {formatMoney(value)}
-                  </td>
-                );
-              })}
+              {serie.data.map((value, yearIndex) => (
+                <td
+                  key={`${serie.name}-${adapted.years[yearIndex]}`}
+                  className="text-xs py-2 pr-4 text-right"
+                >
+                  {formatMoney(value)}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+
   );
 }

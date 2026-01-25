@@ -35,7 +35,7 @@ export function adaptCostsBreakdown(
       itemStyle: {
         borderRadius: 6,
         borderColor: "#fff",
-        borderWidth: 2
+        borderWidth: 0
       },
       label: {
         show: true,
