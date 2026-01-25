@@ -28,4 +28,4 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-export default pool;
+export default pool; 
