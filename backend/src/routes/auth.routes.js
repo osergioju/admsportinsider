@@ -24,16 +24,16 @@ import {
 const router = Router();
 
 // 🔐 Login e cadastro
-router.post("/login", loginRateLimiter, login);
+router.post("/login", login);
 router.post("/register", register);
 
 // 📧 Verificação de e-mail
-router.get("/verify-email", tokenRateLimiter, verifyMail);
-router.post("/resend-verification", mailRateLimiter, resendVerification);
+router.get("/verify-email", verifyMail);
+router.post("/resend-verification", resendVerification);
 
 // 🔑 Recuperação de senha
-router.post("/reset-password", mailRateLimiter, resetPasswordRequest);
-router.post("/reset-password/confirm", tokenRateLimiter, resetPasswordConfirm);
+router.post("/reset-password", resetPasswordRequest);
+router.post("/reset-password/confirm", resetPasswordConfirm);
 
 // 👤 Usuário autenticado
 router.get("/me", authGuard, me);

@@ -40,7 +40,7 @@ export function adaptRevenueBreakdown(
         ? apiData.find((item) => item.name === category)
         : null;
 
-      return found ? Number(found.value) : 0;
+      return found ? Number(found.converted_value) : 0;
     });
 
     // Se o valor for negativo  

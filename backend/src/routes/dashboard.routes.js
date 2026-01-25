@@ -30,6 +30,11 @@ import {
 
 } from "../controllers/dashboard.controller.js";
 
+import {
+  createFavorite,
+  listFavorites
+} from "../controllers/dashboardFavorites.controller.js";
+
 const router = Router();
 
 /* ===============================
@@ -100,5 +105,9 @@ router.get("/leagues/:id/financials/indicators", getLeagueFinancialIndicators);
 // Anos disponíveis
 router.get("/leagues/:id/financials/available-years", getLeagueAvailableYears);
 
+
+// Favortiressss 
+router.post("/favorites", createFavorite);
+router.get("/favorites", listFavorites);
 
 export default router;

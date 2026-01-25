@@ -20,6 +20,20 @@ export default function RevenueBreakdownBarChart({
     return <p className="text-sm text-gray-400">Sem dados de receita</p>;
   }
 
+  const firstClubId = Object.keys(data || {})[0];
+  const currency = firstClubId
+    ? data[firstClubId]?.[0]?.currency_converted
+    : "USD";
+
+  const currencySymbolMap = {
+    USD: "$",
+    EUR: "€",
+    BRL: "R$",
+    RUB: "₽"
+  };
+
+  const currencySymbol = currencySymbolMap[currency] || currency;
+
   const option = {
     textStyle: {
       fontFamily: "Effra Trial",
@@ -39,10 +53,12 @@ export default function RevenueBreakdownBarChart({
         return params
           .map(
             (p) =>
-              `<b>${p.axisValue}</b>: R$ ${Number(p.value).toLocaleString("pt-BR")}`
+              `<b>${p.axisValue}</b>: ${currencySymbol} ${Number(p.value).toLocaleString("en-US")}`
           )
           .join("<br/>");
       }
+
+
     },
     grid: {
       left: 0,
@@ -54,7 +70,7 @@ export default function RevenueBreakdownBarChart({
     yAxis: {
       type: "value",
       axisLabel: {
-        formatter: (value) => `R$ ${(value / 1e6).toFixed(0)}M`
+        formatter: (value) => `${currencySymbol} ${(value / 1e6).toFixed(0)}M`
       }
     },
     xAxis: {

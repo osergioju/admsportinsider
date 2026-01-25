@@ -1,7 +1,8 @@
 // components/revenueBreak/RevenueBreakdownSection.jsx
-import { X } from "lucide-react";
+import { X, Heart } from "lucide-react";
 import RevenueBreakdownBarChart from "./RevenueBreakdownBarChart";
 import ChartFilter from "../filter/ChartFilter";
+import { api } from "../../../../../services/api";
 
 export default function RevenueBreakdownSection({
   data,
@@ -41,10 +42,35 @@ export default function RevenueBreakdownSection({
     );
   }
 
+  async function handleFavorite() {
+    const payload = {
+      chartType: "revenue_breakdown",
+      title: "Receitas por clube",
+      mainClubId,
+      selectedClubs
+    };
+
+    try {
+      await api.post("/dashboard/favorites", payload);
+      alert("Favorito salvo 😎");
+    } catch (err) {
+      console.error(err);
+      alert("Deu ruim ao salvar favorito");
+    }
+  }
+
+
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
-      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
+      <h2 className="flex items-center justify-between mb-1 text-[#0A0A0A] font-[400] text-xl">
         Receitas
+         {selectedClubs.length > 0 && (
+            <button 
+              className="cursor-pointer border rounded-full w-10 h-10 flex items-center justify-center text-[#d9337e] hover:bg-[#d9337e] hover:text-white transition-all"
+              onClick={handleFavorite}>
+              <Heart className="w-4" />
+            </button>
+          )}
       </h2>
 
       <ChartFilter

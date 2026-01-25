@@ -24,7 +24,7 @@ export default function DashClubUniques() {
    */
   const [clubMap, setClubMap] = useState({});
   const [clubColorMap, setClubColorMap] = useState({});
-
+  const [toCurrency, setToCurrency] = useState("RUB");
   /**
    * clubes selecionados POR GRÁFICO
    */
@@ -143,15 +143,15 @@ export default function DashClubUniques() {
   /**
    * fetch genérico por gráfico
    */
-  async function fetchChartData(chartKey, endpointBuilder) {
-    const clubs = clubsForChart(chartKey);
-    const existingData = chartData[chartKey];
+  async function fetchChartData(chartKey, endpointBuilder, force = false) {
+  const clubs = clubsForChart(chartKey);
+  const existingData = chartData[chartKey];
 
-    const clubsToFetch = clubs.filter(
-      (clubId) => !existingData[clubId]
-    );
+  const clubsToFetch = force
+    ? clubs
+    : clubs.filter((clubId) => !existingData[clubId]);
 
-    if (clubsToFetch.length === 0) return;
+  if (clubsToFetch.length === 0) return;
 
     try {
       const responses = await Promise.all(
@@ -218,10 +218,15 @@ export default function DashClubUniques() {
   }, [chartComparisons.debts, mainClubId]);
 
   useEffect(() => {
-    fetchChartData("revenueBreakdown", (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/revenues/breakdown`
+    fetchChartData(
+      "revenueBreakdown",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${toCurrency}`,
+      true
     );
-  }, [chartComparisons.revenueBreakdown, mainClubId]);
+  }, [chartComparisons.revenueBreakdown, mainClubId, toCurrency]);
+
+
 
 
   if (loading || !theClub) {
@@ -241,12 +246,12 @@ export default function DashClubUniques() {
     <div className="space-y-6">
       {/* HEADER */}
       <div
-        className="relative w-full p-4 flex items-center lg:px-6 rounded-2xl border"
+        className="relative w-full p-4 lg:py-12 flex items-center lg:px-6 rounded-2xl border"
         style={{
           background: `linear-gradient(
             135deg,
-            ${theClub.club.primary_color} 85%,
-            ${theClub.club.secondary_color || "#FFF5F5"} 106%
+            ${theClub.club.primary_color} 40%,
+            ${theClub.club.secondary_color || "#FFF5F5"} 100%
           )`
         }}
       >
@@ -254,9 +259,13 @@ export default function DashClubUniques() {
           <img className="h-full" src={theClub.club.flag_url} alt="" />
         </div>
 
-        <img src={theClub.club.crest_url} className="w-20 lg:w-36" alt="" />
+        <div className="w-20 h-20 lg:w-24 lg:h-24 xl:w-34 xl:h-34 bg-contain bg-no-repeat bg-center"
+          style={{
+            backgroundImage: `url(${theClub.club.crest_url})`,
+          }}
+        ></div>
 
-        <div className="ml-4 lg:ml-10 border-b border-white pb-4 lg:pb-6">
+        <div className="ml-4 lg:ml-10 border-b border-white pb-4">
           <h3 className="text-white text-2xl mb-3 lg:text-3xl font-light">
             {theClub.club.name}
           </h3>
@@ -277,6 +286,19 @@ export default function DashClubUniques() {
               {theClub.club?.ownership_model || "Modelo não informado"}
             </li>
           </ul>
+
+          <div className="flex items-center gap-3 mt-4">
+            <span className="text-white text-sm">Moeda</span>
+            <select
+              value={toCurrency}
+              onChange={(e) => setToCurrency(e.target.value)}
+              className="rounded px-5 py-3 text-sm bg-white rounded-full text-[#4d4d4d]"
+            >
+              <option value="RUB">Rublo (Rússia)</option>
+              <option value="USD">Dólar (EUA)</option>
+              <option value="BRL">Real (Brasil)</option>
+            </select>
+          </div>
         </div>
       </div>
 

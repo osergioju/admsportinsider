@@ -177,16 +177,32 @@ export async function getRevenues(req, res) {
 export async function getRevenuesBreakdown(req, res) {
   try {
     const { id } = req.params;
-    // const { locale = "pt" } = req.query;
-    const locale = "CN";
-    
-    console.log(req.query); 
+    const locale = "pt-BR";
+
+    const fromCurrency = req.query.from || "RUB";
+    const toCurrency = req.query.to || "USD";
+
     const result = await db.query(`
+      WITH latest_year AS (
+        SELECT MAX(year) AS year
+        FROM club_financials
+        WHERE id_club = $1
+      ),
+      rate_cte AS (
+        SELECT rate
+        FROM currency_rates
+        WHERE base_currency = $3
+          AND reference_currency = $4
+          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+        LIMIT 1
+      )
       SELECT
         fi.code,
         COALESCE(fit.name, fi.name_pt) AS name,
         cf.value,
-        cf.year
+        cf.year,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi 
         ON fi.id = cf.id_indicator
@@ -194,6 +210,8 @@ export async function getRevenuesBreakdown(req, res) {
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id
        AND fit.locale = $2
+
+      LEFT JOIN rate_cte r ON true
 
       WHERE cf.id_club = $1
         AND fi.code IN (
@@ -204,20 +222,21 @@ export async function getRevenuesBreakdown(req, res) {
           'other_revenue',
           'transfers_revenue'
         )
-        AND cf.year = (
-          SELECT MAX(year)
-          FROM club_financials
-          WHERE id_club = $1
-        )
+        AND cf.year = (SELECT year FROM latest_year)
       ORDER BY name;
-    `, [id, locale]);
+    `, [id, locale, fromCurrency, toCurrency]);
 
     return res.json({
       year: result.rows[0]?.year || null,
+      fromCurrency,
+      toCurrency,
+      rate: result.rows[0]?.rate || 1,
       data: result.rows.map(row => ({
         code: row.code,
         name: row.name,
-        value: row.value
+        value: row.value,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
       }))
     });
 
@@ -226,7 +245,6 @@ export async function getRevenuesBreakdown(req, res) {
     return res.status(500).json({ message: "Erro ao buscar breakdown de receitas" });
   }
 }
-
 
 export async function getPayrollCosts(req, res) {
   try {
