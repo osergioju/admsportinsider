@@ -278,8 +278,8 @@ export default function DashboardLayout() {
         </div>
 
         {/* --- CONTEÚDO PRINCIPAL --- */}
-        <div className="lg:w-[calc(100%_-_300px)] lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
-
+        <div className="lg:w-[calc(100%_-_300px)] bg-[#F6F5FA] pb-30 lg:pb-0 lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
+ 
             <Outlet />
 
             {/* Menu Fixo Mobile (Específico de usuário) */}

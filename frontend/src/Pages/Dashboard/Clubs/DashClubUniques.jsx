@@ -255,7 +255,7 @@ export default function DashClubUniques() {
           )`
         }}
       >
-        <div className="overflow-hidden absolute bg-black rounded-full w-10 h-10 right-4 top-4">
+        <div className="overflow-hidden absolute bg-black rounded-full w-5 h-5 lg:w-10 lg:h-10 right-4 top-4">
           <img className="h-full" src={theClub.club.flag_url} alt="" />
         </div>
 
@@ -270,7 +270,7 @@ export default function DashClubUniques() {
             {theClub.club.name}
           </h3>
 
-          <ul className="flex items-center gap-4">
+          <ul className="flex flex-col lg:flex-row lg:items-center gap-0 lg:gap-4">
             <li className="text-white text-sm flex items-center gap-2">
               <CalendarDays className="w-4" />
               Fundação: <strong>{foundedAt}</strong>
@@ -303,8 +303,8 @@ export default function DashClubUniques() {
       </div>
 
       {/* GRÁFICOS */}
-      <div className="w-full">
-        <div className="grid lg:grid-cols-2 gap-4 mb-4">
+      <div className="w-full overflow-hidden relative ">
+        <div className="w-full grid lg:grid-cols-2 gap-4 mb-4">
             <RevenueSection
               data={chartData.revenue}
               selectedClubs={chartComparisons.revenue}
@@ -344,7 +344,7 @@ export default function DashClubUniques() {
             />
         </div>
        
-         <div className="grid lg:grid-cols-1 gap-4 mb-4">
+         <div className="w-full grid lg:grid-cols-1 gap-4 mb-4">
             <PayrollSection
               data={chartData.payroll}
               selectedClubs={chartComparisons.payroll}
