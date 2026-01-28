@@ -69,7 +69,7 @@ export default function FrontPage() {
                     <Link to="/ajuda"><div className="cursor-pointer hover:text-white transition-colors">Ajuda</div></Link>
                 </div>
                 <div className="flex items-center">
-                    <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-2 py-1 text-sm sm:px-5 sm:py-3 sm:text-sm sm:mr-0 flex items-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/login">
+                    <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 py-3 text-sm sm:px-5 sm:py-3 sm:text-sm sm:mr-0 flex items-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/login">
                         Acessar <ArrowUpRight className="ml-2 w-3 h-3 sm:w-4 sm:h-4"></ArrowUpRight>
                     </Link>
                 </div>
