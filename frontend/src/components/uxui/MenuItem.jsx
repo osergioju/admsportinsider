@@ -19,3 +19,4 @@ export default function MenuItem({ icon, label, to, ...props }) {
     </li>
   );
 }
+ 

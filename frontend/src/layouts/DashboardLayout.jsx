@@ -97,6 +97,7 @@ export default function DashboardLayout() {
         <div className="space-y-6">
             
             {/* SEÇÃO: MENU */}
+            
             <div>
                 <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Menu</span>
                 <ul>
