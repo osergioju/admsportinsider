@@ -109,7 +109,7 @@ export default function DashboardLayout() {
                             <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openClubes ? "rotate-180 text-purple-500" : ""}`} />
                         </button>
                         {openClubes && (
-                            <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                            <ul className="groupml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                 <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/clubs" label="Todos os clubes" />
                                 <SubItem onClick={() => setOpenMenu(false)}  to="/clubes/favoritos" label="Favoritos" />
                             </ul>
@@ -117,8 +117,9 @@ export default function DashboardLayout() {
                     </li>
 
                     {/* Outros itens */}
-                    { user ? ( <MenuItem to="/dashboard/meu-dashboard" icon={<Heart strokeWidth={1} size={20}/>} label="Meu Dashboard" /> ) : ( null ) }
-                    <MenuItem onClick={() => setOpenMenu(false)} to="/relatorios" icon={<FileText strokeWidth={1} size={20}/>} label="Relatórios" />
+                    { user ? ( <div className="group"><MenuItem to="/dashboard/meu-dashboard" icon={<Heart strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>Meu Dashboard</span>} className={textStyle}/></div> ) : ( null ) }
+                    <div className="group">
+                        <MenuItem onClick={() => setOpenMenu(false)} to="/relatorios" icon={<FileText strokeWidth={1} size={20} className={iconStyle}/>} label={<span className={textStyle}>Relatórios</span>} /></div>
                 </ul>
             </div>
 
