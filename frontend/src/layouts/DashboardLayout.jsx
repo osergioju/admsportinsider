@@ -331,11 +331,9 @@ export default function DashboardLayout() {
                             )}
                         </div>
                     </div>
-
-                    {/* Notificações */}
-                    <div className="relative">
-                         <NotificationDropdown />
-                    </div>
+                    
+                    {/* Dropdown Notificações */}
+                    <NotificationDropdown />
 
                     {/* Botão Configurações */}
                     <button className="w-11 h-11 bg-white border border-gray-300 rounded-full flex items-center justify-center text-[#7F33D9] hover:bg-gray-50 transition shadow-sm">

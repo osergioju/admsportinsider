@@ -42,11 +42,16 @@ export default function FrontPage() {
 
     
 
-    const leftPillStyle = "flex items-center gap-2 px-4 py-2 bg-[#E5E5E5] border border-[#D4D4D4] rounded-full text-[#404040] text-xs lg:text-sm font-medium shadow-sm z-10 relative whitespace-nowrap hover:scale-105 transition-transform cursor-default";
-    const rightPillStyle = "flex items-center gap-3 px-5 py-3 bg-white border border-[#F0F0F0] rounded-full text-[#404040] text-sm font-medium shadow-lg shadow-purple-500/5 z-10 relative whitespace-nowrap min-w-[220px] hover:border-purple-200 transition-colors cursor-default";
-    const cardClass = "bg-[#FFF5F5] rounded-2xl p-6 lg:p-8 flex flex-col justify-between h-full border border-pink-50 hover:shadow-lg transition-shadow duration-300";
-    const titleClass = "text-[#8033D9] font-medium text-sm lg:text-base mb-2";
-    const descClass = "text-[#1B1917] font-medium text-xl lg:text-2xl leading-tight";
+    const leftPillStyle = "flex items-center justify-center gap-2 px-3 py-2 bg-white border border-[#E5E5E5] rounded-full text-[#404040] text-xs sm:text-sm font-medium shadow-sm z-20 relative whitespace-nowrap hover:scale-105 transition-transform cursor-default"; 
+    const rightPillStyle = "flex items-center gap-3 px-4 py-3 bg-white border border-[#F0F0F0] rounded-2xl text-[#404040] text-sm font-medium shadow-sm z-20 relative w-full hover:border-purple-200 transition-colors cursor-default";
+    const cardClass = "bg-[#FFF5F5] rounded-2xl p-5 sm:p-6 lg:p-8 flex flex-col justify-between h-full border border-pink-50 hover:shadow-lg transition-shadow duration-300 min-h-[300px]";
+    const titleClass = "text-[#8033D9] font-medium text-sm lg:text-base mb-2 block";
+    const descClass = "text-[#1B1917] font-medium text-lg sm:text-xl lg:text-2xl leading-tight";
+
+    // ESTILO ORIGINAL DOS BOTÕES
+    const primaryButtonClass = "bg-gradient-to-r from-[#904EDE] to-[#4E2A78] flex items-center justify-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all";
+    const secondaryButtonClass = "flex items-center justify-center border border-[#A572E1] text-[#A572E1] rounded-full hover:bg-white/5 transition-colors";
+
     if (loadingAuth || user) return null;
 
   return (
@@ -124,64 +129,95 @@ export default function FrontPage() {
             </div>
 
             {/* DIAGRAMA*/}
-            <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-0 relative mb-20">
-                
-                {/* ESQUERDA */}
-                <div className="relative w-full lg:w-[424px] flex-shrink-0 flex flex-col items-center">
-                    {/* SVG visível apenas em Desktop */}
-                    <div className="relative h-[320px] w-full hidden lg:block">
-                        <svg className="absolute top-0 right-0 w-full h-full pointer-events-none" viewBox="0 0 450 320" preserveAspectRatio="none">
-                            <path d="M260 50 C 350 50, 400 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" /> 
-                            <path d="M150 110 C 250 110, 350 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
-                            <path d="M270 160 L 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
-                            <path d="M150 210 C 250 210, 350 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
-                            <path d="M260 270 C 350 270, 400 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
-                        </svg>
-                        <div className="absolute top-[90px] left-[50px]"><div className={leftPillStyle}><Trophy size={16} /> Clubes</div></div>
-                        <div className="absolute top-[190px] left-[50px]"><div className={leftPillStyle}><Users size={16} /> Ligas</div></div>
-                        <div className="absolute top-[30px] right-[100px]"><div className={leftPillStyle}><DollarSign size={16} /> Patrocínios</div></div>
-                        <div className="absolute top-[140px] right-[80px] z-20"><div className={leftPillStyle}><Activity size={16} /> Receitas</div></div>
-                        <div className="absolute top-[250px] right-[100px]"><div className={leftPillStyle}><Database size={16} /> Despesas</div></div>
-                    </div>
-                    {/* Versão Mobile (Lista simples) */}
-                    <div className="flex flex-wrap gap-3 justify-center lg:hidden w-full">
-                        <div className={leftPillStyle}><Trophy size={16} /> Clubes</div>
-                        <div className={leftPillStyle}><Users size={16} /> Ligas</div>
-                        <div className={leftPillStyle}><DollarSign size={16} /> Patrocínios</div>
-                        <div className={leftPillStyle}><Activity size={16} /> Receitas</div>
-                        <div className={leftPillStyle}><Database size={16} /> Despesas</div>
-                    </div>
-                </div>
+              <div className="w-full mb-12 sm:mb-20">
+                    
+                    {/* ====== VERSÃO DESKTOP (Apenas LG+) ====== */}
+                    <div className="hidden lg:flex flex-row items-center justify-center relative h-[360px]">
+                        {/* Esquerda Desktop */}
+                        <div className="relative w-[424px] h-[320px]">
+                            <svg className="absolute top-0 right-0 w-full h-full pointer-events-none" viewBox="0 0 450 320" preserveAspectRatio="none">
+                                <path d="M260 50 C 350 50, 400 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" /> 
+                                <path d="M150 110 C 250 110, 350 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
+                                <path d="M270 160 L 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
+                                <path d="M150 210 C 250 210, 350 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
+                                <path d="M260 270 C 350 270, 400 160, 450 160" stroke="#D1D1D1" strokeWidth="3.0" fill="none" />
+                            </svg>
+                            <div className="absolute top-[90px] left-[50px]"><div className={leftPillStyle}><Trophy size={16} /> Clubes</div></div>
+                            <div className="absolute top-[190px] left-[50px]"><div className={leftPillStyle}><Users size={16} /> Ligas</div></div>
+                            <div className="absolute top-[30px] right-[100px]"><div className={leftPillStyle}><DollarSign size={16} /> Patrocínios</div></div>
+                            <div className="absolute top-[140px] right-[80px] z-20"><div className={leftPillStyle}><Activity size={16} /> Receitas</div></div>
+                            <div className="absolute top-[250px] right-[100px]"><div className={leftPillStyle}><Database size={16} /> Despesas</div></div>
+                        </div>
 
-                {/* CENTRO */}
-                <div className="relative z-20 shrink-0 mx-[-20px] lg:mx-0">
-                    <div className="absolute inset-0 bg-[#8033D9] opacity-30 blur-3xl rounded-full scale-150"></div>
-                    <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-[#9d5ce6] to-[#6a1cb8] p-1 shadow-2xl flex items-center justify-center relative z-10">
-                        <div className="w-full h-full bg-[#5E1E99] rounded-full flex items-center justify-center shadow-inner border-[6px] border-[#9d5ce6]/20">
-                            <img src={Icone2} alt="Core" />
+                        {/* Centro Desktop */}
+                        <div className="relative z-20 shrink-0 mx-[-10px]">           
+                                <div className="w-32 h-32 bg-[#5E1E99] rounded-full flex items-center justify-center shadow-inner border-[6px] border-[#9d5ce6]/10">
+                                    <img src={Icone2} alt="Core" />
+                                </div>    
+                        </div>
+
+                        {/* Direita Desktop */}
+                        <div className="relative w-[400px] h-[360px] flex items-center">
+                            <svg className="absolute top-0 left-0 w-[200px] h-full pointer-events-none" viewBox="0 0 120 360" preserveAspectRatio="none">
+                                <path d="M0 180 L 30 180" stroke="#8033D9" strokeWidth="4" fill="none" />
+                                <path d="M30 180 C 60 180, 60 52, 120 52" stroke="#8033D9" strokeWidth="2" fill="none" /> 
+                                <path d="M30 180 C 60 180, 60 116, 120 116" stroke="#8033D9" strokeWidth="2" fill="none" />
+                                <path d="M30 180 L 120 180" stroke="#8033D9" strokeWidth="2" fill="none" />
+                                <path d="M30 180 C 60 180, 60 244, 120 244" stroke="#8033D9" strokeWidth="2" fill="none" /> 
+                                <path d="M30 180 C 60 180, 60 308, 120 308" stroke="#8033D9" strokeWidth="2" fill="none" /> 
+                            </svg>
+                            <div className="flex flex-col gap-5 pl-[140px] z-10">
+                                <div className={rightPillStyle}><div className="text-[#8033D9]"><BarChart3 size={18} /></div>Comparativos inteligentes</div>
+                                <div className={rightPillStyle}><div className="text-[#8033D9]"><Layers size={18} /></div>Visão financeira centralizada</div>
+                                <div className={rightPillStyle}><div className="text-[#8033D9]"><Search size={18} /></div>Filtros avançados</div>
+                                <div className={rightPillStyle}><div className="text-[#8033D9]"><Trophy size={18} /></div>Benchmarking</div>
+                                <div className={rightPillStyle}><div className="text-[#8033D9]"><Check size={18} /></div>Redução de análise manual</div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* DIREITA */}
-                <div className="relative h-auto lg:h-[360px] flex-shrink-0 flex items-center justify-center mt-8 lg:mt-0">
-                    <svg className="absolute top-0 left-0 w-[200px] h-full pointer-events-none hidden lg:block" viewBox="0 0 120 360" preserveAspectRatio="none">
-                        <path d="M0 180 L 30 180" stroke="#8033D9" strokeWidth="4" fill="none" />
-                        <path d="M30 180 C 60 180, 60 52, 120 52" stroke="#8033D9" strokeWidth="2" fill="none" /> 
-                        <path d="M30 180 C 60 180, 60 116, 120 116" stroke="#8033D9" strokeWidth="2" fill="none" />
-                        <path d="M30 180 L 120 180" stroke="#8033D9" strokeWidth="2" fill="none" />
-                        <path d="M30 180 C 60 180, 60 244, 120 244" stroke="#8033D9" strokeWidth="2" fill="none" /> 
-                        <path d="M30 180 C 60 180, 60 308, 120 308" stroke="#8033D9" strokeWidth="2" fill="none" /> 
-                    </svg>
-                    <div className="flex flex-col gap-3 lg:gap-5 w-full max-w-md lg:max-w-none lg:pl-[200px] z-10">
-                        <div className={rightPillStyle}><div className="text-[#8033D9]"><BarChart3 size={18} /></div>Comparativos inteligentes</div>
-                        <div className={rightPillStyle}><div className="text-[#8033D9]"><Layers size={18} /></div>Visão financeira centralizada</div>
-                        <div className={rightPillStyle}><div className="text-[#8033D9]"><Search size={18} /></div>Filtros avançados</div>
-                        <div className={rightPillStyle}><div className="text-[#8033D9]"><Trophy size={18} /></div>Benchmarking</div>
-                        <div className={rightPillStyle}><div className="text-[#8033D9]"><Check size={18} /></div>Redução de análise manual</div>
+                    {/* ====== VERSÃO MOBILE/TABLET (Fluxo Vertical com Gradiente) - Até LG ====== */}
+                    <div className="flex flex-col items-center w-full lg:hidden relative py-2">
+                        
+                        {/* LINHA CONECTORA (ESPINHA DORSAL):
+                           - top-6 e bottom-12: limitam a altura para não vazar
+                           - bg-gradient-to-b: cria o degradê
+                           - from-transparent: começo suave
+                           - via-[#8033D9]/40: meio roxo visível
+                           - to-transparent: fim suave (evita o corte brusco)
+                        */}
+                        <div className="absolute top-6 bottom-12 left-1/2 -translate-x-1/2 w-[2px] bg-gradient-to-b from-transparent via-[#8033D9]/40 to-transparent z-0 rounded-full"></div>
+
+                        {/* 1. INPUTS (Topo) */}
+                        <div className="grid grid-cols-2 gap-3 z-10 w-full max-w-sm mb-6 px-2">
+                            <div className={leftPillStyle}><Trophy size={14} /> Clubes</div>
+                            <div className={leftPillStyle}><Users size={14} /> Ligas</div>
+                            <div className={leftPillStyle}><DollarSign size={14} /> Patrocínios</div>
+                            <div className={leftPillStyle}><Activity size={14} /> Receitas</div>
+                            <div className={`${leftPillStyle} col-span-2 w-max mx-auto px-6`}><Database size={14} /> Despesas</div>
+                        </div>
+
+                        {/* 2. CORE (Centro) - Integrado */}
+                        <div className="relative z-20 my-2">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-[#9d5ce6] to-[#6a1cb8] p-1 shadow-xl flex items-center justify-center relative z-10">
+                                <div className="w-full h-full bg-[#5E1E99] rounded-full flex items-center justify-center shadow-inner border-[3px] sm:border-[4px] border-[#9d5ce6]/20">
+                                    <img src={Icone2} alt="Core" className="w-1/2 h-1/2 object-contain" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. OUTPUTS (Base) */}
+                        <div className="flex flex-col gap-3 z-10 w-full max-w-sm px-2 mt-6">
+                            <div className={rightPillStyle}><div className="text-[#8033D9] shrink-0"><BarChart3 size={18} /></div><span className="truncate">Comparativos inteligentes</span></div>
+                            <div className={rightPillStyle}><div className="text-[#8033D9] shrink-0"><Layers size={18} /></div><span className="truncate">Visão financeira centralizada</span></div>
+                            <div className={rightPillStyle}><div className="text-[#8033D9] shrink-0"><Search size={18} /></div><span className="truncate">Filtros avançados</span></div>
+                            <div className={rightPillStyle}><div className="text-[#8033D9] shrink-0"><Trophy size={18} /></div><span className="truncate">Benchmarking</span></div>
+                            <div className={rightPillStyle}><div className="text-[#8033D9] shrink-0"><Check size={18} /></div><span className="truncate">Redução de análise manual</span></div>
+                        </div>
+
                     </div>
+
                 </div>
-            </div>
 
             {/* GRID DE CARDS */}
 
@@ -342,163 +378,192 @@ export default function FrontPage() {
 
             </div>
 
-                <div className="w-full mt-6 bg-[#FFF5F5] border border-pink-50 rounded-[32px] relative overflow-hidden group shadow-sm flex flex-col justify-center">
+                <div className="w-full mt-6 bg-[#FFF5F5] border border-pink-50 rounded-[24px] sm:rounded-[32px] relative overflow-hidden group shadow-sm flex flex-col justify-center">
     
-                    <div className="relative pt-4 lg:pt-8 z-10 text-center mb-12 px-4">
-                        <span className="text-[#8033D9] font-medium text-sm tracking-wide uppercase">Cobertura global</span>
-                        <h3 className="text-[#1B1917] font-medium text-2xl lg:text-4xl mt-3 max-w-4xl mx-auto leading-tight">
-                            Dados de praticamente todas as grandes ligas do mundo.
-                        </h3>
-                    </div>
-
-                    {/* Área do Slide Infinito */}
-                    <div className="relative w-full -mb-25">
-                        
-                        {/* Degradês laterais para suavizar a entrada e saída com Fade Effect */}
-                        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#FFF5F5] via-[#FFF5F5]/80 to-transparent z-20 pointer-events-none"></div>
-                        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#FFF5F5] via-[#FFF5F5]/80 to-transparent z-20 pointer-events-none"></div>
-
-                        <Swiper
-                            modules={[Autoplay]}
-                            spaceBetween={4} 
-                            breakpoints={
-                                {
-                                    1000:{
-                                        spaceBetween: 24,
-                                    }
-                                }
-                            }
-                            slidesPerView="auto"
-                            loop={true}
-                            speed={5000}
-                            allowTouchMove={false}
-                            autoplay={{
-                                delay: 0,
-                                disableOnInteraction: false,
-                                pauseOnMouseEnter: false,
-                            }}
-                            className="w-full [&>.swiper-wrapper]:transition-timing-function-linear" 
-                            style={{
-                                "--swiper-wrapper-transition-timing-function": "linear" 
-                            }}
-                        >
-                            {[Time, Time1, Time2, Time3, Time4, Time5, Time, Time1, Time2, Time3, Time4, Time5, Time, Time1].map((logo, index) => (
-                                <SwiperSlide key={index} className="!w-auto">
-                                    <div className="w-[160px] h-[160px] lg:w-[220px] lg:h-[220px] xl:w-[300px] xl:h-[300px] bg-white border border-[#F0F0F0] rounded-2xl flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:border-purple-100 transition-colors">
-                                        <img 
-                                            src={logo} 
-                                            alt={`Time ${index}`} 
-                                            className="w-24 h-24 lg:w-32 lg:h-32 xl:w-40 xl:h-40 object-contain opacity-40 hover:opacity-100 hover:grayscale-0 grayscale transition-all duration-300"
-                                        />
-                                    </div>
-                                </SwiperSlide>
-                            ))}
-                        </Swiper>
-                    </div>
+                {/* Cabeçalho do Bloco */}
+                <div className="relative pt-6 sm:pt-8 z-10 text-center mb-8 sm:mb-12 px-4">
+                    <span className="text-[#8033D9] font-medium text-xs sm:text-sm tracking-wide uppercase">Cobertura global</span>
+                    <h3 className="text-[#1B1917] font-medium text-xl sm:text-2xl lg:text-4xl mt-3 max-w-4xl mx-auto leading-tight">
+                        Dados de praticamente todas as grandes ligas do mundo.
+                    </h3>
                 </div>
+
+                {/* Área do Slide Infinito */}
+                {/* Ajuste na margem negativa inferior para mobile (-mb-16) vs desktop (-mb-25) */}
+                <div className="relative w-full -mb-16 sm:-mb-25 pb-10">
+                    
+                    {/* Degradês laterais ajustados: w-16 no mobile, w-32 no desktop */}
+                    <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-r from-[#FFF5F5] via-[#FFF5F5]/80 to-transparent z-20 pointer-events-none"></div>
+                    <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-[#FFF5F5] via-[#FFF5F5]/80 to-transparent z-20 pointer-events-none"></div>
+
+                    <Swiper
+                        modules={[Autoplay]}
+                        spaceBetween={10} // Padrão mobile
+                        breakpoints={{
+                            320: {
+                                spaceBetween: 10, // Mobile pequeno
+                            },
+                            640: {
+                                spaceBetween: 16, // Tablets/iPads
+                            },
+                            1024: {
+                                spaceBetween: 24, // Desktop
+                            }
+                        }}
+                        slidesPerView="auto"
+                        loop={true}
+                        speed={5000}
+                        allowTouchMove={false}
+                        autoplay={{
+                            delay: 0,
+                            disableOnInteraction: false,
+                            pauseOnMouseEnter: false,
+                        }}
+                        className="w-full [&>.swiper-wrapper]:transition-timing-function-linear" 
+                        style={{
+                            "--swiper-wrapper-transition-timing-function": "linear" 
+                        }}
+                    >
+                        {[Time, Time1, Time2, Time3, Time4, Time5, Time, Time1, Time2, Time3, Time4, Time5, Time, Time1].map((logo, index) => (
+                            <SwiperSlide key={index} className="!w-auto">
+                                {/* Card Responsivo: 
+                                    Mobile: 120px
+                                    Tablet (sm): 160px
+                                    Laptop (lg): 220px
+                                    Desktop (xl): 300px
+                                */}
+                                <div className="w-[120px] h-[120px] sm:w-[160px] sm:h-[160px] lg:w-[220px] lg:h-[220px] xl:w-[300px] xl:h-[300px] bg-white border border-[#F0F0F0] rounded-2xl flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:border-purple-100 transition-colors">
+                                    <img 
+                                        src={logo} 
+                                        alt={`Time ${index}`} 
+                                        // Imagem Responsiva: w-16 mobile -> w-40 desktop
+                                        className="w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 xl:w-40 xl:h-40 object-contain opacity-40 hover:opacity-100 hover:grayscale-0 grayscale transition-all duration-300"
+                                    />
+                                </div>
+                            </SwiperSlide>
+                        ))}
+                    </Swiper>
+                </div>
+            </div>
 
             </div> 
         </div>
 
         <div className="py-20 bg-[#EBEBEF] w-full">
             <div className="container mx-auto px-10">
-                <div className="text-left flex flex-col items-start mb-4">
-    
-                    <div className="mb-6 flex items-center gap-2 px-4 py-1.5 bg-white border border-[#E5E7EB] rounded-full shadow-sm pointer-events-none select-none">
-                        <img src={Icone} alt="Icone" className="w-4 h-4" />
-                        <span className="text-[#8033D9] cursor-pointer text-sm font-medium">Por dentro</span>
-                    </div>
+                <div className="text-left flex flex-col items-start mb-6 sm:mb-12">
+            <div className="mb-4 sm:mb-6 flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E5E7EB] rounded-full shadow-sm pointer-events-none select-none">
+                <img src={Icone} alt="Icone" className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-[#8033D9] cursor-pointer text-xs sm:text-sm font-medium">Por dentro</span>
+            </div>
+            
+            {/* Título Principal: Reduzido no mobile para text-2xl */}
+            <h2 className="text-2xl sm:text-3xl lg:text-5xl font-medium text-[#1B1917] leading-tight max-w-3xl">
+                Como o Sportinsider transforma dados em decisões        
+            </h2>
+        </div>
+
+        {/* Banner Principal (Largo) */}
+        <div className="bg-black w-full relative rounded-2xl overflow-hidden group min-h-[380px] sm:min-h-[450px] lg:min-h-0 flex flex-col justify-end">
+            <img 
+                src={banner1} 
+                alt="Banner Destaque" 
+                className="absolute lg:relative inset-0 w-full h-full lg:h-auto object-cover lg:object-contain transition-transform duration-700 group-hover:scale-105 block opacity-60 lg:opacity-100"
+            />
+            
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 lg:via-black/30 to-transparent pointer-events-none"></div>
+
+            <div className="absolute bottom-0 left-0 w-full p-6 sm:p-8 lg:p-12 z-10 text-white flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 lg:gap-0">
+                <div className="text-left w-full lg:max-w-2xl">
+                    {/* Título Roxo: Mais claro, negrito e caixa alta para destaque */}
+                    <span className="text-[#C084FC] font-bold tracking-widest text-xs sm:text-sm uppercase mb-2 block">
+                        Para gestores e clubes
+                    </span>
                     
-                    <h2 className="mb-4 text-3xl lg:text-4xl xl:text-5xl font-medium text-[#1B1917] leading-tight">
-                        Como o Sportinsider
-                        <br/>transforma dados em decisões        
+                    {/* Texto Branco: Reduzido para text-lg no mobile */}
+                    <h2 className="font-light text-lg sm:text-2xl lg:text-3xl mt-1 leading-snug text-gray-100">
+                        Planeje orçamentos com base em benchmarks reais e identifique gaps <br className="hidden md:block"/> financeiros e oportunidades de crescimento.
                     </h2>
                 </div>
-
-                <div className="bg-black w-full relative rounded-2xl overflow-hidden group min-h-[450px] lg:min-h-0">
-                    <img 
-                        src={banner1} 
-                        alt="Banner Destaque" 
-                        className="absolute lg:relative inset-0 w-full h-full lg:h-auto object-cover lg:object-contain transition-transform duration-700 group-hover:scale-105 block"
-                    />
-                    
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 lg:via-black/30 to-transparent pointer-events-none"></div>
-
-                        <div className="absolute bottom-0 left-0 w-full p-6 lg:p-12 z-10 text-white flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 lg:gap-0">
-                            
-                            <div className="text-left w-full lg:max-w-2xl">
-                                <span className="text-[#8033D9] font-medium tracking-wide">Para gestores e clubes</span>
-                                <h2 className="font-light text-2xl lg:text-3xl mt-3 leading-snug">
-                                    Planeje orçamentos com base em <br className="hidden md:block"/>
-                                    benchmarks reais e identifique gaps <br className="hidden md:block"/>
-                                    financeiros e oportunidades de crescimento.
-                                </h2>
-                            </div>
-                            
-                            <div className="text-left w-max lg:w-auto">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 px-6 py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all flex items-center justify-center lg:justify-start w-full lg:w-auto" to="/dashboard-public">
-                                    Teste gratuito <ArrowUpRight className="w-4 h-4" />
-                                </Link>
-                            </div>
-
-                        </div>
+                
+                <div className="text-left w-full sm:w-max lg:w-auto">
+                    <Link 
+                        className={`${primaryButtonClass} w-full sm:w-auto px-6 py-3 gap-4 text-sm sm:text-base`} 
+                        to="/dashboard-public"
+                    >
+                        Teste gratuito <ArrowUpRight className="w-3 sm:w-4" />
+                    </Link>
                 </div>
+            </div>
+        </div>
 
-                <div className="grid lg:grid-cols-2 gap-4 mt-5">
-    
-                    <div className="bg-black w-full relative rounded-2xl overflow-hidden group">
-                        
-                        <img 
-                            src={banner2} 
-                            alt="Banner Secundário 1" 
-                            className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105 block"
-                        />
-                        
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
+        {/* Banners Secundários (Grid) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 sm:mt-5">
+            
+            
+            {/* Banner 2 */}
+            <div className="bg-black w-full relative rounded-2xl overflow-hidden group min-h-[350px] sm:min-h-[400px] lg:min-h-[500px] xl:min-h-[800px] flex flex-col justify-end">
+                <img 
+                    src={banner2} 
+                    alt="Banner Secundário 1" 
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 block opacity-60 lg:opacity-100"
+                />
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 lg:via-black/30 to-transparent pointer-events-none"></div>
 
-                        <div className="absolute bottom-0 left-0 w-full p-6 lg:p-12 flex-col text-left z-10 text-white flex items-start gap-4">
-                            <div className="text-left">
-                                <span className="text-[#8033D9] font-medium tracking-wide">Para gestores e clubes</span>
-                                <h2 className="font-light text-2xl lg:text-3xl mt-3 leading-tight">
-                                    Planeje orçamentos com base em <br/>
-                                    benchmarks reais e identifique gaps <br/>
-                                    financeiros e oportunidades de crescimento.
-                                </h2>
-                            </div>
-                            <div className="text-left">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">
-                                    Teste gratuito <ArrowUpRight className="w-3" />
-                                </Link>
-                            </div>
-                        </div>
+                <div className="absolute bottom-0 left-0 w-full p-6 sm:p-8 lg:p-12 flex-col text-left z-10 text-white flex items-start gap-6">
+                    <div className="text-left w-full">
+                        {/* Destaque Roxo */}
+                        <span className="text-[#C084FC] font-bold tracking-widest text-xs sm:text-sm uppercase mb-2 block">
+                            Para gestores e clubes
+                        </span>
+                        {/* Texto Branco Menor */}
+                        <h2 className="font-light text-lg sm:text-2xl lg:text-3xl mt-1 leading-snug text-gray-100">
+                            Planeje orçamentos com base em benchmarks reais e identifique gaps <br className="hidden lg:block"/> financeiros e oportunidades de crescimento.
+                        </h2>
                     </div>
-
-                    <div className="bg-black w-full relative rounded-2xl overflow-hidden group">
-                        
-                        <img 
-                            src={banner3} 
-                            alt="Banner Secundário 2" 
-                            className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105 block"
-                        />
-                        
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
-
-                        <div className="absolute bottom-0 left-0 w-full p-6 lg:p-12 flex-col text-left z-10 text-white flex items-start gap-4">
-                            <div className="text-left">
-                                <span className="text-[#8033D9] font-medium tracking-wide">Para gestores e clubes</span>
-                                <h2 className="font-light text-2xl lg:text-3xl mt-3 leading-tight">
-                                    Planeje orçamentos com base em <br/>
-                                    benchmarks reais e identifique gaps <br/>
-                                    financeiros e oportunidades de crescimento.
-                                </h2>
-                            </div>
-                            <div className="text-left">
-                                <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">
-                                    Teste gratuito <ArrowUpRight className="w-3" />
-                                </Link>
-                            </div>
-                        </div>
+                    <div className="text-left w-full sm:w-auto">
+                        <Link 
+                            className={`${primaryButtonClass} w-full sm:w-auto px-6 py-3 gap-4 text-sm sm:text-base`} 
+                            to="/dashboard-public"
+                        >
+                            Teste gratuito <ArrowUpRight className="w-3 sm:w-4" />
+                        </Link>
                     </div>
+                </div>
+            </div>
+
+            {/* Banner 3 */}
+            <div className="bg-black w-full relative rounded-2xl overflow-hidden group min-h-[350px] sm:min-h-[400px] lg:min-h-[500px] xl:min-h-[800px] flex flex-col justify-end">
+                <img 
+                    src={banner3} 
+                    alt="Banner Secundário 2" 
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 block opacity-60 lg:opacity-100"
+                />
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 lg:via-black/30 to-transparent pointer-events-none"></div>
+
+                <div className="absolute bottom-0 left-0 w-full p-6 sm:p-8 lg:p-12 flex-col text-left z-10 text-white flex items-start gap-6">
+                    <div className="text-left w-full">
+                        {/* Destaque Roxo */}
+                        <span className="text-[#C084FC] font-bold tracking-widest text-xs sm:text-sm uppercase mb-2 block">
+                            Para gestores e clubes
+                        </span>
+                        {/* Texto Branco Menor */}
+                        <h2 className="font-light text-lg sm:text-2xl lg:text-3xl mt-1 leading-snug text-gray-100">
+                            Planeje orçamentos com base em benchmarks reais e identifique gaps <br className="hidden lg:block"/> financeiros e oportunidades de crescimento.
+                        </h2>
+                    </div>
+                    <div className="text-left w-full sm:w-auto">
+                        <Link 
+                            className={`${primaryButtonClass} w-full sm:w-auto px-6 py-3 gap-4 text-sm sm:text-base`} 
+                            to="/dashboard-public"
+                        >
+                            Teste gratuito <ArrowUpRight className="w-3 sm:w-4" />
+                        </Link>
+                    </div>
+                </div>
+            </div>
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-4 mt-4 lg:mt-8">
