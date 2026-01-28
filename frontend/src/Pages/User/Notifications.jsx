@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import { api } from "../../services/api";
+import NotificationModal from "../../components/notifications/NotificationModal";
+import { 
+  Bell, 
+  CheckCheck, 
+  Clock, 
+  MailOpen, 
+  ChevronRight, 
+  Loader2,
+  Inbox
+} from "lucide-react"; 
 
 export default function PageNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -39,7 +49,10 @@ export default function PageNotifications() {
     }
   }
 
-  async function markAsRead(id) {
+  // Função usada pelo botão "Marcar como lida" (texto azul)
+  async function markAsRead(id, e) {
+    if(e) e.stopPropagation(); // Evita abrir o modal ao clicar só no botão
+
     try {
       await api.patch(`/user/notifications/${id}/read`);
       setNotifications(prev =>
@@ -66,8 +79,9 @@ export default function PageNotifications() {
   function openNotification(n) {
     setSelected(n);
     setOpenModal(true);
-
-    if (!n.read_at) markAsRead(n.id);
+    
+    // OBS: Removemos o markAsRead daqui pois o NotificationModal 
+    // já faz isso automaticamente no useEffect dele ao montar.
   }
 
   function closeModal() {
@@ -75,101 +89,146 @@ export default function PageNotifications() {
     setOpenModal(false);
   }
 
+  // Helper visual para data
+  const formatDate = (dateString) => {
+    if(!dateString) return "Recente";
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  }
+
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">
-        Notificações
-      </h1>
+    <div className="max-w-4xl mx-auto p-6 pb-20">
+      
+      {/* --- Header da Página --- */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 className="text-2xl font-bold text-[#111]">Notificações</h1>
+            <p className="text-gray-500 text-sm mt-1">
+                Gerencie suas mensagens e alertas do sistema.
+            </p>
+        </div>
 
+        {notifications.length > 0 && (
+            <button
+                onClick={markAll}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-[#7F33D9] hover:border-[#7F33D9] transition-all text-sm font-medium shadow-sm active:scale-[0.98]"
+            >
+                <CheckCheck size={16} />
+                Marcar todas como lidas
+            </button>
+        )}
+      </div>
+
+      {/* --- Estado Loading Inicial --- */}
       {loading && notifications.length === 0 && (
-        <p>Carregando notificações...</p>
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <Loader2 className="animate-spin mb-3" size={30} />
+            <p>Carregando notificações...</p>
+        </div>
       )}
 
+      {/* --- Estado Vazio --- */}
       {!loading && notifications.length === 0 && (
-        <p>Você ainda não tem notificações 👌</p>
+        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center flex flex-col items-center shadow-sm">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                <Inbox size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-[#111]">Tudo limpo!</h3>
+            <p className="text-gray-500 mt-1">Você não tem novas notificações no momento.</p>
+        </div>
       )}
 
+      {/* --- Lista de Notificações --- */}
       {notifications.length > 0 && (
-        <>
-          <button
-            onClick={markAll}
-            className="px-4 py-2 bg-purple-600 text-white rounded"
-          >
-            Marcar todas como lidas
-          </button>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <ul className="divide-y divide-gray-100">
+            {notifications.map(n => {
+                const isUnread = !n.read_at;
 
-          <ul className="mt-5 space-y-3">
-            {notifications.map(n => (
-              <li
-                key={n.id}
-                className={`p-4 border rounded-lg flex justify-between items-center
-                  ${!n.read_at ? "bg-blue-50" : "bg-gray-100"}`}
-              >
-                <div>
-                  <div className="font-semibold">{n.title}</div>
-                  {!n.read_at && (
-                    <span className="text-xs text-blue-700">
-                      Nova
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex gap-3">
-                  {!n.read_at && (
-                    <button
-                      className="text-sm text-blue-600 underline"
-                      onClick={() => markAsRead(n.id)}
-                    >
-                      Marcar lida
-                    </button>
-                  )}
-
-                  <button
-                    className="px-3 py-1 border rounded text-sm"
+                return (
+                  <li
+                    key={n.id}
                     onClick={() => openNotification(n)}
+                    className={`
+                        group p-5 flex gap-4 items-start cursor-pointer transition-all duration-200
+                        ${isUnread ? "bg-purple-50/40 hover:bg-purple-50/70" : "bg-white hover:bg-gray-50"}
+                    `}
                   >
-                    Ver
-                  </button>
-                </div>
-              </li>
-            ))}
+                    {/* Ícone de Status */}
+                    <div className={`
+                        shrink-0 w-10 h-10 rounded-full flex items-center justify-center border transition-colors
+                        ${isUnread 
+                            ? "bg-[#7F33D9] border-[#7F33D9] text-white shadow-sm" 
+                            : "bg-white border-gray-200 text-gray-400 group-hover:border-gray-300"
+                        }
+                    `}>
+                        {isUnread ? <Bell size={18} fill="currentColor" /> : <MailOpen size={18} />}
+                    </div>
+
+                    {/* Conteúdo */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap justify-between items-start gap-2 mb-1">
+                            <h4 className={`text-sm ${isUnread ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}>
+                                {n.title}
+                            </h4>
+                            <span className="text-xs text-gray-400 flex items-center gap-1 whitespace-nowrap">
+                                <Clock size={12} />
+                                {formatDate(n.created_at)}
+                            </span>
+                        </div>
+                        
+                        {/* Preview Texto */}
+                        <p className={`text-sm line-clamp-2 ${isUnread ? "text-gray-600" : "text-gray-500"}`}>
+                             {n.message ? n.message.replace(/<[^>]*>?/gm, '') : "Nova mensagem recebida."}
+                        </p>
+
+                        {/* Botão de Ação Rápida (Marcar como lida sem abrir) */}
+                        {isUnread && (
+                            <button
+                                onClick={(e) => markAsRead(n.id, e)}
+                                className="mt-3 text-xs font-semibold text-[#7F33D9] hover:underline flex items-center gap-1"
+                            >
+                                Marcar como lida
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Seta com Hover */}
+                    <div className="self-center pl-2 text-gray-300 group-hover:text-[#7F33D9] group-hover:translate-x-1 transition-all">
+                        <ChevronRight size={20} />
+                    </div>
+                  </li>
+                );
+            })}
           </ul>
 
+          {/* Botão Carregar Mais */}
           {hasMore && (
-            <div className="mt-6 text-center">
+            <div className="p-4 border-t border-gray-100 bg-gray-50/50">
               <button
                 onClick={() => setPage(p => p + 1)}
-                className="px-4 py-2 border rounded"
+                className="w-full py-3 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:text-[#7F33D9] hover:border-[#7F33D9] transition-all shadow-sm active:scale-[0.99]"
               >
-                Carregar mais
+                {loading ? "Carregando..." : "Carregar mensagens anteriores"}
               </button>
             </div>
           )}
-        </>
+        </div>
       )}
 
-      {/* ===== MODAL ===== */}
+      {/* Modal */}
       {openModal && selected && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-          <div className="bg-white max-w-xl w-full p-6 rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-3">{selected.title}</h2>
-
-            {/* Se vier HTML / imagens do backend */}
-            <div
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: selected.message }}
-            />
-
-            <div className="text-right mt-5">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 bg-gray-800 text-white rounded"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
+        <NotificationModal
+            notification={selected}
+            onClose={closeModal}
+            // Atualiza o estado local quando o modal marcar como lida internamente
+            onRead={() => {
+                setNotifications(prev =>
+                    prev.map(n =>
+                        n.id === selected.id ? { ...n, read_at: new Date() } : n
+                    )
+                );
+            }}
+        />
       )}
     </div>
   );

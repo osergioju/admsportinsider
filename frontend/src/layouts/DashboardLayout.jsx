@@ -6,8 +6,9 @@ import MenuItem from "../components/uxui/MenuItem";
 import SubItem from "../components/uxui/SubMenu";
 import FixedMenu from "../components/uxui/FixedMenu"; 
 import LinkButton from "../components/uxui/LinkButton";
+import NotificationDropdown from "../components/notifications/NotificationDropdown";
 // Ícones do Usuário
-import { Home, Trophy, Shield, BarChart2, Heart, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare,ChevronDown,LogOut,CircleX, } from "lucide-react";
+import { Home, Search, Sun, Moon, Settings, Trophy, Shield, BarChart2, Heart, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare,ChevronDown,LogOut,CircleX, } from "lucide-react";
 
 export default function DashboardLayout() {
   // --- LÓGICA DE LAYOUT (Idêntica ao Admin) ---
@@ -105,7 +106,7 @@ export default function DashboardLayout() {
                         <button onClick={() => setOpenLigas(!openLigas)} className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-gray-50 transition">
                             <div className="flex items-center gap-3">
                                 <Trophy strokeWidth={1} className="text-gray-400" size={20} />
-                                <span className="text-sm font-[400] text-[#0A0A0A]">Ligas</span>
+                                <span className="text-sm font-normal text-[#0A0A0A]">Ligas</span>
                             </div>
                             <ChevronDown strokeWidth={1} size={18} className={`transition-transform ${openLigas ? "rotate-180" : ""}`} />
                         </button>
@@ -122,7 +123,7 @@ export default function DashboardLayout() {
                         <button onClick={() => setOpenClubes(!openClubes)} className="cursor-pointer w-full flex items-center justify-between px-5 py-3 rounded-full hover:bg-gray-50 transition">
                             <div className="flex items-center gap-3">
                                 <Shield strokeWidth={1} className="text-gray-400" size={20} />
-                                <span className="text-sm font-[400] text-[#0A0A0A]">Clubes</span>
+                                <span className="text-sm font-normal text-[#0A0A0A]">Clubes</span>
                             </div>
                             <ChevronDown strokeWidth={1} size={18} className={`transition-transform ${openClubes ? "rotate-180" : ""}`} />
                         </button>
@@ -200,7 +201,7 @@ export default function DashboardLayout() {
   );
 
   return (
-    <div className="lg:flex lg:overflow-y-auto w-full h-screen bg-[#F6F5FA]">
+    <div className="lg:flex hidden w-full h-screen bg-[#F6F5FA]">
 
         {/* --- SIDEBAR CONTAINER --- */}
         <div className="lg:border-r lg:relative top-0 lg:w-[300px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
@@ -218,12 +219,12 @@ export default function DashboardLayout() {
             </div>
 
             {/* Hamburger Mobile + Info */}
-            <div className="lg:hidden flex items-center flex-wrap items-center px-5">
+            <div className="lg:hidden flex items-center flex-wrap px-5">
                 <div className="w-1/4">
                     <button className="flex items-center flex-col gap-[5px]" onClick={() => setOpenMenu(!openMenu)}>
-                        <span className="bg-[#BA7FFF] h-[1px] w-[30px] inline-block"></span>
-                        <span className="bg-[#BA7FFF] h-[1px] w-[30px] inline-block"></span>
-                        <span className="bg-[#BA7FFF] h-[1px] w-[30px] inline-block"></span>
+                        <span className="bg-[#BA7FFF] h-px w-[30px] inline-block"></span>
+                        <span className="bg-[#BA7FFF] h-px w-[30px] inline-block"></span>
+                        <span className="bg-[#BA7FFF] h-px w-[30px] inline-block"></span>
                     </button>
                 </div>
                 <div className="w-3/4 flex gap-2 items-center justify-end">
@@ -255,12 +256,11 @@ export default function DashboardLayout() {
                     >
                         <div className="w-full flex flex-col items-start p-3">
                             <div className="w-full flex justify-between items-center mb-4">
-                                <img src={brand} alt="Brand" className="w-full lg:max-w-[100px] lg:max-w-[180px]" />
+                                <img src={brand} alt="Brand" className="w-full lg:max-w-[180px]" />
                                 <CircleX className="lg:hidden cursor-pointer" onClick={() => setOpenMenu(false)} strokeWidth={1} size={24} color="#BA7FFF" />
                             </div>
                             <div className="w-full border-b border-[#DADADA] mb-4"></div>
                             
-                            {/* Conteúdo do Menu Inserido Aqui */}
                             <UserMenuContent />
                         </div>
                     </div>
@@ -272,13 +272,72 @@ export default function DashboardLayout() {
                  <div className="px-6 pb-4 mb-4 border-b border-gray-100">
                     <img src={brand} alt="Brand" className="h-8 w-auto object-contain" />
                  </div>
-                 {/* Conteúdo do Menu Inserido Aqui */}
                  <UserMenuContent />
             </div>
         </div>
 
         {/* --- CONTEÚDO PRINCIPAL --- */}
-        <div className="lg:w-[calc(100%_-_300px)] bg-[#F6F5FA] pb-30 lg:pb-0 lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
+        <div className="lg:w-[calc(100%-300px)] bg-[#F6F5FA] pb-30 lg:pb-0 lg:h-screen lg:overflow-y-auto lg:px-10 w-full p-5">
+
+            <header className="hidden lg:flex items-center justify-between mb-10">
+                
+                {/* Busca */}
+                <div className="flex-1 max-w-xl">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Search size={20} className="text-gray-400 font-light" strokeWidth={1.5} />
+                        </div>
+                        <input 
+                            type="text" 
+                            placeholder="Buscar" 
+                            className="w-full pl-12 pr-4 py-3 bg-[#E9E9EB] border-none rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7F33D9]/20 transition-all"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-6 ml-4">
+                    
+                    {/* Toggle Modo (Visual) */}
+                    <div className="flex items-center gap-3">
+                        <div className="border border-gray-300 rounded-full p-1 flex items-center bg-white cursor-pointer h-9">
+                            <div className="w-7 h-7 bg-[#F3E8FF] rounded-full flex items-center justify-center text-[#7F33D9]">
+                                <Sun size={16} strokeWidth={2.5} />
+                            </div>
+                            <div className="w-7 h-7 flex items-center justify-center text-gray-400">
+                                <Moon size={16} strokeWidth={2} />
+                            </div>
+                        </div>
+                        <span className="text-sm font-medium text-[#111]">Modo</span>
+                    </div>
+
+                    {/* Separador sutil */}
+                    <div className="w-px h-6 bg-gray-200 mx-1"></div>
+
+                    {/* Avatar do Usuário */}
+                    <div className="relative group cursor-pointer">
+                        <div className="w-11 h-11 rounded-full p-0.5 border border-[#7F33D9] flex items-center justify-center">
+                            {user?.avatar_url ? (
+                                <img src={user.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                                     <User size={20} className="text-gray-500" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Notificações */}
+                    <div className="relative">
+                         <NotificationDropdown />
+                    </div>
+
+                    {/* Botão Configurações */}
+                    <button className="w-11 h-11 bg-white border border-gray-300 rounded-full flex items-center justify-center text-[#7F33D9] hover:bg-gray-50 transition shadow-sm">
+                        <Settings size={22} strokeWidth={1.5} />
+                    </button>
+
+                </div>
+            </header>
  
             <Outlet />
 
