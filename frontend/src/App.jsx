@@ -21,6 +21,7 @@ import SubscriptionInvoices from "./Pages/User/Profile/SubscriptionInvoices";
 import SubscriptionPlan from "./Pages/User/Profile/SubscriptionPlan";
 import Onboarding from "./Pages/User/Onboarding";
 import Faq from "./Pages/User/Profile/Components/Faq";
+import MeuDashboard from "./Pages/User/MeuDashboard";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
@@ -118,6 +119,9 @@ export default function App() {
               {/* Dados - páginas de gráficos de ligas */}
               <Route path="/dashboard/leagues" element={<DashLeagues />} />
               <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
+
+              {/* Meu Dashboard */}
+              <Route path="/dashboard/meu-dashboard" element={<MeuDashboard />} />
             </Route>
 
           </Route>

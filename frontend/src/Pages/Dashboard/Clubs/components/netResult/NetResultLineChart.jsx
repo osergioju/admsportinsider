@@ -113,7 +113,7 @@ export default function NetResultLineChart({
   };
 
   return (
-    <div className="w-full max-w-full h-[250px] overflow-hidden">
+    <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}

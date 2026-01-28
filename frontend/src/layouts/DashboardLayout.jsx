@@ -139,8 +139,7 @@ export default function DashboardLayout() {
                     </li>
 
                     {/* Outros itens */}
-                    <MenuItem onClick={() => setOpenMenu(false)} to="/comparativo" icon={<BarChart2 strokeWidth={1} size={20}/>} label="Comparativo" />
-                    { user ? ( <MenuItem to="/meu-dashboard" icon={<Heart strokeWidth={1} size={20}/>} label="Meu Dashboard" /> ) : ( null ) }
+                    { user ? ( <MenuItem to="/dashboard/meu-dashboard" icon={<Heart strokeWidth={1} size={20}/>} label="Meu Dashboard" /> ) : ( null ) }
                     <MenuItem onClick={() => setOpenMenu(false)} to="/relatorios" icon={<FileText strokeWidth={1} size={20}/>} label="Relatórios" />
                 </ul>
             </div>
