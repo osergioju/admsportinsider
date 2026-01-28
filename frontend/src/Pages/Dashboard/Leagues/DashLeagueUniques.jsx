@@ -213,24 +213,26 @@ export default function DashLeagueUniques() {
       {/* GRÁFICOS */}
       <div className="w-full">
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          <RevenueSection
-            data={chartData.revenue}
-            selectedLeagues={chartComparisons.revenue}
-            setSelectedLeagues={(updater) =>
-              setChartComparisons((prev) => ({
-                ...prev,
-                revenue:
-                  typeof updater === "function"
-                    ? updater(prev.revenue)
-                    : updater
-              }))
-            }
-            leagueMap={leagueMap}
-            setLeagueMap={setLeagueMap}
-            mainLeagueId={mainLeagueId}
-            leagueColor={leagueColor}
-            setLeagueColor={setLeagueColor}
-          />
+          <div className="min-w-0">
+            <RevenueSection
+              data={chartData.revenue}
+              selectedLeagues={chartComparisons.revenue}
+              setSelectedLeagues={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  revenue:
+                    typeof updater === "function"
+                      ? updater(prev.revenue)
+                      : updater
+                }))
+              }
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              mainLeagueId={mainLeagueId}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+            />
+          </div>
 
           <RevenueBreakdownSection
             data={chartData.revenueBreakdown}

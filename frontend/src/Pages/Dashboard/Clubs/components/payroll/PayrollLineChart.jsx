@@ -118,7 +118,7 @@ export default function PayrollLineChart({
   };
 
   return (
-    <div className="w-full h-80 max-w-full overflow-hidden">
+    <div className="w-full max-w-full h-[250px] overflow-hidden">
       <ReactECharts
         option={option}
         style={{ width: "100%", height: "100%" }}

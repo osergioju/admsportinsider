@@ -46,7 +46,7 @@ export default function DebtsBreakdownBarChart({
   };
 
   return (
-    <div className="w-full h-72">
+    <div className="w-full max-w-full overflow-hidden">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}

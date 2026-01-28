@@ -88,12 +88,10 @@ export default function RevenueBreakdownBarChart({
   };
 
   return (
-    <div className="w-full h-[420px]">
+    <div className="w-full max-w-full h-[250px] overflow-hidden">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}
-        notMerge
-        lazyUpdate
       />
     </div>
   );

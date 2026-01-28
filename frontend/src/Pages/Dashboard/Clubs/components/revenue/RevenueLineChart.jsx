@@ -126,12 +126,10 @@ export default function RevenueLineChart({
   };
 
   return (
-    <div className="w-full h-[300px]">
+    <div className="max-w-full h-[250px] overflow-hidden">
       <ReactECharts
         option={option}
         style={{ height: "100%", width: "100%" }}
-        notMerge
-        lazyUpdate
       />
     </div>
   );

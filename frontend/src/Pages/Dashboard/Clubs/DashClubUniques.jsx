@@ -303,8 +303,8 @@ export default function DashClubUniques() {
       </div>
 
       {/* GRÁFICOS */}
-      <div className="w-full overflow-hidden relative ">
-        <div className="w-full grid lg:grid-cols-2 gap-4 mb-4">
+      <div className="max-w-full w-full overflow-hidden relative ">
+        <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
             <RevenueSection
               data={chartData.revenue}
               selectedClubs={chartComparisons.revenue}

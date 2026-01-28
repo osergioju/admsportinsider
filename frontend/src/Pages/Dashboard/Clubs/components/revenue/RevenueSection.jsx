@@ -45,7 +45,7 @@ export default function RevenueSection({
   }
 
   return (
-    <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
+    <div className="max-w-full w-full min-w-0 bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
         Receitas | Por ano
       </h2>
@@ -54,7 +54,7 @@ export default function RevenueSection({
         clubesSelecionados={selectedClubs}
         onAddClub={handleAddClub}
       />
-
+      
       <RevenueLineChart
         data={data}
         clubesSelecionados={selectedClubs}

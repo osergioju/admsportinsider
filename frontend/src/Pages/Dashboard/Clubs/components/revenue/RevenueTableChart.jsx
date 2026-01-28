@@ -53,7 +53,7 @@ export default function RevenueTableChart({
         <tbody>
           {adapted.series.map((serie) => (
             <tr key={serie.name} className="border-b last:border-0 sticky left-0  bg-white py-2 pl-4">
-              <td className="py-2 pl-4">
+              <td className="sticky left-0 bg-white py-2 pl-4">
                 <span className="flex gap-2 items-center">
                   <div
                     className="w-2 h-2 rounded-lg"
