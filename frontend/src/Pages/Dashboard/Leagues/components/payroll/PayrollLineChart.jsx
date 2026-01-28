@@ -120,12 +120,10 @@ export default function PayrollLineChart({
   };
 
   return (
-    <div className="w-full h-80">
+    <div className="w-full h-80 max-w-full overflow-hidden">
       <ReactECharts
         option={option}
-        style={{ height: "100%", width: "100%" }}
-        notMerge
-        lazyUpdate
+        style={{ width: "100%", height: "100%" }}
       />
     </div>
   );

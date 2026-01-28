@@ -1,12 +1,21 @@
 import db from  "../config/db.js";
 
 export async function findUserByEmail(email) {
-  const query = "SELECT * FROM users WHERE email = $1 LIMIT 1";
-  const values = [email];
+  const query = `
+    SELECT 
+      u.*,
+      row_to_json(up) AS preferences
+    FROM users u
+    LEFT JOIN user_preferences up 
+      ON up.user_id = u.id
+    WHERE u.email = $1
+    LIMIT 1
+  `;
 
-  const result = await db.query(query, values);
+  const result = await db.query(query, [email]);
   return result.rows[0];
 }
+
 
 export async function createPublicUser({ nome, email, passwordHash }) {
   const query = `

@@ -55,6 +55,7 @@ export const login = async (req, res) => {
       [user.id]
     );
 
+    console.log(user);
     return res.json({
       message: "Login efetuado com sucesso",
       token,
@@ -62,7 +63,8 @@ export const login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        preferences: user.preferences
       }
     });
 

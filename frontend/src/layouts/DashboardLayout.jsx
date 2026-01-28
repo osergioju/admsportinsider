@@ -29,7 +29,9 @@ export default function DashboardLayout() {
     if (!user) {
       navigate("/login");
       return;
-    }
+    }   
+
+    console.log(user);
 
     if (
       !user.preferences ||
@@ -99,7 +101,7 @@ export default function DashboardLayout() {
                 <span className="text-xs lg:text-sm text-[#AFAFB2] mb-2 font-light block px-2">Menu</span>
                 <ul>
                     {/* Página Inicial */}
-                    <MenuItem to="/dashboard" icon={<Home strokeWidth={1} size={20}/>} label="Página inicial" />
+                    <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard" icon={<Home strokeWidth={1} size={20}/>} label="Página inicial" />
 
                     {/* Dropdown Ligas */}
                     <li>
@@ -112,8 +114,8 @@ export default function DashboardLayout() {
                         </button>
                         {openLigas && (
                             <ul className="ml-12 space-y-2 mb-4">
-                                <SubItem to="/dashboard/leagues" label="Todas as ligas" />
-                                <SubItem to="/dashboard/leagues" label="Favoritas" />
+                                <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/leagues" label="Todas as ligas" />
+                                <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/leagues" label="Favoritas" />
                             </ul>
                         )}
                     </li>
@@ -129,16 +131,16 @@ export default function DashboardLayout() {
                         </button>
                         {openClubes && (
                             <ul className="ml-12 space-y-2 mb-4">
-                                <SubItem to="/dashboard/clubs" label="Todos os clubes" />
-                                <SubItem to="/clubes/favoritos" label="Favoritos" />
+                                <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/clubs" label="Todos os clubes" />
+                                <SubItem onClick={() => setOpenMenu(false)}  to="/clubes/favoritos" label="Favoritos" />
                             </ul>
                         )}
                     </li>
 
                     {/* Outros itens */}
-                    <MenuItem to="/comparativo" icon={<BarChart2 strokeWidth={1} size={20}/>} label="Comparativo" />
+                    <MenuItem onClick={() => setOpenMenu(false)} to="/comparativo" icon={<BarChart2 strokeWidth={1} size={20}/>} label="Comparativo" />
                     { user ? ( <MenuItem to="/meu-dashboard" icon={<Heart strokeWidth={1} size={20}/>} label="Meu Dashboard" /> ) : ( null ) }
-                    <MenuItem to="/relatorios" icon={<FileText strokeWidth={1} size={20}/>} label="Relatórios" />
+                    <MenuItem onClick={() => setOpenMenu(false)} to="/relatorios" icon={<FileText strokeWidth={1} size={20}/>} label="Relatórios" />
                 </ul>
             </div>
 
@@ -150,12 +152,13 @@ export default function DashboardLayout() {
                         <ul>
                             <MenuItem
                                 to="/me/profile"
-                                onClick={() => handleGoPerfil(user.id)}
+                                onClick={() => setOpenMenu(false)}
                                 icon={<User strokeWidth={1} size={20} />}
                                 label="Perfil"
                             />
                             <MenuItem
                                 to="/me/financial"
+                                onClick={() => setOpenMenu(false)}
                                 icon={<Wallet strokeWidth={1} size={20} />}
                                 label="Financeiro"
                             />
@@ -175,11 +178,13 @@ export default function DashboardLayout() {
                 <ul>
                     <MenuItem
                      to="/faq" 
+                     onClick={() => setOpenMenu(false)}
                      icon={<BadgeQuestionMark strokeWidth={1} size={20}/>} 
                      label="Perguntas frequentes" 
                     />
                     <MenuItem 
                     to="/fale-conosco" 
+                    onClick={() => setOpenMenu(false)}
                     icon={<MessagesSquare strokeWidth={1} size={20}/>} 
                     label="Fale conosco" />
                 </ul>
@@ -201,7 +206,7 @@ export default function DashboardLayout() {
   );
 
   return (
-    <div className="lg:flex hidden w-full h-screen bg-[#F6F5FA]">
+    <div className="lg:flex overflow-y-scroll w-full h-screen bg-[#F6F5FA]">
 
         {/* --- SIDEBAR CONTAINER --- */}
         <div className="lg:border-r lg:relative top-0 lg:w-[300px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
@@ -255,11 +260,11 @@ export default function DashboardLayout() {
                         onTouchEnd={handleTouchEnd}
                     >
                         <div className="w-full flex flex-col items-start p-3">
-                            <div className="w-full flex justify-between items-center mb-4">
+                            <div className="hidden lg:flex w-full flex justify-between items-center mb-4">
                                 <img src={brand} alt="Brand" className="w-full lg:max-w-[180px]" />
                                 <CircleX className="lg:hidden cursor-pointer" onClick={() => setOpenMenu(false)} strokeWidth={1} size={24} color="#BA7FFF" />
                             </div>
-                            <div className="w-full border-b border-[#DADADA] mb-4"></div>
+                            <div className="hidden lg:block  w-full border-b border-[#DADADA] mb-4"></div>
                             
                             <UserMenuContent />
                         </div>
