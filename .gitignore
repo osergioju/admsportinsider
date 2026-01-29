@@ -22,5 +22,8 @@ build/
 .vscode/
 .idea/
 
-#Api call 
+# Api call 
+services/api.jsx
 
+# Database
+src/config/db.js
