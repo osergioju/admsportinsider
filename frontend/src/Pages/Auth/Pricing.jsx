@@ -13,7 +13,7 @@ export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState(null);
 
 
-  const isPaid = user.plan_id !== 1;
+  const isPaid = user?.plan_id !== 1;
 
 
   async function handleSubscribe(plan_id) {
