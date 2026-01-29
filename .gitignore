@@ -23,7 +23,7 @@ build/
 .idea/
 
 # Api call 
-services/api.jsx
+frontend/src/services/api.jsx
 
 # Database
-src/config/db.js
+backend/src/config/db.js
