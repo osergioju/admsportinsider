@@ -20,6 +20,7 @@ export default function DashboardLayout() {
   const { logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  console.log();
   useEffect(() => {
     if (!user) { navigate("/login"); return; } 
     if (!user.preferences || !user.preferences.first_login_completed) {
@@ -37,7 +38,6 @@ export default function DashboardLayout() {
     if (Math.abs(translateX) > window.innerWidth * 0.25) { setOpenMenu(false); }
     setTranslateX(0);
   };
-  useEffect(() => { if (window.innerWidth > 1024) { setOpenMenu(true); } }, []);
 
 
   const menuItemStyle = "group w-full flex items-center justify-between px-5 py-3 rounded-full transition-all duration-300 ease-out border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-0.5 active:scale-95 cursor-pointer mb-1";
