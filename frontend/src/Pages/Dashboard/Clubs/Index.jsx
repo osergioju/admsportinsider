@@ -3,8 +3,61 @@ import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import bgimage from "../../../assets/img/bg-clubs.jpg";
 import {ChevronRight, Loader2} from "lucide-react"
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+
+const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
+const regioes = {
+  mundo: { center: [0, 0], zoom: 1 },
+  africaCentral: { center: [20, 5], zoom: 3 }
+};
+
+const continentes = {
+  mundo: { center: [0, 0], zoom: 1 },
+  americaSul: { center: [-60, -15], zoom: 2.8 },
+  americaNorte: { center: [-100, 40], zoom: 2.5 },
+  europa: { center: [15, 50], zoom: 3 },
+  africa: { center: [20, 5], zoom: 2.6 },
+  asia: { center: [90, 30], zoom: 2.3 },
+  oceania: { center: [140, -25], zoom: 3 }
+};
+
+// relação país → continente (simplificada)
+const continentePorPais = {
+  "Brazil": "americaSul",
+  "Argentina": "americaSul",
+  "Chile": "americaSul",
+  "United States of America": "americaNorte",
+  "Canada": "americaNorte",
+  "Mexico": "americaNorte",
+  "France": "europa",
+  "Germany": "europa",
+  "Italy": "europa",
+  "Spain": "europa",
+  "Nigeria": "africa",
+  "South Africa": "africa",
+  "Egypt": "africa",
+  "China": "asia",
+  "Japan": "asia",
+  "India": "asia",
+  "Australia": "oceania",
+  "New Zealand": "oceania"
+};
+
+const regioesUI = [
+{ id: "mundo", label: "🌍 Mundo" },
+{ id: "americaSul", label: "América do Sul" },
+{ id: "americaNorte", label: "América do Norte" },
+{ id: "europa", label: "Europa" },
+{ id: "africa", label: "África" },
+{ id: "asia", label: "Ásia" },
+{ id: "oceania", label: "Oceania" }
+];
+
 
 export default function DashClubs() {
+    const [continente, setContinente] = useState("mundo");
+
     const [search, setSearch] = useState("");
     const [country, setCountry] = useState("");
     const [submitted, setSubmitted] = useState(false);
@@ -65,7 +118,7 @@ export default function DashClubs() {
             console.error(error);
         } finally {
             setLoadingClubs(false);
-        }
+        } 
     }
 
     useEffect(() => {
@@ -81,8 +134,8 @@ export default function DashClubs() {
             >
                 <div className="w-full absolute h-full bg-black top-0 left-0 opacity-40"></div>
                 <div className="w-full p-8  flex flex-col justify-center relative">
-                    <h2 class="text-white text-xl mb-2 lg:text-2xl lg:font-[300]">Todos os clubes</h2>
-                    <p class="text-white font-light">Busque por nome ou filtre pelo páis</p>
+                    <h2 className="text-white text-xl mb-2 lg:text-2xl lg:font-[300]">Todos os clubes</h2>
+                    <p className="text-white font-light">Busque por nome ou filtre pelo páis</p>
                 </div>
             </div>
             <div className="w-full p-6 lg:p-10 border bg-white rounded-bl-lg rounded-br-lg">
@@ -140,6 +193,71 @@ export default function DashClubs() {
                     </button>
                 </div>
 
+                 <div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                    {regioesUI.map((r) => (
+                        <button
+                        key={r.id}
+                        onClick={() => setContinente(r.id)}
+                        style={{
+                            padding: "6px 12px",
+                            borderRadius: 20,
+                            border: "1px solid #ccc",
+                            background: continente === r.id ? "#4CAF50" : "#f2f2f2",
+                            color: continente === r.id ? "#fff" : "#333",
+                            cursor: "pointer",
+                            transition: "0.2s"
+                        }}
+                        >
+                        {r.label}
+                        </button>
+                    ))}
+                    </div>
+
+                    <ComposableMap projectionConfig={{ scale: 160 }}>
+                        <ZoomableGroup
+                    center={continentes[continente].center}
+                    zoom={continentes[continente].zoom}
+                    transitionDuration={2000}
+                    transitionTimingFunction="cubic-bezier(0.22, 1, 0.36, 1)" // easeOutExpo vibes
+                    >
+
+                        <Geographies geography={geoUrl}>
+                            {({ geographies }) =>
+                            geographies.map((geo) => {
+                                const nome = geo.properties.name;
+                                const cont = continentePorPais[nome];
+
+                                const emDestaque =
+                                continente === "mundo" || cont === continente;
+
+                                return (
+                                <Geography
+                                    key={geo.rsmKey}
+                                    geography={geo}
+                                    onClick={() => console.log(nome)}
+                                    style={{
+                                    default: {
+                                        fill: emDestaque ? "#4CAF50" : "#AAA",
+                                        opacity: emDestaque ? 1 : 0.15,
+                                        outline: "none",
+                                        transition: "all 0.4s ease"
+                                    },
+                                    hover: {
+                                        fill: emDestaque ? "#2E7D32" : "#AAA",
+                                        opacity: emDestaque ? 1 : 0.15,
+                                        outline: "none"
+                                    }
+                                    }}
+                                />
+                                );
+                            })
+                            }
+                        </Geographies>
+                        </ZoomableGroup>
+                    </ComposableMap>
+                    </div>
+                    
                 {/* Resultado */}
                 {submitted && (
                     <div className="mt-10">
@@ -193,7 +311,7 @@ export default function DashClubs() {
                                         onClick={() => setPage(page - 1)}
                                         className="cursor-pointer transition-all hover:bg-black hover:border-black group rounded-full px-2 py-2 border rounded disabled:opacity-40"
                                     >
-                                        <ChevronRight class="rotate-180 transition-all group-hover:text-white" />
+                                        <ChevronRight className="rotate-180 transition-all group-hover:text-white" />
                                     </button>
 
                                     <span className="px-4 py-2 text-sm">
@@ -205,7 +323,7 @@ export default function DashClubs() {
                                         onClick={() => setPage(page + 1)}
                                         className="cursor-pointer transition-all hover:bg-black hover:border-black group rounded-full px-2 py-2 border rounded disabled:opacity-40"
                                     >
-                                        <ChevronRight class="transition-all group-hover:text-white" />
+                                        <ChevronRight className="transition-all group-hover:text-white" />
                                     </button>
                                 </div>
                             </div>
