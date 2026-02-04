@@ -55,7 +55,6 @@ export const login = async (req, res) => {
       [user.id]
     );
 
-    console.log(user);
     return res.json({
       message: "Login efetuado com sucesso",
       token,
