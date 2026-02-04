@@ -29,6 +29,7 @@ import {
   getLeagueAvailableYears
 
 } from "../controllers/dashboard.controller.js";
+import { authGuard } from "../middlewares/auth.middleware.js";
 
 import {
   createFavorite,
@@ -57,7 +58,7 @@ router.get("/ligas/receita", getRevenueEvolutionByLeague);
 
 // Receitas
 router.get("/clubs/:id/financials/revenues", getRevenues);
-router.get("/clubs/:id/financials/revenues/breakdown", getRevenuesBreakdown);
+router.get("/clubs/:id/financials/revenues/breakdown", authGuard, getRevenuesBreakdown);
 
 // Custos
 router.get("/clubs/:id/financials/costs/payroll", getPayrollCosts);

@@ -1,4 +1,5 @@
 import db from  "../config/db.js";
+import { authGuard } from "../middlewares/auth.middleware.js";
 
 export const getClubes = (req, res) => {
   const clubes = [
@@ -177,10 +178,44 @@ export async function getRevenues(req, res) {
 export async function getRevenuesBreakdown(req, res) {
   try {
     const { id } = req.params;
-    const locale = "pt-BR";
 
-    const fromCurrency = req.query.from || "RUB";
-    const toCurrency = req.query.to || "USD";
+    const userId = req.user.id;
+
+    // 🔎 Busca o locale da região do usuário
+    const regionResult = await db.query(
+      `
+      SELECT r.code
+      FROM user_preferences up
+      JOIN regions r ON r.id = up.region_id
+      WHERE up.user_id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    // 🔎 Busca a currency 
+    const currencyResult = await db.query(
+      `
+      SELECT c.code
+      FROM user_preferences up
+      JOIN currencies c ON c.id = up.currency_id
+      WHERE up.user_id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    // fallback se não achar
+    const locale = regionResult.rows.length
+      ? regionResult.rows[0].code
+      : "pt-BR";
+
+    const actualCurrency = currencyResult.rows.length
+      ? currencyResult.rows[0].code
+      : "BRL";
+
+    const fromCurrency = req.query.from || actualCurrency;
+    const toCurrency = req.query.to || actualCurrency;
 
     const result = await db.query(`
       WITH latest_year AS (

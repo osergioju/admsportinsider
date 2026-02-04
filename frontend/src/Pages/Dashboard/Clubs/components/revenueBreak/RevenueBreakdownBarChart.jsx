@@ -70,7 +70,7 @@ export default function RevenueBreakdownBarChart({
     yAxis: {
       type: "value",
       axisLabel: {
-        formatter: (value) => `${currencySymbol} ${(value / 1e6).toFixed(0)}M`
+        formatter: (value) => `${(value / 1e6).toFixed(0)}M`
       }
     },
     xAxis: {
