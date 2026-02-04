@@ -24,7 +24,6 @@ export default function GestaoClubes() {
         crest_url: "",
         founded_at: "",
         stadium_name: "",
-        stadium_capacity: "",
         ownership_model: "",
         primary_color: "",
         secondary_color: ""
@@ -115,10 +114,10 @@ export default function GestaoClubes() {
             crest_url: "",
             founded_at: "",
             stadium_name: "",
-            stadium_capacity: "",
             ownership_model: "",
             primary_color: "",
-            secondary_color: ""
+            secondary_color: "",
+            location: ""
         });
         setIsEditing(false);
         setModal(true);
@@ -146,10 +145,10 @@ export default function GestaoClubes() {
                 crest_url: data.club.crest_url,
                 founded_at: clube_foundation,
                 stadium_name: data.club.stadium_name,
-                stadium_capacity: data.club.stadium_capacity,
                 ownership_model: data.club.ownership_model,
                 primary_color: data.club.primary_color,
-                secondary_color: data.club.secondary_color
+                secondary_color: data.club.secondary_color,
+                location: data.club.location
             });
 
             setAttributes(data.attributes || []);
@@ -467,32 +466,7 @@ export default function GestaoClubes() {
                                 </select>
                             </div>
 
-                            {/* Estádio */}
-                            <div>
-                                <label className="block text-sm text-gray-600 mb-1">Nome do Estádio</label>
-                                <input
-                                    type="text"
-                                    className="w-full border px-3 py-2 rounded"
-                                    value={newClub?.stadium_name || ""}
-                                    onChange={(e) =>
-                                        setNewClub({ ...newClub, stadium_name: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            {/* Capacidade */}
-                            <div>
-                                <label className="block text-sm text-gray-600 mb-1">Capacidade do Estádio</label>
-                                <input
-                                    type="number"
-                                    className="w-full border px-3 py-2 rounded"
-                                    value={newClub?.stadium_capacity || ""}
-                                    onChange={(e) =>
-                                        setNewClub({ ...newClub, stadium_capacity: e.target.value })
-                                    }
-                                />
-                            </div>
-
+                            
                             <div>
                                 <label className="block text-sm text-gray-600 mb-1">Cor primária</label>
                                 <input
@@ -513,6 +487,31 @@ export default function GestaoClubes() {
                                     value={newClub?.secondary_color || ""}
                                     onChange={(e) =>
                                         setNewClub({ ...newClub, secondary_color: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* Estádio */}
+                            <div class="w-full">
+                                <label className="block text-sm text-gray-600 mb-1">Nome do Estádio</label>
+                                <input
+                                    type="text"
+                                    className="w-full border px-3 py-2 rounded"
+                                    value={newClub?.stadium_name || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, stadium_name: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div class="w-full">
+                                <label className="block text-sm text-gray-600 mb-1">Localização</label>
+                                <input
+                                    type="text"
+                                    className="w-full border px-3 py-2 rounded"
+                                    value={newClub?.location || ""}
+                                    onChange={(e) =>
+                                        setNewClub({ ...newClub, location: e.target.value })
                                     }
                                 />
                             </div>

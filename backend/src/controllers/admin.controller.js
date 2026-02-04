@@ -194,7 +194,7 @@ export async function getAllClubs(req, res) {
       c.secondary_color,
       c.active,
       c.created_at,
-
+      c.location,
       co.id_country,
       co.name AS country_name,
       co.flag_url
@@ -263,7 +263,7 @@ export async function clubsSearch(req, res) {
         c.secondary_color,
         c.active,
         c.created_at,
-
+        c.location,
         co.id_country,
         co.name AS country_name,
         co.flag_url
@@ -449,8 +449,8 @@ export async function createClub(req, res) {
     crest_url,
     founded_at,
     stadium_name,
-    stadium_capacity,
     ownership_model,
+    location,
     attributes = [] // array vindo do front
   } = req.body;
 
@@ -468,9 +468,9 @@ export async function createClub(req, res) {
       `
       INSERT INTO clubs (
         id_country, name, description, crest_url,
-        founded_at, stadium_name, stadium_capacity, ownership_model
+        founded_at, stadium_name, ownership_model, location
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
       RETURNING id_club
       `,
       [
@@ -480,8 +480,8 @@ export async function createClub(req, res) {
         crest_url,
         founded_at || null,
         stadium_name || null,
-        stadium_capacity || null,
-        ownership_model || null
+        ownership_model || null,
+        location || null
       ]
     );
 
@@ -527,10 +527,10 @@ export async function updateClub(req, res) {
     crest_url,
     founded_at,
     stadium_name,
-    stadium_capacity,
     ownership_model,
     primary_color,
     secondary_color,
+    location,
     attributes = [] // array de atributos novos/atualizados
   } = req.body;
 
@@ -548,10 +548,10 @@ export async function updateClub(req, res) {
         crest_url = $3,
         founded_at = $4,
         stadium_name = $5,
-        stadium_capacity = $6,
-        ownership_model = $7,
-        primary_color = $8,
-        secondary_color = $9
+        ownership_model = $6,
+        primary_color = $7,
+        secondary_color = $8,
+        location = $9
       WHERE id_club = $10
       `,
       [
@@ -560,10 +560,10 @@ export async function updateClub(req, res) {
         crest_url,
         founded_at || null,
         stadium_name || null,
-        stadium_capacity || null,
         ownership_model || null,
         primary_color || null,
         secondary_color || null,
+        location || null,
         id
       ]
     );
@@ -1129,8 +1129,8 @@ export async function uploadClubXlsx(req, res) {
           active,
           founded_at,
           stadium_name,
-          stadium_capacity,
-          ownership_model
+          ownership_model, 
+          location
         )
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
         `,
@@ -1144,8 +1144,8 @@ export async function uploadClubXlsx(req, res) {
           row.active !== "" ? row.active : true,
           row.founded_at || null,
           row.stadium_name || null,
-          row.stadium_capacity || null,
-          row.ownership_model || null
+          row.ownership_model || null,
+          row.location || null
         ]
       );
 
