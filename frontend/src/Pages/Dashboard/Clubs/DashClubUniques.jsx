@@ -25,6 +25,17 @@ export default function DashClubUniques() {
   const [clubMap, setClubMap] = useState({});
   const [clubColorMap, setClubColorMap] = useState({});
   const [toCurrency, setToCurrency] = useState("RUB");
+
+  const [chartCurrencies, setChartCurrencies] = useState({
+    revenue: "RUB",
+    payroll: "RUB",
+    costs: "RUB",
+    netResult: "RUB",
+    netEvolution: "RUB",
+    debts: "RUB",
+    revenueBreakdown: "RUB"
+  });
+
   /**
    * clubes selecionados POR GRÁFICO
    */
@@ -181,10 +192,14 @@ export default function DashClubUniques() {
    * efeitos por gráfico
    */
   useEffect(() => {
-    fetchChartData("revenue", (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/revenues`
+    fetchChartData(
+      "revenue",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}`,
+      true
     );
-  }, [chartComparisons.revenue, mainClubId]);
+  }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);
+
 
   useEffect(() => {
     fetchChartData("payroll", (clubId) =>
@@ -217,14 +232,14 @@ export default function DashClubUniques() {
     );
   }, [chartComparisons.debts, mainClubId]);
 
-  useEffect(() => {
-    fetchChartData(
-      "revenueBreakdown",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${toCurrency}`,
-      true
-    );
-  }, [chartComparisons.revenueBreakdown, mainClubId, toCurrency]);
+useEffect(() => {
+  fetchChartData(
+    "revenueBreakdown",
+    (clubId) =>
+      `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
+    true
+  );
+}, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);
 
 
 
@@ -322,6 +337,14 @@ export default function DashClubUniques() {
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
               mainClubId={mainClubId}
+
+              currency={chartCurrencies.revenue}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({
+                  ...prev,
+                  revenue: value
+                }))
+              }
             />
 
             <RevenueBreakdownSection
@@ -341,6 +364,14 @@ export default function DashClubUniques() {
               mainClubId={mainClubId}
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
+
+              currency={chartCurrencies.revenueBreakdown}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({
+                  ...prev,
+                  revenueBreakdown: value
+                }))
+              }
             />
         </div>
        
@@ -362,6 +393,9 @@ export default function DashClubUniques() {
               mainClubId={mainClubId}
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
+
+              toCurrency={toCurrency}
+              setToCurrency={setToCurrency}
             />
          </div>
     
@@ -381,6 +415,9 @@ export default function DashClubUniques() {
               clubMap={clubMap}
               setClubMap={setClubMap}
               mainClubId={mainClubId}
+
+              toCurrency={toCurrency}
+              setToCurrency={setToCurrency}
             />
 
             <NetResultSection
@@ -400,6 +437,9 @@ export default function DashClubUniques() {
               mainClubId={mainClubId}
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
+
+              toCurrency={toCurrency}
+              setToCurrency={setToCurrency}
             />
           </div>
         
@@ -419,6 +459,9 @@ export default function DashClubUniques() {
               clubMap={clubMap}
               setClubMap={setClubMap}
               mainClubId={mainClubId}
+
+              toCurrency={toCurrency}
+              setToCurrency={setToCurrency}
             />
 
           
@@ -440,6 +483,9 @@ export default function DashClubUniques() {
                 mainClubId={mainClubId}
                 clubColorMap={clubColorMap}
                 setClubColorMap={setClubColorMap}
+
+                toCurrency={toCurrency}
+              setToCurrency={setToCurrency}
               />
 
 

@@ -35,7 +35,7 @@ export default function DebtsBreakdownBarChart({
     xAxis: {
       type: "value",
       axisLabel: {
-        formatter: (value) => `R$ ${(value / 1e6).toFixed(0)}M`
+        formatter: (value) => `${(value / 1e6).toFixed(0)}M`
       }
     },
     yAxis: {

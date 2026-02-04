@@ -57,7 +57,7 @@ router.get("/ligas/receita", getRevenueEvolutionByLeague);
 ================================ */
 
 // Receitas
-router.get("/clubs/:id/financials/revenues", getRevenues);
+router.get("/clubs/:id/financials/revenues", authGuard, getRevenues);
 router.get("/clubs/:id/financials/revenues/breakdown", authGuard, getRevenuesBreakdown);
 
 // Custos

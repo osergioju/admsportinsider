@@ -45,7 +45,7 @@ export default function PayrollLineChart({
         return params
           .map(
             (p) =>
-              `${p.marker} ${p.seriesName}: R$ ${Number(p.value).toLocaleString("pt-BR")}`
+              `${p.marker} ${p.seriesName}: ${Number(p.value).toLocaleString("pt-BR")}`
           )
           .join("<br/>");
       }
@@ -89,7 +89,7 @@ export default function PayrollLineChart({
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        formatter: (value) => `R$ ${(value / 1000).toFixed(0)}M`,
+        formatter: (value) => `${(value / 1000).toFixed(0)}M`,
         color: "#666",
         fontFamily: "Effra Trial"
       },

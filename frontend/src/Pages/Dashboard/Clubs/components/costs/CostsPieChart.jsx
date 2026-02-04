@@ -34,7 +34,7 @@ export default function CostsPieChart({
     tooltip: {
       trigger: "item",
       formatter: ({ seriesName, name, value, percent }) =>
-        `${seriesName}<br/>${name}<br/>R$ ${Number(value).toLocaleString(
+        `${seriesName}<br/>${name}<br/> ${Number(value).toLocaleString(
           "pt-BR"
         )} (${percent}%)`
     },

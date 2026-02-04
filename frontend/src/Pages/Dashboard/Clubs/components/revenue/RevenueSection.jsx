@@ -14,7 +14,9 @@ export default function RevenueSection({
   setClubColorMap,
   // ⬇️ AGORA VEM DO PAI
   selectedClubs,
-  setSelectedClubs
+  setSelectedClubs,
+  currency,
+  setCurrency
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -45,14 +47,16 @@ export default function RevenueSection({
   }
 
   return (
-    <div className="max-w-full w-full min-w-0 bg-white lg:p-10 p-6 rounded-xl">
+    <div className="relative max-w-full w-full min-w-0 bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas | Por ano
+        Receitas <small className="text-xs">(por ano)</small>
       </h2>
 
       <ChartFilter
         clubesSelecionados={selectedClubs}
         onAddClub={handleAddClub}
+        currency={currency}
+        onChangeCurrency={setCurrency}
       />
       
       <RevenueLineChart

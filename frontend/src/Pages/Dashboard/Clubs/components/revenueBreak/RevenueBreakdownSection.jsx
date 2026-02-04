@@ -9,10 +9,12 @@ export default function RevenueBreakdownSection({
   clubMap,
   setClubMap,
   mainClubId,
-  selectedClubs,
+  selectedClubs, 
   setSelectedClubs,
   clubColorMap,
-  setClubColorMap
+  setClubColorMap,
+  currency,
+  setCurrency
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -61,9 +63,9 @@ export default function RevenueBreakdownSection({
 
 
   return (
-    <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
-      <h2 className="flex items-center justify-between mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas
+    <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
+      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
+          Receitas <small className="text-xs">(por ano)</small>
          {selectedClubs.length > 0 && (
             <button 
               className="cursor-pointer border rounded-full w-10 h-10 flex items-center justify-center text-[#d9337e] hover:bg-[#d9337e] hover:text-white transition-all"
@@ -76,6 +78,8 @@ export default function RevenueBreakdownSection({
       <ChartFilter
         clubesSelecionados={selectedClubs}
         onAddClub={handleAddClub}
+        currency={currency}
+        onChangeCurrency={setCurrency}
       />
 
       <RevenueBreakdownBarChart
@@ -85,7 +89,7 @@ export default function RevenueBreakdownSection({
         mainClubId={mainClubId}
         clubColorMap={clubColorMap}
       />
-
+ 
       {selectedClubs.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {selectedClubs.map((clubeId) => (

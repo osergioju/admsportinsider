@@ -39,7 +39,7 @@ export function adaptRevenueLineData(dataByClub,mainClubId, clubesSelecionados, 
 
     (dataByClub[clubId] || []).forEach((item) => {
       if (item.code === "revenue") {
-        revenueByYear[item.year] = item.value;
+        revenueByYear[item.year] = item.converted_value;
       }
     });
 

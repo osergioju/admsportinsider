@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { api } from "../../../../../services/api";
 
 const LIMITE_CLUBES = 4;
-
 export default function ChartFilter({
   clubesSelecionados,
   onAddClub,
-  country = null
+  country = null,
+  currency,
+  onChangeCurrency
 }) {
   const [busca, setBusca] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -55,7 +56,20 @@ export default function ChartFilter({
   }
 
   return (
-    <div className="w-full mb-2 z-20 relative">
+    <div className="w-full mb-2 z-20">
+      <div className="flex flex-col absolute top-4 right-4">
+        <span>Moeda</span>
+        <select
+          value={currency}
+          onChange={(e) => onChangeCurrency(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          <option value="RUB">Rublo (Rússia)</option>
+          <option value="USD">Dólar (EUA)</option>
+          <option value="BRL">Real (Brasil)</option>
+        </select>
+      </div>
+
       <div className="flex gap-4 lg:gap-10">
         <div className="relative w-64">
           <span className="inline-block font-light w-full text-[#AFAFB2] mb-2">
@@ -128,5 +142,6 @@ export default function ChartFilter({
         </div>
       </div>
     </div>
+    
   );
 }

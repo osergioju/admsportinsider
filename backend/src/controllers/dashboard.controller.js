@@ -133,9 +133,45 @@ export async function getRevenues(req, res) {
   try {
     const { id } = req.params;
     const { fromYear, toYear } = req.query;
+    const userId = req.user.id;
 
-    const values = [id];
-    let idx = 2;
+    // 🔎 Busca locale da região do usuário
+    const regionResult = await db.query(
+      `
+      SELECT r.code
+      FROM user_preferences up
+      JOIN regions r ON r.id = up.region_id
+      WHERE up.user_id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    // 🔎 Busca currency do usuário
+    const currencyResult = await db.query(
+      `
+      SELECT c.code
+      FROM user_preferences up
+      JOIN currencies c ON c.id = up.currency_id
+      WHERE up.user_id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    const locale = regionResult.rows.length
+      ? regionResult.rows[0].code
+      : "pt-BR";
+
+    const actualCurrency = currencyResult.rows.length
+      ? currencyResult.rows[0].code
+      : "BRL";
+
+    const fromCurrency = req.query.from || actualCurrency;
+    const toCurrency = req.query.to || actualCurrency;
+
+    const values = [id, locale, fromCurrency, toCurrency];
+    let idx = 5;
     let yearFilter = "";
 
     if (fromYear) {
@@ -151,22 +187,48 @@ export async function getRevenues(req, res) {
     }
 
     const result = await db.query(`
+      WITH rate_cte AS (
+        SELECT cr.rate, cr.period
+        FROM currency_rates cr
+        WHERE cr.base_currency = $3
+          AND cr.reference_currency = $4
+      )
       SELECT
         cf.year,
         fi.code,
-        fi.name_pt,
-        cf.value
+        COALESCE(fit.name, fi.name_pt) AS name,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi 
         ON fi.id = cf.id_indicator
+
+      LEFT JOIN financial_indicator_translations fit
+        ON fit.financial_indicator_id = fi.id
+       AND fit.locale = $2
+
+      LEFT JOIN rate_cte r
+        ON r.period = (cf.year || '-01-01')::date
+
       WHERE cf.id_club = $1
         AND fi.code IN ('revenue')
         ${yearFilter}
       ORDER BY cf.year ASC;
     `, values);
 
+    console.log(toCurrency);
     return res.json({
-      data: result.rows
+      fromCurrency,
+      toCurrency,
+      data: result.rows.map(row => ({
+        year: row.year,
+        code: row.code,
+        name: row.name,
+        value: row.value,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
     });
 
   } catch (err) {
