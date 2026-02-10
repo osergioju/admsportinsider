@@ -1,6 +1,34 @@
 import db from  "../config/db.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
+async function getUserFinancialContext(req) {
+  const userId = req.user.id;
+
+  const result = await db.query(
+    `
+    SELECT 
+      r.code  AS locale,
+      c.code  AS currency
+    FROM user_preferences up
+    LEFT JOIN regions r    ON r.id = up.region_id
+    LEFT JOIN currencies c ON c.id = up.currency_id
+    WHERE up.user_id = $1
+    LIMIT 1
+    `,
+    [userId]
+  );
+
+  const locale = result.rows[0]?.locale || "pt-BR";
+  const userCurrency = result.rows[0]?.currency || "BRL";
+
+  return {
+    locale,
+    fromCurrency: req.query.from || userCurrency,
+    toCurrency: req.query.to || userCurrency
+  };
+}
+
+
 export const getClubes = (req, res) => {
   const clubes = [
     "Athletico-PR", "Atlético-GO", "Atlético-MG", "Bahia", "Botafogo",
@@ -159,14 +187,8 @@ export async function getRevenues(req, res) {
       [userId]
     );
 
-    const locale = regionResult.rows.length
-      ? regionResult.rows[0].code
-      : "pt-BR";
-
-    const actualCurrency = currencyResult.rows.length
-      ? currencyResult.rows[0].code
-      : "BRL";
-
+    const locale = regionResult.rows.length ? regionResult.rows[0].code : "pt-BR";
+    const actualCurrency = currencyResult.rows.length ? currencyResult.rows[0].code : "BRL";
     const fromCurrency = req.query.from || actualCurrency;
     const toCurrency = req.query.to || actualCurrency;
 
@@ -201,16 +223,10 @@ export async function getRevenues(req, res) {
         COALESCE(r.rate, 1) AS rate,
         (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
-      JOIN financial_indicators fi 
-        ON fi.id = cf.id_indicator
-
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
       LEFT JOIN financial_indicator_translations fit
-        ON fit.financial_indicator_id = fi.id
-       AND fit.locale = $2
-
-      LEFT JOIN rate_cte r
-        ON r.period = (cf.year || '-01-01')::date
-
+        ON fit.financial_indicator_id = fi.id AND fit.locale = $2
+      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
         AND fi.code IN ('revenue')
         ${yearFilter}
@@ -218,6 +234,7 @@ export async function getRevenues(req, res) {
     `, values);
 
     console.log(toCurrency);
+
     return res.json({
       fromCurrency,
       toCurrency,
@@ -230,7 +247,6 @@ export async function getRevenues(req, res) {
         currency_converted: toCurrency
       }))
     });
-
   } catch (err) {
     console.error("Erro ao buscar receitas:", err);
     return res.status(500).json({ message: "Erro ao buscar receitas" });
@@ -240,44 +256,7 @@ export async function getRevenues(req, res) {
 export async function getRevenuesBreakdown(req, res) {
   try {
     const { id } = req.params;
-
-    const userId = req.user.id;
-
-    // 🔎 Busca o locale da região do usuário
-    const regionResult = await db.query(
-      `
-      SELECT r.code
-      FROM user_preferences up
-      JOIN regions r ON r.id = up.region_id
-      WHERE up.user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
-
-    // 🔎 Busca a currency 
-    const currencyResult = await db.query(
-      `
-      SELECT c.code
-      FROM user_preferences up
-      JOIN currencies c ON c.id = up.currency_id
-      WHERE up.user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
-
-    // fallback se não achar
-    const locale = regionResult.rows.length
-      ? regionResult.rows[0].code
-      : "pt-BR";
-
-    const actualCurrency = currencyResult.rows.length
-      ? currencyResult.rows[0].code
-      : "BRL";
-
-    const fromCurrency = req.query.from || actualCurrency;
-    const toCurrency = req.query.to || actualCurrency;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
       WITH latest_year AS (
@@ -301,15 +280,10 @@ export async function getRevenuesBreakdown(req, res) {
         COALESCE(r.rate, 1) AS rate,
         (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
-      JOIN financial_indicators fi 
-        ON fi.id = cf.id_indicator
-
+      JOIN financial_indicators fi ON fi.id = cf.id_indicator
       LEFT JOIN financial_indicator_translations fit
-        ON fit.financial_indicator_id = fi.id
-       AND fit.locale = $2
-
+        ON fit.financial_indicator_id = fi.id AND fit.locale = $2
       LEFT JOIN rate_cte r ON true
-
       WHERE cf.id_club = $1
         AND fi.code IN (
           'media',
@@ -336,9 +310,8 @@ export async function getRevenuesBreakdown(req, res) {
         currency_converted: toCurrency
       }))
     });
-
   } catch (err) {
-    console.error("Erro ao buscar breakdown de receitas:", err);
+    console.error(err);
     return res.status(500).json({ message: "Erro ao buscar breakdown de receitas" });
   }
 }
@@ -346,18 +319,39 @@ export async function getRevenuesBreakdown(req, res) {
 export async function getPayrollCosts(req, res) {
   try {
     const { id } = req.params;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
-      SELECT cf.year, cf.value
+      WITH rate_cte AS (
+        SELECT cr.rate, cr.period
+        FROM currency_rates cr
+        WHERE cr.base_currency = $2
+          AND cr.reference_currency = $3
+      )
+      SELECT
+        cf.year,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
         AND fi.code = 'wages'
       ORDER BY cf.year ASC;
-    `, [id]);
+    `, [id, fromCurrency, toCurrency]); 
 
-    return res.json({ data: result.rows });
-
+    return res.json({
+      fromCurrency,
+      toCurrency,
+      data: result.rows.map(row => ({
+        year: row.year,
+        value: row.value,
+        rate: row.rate,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar folha salarial" });
@@ -367,11 +361,34 @@ export async function getPayrollCosts(req, res) {
 export async function getCostsBreakdown(req, res) {
   try {
     const { id } = req.params;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
-      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      WITH latest_year AS (
+        SELECT MAX(year) AS year
+        FROM club_financials
+        WHERE id_club = $1
+      ),
+      rate_cte AS (
+        SELECT rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+        LIMIT 1
+      )
+      SELECT
+        cf.year,
+        fi.code,
+        COALESCE(fit.name, fi.name_pt) AS name,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      LEFT JOIN financial_indicator_translations fit
+        ON fit.financial_indicator_id = fi.id AND fit.locale = $4
+      LEFT JOIN rate_cte r ON true
       WHERE cf.id_club = $1
         AND fi.code IN (
           'wages',
@@ -380,14 +397,23 @@ export async function getCostsBreakdown(req, res) {
           'other_expense',
           'transfers_costs'
         )
-        AND cf.year = (
-          SELECT MAX(year) FROM club_financials WHERE id_club = $1
-        )
-      ORDER BY fi.name_pt;
-    `, [id]);
+        AND cf.year = (SELECT year FROM latest_year)
+      ORDER BY name;
+    `, [id, fromCurrency, toCurrency, locale]); // ✅ CORRIGIDO: 4 parâmetros
 
-    return res.json({ data: result.rows });
-
+    return res.json({
+      year: result.rows[0]?.year || null,
+      fromCurrency,
+      toCurrency,
+      rate: result.rows[0]?.rate || 1,
+      data: result.rows.map(row => ({
+        code: row.code,
+        name: row.name,
+        value: row.value,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar breakdown de custos" });
@@ -397,19 +423,46 @@ export async function getCostsBreakdown(req, res) {
 export async function getNetResult(req, res) {
   try {
     const { id } = req.params;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
-      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      WITH rate_cte AS (
+        SELECT cr.rate, cr.period
+        FROM currency_rates cr
+        WHERE cr.base_currency = $2
+          AND cr.reference_currency = $3
+      )
+      SELECT
+        cf.year,
+        fi.code,
+        COALESCE(fit.name, fi.name_pt) AS name,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      LEFT JOIN financial_indicator_translations fit
+        ON fit.financial_indicator_id = fi.id AND fit.locale = $4
+      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
         AND fi.code IN ('ebitda', 'revenue', 'costs', 'net_income')
       ORDER BY cf.year DESC
       LIMIT 12;
-    `, [id]);
+    `, [id, fromCurrency, toCurrency, locale]); // ✅ CORRIGIDO: 4 parâmetros
 
-    return res.json({ data: result.rows });
-
+    return res.json({
+      fromCurrency,
+      toCurrency,
+      data: result.rows.map(row => ({
+        year: row.year,
+        code: row.code,
+        name: row.name,
+        value: row.value,
+        rate: row.rate,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar resultado líquido" });
@@ -419,18 +472,39 @@ export async function getNetResult(req, res) {
 export async function getNetResultEvolution(req, res) {
   try {
     const { id } = req.params;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
-      SELECT cf.year, cf.value
-      FROM club_financials cf 
+      WITH rate_cte AS (
+        SELECT cr.rate, cr.period
+        FROM currency_rates cr
+        WHERE cr.base_currency = $2
+          AND cr.reference_currency = $3
+      )
+      SELECT
+        cf.year,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
+      FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
         AND fi.code = 'net_income'
       ORDER BY cf.year ASC;
-    `, [id]);
+    `, [id, fromCurrency, toCurrency]); // ✅ CORRIGIDO: 3 parâmetros
 
-    return res.json({ data: result.rows });
-
+    return res.json({
+      fromCurrency,
+      toCurrency,
+      data: result.rows.map(row => ({
+        year: row.year,
+        value: row.value,
+        rate: row.rate,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar evolução do resultado líquido" });
@@ -440,11 +514,34 @@ export async function getNetResultEvolution(req, res) {
 export async function getDebtsBreakdown(req, res) {
   try {
     const { id } = req.params;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
-      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      WITH latest_year AS (
+        SELECT MAX(year) AS year
+        FROM club_financials
+        WHERE id_club = $1
+      ),
+      rate_cte AS (
+        SELECT rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+        LIMIT 1
+      )
+      SELECT
+        cf.year,
+        fi.code,
+        COALESCE(fit.name, fi.name_pt) AS name,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      LEFT JOIN financial_indicator_translations fit
+        ON fit.financial_indicator_id = fi.id AND fit.locale = $4
+      LEFT JOIN rate_cte r ON true
       WHERE cf.id_club = $1
         AND fi.code IN (
           'loans_debt',
@@ -452,14 +549,23 @@ export async function getDebtsBreakdown(req, res) {
           'payroll_debt',
           'other_debt'
         )
-        AND cf.year = (
-          SELECT MAX(year) FROM club_financials WHERE id_club = $1
-        )
-      ORDER BY fi.name_pt;
-    `, [id]);
+        AND cf.year = (SELECT year FROM latest_year)
+      ORDER BY name;
+    `, [id, fromCurrency, toCurrency, locale]); // ✅ CORRIGIDO: 4 parâmetros
 
-    return res.json({ data: result.rows });
-
+    return res.json({
+      year: result.rows[0]?.year || null,
+      fromCurrency,
+      toCurrency,
+      rate: result.rows[0]?.rate || 1,
+      data: result.rows.map(row => ({
+        code: row.code,
+        name: row.name,
+        value: row.value,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar breakdown de dívidas" });
@@ -469,18 +575,39 @@ export async function getDebtsBreakdown(req, res) {
 export async function getDebtsEvolution(req, res) {
   try {
     const { id } = req.params;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
-      SELECT cf.year, cf.value
+      WITH rate_cte AS (
+        SELECT cr.rate, cr.period
+        FROM currency_rates cr
+        WHERE cr.base_currency = $2
+          AND cr.reference_currency = $3
+      )
+      SELECT
+        cf.year,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
         AND fi.code = 'net_debt'
       ORDER BY cf.year ASC;
-    `, [id]);
+    `, [id, fromCurrency, toCurrency]); // ✅ CORRIGIDO: 3 parâmetros
 
-    return res.json({ data: result.rows });
-
+    return res.json({
+      fromCurrency,
+      toCurrency,
+      data: result.rows.map(row => ({
+        year: row.year,
+        value: row.value,
+        rate: row.rate,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar evolução da dívida" });
@@ -490,11 +617,27 @@ export async function getDebtsEvolution(req, res) {
 export async function getFinancialIndicators(req, res) {
   try {
     const { id } = req.params;
+    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
 
     const result = await db.query(`
-      SELECT cf.year, fi.code, fi.name_pt, cf.value
+      WITH rate_cte AS (
+        SELECT cr.rate, cr.period
+        FROM currency_rates cr
+        WHERE cr.base_currency = $2
+          AND cr.reference_currency = $3
+      )
+      SELECT
+        cf.year,
+        fi.code,
+        COALESCE(fit.name, fi.name_pt) AS name,
+        cf.value,
+        COALESCE(r.rate, 1) AS rate,
+        (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
+      LEFT JOIN financial_indicator_translations fit
+        ON fit.financial_indicator_id = fi.id AND fit.locale = $4
+      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
         AND fi.code IN (
           'ebitda',
@@ -503,10 +646,21 @@ export async function getFinancialIndicators(req, res) {
           'debt_ebitda_ratio'
         )
       ORDER BY cf.year DESC;
-    `, [id]);
+    `, [id, fromCurrency, toCurrency, locale]); // ✅ CORRIGIDO: 4 parâmetros
 
-    return res.json({ data: result.rows });
-
+    return res.json({
+      fromCurrency,
+      toCurrency,
+      data: result.rows.map(row => ({
+        year: row.year,
+        code: row.code,
+        name: row.name,
+        value: row.value,
+        rate: row.rate,
+        converted_value: row.converted_value,
+        currency_converted: toCurrency
+      }))
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Erro ao buscar indicadores financeiros" });
