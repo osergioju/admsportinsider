@@ -31,10 +31,8 @@ import {
 } from "../controllers/dashboard.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
-import {
-  createFavorite,
-  listFavorites
-} from "../controllers/dashboardFavorites.controller.js";
+import { createFavorite, listFavorites } from "../controllers/dashboardFavorites.controller.js";
+import { financialContext } from "../middlewares/financialContext.middleware.js";
 
 const router = Router();
 
@@ -57,26 +55,26 @@ router.get("/ligas/receita", getRevenueEvolutionByLeague);
 ================================ */
 
 // Receitas
-router.get("/clubs/:id/financials/revenues", authGuard, getRevenues);
-router.get("/clubs/:id/financials/revenues/breakdown", authGuard, getRevenuesBreakdown);
+router.get("/clubs/:id/financials/revenues", authGuard, financialContext, getRevenues);
+router.get("/clubs/:id/financials/revenues/breakdown", authGuard, financialContext, getRevenuesBreakdown);
 
 // Custos
-router.get("/clubs/:id/financials/costs/payroll", getPayrollCosts);
-router.get("/clubs/:id/financials/costs/breakdown", getCostsBreakdown);
+router.get("/clubs/:id/financials/costs/payroll", authGuard, financialContext, getPayrollCosts);
+router.get("/clubs/:id/financials/costs/breakdown",authGuard, financialContext,  getCostsBreakdown);
 
 // Resultado líquido
-router.get("/clubs/:id/financials/net-result", getNetResult);
-router.get("/clubs/:id/financials/net-result/evolution", getNetResultEvolution);
+router.get("/clubs/:id/financials/net-result",authGuard, financialContext, getNetResult);
+router.get("/clubs/:id/financials/net-result/evolution",authGuard, financialContext, getNetResultEvolution);
 
 // Dívidas
-router.get("/clubs/:id/financials/debts/breakdown", getDebtsBreakdown);
-router.get("/clubs/:id/financials/debts/evolution", getDebtsEvolution);
+router.get("/clubs/:id/financials/debts/breakdown",authGuard, financialContext, getDebtsBreakdown);
+router.get("/clubs/:id/financials/debts/evolution",authGuard, financialContext, getDebtsEvolution);
 
 // Indicadores financeiros
-router.get("/clubs/:id/financials/indicators", getFinancialIndicators);
+router.get("/clubs/:id/financials/indicators",authGuard, financialContext, getFinancialIndicators);
 
 // Anos disponíveis
-router.get("/clubs/:id/financials/available-years", getAvailableYears);
+router.get("/clubs/:id/financials/available-years",authGuard, financialContext, getAvailableYears);
 
 
 /* ===============================

@@ -39,7 +39,7 @@ export function adaptNetResultEvolution(
 
     const values = years.map((year) => {
       const found = sorted.find((item) => item.year === year);
-      return found ? Number(found.value) : 0; 
+      return found ? Number(found.converted_value) : 0; 
     });
 
 

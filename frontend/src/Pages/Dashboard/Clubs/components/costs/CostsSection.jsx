@@ -9,7 +9,9 @@ export default function CostsSection({
   setClubMap,
   mainClubId,
   selectedClubs,
-  setSelectedClubs
+  setSelectedClubs,
+  currency,
+  setCurrency
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -39,9 +41,11 @@ export default function CostsSection({
       <ChartFilter
         clubesSelecionados={selectedClubs}
         onAddClub={handleAddClub}
+        currency={currency}
+        onChangeCurrency={setCurrency}
       />
 
-      <CostsPieChart
+      <CostsPieChart 
         data={data}
         clubesSelecionados={selectedClubs}
         clubMap={clubMap}

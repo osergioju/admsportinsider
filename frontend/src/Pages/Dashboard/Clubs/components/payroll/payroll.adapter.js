@@ -29,6 +29,7 @@ export function adaptPayrollLineData(
 
   const series = clubIds.map((clubId) => {
     const apiData = dataByClub[clubId];
+    console.log(dataByClub[clubId]);
 
     const sorted = Array.isArray(apiData)
       ? [...apiData].sort((a, b) => a.year - b.year)
@@ -36,7 +37,7 @@ export function adaptPayrollLineData(
 
     const values = years.map((year) => {
       const found = sorted.find((item) => item.year === year);
-      return found ? found.value : 0;
+      return found ? found.converted_value : 0;
     });
 
     const clubColor =

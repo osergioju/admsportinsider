@@ -45,7 +45,7 @@ export function adaptNetResultEvolution(
     // mapear valores por ano
     const values = years.map((year) => {
       const found = filtered.find((item) => item.year === year);
-      return found ? Number(found.value) : 0;
+      return found ? Number(found.converted_value) : 0;
     });
 
     return {

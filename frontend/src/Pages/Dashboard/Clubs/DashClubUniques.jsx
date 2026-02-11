@@ -63,6 +63,7 @@ export default function DashClubUniques() {
     revenueBreakdown: {}
   });
 
+
   // dados fixos (sem comparação)
   const [revenuesBreakdown, setRevenuesBreakdown] = useState(null);
   const [payrollCosts, setPayrollCosts] = useState(null);
@@ -191,59 +192,76 @@ export default function DashClubUniques() {
   /**
    * efeitos por gráfico
    */
-  useEffect(() => {
-    fetchChartData(
-      "revenue",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}`,
-      true
-    );
-  }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);
+    // ✅ ADICIONAR filtros de ano - evolução temporal
+    useEffect(() => {
+      fetchChartData(
+        "revenue",
+        (clubId) =>
+          `/dashboard/clubs/${clubId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
+        true
+      );
+    }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);
 
+    // ✅ ADICIONAR filtros de ano - evolução temporal
+    useEffect(() => {
+      fetchChartData(
+        "payroll",
+        (clubId) =>
+          `/dashboard/clubs/${clubId}/financials/costs/payroll?from=RUB&to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
+        true
+      );
+    }, [chartComparisons.payroll, mainClubId, chartCurrencies.payroll]);
 
-  useEffect(() => {
-    fetchChartData("payroll", (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/costs/payroll`
-    );
-  }, [chartComparisons.payroll, mainClubId]);
+    // ❌ NÃO adicionar - breakdown do último ano apenas
+    useEffect(() => {
+      fetchChartData(
+        "costs",
+        (clubId) =>
+          `/dashboard/clubs/${clubId}/financials/costs/breakdown?from=RUB&to=${chartCurrencies.costs}`,
+        true
+      );
+    }, [chartComparisons.costs, mainClubId, chartCurrencies.costs]);
 
-  useEffect(() => {
-    fetchChartData("costs", (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/costs/breakdown`
-    );
-  }, [chartComparisons.costs, mainClubId]);
+    // ✅ ADICIONAR filtros de ano - evolução temporal (últimos 3 anos, 12 registros)
+    useEffect(() => {
+      fetchChartData(
+        "netResult",
+        (clubId) =>
+          `/dashboard/clubs/${clubId}/financials/net-result?from=RUB&to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
+        true
+      );
+    }, [chartComparisons.netResult, mainClubId, chartCurrencies.netResult]);
 
-  useEffect(() => {
-    fetchChartData("netResult", (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/net-result`
-    );
-  }, [chartComparisons.netResult, mainClubId]);
+    // ✅ ADICIONAR filtros de ano - evolução temporal
+    useEffect(() => {
+      fetchChartData(
+        "netEvolution",
+        (clubId) =>
+          `/dashboard/clubs/${clubId}/financials/net-result/evolution?from=RUB&to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
+        true
+      );
+    }, [chartComparisons.netEvolution, mainClubId, chartCurrencies.netEvolution]);
 
-  useEffect(() => {
-    fetchChartData("netEvolution", (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/net-result/evolution`
-    );
-  }, [chartComparisons.netEvolution, mainClubId]);
+    // ❌ NÃO adicionar - breakdown do último ano apenas
+    useEffect(() => {
+      fetchChartData(
+        "debts",
+        (clubId) =>
+          `/dashboard/clubs/${clubId}/financials/debts/breakdown?from=RUB&to=${chartCurrencies.debts}`,
+        true
+      );
+    }, [chartComparisons.debts, mainClubId, chartCurrencies.debts]);
 
-
-  useEffect(() => {
-    fetchChartData("debts", (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/debts/breakdown`
-    );
-  }, [chartComparisons.debts, mainClubId]);
-
-useEffect(() => {
-  fetchChartData(
-    "revenueBreakdown",
-    (clubId) =>
-      `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
-    true
-  );
-}, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);
-
-
-
-
+    // ❌ NÃO adicionar - breakdown do último ano apenas
+    useEffect(() => {
+      fetchChartData(
+        "revenueBreakdown",
+        (clubId) =>
+          `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
+        true
+      );
+    }, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);
+    
   if (loading || !theClub) {
     return <p className="text-sm text-gray-500">Carregando dashboard…</p>;
   }
@@ -394,8 +412,13 @@ useEffect(() => {
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
 
-              toCurrency={toCurrency}
-              setToCurrency={setToCurrency}
+              currency={chartCurrencies.payroll}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({
+                  ...prev,
+                  payroll: value
+                }))
+              }
             />
          </div>
     
@@ -416,8 +439,13 @@ useEffect(() => {
               setClubMap={setClubMap}
               mainClubId={mainClubId}
 
-              toCurrency={toCurrency}
-              setToCurrency={setToCurrency}
+              currency={chartCurrencies.costs}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({
+                  ...prev,
+                  costs: value
+                }))
+              }
             />
 
             <NetResultSection
@@ -438,8 +466,13 @@ useEffect(() => {
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
 
-              toCurrency={toCurrency}
-              setToCurrency={setToCurrency}
+              currency={chartCurrencies.netEvolution}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({
+                  ...prev,
+                  netEvolution: value
+                }))
+              }
             />
           </div>
         
@@ -460,13 +493,18 @@ useEffect(() => {
               setClubMap={setClubMap}
               mainClubId={mainClubId}
 
-              toCurrency={toCurrency}
-              setToCurrency={setToCurrency}
+              currency={chartCurrencies.debts}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({
+                  ...prev,
+                  debts: value
+                }))
+              }
             />
 
           
 
-              <NetResultTableSection
+            <NetResultTableSection
                 data={chartData.netResult}
                 selectedClubs={chartComparisons.netResult}
                 setSelectedClubs={(updater) =>
@@ -484,8 +522,13 @@ useEffect(() => {
                 clubColorMap={clubColorMap}
                 setClubColorMap={setClubColorMap}
 
-                toCurrency={toCurrency}
-              setToCurrency={setToCurrency}
+                currency={chartCurrencies.netResult}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({
+                    ...prev,
+                    netResult: value
+                  }))
+                }
               />
 
 

@@ -14,12 +14,14 @@ export default function CostsPieChart({
     clubMap
   );
 
-  const sliceColors = ["#161616", "#6C6969", "#B2B1B1", "#D9D9D9"];
+  console.log(data);
 
+  const sliceColors = ["#161616", "#6C6969", "#B2B1B1", "#D9D9D9"];
+  
   if (!adapted) {
     return <p className="text-sm text-gray-400">Sem dados de custos</p>;
   }
-
+  console.log(adapted);
   const total = adapted.series[0].data.reduce(
     (sum, item) => sum + item.value,
     0

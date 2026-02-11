@@ -12,7 +12,9 @@ export default function NetResultTableSection({
   selectedClubs,
   setSelectedClubs,
   clubColorMap,
-  setClubColorMap
+  setClubColorMap,
+  currency,
+  setCurrency
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -50,6 +52,8 @@ export default function NetResultTableSection({
       <ChartFilter
         clubesSelecionados={selectedClubs}
         onAddClub={handleAddClub}
+        currency={currency}
+        onChangeCurrency={setCurrency}
       />
 
       <NetResultLine

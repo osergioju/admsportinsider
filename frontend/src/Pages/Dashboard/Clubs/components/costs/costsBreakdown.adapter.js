@@ -4,6 +4,7 @@ export function adaptCostsBreakdown(
   mainClubId,
   clubMap
 ) {
+  console.log("dataByClub:", dataByClub);
   if (!dataByClub || Object.keys(dataByClub).length === 0) {
     return null;
   }
@@ -12,16 +13,20 @@ export function adaptCostsBreakdown(
 
   const series = clubIds.map((clubId, index) => {
     const apiData = dataByClub[clubId];
+    console.log(`Dados do clube ${clubId}:`, apiData);
+    
     if (!Array.isArray(apiData)) return null;
 
     const values = apiData
-      .filter((item) => item.name_pt)
+      .filter((item) => item.name) // ← MUDEI AQUI: era item.name_pt
       .map((item) => ({
-        name: item.name_pt.replace("(-)", ""),
-        value: Number(item.value.toString().replace("-", ""))
+        name: item.name.replace("(-)", "").trim(), // ← MUDEI AQUI também
+        value: Math.abs(Number(item.converted_value)) // ← Simplificado
       }));
 
-      const total = clubIds.length;
+    console.log(`Values processados do clube ${clubId}:`, values);
+
+    const total = clubIds.length;
 
     return {
       name: clubMap[clubId] || `Clube ${clubId}`,
@@ -52,5 +57,8 @@ export function adaptCostsBreakdown(
     };
   });
 
-  return { series };
+  // Filtrar nulls caso algum clube não tenha dados
+  const validSeries = series.filter(s => s !== null);
+
+  return { series: validSeries };
 }
