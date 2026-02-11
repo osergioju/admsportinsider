@@ -149,6 +149,10 @@ body {
     transition: 1.2s ease all;
 }
 
+.marquee-swiper .swiper-wrapper {
+  transition-timing-function: linear !important;
+}
+
 .plan_box:hover::before {
     opacity:1;
     transition: 1.2s ease all;

@@ -3,60 +3,8 @@ import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import bgimage from "../../../assets/img/bg-clubs.jpg";
 import {ChevronRight, Loader2} from "lucide-react"
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
-
-const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-
-const regioes = {
-  mundo: { center: [0, 0], zoom: 1 },
-  africaCentral: { center: [20, 5], zoom: 3 }
-};
-
-const continentes = {
-  mundo: { center: [0, 0], zoom: 1 },
-  americaSul: { center: [-60, -15], zoom: 2.8 },
-  americaNorte: { center: [-100, 40], zoom: 2.5 },
-  europa: { center: [15, 50], zoom: 3 },
-  africa: { center: [20, 5], zoom: 2.6 },
-  asia: { center: [90, 30], zoom: 2.3 },
-  oceania: { center: [140, -25], zoom: 3 }
-};
-
-// relação país → continente (simplificada)
-const continentePorPais = {
-  "Brazil": "americaSul",
-  "Argentina": "americaSul",
-  "Chile": "americaSul",
-  "United States of America": "americaNorte",
-  "Canada": "americaNorte",
-  "Mexico": "americaNorte",
-  "France": "europa",
-  "Germany": "europa",
-  "Italy": "europa",
-  "Spain": "europa",
-  "Nigeria": "africa",
-  "South Africa": "africa",
-  "Egypt": "africa",
-  "China": "asia",
-  "Japan": "asia",
-  "India": "asia",
-  "Australia": "oceania",
-  "New Zealand": "oceania"
-};
-
-const regioesUI = [
-{ id: "mundo", label: "🌍 Mundo" },
-{ id: "americaSul", label: "América do Sul" },
-{ id: "americaNorte", label: "América do Norte" },
-{ id: "europa", label: "Europa" },
-{ id: "africa", label: "África" },
-{ id: "asia", label: "Ásia" },
-{ id: "oceania", label: "Oceania" }
-];
-
 
 export default function DashClubs() {
-    const [continente, setContinente] = useState("mundo");
 
     const [search, setSearch] = useState("");
     const [country, setCountry] = useState("");
@@ -87,17 +35,6 @@ export default function DashClubs() {
         getCountries();
     }, []);
 
-    const filteredClubs = clubs.filter((club) => {
-        const matchName = club.name
-            .toLowerCase()
-            .includes(search.toLowerCase());
-
-        const matchCountry = country
-            ? club.country === country
-            : true;
-
-        return matchName && matchCountry;
-    });
 
     async function handleSearch() {
         try {
@@ -193,71 +130,6 @@ export default function DashClubs() {
                     </button>
                 </div>
 
-                 <div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-                    {regioesUI.map((r) => (
-                        <button
-                        key={r.id}
-                        onClick={() => setContinente(r.id)}
-                        style={{
-                            padding: "6px 12px",
-                            borderRadius: 20,
-                            border: "1px solid #ccc",
-                            background: continente === r.id ? "#4CAF50" : "#f2f2f2",
-                            color: continente === r.id ? "#fff" : "#333",
-                            cursor: "pointer",
-                            transition: "0.2s"
-                        }}
-                        >
-                        {r.label}
-                        </button>
-                    ))}
-                    </div>
-
-                    <ComposableMap projectionConfig={{ scale: 160 }}>
-                        <ZoomableGroup
-                    center={continentes[continente].center}
-                    zoom={continentes[continente].zoom}
-                    transitionDuration={2000}
-                    transitionTimingFunction="cubic-bezier(0.22, 1, 0.36, 1)" // easeOutExpo vibes
-                    >
-
-                        <Geographies geography={geoUrl}>
-                            {({ geographies }) =>
-                            geographies.map((geo) => {
-                                const nome = geo.properties.name;
-                                const cont = continentePorPais[nome];
-
-                                const emDestaque =
-                                continente === "mundo" || cont === continente;
-
-                                return (
-                                <Geography
-                                    key={geo.rsmKey}
-                                    geography={geo}
-                                    onClick={() => console.log(nome)}
-                                    style={{
-                                    default: {
-                                        fill: emDestaque ? "#4CAF50" : "#AAA",
-                                        opacity: emDestaque ? 1 : 0.15,
-                                        outline: "none",
-                                        transition: "all 0.4s ease"
-                                    },
-                                    hover: {
-                                        fill: emDestaque ? "#2E7D32" : "#AAA",
-                                        opacity: emDestaque ? 1 : 0.15,
-                                        outline: "none"
-                                    }
-                                    }}
-                                />
-                                );
-                            })
-                            }
-                        </Geographies>
-                        </ZoomableGroup>
-                    </ComposableMap>
-                    </div>
-                    
                 {/* Resultado */}
                 {submitted && (
                     <div className="mt-10">
