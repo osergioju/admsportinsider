@@ -21,7 +21,9 @@ import SubscriptionInvoices from "./Pages/User/Profile/SubscriptionInvoices";
 import SubscriptionPlan from "./Pages/User/Profile/SubscriptionPlan";
 import Onboarding from "./Pages/User/Onboarding";
 import Faq from "./Pages/User/Profile/Components/Faq";
+import ContactUs from "./Pages/User/Profile/Components/ContactUs";
 import MeuDashboard from "./Pages/User/MeuDashboard";
+import SubscriptionManagement from "./Pages/User/Profile/Components/Financial";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
@@ -103,13 +105,14 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user" element={<UserIndex />} />
               <Route path="/faq" element={<Faq />} />
+              <Route path="/fale-conosco" element={<ContactUs />} />
               <Route path="/me/notifications" element={<PageNotifications />} />
 
               {/* Aqui é pro usuário compeltar o cadastro dele no site */}
               <Route path="/onboarding/preferences" element={<Onboarding />} />
 
               <Route path="me/profile" element={<ProfileDetails />} />
-              <Route path="me/financial" element={<SubscriptionInvoices />} />
+              <Route path="me/financial" element={<SubscriptionManagement />} />
               <Route path="me/subscription" element={<SubscriptionPlan />} />
 
               {/* Dados - páginas de gráficos de clubes */}
