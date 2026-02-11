@@ -546,9 +546,9 @@ export default function SearchBar() {
                   opacity: 0.5,
                 }}
               />
-              <span style={{ fontSize: 10, color: "#ccc", fontFamily: "'DM Mono', monospace" }}>
+              {/*<span style={{ fontSize: 10, color: "#ccc", fontFamily: "'DM Mono', monospace" }}>
                 dados simulados · pronto pra backend
-              </span>
+              </span>*/}
             </div>
           </div>
         )}
