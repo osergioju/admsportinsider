@@ -29,7 +29,6 @@ export default function ProfileDetails() {
     delete: <PrivacyDelete user={user} onClose={close} />,
   };
 
-console.log(user);
   const btnPurpleClass = "group flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium text-white bg-[#7F33D9] hover:bg-[#6025A8] shadow-md shadow-purple-500/20 transition-all duration-300";
 
   return (
@@ -124,7 +123,7 @@ console.log(user);
                 <CircleDollarSign size={20} className="text-[#7F33D9]" />
             </div>
             <div>
-                <h2 className="text-lg font-semibold text-[#111]">Plano & Assinatura</h2>
+                <h2 className="text-lg font-semibold text-[#111]">Plano e assinatura</h2>
             </div>
           </div>
           <button onClick={() => open("subscriptions")} className={btnPurpleClass}>

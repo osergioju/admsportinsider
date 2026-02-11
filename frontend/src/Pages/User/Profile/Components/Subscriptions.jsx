@@ -35,31 +35,26 @@ export default function Subscriptions() {
       return "Business";
   };
 
-  // Função auxiliar para renderizar badge de status
-  const renderStatusBadge = () => {
-      const status = user.subscription_status;
-      let colorClass = "bg-gray-100 text-gray-600";
-      let label = "Desconhecido";
+    // Função auxiliar para renderizar badge de status
+    const renderStatusBadge = () => {
+        const status = user.subscription_current_period_end;
+        console.log(user);
+        let colorClass = "bg-gray-100 text-gray-600";
+        let label = "Desconhecido";
 
-      if (status === 'active') {
-          colorClass = "bg-green-50 text-green-700 border border-green-200";
-          label = "Ativo";
-      } else if (status === 'canceled') {
-          colorClass = "bg-red-50 text-red-700 border border-red-200";
-          label = "Cancelado";
-      } else if (status === 'trialing') {
-          colorClass = "bg-yellow-50 text-yellow-700 border border-yellow-200";
-          label = "Período de Teste";
-      } else {
-          label = "Pendente";
-      }
+        if (status) {
+            label = "Plano ativo até " + status;
+        } else {
+                colorClass = "bg-green-50 text-green-700 border border-green-200";
+            label = "Ativo";
+        }
 
-      return (
-          <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide ${colorClass}`}>
-              {label}
-          </span>
-      );
-  };
+        return (
+            <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide ${colorClass}`}>
+                {label}
+            </span>
+        );
+    };
 
   return (
     <div className="w-full">
