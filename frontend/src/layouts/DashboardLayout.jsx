@@ -4,6 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 import brand from "../assets/svg/brand-full.svg"; 
 import MenuItem from "../components/uxui/MenuItem"; 
 import SubItem from "../components/uxui/SubMenu";
+import SearchBar from "../components/uxui/SearchBar";
 import FixedMenu from "../components/uxui/FixedMenu"; 
 import LinkButton from "../components/uxui/LinkButton";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
@@ -277,16 +278,7 @@ export default function DashboardLayout() {
                 
                 {/* Busca */}
                 <div className="flex-1 max-w-xl">
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Search size={20} className="text-gray-400 font-light group-focus-within:text-[#7F33D9] transition-colors" strokeWidth={1.5} />
-                        </div>
-                        <input 
-                            type="text" 
-                            placeholder="Buscar" 
-                            className="w-full pl-12 pr-4 py-3 bg-[#E9E9EB] border-none rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7F33D9]/20 focus:bg-white transition-all shadow-sm"
-                        />
-                    </div>
+                    <SearchBar></SearchBar>
                 </div>
 
                 <div className="flex items-center gap-6 ml-4">
