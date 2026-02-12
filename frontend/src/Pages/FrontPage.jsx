@@ -314,7 +314,7 @@ export default function FrontPage() {
                                 disableOnInteraction: false,
                             }}
                             allowTouchMove={false} // impede arrastar
-                            className="w-full marquee-swiper"
+                            className="w-full "
                         >
                             {/* Slide 1 */}
                             <SwiperSlide>

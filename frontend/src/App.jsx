@@ -28,6 +28,7 @@ import SubscriptionManagement from "./Pages/User/Profile/Components/Financial";
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
+import AdminProfileDetails from "./Pages/Admin/AdminProfileDetails";
 
 // ADMIN - Gestão de ligas, países e clubes
 import GestaoPaises from "./Pages/Admin/GestaoPaises";
@@ -77,6 +78,7 @@ import DashClubs from "./Pages/Dashboard/Clubs/Index";
 import DashClubUniques from "./Pages/Dashboard/Clubs/DashClubUniques";
 import DashLeagues from "./Pages/Dashboard/Leagues/Index";
 import DashLeagueUniques from "./Pages/Dashboard/Leagues/DashLeagueUniques";
+import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
 
 export default function App() {
   return (
@@ -141,6 +143,7 @@ export default function App() {
 
             <Route element={<RoleRoute allowedRoles={["admin", "admin_master"]} />}>
               <Route path="/admin" element={<AdminIndex />} />
+              <Route path="/admin/profile" element={<AdminProfileDetails />} />
 
               {/* Gestão de países, ligas e clubes */}
               <Route path="/admin/gestao-paises" element={<GestaoPaises />} />
