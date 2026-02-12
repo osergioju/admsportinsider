@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../services/api"; 
-import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Globe } from "lucide-react";
+import { Trash2, Loader2, Check, Plus, Search, X, Globe } from "lucide-react";
 import paises from "world-countries";
 import Select from "../../components/uxui/Select";
 
@@ -10,46 +10,29 @@ export default function GestaoPaises() {
     const [paisSelecionado, setPaisSelecionado] = useState(null);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
-    
-    // Edição e Deleção
     const [editCountryId, setEditCountryId] = useState(null); 
     const [currentCountry, setCurrentCountry] = useState(null);
     
-    // Paginação e Busca
-    const [page, setPage] = useState(1);
-    const [pagination, setPagination] = useState(null);
-    const [searchTerm, setSearchTerm] = useState(""); // Valor do input
-    const [debouncedSearch, setDebouncedSearch] = useState(""); // Valor enviado pra API
+    // --- BUSCA CLIENT-SIDE ---
+    const [searchTerm, setSearchTerm] = useState("");
 
-    // 1. Debounce (Espera parar de digitar)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setPage(1); // Reseta paginação ao buscar
-            setDebouncedSearch(searchTerm);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
-
-    // 2. Carregar Dados
-    const loadCountries = useCallback(async () => {
+    // Carregar TODOS os dados de uma vez
+    async function loadCountries() {
         try {
-            const params = new URLSearchParams({
-                page: page,
-                limit: 8
-            });
-            if (debouncedSearch) params.append('search', debouncedSearch);
-
-            const { data } = await api.get(`/admin/countries?${params.toString()}`);
+            // limit=1000 garante que traga tudo para filtrarmos aqui
+            const { data } = await api.get("/admin/countries?limit=1000"); 
             setCountries(data.countries);
-            setPagination(data.pagination);
         } catch (err) {
             console.error("Erro ao carregar países:", err);
         }
-    }, [page, debouncedSearch]);
+    }
 
-    useEffect(() => {
-        loadCountries();
-    }, [loadCountries]);
+    useEffect(() => { loadCountries(); }, []);
+
+    // Filtro
+    const filteredCountries = countries.filter((country) => 
+        country.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     // --- HANDLERS ---
     const handleOpenDeleteModal = async (countryId) =>  {
@@ -57,6 +40,7 @@ export default function GestaoPaises() {
         setModal(true);
         setPaisSelecionado(null); 
         try {
+            // Busca dados específicos apenas se precisar confirmar algo que não veio na lista
             const { data } = await api.get("/admin/countries/" + countryId);
             setCurrentCountry(data.countries[0]); 
         } catch (err) { console.error(err); }
@@ -85,9 +69,7 @@ export default function GestaoPaises() {
             if (res.status === 201) {
                 setSuccess(true);
                 setTimeout(() => {
-                    setLoading(false);
-                    setSuccess(false);
-                    setModal(false);
+                    setLoading(false); setSuccess(false); setModal(false);
                     loadCountries();
                 }, 1000);                
             } else { setLoading(false); alert("Erro ao cadastrar."); }
@@ -99,101 +81,56 @@ export default function GestaoPaises() {
         try {
             const res = await api.delete(`/admin/disable-country/${countryId}`);
             if (res.status === 200) {
-                setLoading(false);
-                setModal(false);
+                setLoading(false); setModal(false);
                 loadCountries();
             } else { setLoading(false); alert("Erro ao deletar."); }
         } catch (error) { setLoading(false); alert("Erro ao realizar operação."); }
     };
 
-    // --- ESTILOS ---
+    // Estilos
     const btnPrimary = "flex items-center gap-2 px-5 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20";
     const btnSecondary = "px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors";
     const btnDanger = "px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-full text-sm font-bold hover:bg-red-100 transition-colors";
 
     return (
         <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500">
-            
-            {/* Header com Busca */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-[#111] tracking-tight">Gestão de Países</h1>
-                    <p className="text-gray-500 text-sm mt-1">Gerencie os países disponíveis para ligas e clubes.</p>
+                    <p className="text-gray-500 text-sm mt-1">Gerencie os países disponíveis.</p>
                 </div>
-                
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    {/* Barra de Busca */}
                     <div className="relative group w-full sm:w-64">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#7F33D9] transition-colors">
-                            <Search size={18} />
-                        </div>
-                        <input 
-                            type="text" 
-                            placeholder="Buscar país..." 
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        {searchTerm && (
-                            <button 
-                                onClick={() => setSearchTerm("")}
-                                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
-                            >
-                                <X size={14} />
-                            </button>
-                        )}
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#7F33D9] transition-colors"><Search size={18} /></div>
+                        <input type="text" placeholder="Filtrar país..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"><X size={14} /></button>}
                     </div>
-
-                    <button onClick={handleOpenCreateModal} className={btnPrimary}>
-                        <Plus size={18} /> <span className="whitespace-nowrap">Novo País</span>
-                    </button>
+                    <button onClick={handleOpenCreateModal} className={btnPrimary}><Plus size={18} /> <span className="whitespace-nowrap">Novo País</span></button>
                 </div>
             </div>
 
-            {/* Grid de Países */}
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-4 sm:p-6 min-h-[400px] flex flex-col">
-                {countries.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {countries.map((country) => (
-                            <div key={country.id_country} className="group relative bg-white border border-gray-100 rounded-2xl p-6 hover:border-[#7F33D9]/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center gap-4">
+            {/* Grid */}
+            <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
+                {filteredCountries.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 divide-y sm:divide-y-0 sm:gap-px bg-gray-100 border-b border-gray-100">
+                        {filteredCountries.map((country) => (
+                            <div key={country.id_country} className="group relative bg-white p-6 hover:z-10 transition-all duration-300 flex flex-col items-center text-center gap-4 hover:shadow-lg">
                                 <div className="relative w-16 h-16 rounded-full border-4 border-gray-50 shadow-sm overflow-hidden group-hover:scale-110 transition-transform duration-300">
                                     <img className="w-full h-full object-cover" src={country.flag_url || "https://flagcdn.com/w40/xx.png"} alt={country.name} />
                                 </div>
                                 <span className="font-bold text-gray-900 text-lg group-hover:text-[#7F33D9] transition-colors">{country.name}</span>
-                                <div className="mt-2">
-                                    <button onClick={() => handleOpenDeleteModal(country.id_country)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 duration-300">
-                                        <Trash2 size={14} /> Remover
-                                    </button>
+                                <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+                                    <button onClick={() => handleOpenDeleteModal(country.id_country)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"><Trash2 size={14} /> Remover</button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                            <Globe size={32} className="text-gray-300" />
-                        </div>
+                        <Globe size={32} className="text-gray-300 mb-4" />
                         <h3 className="text-lg font-bold text-gray-900">Nenhum país encontrado</h3>
-                        <p className="text-sm text-gray-500 max-w-xs mt-1">
-                            {searchTerm ? `Não encontramos nada para "${searchTerm}"` : "Comece adicionando países para configurar a base de dados."}
-                        </p>
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm("")} className="mt-4 text-[#7F33D9] font-bold text-sm hover:underline">Limpar busca</button>
-                        )}
-                        {!searchTerm && (
-                            <button onClick={handleOpenCreateModal} className={`mt-6 ${btnPrimary}`}>Adicionar agora</button>
-                        )}
-                    </div>
-                )}
-
-                {/* Paginação */}
-                {pagination && pagination.totalPages > 1 && (
-                    <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-500">Página <span className="text-gray-900">{page}</span> de {pagination.totalPages}</span>
-                        <div className="flex gap-2">
-                            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-[#7F33D9] hover:border-[#7F33D9] disabled:opacity-50 disabled:cursor-not-allowed transition-all"><ChevronLeft size={16} /></button>
-                            <button disabled={page === pagination.totalPages} onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-[#7F33D9] hover:border-[#7F33D9] disabled:opacity-50 disabled:cursor-not-allowed transition-all"><ChevronRight size={16} /></button>
-                        </div>
+                        {searchTerm ? <p className="text-sm text-gray-500">Sem resultados para "{searchTerm}"</p> : <button onClick={handleOpenCreateModal} className={`mt-4 ${btnPrimary}`}>Adicionar</button>}
                     </div>
                 )}
             </div>
@@ -212,7 +149,7 @@ export default function GestaoPaises() {
                                 <div className="text-center">
                                     <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash2 size={32} /></div>
                                     <h4 className="text-lg font-bold text-gray-900 mb-2">Tem certeza?</h4>
-                                    <p className="text-sm text-gray-500 mb-6 leading-relaxed">Você está prestes a desativar <strong className="text-gray-900 mx-1">{currentCountry?.name}</strong>. Isso afetará todos os clubes e ligas vinculados.</p>
+                                    <p className="text-sm text-gray-500 mb-6">Desativar <strong>{currentCountry?.name}</strong> afetará clubes e ligas.</p>
                                     <div className="flex gap-3 justify-center">
                                         <button onClick={() => setModal(false)} className={btnSecondary}>Cancelar</button>
                                         <button onClick={() => deleteCountry(currentCountry.id_country)} className={btnDanger} disabled={loading}>{loading ? <Loader2 size={16} className="animate-spin" /> : "Sim, desativar"}</button>
@@ -228,7 +165,7 @@ export default function GestaoPaises() {
                                         {paisSelecionado ? (
                                             success ? <div className="text-green-600 font-bold"><Check size={24} className="mx-auto mb-2"/>Cadastrado!</div> : 
                                             loading ? <Loader2 size={32} className="animate-spin text-[#7F33D9]" /> :
-                                            <div><img src={paisSelecionado.flag} className="w-16 h-auto shadow-sm rounded mb-3 mx-auto"/> <span className="text-lg font-bold block">{paisSelecionado.value}</span><span className="text-xs text-gray-400 font-mono mt-1">{paisSelecionado.codigo}</span></div>
+                                            <div><img src={paisSelecionado.flag} className="w-16 h-auto shadow-sm rounded mb-3 mx-auto"/> <span className="text-lg font-bold block">{paisSelecionado.value}</span></div>
                                         ) : <div className="text-gray-400"><Globe size={32} className="mb-2 opacity-50 mx-auto"/><span className="text-xs">Nenhum país selecionado</span></div>}
                                     </div>
                                     <div className="flex justify-end pt-2">

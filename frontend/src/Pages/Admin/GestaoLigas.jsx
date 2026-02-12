@@ -1,75 +1,44 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../services/api"; 
 import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy } from "lucide-react";
 
 export default function GestaoLigas() {
     const [leagues, setLeagues] = useState([]);
     const [countries, setCountries] = useState([]);
-    
-    // Modal
     const [modal, setModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    
-    // Dados
     const [currentLeague, setCurrentLeague] = useState(null);
     const [newLeague, setNewLeague] = useState({ id_country: "", name: "", description: "", logo_url: "" });
-    
-    // Estados UI
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
-    const [page, setPage] = useState(1);
-    const [pagination, setPagination] = useState(null);
     
-    // Busca
+    // --- BUSCA ---
     const [searchTerm, setSearchTerm] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
 
-    // 1. Debounce Effect
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setPage(1);
-            setDebouncedSearch(searchTerm);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
-
-    // 2. Data Loading
-    const loadData = useCallback(async () => {
+    async function loadData() {
         try {
-            const params = new URLSearchParams({
-                page: page,
-                limit: 8
-            });
-            if (debouncedSearch) params.append('search', debouncedSearch);
-
-            const respLeagues = await api.get(`/admin/leagues?${params.toString()}`);
+            // Busca TUDO
+            const respLeagues = await api.get(`/admin/leagues?limit=1000`);
             setLeagues(respLeagues.data.leagues);
-            setPagination(respLeagues.data.pagination);
 
-            // Carrega lista de países para o select apenas se ainda não tiver carregado
-            if (countries.length === 0) {
-                const respCountries = await api.get(`/admin/countries?onlyActive=true`);
-                const countryOptions = respCountries.data.countries.map(c => ({
-                    value: c.id_country,
-                    label: c.name
-                }));
-                setCountries(countryOptions);
-            }
+            const respCountries = await api.get(`/admin/countries?onlyActive=true`);
+            const countryOptions = respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name }));
+            setCountries(countryOptions);
+        } catch (err) { console.error("Erro dados:", err); }
+    }
 
-        } catch (err) {
-            console.error("Erro dados:", err);
-        }
-    }, [page, debouncedSearch]); // Dependências
+    useEffect(() => { loadData(); }, []);
 
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
+    // FILTRO NO FRONT
+    const filteredLeagues = leagues.filter(league => 
+        league.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (league.country_name && league.country_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     // Handlers Modal
     const openCreateModal = () => {
         setNewLeague({ id_country: "", name: "", description: "", logo_url: "" });
-        setIsEditing(false);
-        setModal(true);
+        setIsEditing(false); setModal(true);
     };
 
     const openEditModal = async (id) => {
@@ -77,8 +46,7 @@ export default function GestaoLigas() {
             const { data } = await api.get(`/admin/leagues/${id}`);
             setCurrentLeague(data.league);
             setNewLeague({ ...data.league });
-            setIsEditing(true);
-            setModal(true);
+            setIsEditing(true); setModal(true);
         } catch (err) { console.error(err); }
     };
 
@@ -105,10 +73,7 @@ export default function GestaoLigas() {
     const disableLeague = async (id) => {
         if (!window.confirm("Desativar esta liga?")) return;
         setLoading(true);
-        try {
-            await api.delete(`/admin/disable-league/${id}`);
-            setModal(false); setLoading(false); loadData();
-        } catch (err) { alert("Erro ao desativar"); setLoading(false); }
+        try { await api.delete(`/admin/disable-league/${id}`); setModal(false); setLoading(false); loadData(); } catch (err) { alert("Erro"); setLoading(false); }
     };
 
     // Estilos
@@ -119,23 +84,16 @@ export default function GestaoLigas() {
 
     return (
         <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500">
-            {/* Header com Busca */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-[#111] tracking-tight">Ligas</h1>
-                    <p className="text-gray-500 text-sm mt-1">Gerencie os campeonatos e torneios.</p>
+                    <p className="text-gray-500 text-sm mt-1">Gerencie os campeonatos.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    {/* Input Busca */}
                     <div className="relative group w-full sm:w-64">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#7F33D9] transition-colors"><Search size={18} /></div>
-                        <input 
-                            type="text" 
-                            placeholder="Buscar liga..." 
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm" 
-                            value={searchTerm} 
-                            onChange={(e) => setSearchTerm(e.target.value)} 
-                        />
+                        <input type="text" placeholder="Filtrar ligas..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"><X size={14} /></button>}
                     </div>
                     <button onClick={openCreateModal} className={btnPrimary}><Plus size={18} /> Nova Liga</button>
@@ -144,9 +102,9 @@ export default function GestaoLigas() {
 
             {/* Grid */}
             <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-4 sm:p-6 min-h-[400px] flex flex-col">
-                {leagues.length > 0 ? (
+                {filteredLeagues.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {leagues.map((league) => (
+                        {filteredLeagues.map((league) => (
                             <div key={league.id_league} onClick={() => openEditModal(league.id_league)} className="group relative bg-white border border-gray-100 rounded-2xl p-6 hover:border-[#7F33D9]/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center gap-4 cursor-pointer">
                                 <div className="relative w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center p-3 border border-gray-100 group-hover:bg-white transition-colors">
                                     {league.logo_url ? <img src={league.logo_url} className="w-full h-full object-contain drop-shadow-sm" alt={league.name} /> : <Trophy size={32} className="text-gray-300" />}
@@ -163,24 +121,12 @@ export default function GestaoLigas() {
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4"><Trophy size={32} className="text-gray-300" /></div>
                         <h3 className="text-lg font-bold text-gray-900">Nenhuma liga encontrada</h3>
-                        <p className="text-sm text-gray-500 max-w-xs mt-1">{searchTerm ? `Sem resultados para "${searchTerm}"` : "Comece cadastrando."}</p>
-                        {searchTerm && <button onClick={() => setSearchTerm("")} className="mt-4 text-[#7F33D9] font-bold text-sm hover:underline">Limpar busca</button>}
-                    </div>
-                )}
-                
-                {/* Pagination */}
-                {pagination && pagination.totalPages > 1 && (
-                    <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-500">Página {page} de {pagination.totalPages}</span>
-                        <div className="flex gap-2">
-                            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50"><ChevronLeft size={16} /></button>
-                            <button disabled={page === pagination.totalPages} onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50"><ChevronRight size={16} /></button>
-                        </div>
+                        {searchTerm && <p className="text-sm text-gray-500 mt-1">Sem resultados para "{searchTerm}"</p>}
                     </div>
                 )}
             </div>
 
-            {/* Modal - Renderização igual ao anterior */}
+            {/* Modal - Renderização */}
             {modal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setModal(false)}>
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />

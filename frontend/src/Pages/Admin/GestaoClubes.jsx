@@ -1,135 +1,110 @@
-import { useState, useEffect, useCallback } from "react"; // Adicionado useCallback
+import { useState, useEffect } from "react";
 import { api } from "../../services/api"; 
 import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Shield, UploadCloud, FileSpreadsheet, AlertCircle } from "lucide-react";
 
 export default function GestaoClubes() {
 
-    // --- ESTADOS GERAIS ---
-    const [clubs, setClubs] = useState([]);
+    // --- ESTADOS DE DADOS ---
+    const [allClubs, setAllClubs] = useState([]); // Armazena TODOS os clubes
     const [countries, setCountries] = useState([]);
     const [attributeKeys, setAttributeKeys] = useState([]);
+
+    // --- ESTADOS VISUAIS ---
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8; // Grid 4x2
 
     // --- MODAIS ---
     const [modal, setModal] = useState(false);
     const [importModal, setImportModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    // --- DADOS DO CLUBE ATUAL ---
+    // --- FORMS ---
     const [currentClub, setCurrentClub] = useState(null);
     const [newClub, setNewClub] = useState({
-        id_country: "",
-        name: "",
-        description: "",
-        crest_url: "",
-        founded_at: "",
-        stadium_name: "",
-        ownership_model: "",
-        primary_color: "#000000",
-        secondary_color: "#ffffff",
-        location: ""
+        id_country: "", name: "", description: "", crest_url: "", founded_at: "", stadium_name: "", ownership_model: "", primary_color: "#000000", secondary_color: "#ffffff", location: ""
     });
     const [attributes, setAttributes] = useState([]);
 
-    // --- UPLOAD / IMPORT ---
+    // --- UPLOAD ---
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [importCountry, setImportCountry] = useState("");
     const [importing, setImporting] = useState(false);
 
-    // --- PAGINAÇÃO & FEEDBACK ---
+    // --- FEEDBACK ---
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
-    const [page, setPage] = useState(1);
-    const [pagination, setPagination] = useState(null);
-    
-    // --- BUSCA ---
-    const [searchTerm, setSearchTerm] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
 
-    // 1. Lógica de Debounce (Espera parar de digitar)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setPage(1); // Reseta para pág 1 ao buscar
-            setDebouncedSearch(searchTerm);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
 
-    // ============================
-    // 2. CARREGA DADOS (Blindado)
-    // ============================
-    const loadData = useCallback(async () => {
+    // CARREGAR TUDO (Para permitir busca no front)
+
+    async function loadData() {
         try {
-            // Construtor de URL seguro
-            const params = new URLSearchParams({
-                page: page,
-                limit: 8
-            });
+            // Trazemos um limite alto para pegar todos os clubes e filtrar localmente, 2000 por enquanto
+            const clubsResp = await api.get(`/admin/clubs?limit=2000`); 
+            setAllClubs(clubsResp.data.clubs);
 
-            // Só adiciona a busca se tiver algo escrito
-            if (debouncedSearch) {
-                params.append('search', debouncedSearch);
-            }
-
-            console.log("🔍 Buscando na API:", `/admin/clubs?${params.toString()}`); // DEBUG NO CONSOLE
-
-            const clubsResp = await api.get(`/admin/clubs?${params.toString()}`);
-            setClubs(clubsResp.data.clubs);
-            setPagination(clubsResp.data.pagination);
-
-            // Carrega países apenas se a lista estiver vazia (otimização)
-            if (countries.length === 0) {
-                const countriesResp = await api.get(`/admin/countries?onlyActive=true`);
-                setCountries(countriesResp.data.countries);
-            }
-
+            const countriesResp = await api.get(`/admin/countries?onlyActive=true`);
+            setCountries(countriesResp.data.countries);
         } catch (err) {
             console.error("Erro ao carregar dados:", err);
         }
-    }, [page, debouncedSearch]); // Recria a função se página ou busca mudarem
+    }
 
     async function loadAttributeKeys() {
         try {
             const res = await api.get("/admin/attribute-keys");
             setAttributeKeys(res.data.keys);
-        } catch (error) {
-            console.error("Erro chaves atributos", error);
-        }
+        } catch (e) { console.error(e); }
     }
 
-    // 3. Dispara o carregamento
     useEffect(() => {
         loadData();
         loadAttributeKeys();
-    }, [loadData]); // Depende do loadData (que depende de page/search)
+    }, []);
 
-    // ... (RESTANTE DOS HANDLERS: UPLOAD, IMPORT, CREATE, EDIT IGUAIS AO ANTERIOR) ...
-    // Para economizar espaço, mantive a lógica visual idêntica, foquei na correção acima.
+    // Resetar para página 1 quando pesquisar
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+
+    // LÓGICA DE FILTRO E PAGINAÇÃO
     
+    // Filtrar
+    const filteredClubs = allClubs.filter(club => 
+        club.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (club.country_name && club.country_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Paginação
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentClubs = filteredClubs.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredClubs.length / itemsPerPage);
+
+    // HANDLERS 
     const uploadLogo = async () => {
-        if (!file) return alert("Selecione uma imagem.");
+        if (!file) return alert("Selecione imagem");
         setUploading(true);
-        const formData = new FormData();
-        formData.append("file", file);
+        const fd = new FormData(); fd.append("file", file);
         try {
-            const res = await api.post("/admin/upload-club-logo", formData, { headers: { "Content-Type": "multipart/form-data" } });
-            setNewClub(prev => ({ ...prev, crest_url: res.data.url }));
-        } catch (err) { alert("Erro ao enviar logo."); } finally { setUploading(false); }
+            const res = await api.post("/admin/upload-club-logo", fd, { headers: { "Content-Type": "multipart/form-data" } });
+            setNewClub(p => ({ ...p, crest_url: res.data.url }));
+        } catch (e) { alert("Erro logo"); } finally { setUploading(false); }
     };
 
     const handleImportClubs = async () => {
-        if (!importFile || !importCountry) return alert("Preencha todos os campos.");
+        if (!importFile || !importCountry) return alert("Preencha tudo");
         setImporting(true);
         try {
-            const formData = new FormData();
-            formData.append("file", importFile);
-            formData.append("id_country", importCountry);
-            await api.post("/admin/import-clubs-xlsx", formData, { headers: { "Content-Type": "multipart/form-data" } });
-            alert("Sucesso!");
-            setImportModal(false); setImportFile(null); setImportCountry("");
+            const fd = new FormData(); fd.append("file", importFile); fd.append("id_country", importCountry);
+            await api.post("/admin/import-clubs-xlsx", fd, { headers: { "Content-Type": "multipart/form-data" } });
+            alert("Sucesso!"); setImportModal(false); setImportFile(null); setImportCountry("");
             loadData();
-        } catch (err) { alert("Erro na importação."); } finally { setImporting(false); }
+        } catch (e) { alert("Erro importação"); } finally { setImporting(false); }
     };
 
     const openCreateModal = () => {
@@ -156,8 +131,8 @@ export default function GestaoClubes() {
             if (res.status === 201) {
                 setSuccess(true);
                 setTimeout(() => { setModal(false); setSuccess(false); setLoading(false); loadData(); }, 700);
-            } else { setLoading(false); alert("Erro inesperado."); }
-        } catch (err) { alert("Erro ao cadastrar."); setLoading(false); }
+            } else { setLoading(false); alert("Erro."); }
+        } catch (err) { alert("Erro cadastro"); setLoading(false); }
     };
 
     const updateClub = async () => {
@@ -166,15 +141,15 @@ export default function GestaoClubes() {
             await api.put(`/admin/clubs/${currentClub.id_club}/update`, { ...newClub, attributes });
             setSuccess(true);
             setTimeout(() => { setModal(false); setSuccess(false); setLoading(false); loadData(); }, 700);
-        } catch (err) { alert("Erro ao atualizar."); setLoading(false); } 
+        } catch (err) { alert("Erro update"); setLoading(false); } 
     };
 
     const disableClub = async (id) => {
-        if (!window.confirm("Deseja desativar?")) return;
-        try { await api.delete(`/admin/disable-club/${id}`); setModal(false); loadData(); } catch (err) { alert("Erro."); }
+        if (!window.confirm("Desativar clube?")) return;
+        try { await api.delete(`/admin/disable-club/${id}`); setModal(false); loadData(); } catch (err) { alert("Erro"); }
     };
 
-    // --- ESTILOS ---
+    // Styles
     const btnPrimary = "flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
     const btnSecondary = "px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors";
     const inputClass = "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400";
@@ -182,47 +157,36 @@ export default function GestaoClubes() {
 
     return (
         <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500">
-
-            {/* Header com Busca */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-[#111] tracking-tight">Clubes</h1>
                     <p className="text-gray-500 text-sm mt-1">Gerencie os times de futebol.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    {/* INPUT DE BUSCA */}
+                    {/* Barra de Busca (Filtrando filteredClubs) */}
                     <div className="relative group w-full sm:w-64">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#7F33D9] transition-colors">
-                            <Search size={18} />
-                        </div>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#7F33D9] transition-colors"><Search size={18} /></div>
                         <input 
                             type="text" 
-                            placeholder="Buscar clube..." 
+                            placeholder="Filtrar na lista..." 
                             className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm" 
                             value={searchTerm} 
                             onChange={(e) => setSearchTerm(e.target.value)} 
                         />
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm("")} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600">
-                                <X size={14} />
-                            </button>
-                        )}
+                        {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"><X size={14} /></button>}
                     </div>
-
                     <button onClick={() => setImportModal(true)} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors">
                         <FileSpreadsheet size={18} className="text-green-600" /> <span className="hidden lg:inline">Importar</span>
                     </button>
-                    <button onClick={openCreateModal} className={btnPrimary}>
-                        <Plus size={18} /> Novo Clube
-                    </button>
+                    <button onClick={openCreateModal} className={btnPrimary}><Plus size={18} /> Novo Clube</button>
                 </div>
             </div>
 
-            {/* GRID E CONTEÚDO */}
             <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-4 sm:p-6 min-h-[400px] flex flex-col">
-                {clubs.length > 0 ? (
+                {currentClubs.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {clubs.map((club) => (
+                        {currentClubs.map((club) => (
                             <div key={club.id_club} onClick={() => openEditModal(club.id_club)} className="group relative bg-white border border-gray-100 rounded-2xl p-6 hover:border-[#7F33D9]/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center gap-4 cursor-pointer">
                                 <div className="relative w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center p-2 border border-gray-100 group-hover:bg-white transition-colors overflow-hidden">
                                     {club.crest_url ? <img src={club.crest_url} className="w-full h-full object-contain" alt={club.name} /> : 
@@ -240,27 +204,24 @@ export default function GestaoClubes() {
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4"><Shield size={32} className="text-gray-300" /></div>
                         <h3 className="text-lg font-bold text-gray-900">Nenhum resultado</h3>
-                        <p className="text-sm text-gray-500 max-w-xs mt-1">
-                            {searchTerm ? `Não encontramos nada para "${searchTerm}"` : "Comece cadastrando os primeiros times."}
-                        </p>
+                        <p className="text-sm text-gray-500 max-w-xs mt-1">{searchTerm ? `Nada encontrado para "${searchTerm}"` : "Lista vazia."}</p>
                         {searchTerm && <button onClick={() => setSearchTerm("")} className="mt-4 text-[#7F33D9] font-bold text-sm hover:underline">Limpar busca</button>}
                     </div>
                 )}
                 
-                {/* Pagination */}
-                {pagination && pagination.totalPages > 1 && (
+                {/* Paginação */}
+                {totalPages > 1 && (
                     <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-500">Página {page} de {pagination.totalPages}</span>
+                        <span className="text-xs font-medium text-gray-500">Página {currentPage} de {totalPages}</span>
                         <div className="flex gap-2">
-                            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50"><ChevronLeft size={16} /></button>
-                            <button disabled={page === pagination.totalPages} onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50"><ChevronRight size={16} /></button>
+                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50"><ChevronLeft size={16} /></button>
+                            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50"><ChevronRight size={16} /></button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* MODAIS (Código Visual mantido igual ao anterior, omitido aqui para focar na lógica de busca, mas deve estar presente no arquivo final) */}
-            {/* ... Modal Create/Edit ... */}
+            {/* Modal Principal */}
             {modal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setModal(false)}>
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -327,7 +288,7 @@ export default function GestaoClubes() {
                 </div>
             )}
 
-            {/* ... Modal Import (Mantido igual) ... */}
+            {/* Modal Importação */}
             {importModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setImportModal(false)}>
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
