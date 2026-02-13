@@ -66,16 +66,16 @@ export default function DashClubs() {
 
     return (
         <div className="w-full">
-            <div className="relative overflow-hidden w-full p-10 rounded-tl-lg rounded-tr-lg bg-cover bg-center"
+            <div className="relative overflow-hidden w-full p-2 px-6 rounded-tl-lg rounded-tr-lg bg-cover bg-center"
              style={{ backgroundImage: `url(${bgimage})` }}
             >
                 <div className="w-full absolute h-full bg-black top-0 left-0 opacity-40"></div>
                 <div className="w-full p-8  flex flex-col justify-center relative">
                     <h2 className="text-white text-xl mb-2 lg:text-2xl lg:font-[300]">Todos os clubes</h2>
-                    <p className="text-white font-light">Busque por nome ou filtre pelo páis</p>
+                    <p className="text-white font-light">Busque por nome ou filtre pelo país</p>
                 </div>
             </div>
-            <div className="w-full p-6 lg:p-10 border bg-white rounded-bl-lg rounded-br-lg">
+            <div className="w-full p-6 lg:px-12 border bg-white rounded-bl-lg rounded-br-lg">
                 {/* Filtros */}
                 <div className="flex flex-col lg:flex-row gap-4 items-center">
                     {/* Busca por nome */}
@@ -85,7 +85,7 @@ export default function DashClubs() {
                             placeholder="Nome do clube"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="lg:text-lg lg:font-light text-sm w-full px-4 py-4 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="lg:text-lg lg:font-light text-sm w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                     </div>
 
@@ -95,7 +95,7 @@ export default function DashClubs() {
                             value={country}
                             onChange={(e) => setCountry(e.target.value)}
                             disabled={loadingCountries}
-                            className={`lg:text-lg lg:font-light text-sm w-full px-4 py-4 border rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                            className={`lg:text-lg lg:font-light text-sm w-full px-4 py-3 border rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                                 loadingCountries
                                     ? "opacity-60 cursor-not-allowed"
                                     : ""
@@ -124,12 +124,54 @@ export default function DashClubs() {
                     {/* Botão */}
                     <button
                         onClick={handleSearch}
-                        className="cursor-pointer lg:px-8 xl:px-10 px-6 py-4 bg-black rounded-full font-light text-white hover:bg-[#7F33D9] transition"
+                        className="cursor-pointer lg:px-8 xl:px-10 px-6 py-3 bg-black rounded-full font-light text-white hover:bg-[#7F33D9] transition"
                     >
                         Buscar
                     </button>
                 </div>
 
+                {/* Resulatdo padrão, agrupado por país */}
+                {
+                    submitted && (
+                        <div className="mt-8 w-full flex flex-col gap-2">
+                            <div className="w-full p-4 border rounded-3xl">
+                                <div className="flex items-center gap-3">
+                                    {clubs.map((club) => (
+                                        <Link
+                                            key={club.id_club}
+                                            to={`/dashboard/clubs/${club.id_club}`}
+                                            className="bg-black flex items-center w-1/2 lg:w-1/3 rounded-3xl"
+                                        >
+                                            <div className="w-20 h-20 lg:h-30 xl:h-40 p-2 lg:p-4 xl:p-7"
+                                                style={{
+                                                background: `linear-gradient(135deg, ${club.primary_color} 60%, ${club.secondary_color} 160%)`
+                                                }}>
+                                                <div className="relative bg-contain bg-center bg-no-repeat w-full h-full"
+                                                    style={{ backgroundImage: `url(${club.crest_url})` }}
+                                                >
+                                                    <div className="w-5 h-5 lg:w-8 lg:h-8 bg-black rounded-full absolute right-0 top-0 translate-x-3 -translate-y-3 bg-center bg-cover"
+                                                    style={{ backgroundImage: `url(${club.flag_url})` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                            <div className="text-center p-2 lg:p-6">
+                                                <h2 className="text-lg lg:text-xl xl:text-2xl font-light text-[#111]">
+                                                    {club.name}
+                                                </h2>
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    {club.country}
+                                                </p>
+                                                <span className="hover:text-white hover:bg-black transition-all rounded-full px-4 py-3 lg:px-6 inline-block mt-4 text-sm text-[#000000] border border-[#000000]">
+                                                    Ver detalhes →
+                                                </span>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
                 {/* Resultado */}
                 {submitted && (
                     <div className="mt-10">
