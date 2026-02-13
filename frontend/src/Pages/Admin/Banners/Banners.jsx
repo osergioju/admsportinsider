@@ -1,16 +1,32 @@
 import { useEffect, useState } from "react";
 import { api } from "../../../services/api";
+import { 
+  Plus, 
+  Image as ImageIcon, 
+  Smartphone, 
+  Monitor, 
+  Calendar, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  X, 
+  Trash2, 
+  Loader2, 
+  Link as LinkIcon,
+  Eye,
+  FileText
+} from "lucide-react";
 
 export default function Banners() {
-  // =========================
+
   // STATES
-  // =========================
   const [banners, setBanners] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
 
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -22,15 +38,17 @@ export default function Banners() {
     status: "draft"
   });
 
-  // =========================
+
   // LOAD BANNERS
-  // =========================
   async function loadBanners() {
+    setLoading(true);
     try {
       const res = await api.get("/admin/banners");
       setBanners(res.data.banners);
     } catch (err) {
       console.error("Erro ao carregar banners", err);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -38,10 +56,10 @@ export default function Banners() {
     loadBanners();
   }, []);
 
-  // =========================
+
   // UPLOAD IMAGE
-  // =========================
   async function uploadImage(file, type) {
+    if (!file) return;
     setUploading(true);
 
     const formData = new FormData();
@@ -61,14 +79,12 @@ export default function Banners() {
 
     } catch (err) {
       alert("Erro ao enviar imagem");
+    } finally {
+      setUploading(false);
     }
-
-    setUploading(false);
   }
 
-  // =========================
   // OPEN MODALS
-  // =========================
   function openCreate() {
     setIsEditing(false);
     setCurrentId(null);
@@ -95,10 +111,10 @@ export default function Banners() {
     setModalOpen(true);
   }
 
-  // =========================
+
   // SAVE
-  // =========================
   async function saveBanner() {
+    setUploading(true); 
     try {
       if (isEditing) {
         await api.put(`/admin/banners/${currentId}`, form);
@@ -111,12 +127,12 @@ export default function Banners() {
 
     } catch (err) {
       alert("Erro ao salvar banner");
+    } finally {
+        setUploading(false);
     }
   }
 
-  // =========================
   // DELETE
-  // =========================
   async function deleteBanner(id) {
     if (!window.confirm("Deseja desativar este banner?")) return;
 
@@ -128,18 +144,13 @@ export default function Banners() {
     }
   }
 
-  // =========================
   // HELPERS
-  // =========================
     function getBannerDisplayStatus(banner) {
         const now = new Date();
-
         const start = banner.start_at ? new Date(banner.start_at) : null;
         const end = banner.end_at ? new Date(banner.end_at) : null;
 
-        if (banner.status === "draft") {
-            return "draft";
-        }
+        if (banner.status === "draft") return "draft";
 
         if (banner.status === "scheduled") {
             if (start && now < start) return "scheduled";
@@ -147,204 +158,278 @@ export default function Banners() {
             if (end && now > end) return "expired";
         }
 
-        if (banner.status === "active") {
-            return "published";
-        }
+        if (banner.status === "active") return "published";
 
         return "draft";
     }
 
-    function displayLabel(status) {
-        if (status === "published") return "Publicado";
-        if (status === "scheduled") return "Agendado";
-        if (status === "expired") return "Expirado";
-        return "Rascunho";
+    function getStatusConfig(status) {
+        switch (status) {
+            case "published": return { label: "Publicado", color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle2 };
+            case "scheduled": return { label: "Agendado", color: "bg-blue-50 text-blue-700 border-blue-200", icon: Clock };
+            case "expired": return { label: "Expirado", color: "bg-red-50 text-red-700 border-red-200", icon: AlertCircle };
+            default: return { label: "Rascunho", color: "bg-gray-100 text-gray-600 border-gray-200", icon: FileText };
+        }
     }
 
-    function displayColor(status) {
-        if (status === "published") return "bg-green-100 text-green-700";
-        if (status === "scheduled") return "bg-yellow-100 text-yellow-700";
-        if (status === "expired") return "bg-red-100 text-red-700";
-        return "bg-gray-200 text-gray-600";
-    }
-  
+  //ESTILOS
+  const btnPrimary = "flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
+  const btnSecondary = "px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors";
+  const inputClass = "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400";
+  const labelClass = "block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1";
 
-  // =========================
   // RENDER
-  // =========================
   return (
-    <div className="p-6 bg-white rounded-xl shadow">
+    <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Banners</h1>
-
-        <button
-          onClick={openCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          + Novo Banner
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+            <h1 className="text-2xl font-bold text-[#111] tracking-tight">Banners</h1>
+            <p className="text-gray-500 text-sm mt-1">Gerencie os destaques visuais do app e site.</p>
+        </div>
+        <button onClick={openCreate} className={btnPrimary}>
+          <Plus size={18} /> Novo Banner
         </button>
       </div>
 
-      {/* LIST */}
-      <ul className="space-y-3">
-        {banners.map((banner) => (
-          <li
-            key={banner.id_banner}
-            className="cursor-pointer p-4 border rounded-lg hover:bg-gray-50 flex justify-between items-center"
-            onClick={() => openEdit(banner)}
-          >
-            <div>
-              <p className="font-semibold">{banner.title}</p>
-              <p className="text-sm text-gray-500">
-                {banner.start_at
-                  ? `${banner.start_at} → ${banner.end_at || "—"}`
-                  : "Sem agendamento"}
-              </p>
+      {/* GRID DE BANNERS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {banners.map((banner) => {
+            const status = getBannerDisplayStatus(banner);
+            const statusConfig = getStatusConfig(status);
+            const StatusIcon = statusConfig.icon;
+
+            return (
+                <div 
+                    key={banner.id_banner} 
+                    onClick={() => openEdit(banner)}
+                    className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg hover:border-purple-200 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col"
+                >
+                    {/* Preview da Imagem (Capa) */}
+                    <div className="relative h-40 bg-gray-100 overflow-hidden">
+                        {banner.image_desktop_url ? (
+                            <img 
+                                src={banner.image_desktop_url} 
+                                alt={banner.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                <ImageIcon size={40} />
+                            </div>
+                        )}
+                        
+                        {/* Badge de Status Flutuante */}
+                        <div className="absolute top-3 right-3">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm ${statusConfig.color} bg-white`}>
+                                <StatusIcon size={12} />
+                                {statusConfig.label}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Conteúdo do Card */}
+                    <div className="p-5 flex-1 flex flex-col">
+                        <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">{banner.title}</h3>
+                        
+                        {/* Datas */}
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+                            <Calendar size={14} />
+                            <span>
+                                {banner.start_at 
+                                    ? `${new Date(banner.start_at).toLocaleDateString()} - ${banner.end_at ? new Date(banner.end_at).toLocaleDateString() : 'Indefinido'}`
+                                    : "Sem agendamento"
+                                }
+                            </span>
+                        </div>
+
+                        {/* Footer do Card */}
+                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
+                            <div className="flex gap-2">
+                                {/* Indicadores de plataforma */}
+                                {banner.image_desktop_url && <Monitor size={16} className="text-gray-400" title="Desktop OK" />}
+                                {banner.image_mobile_url && <Smartphone size={16} className="text-gray-400" title="Mobile OK" />}
+                            </div>
+                            
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); deleteBanner(banner.id_banner); }}
+                                className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                title="Desativar"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        })}
+
+        {/* Empty State */}
+        {!loading && banners.length === 0 && (
+            <div className="col-span-full py-20 text-center flex flex-col items-center justify-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                    <ImageIcon size={32} className="text-gray-300" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">Nenhum banner criado</h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xs">Crie banners para promover campanhas ou novidades no app.</p>
+                <button onClick={openCreate} className={`mt-6 ${btnPrimary}`}>
+                    Criar meu primeiro banner
+                </button>
             </div>
-
-            <div className="flex gap-3 items-center">
-              {(() => {
-                const displayStatus = getBannerDisplayStatus(banner);
-
-                return (
-                    <span
-                    className={`px-3 py-1 rounded-full text-sm ${displayColor(displayStatus)}`}
-                    >
-                    {displayLabel(displayStatus)}
-                    </span>
-                );
-            })()}
-
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteBanner(banner.id_banner);
-                }}
-                className="text-red-600 text-sm underline"
-              >
-                Desativar
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+        )}
+      </div>
 
       {/* MODAL */}
       {modalOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-          onClick={() => setModalOpen(false)}
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setModalOpen(false)}
         >
-          <div
-            className="bg-white w-full max-w-2xl p-6 rounded-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-bold mb-4">
-              {isEditing ? "Editar Banner" : "Novo Banner"}
-            </h2>
-
-            {/* TITLE */}
-            <input
-              className="w-full border px-3 py-2 rounded mb-3"
-              placeholder="Título"
-              value={form.title}
-              onChange={(e) =>
-                setForm({ ...form, title: e.target.value })
-              }
-            />
-
-            {/* DESKTOP IMAGE */}
-            <label className="block text-sm mb-1">Imagem Desktop</label>
-            <input
-              type="file"
-              onChange={(e) =>
-                uploadImage(e.target.files[0], "image_desktop_url")
-              }
-            />
-            {form.image_desktop_url && (
-              <img
-                src={form.image_desktop_url}
-                className="h-20 mt-2 rounded"
-              />
-            )}
-
-            {/* MOBILE IMAGE */}
-            <label className="block text-sm mt-3 mb-1">Imagem Mobile</label>
-            <input
-              type="file"
-              onChange={(e) =>
-                uploadImage(e.target.files[0], "image_mobile_url")
-              }
-            />
-            {form.image_mobile_url && (
-              <img
-                src={form.image_mobile_url}
-                className="h-20 mt-2 rounded"
-              />
-            )}
-
-            {/* LINK */}
-            <input
-              className="w-full border px-3 py-2 rounded mt-3"
-              placeholder="Link ao clicar"
-              value={form.link_url}
-              onChange={(e) =>
-                setForm({ ...form, link_url: e.target.value })
-              }
-            />
-
-            {/* DATES */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <input
-                type="datetime-local"
-                value={form.start_at}
-                onChange={(e) =>
-                  setForm({ ...form, start_at: e.target.value })
-                }
-              />
-              <input
-                type="datetime-local"
-                value={form.end_at}
-                onChange={(e) =>
-                  setForm({ ...form, end_at: e.target.value })
-                }
-              />
-            </div>
-
-            {/* STATUS */}
-            <select
-              className="w-full border px-3 py-2 rounded mt-3"
-              value={form.status}
-              onChange={(e) =>
-                setForm({ ...form, status: e.target.value })
-              }
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            
+            <div 
+                className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
+                onClick={(e) => e.stopPropagation()}
             >
-              <option value="draft">Rascunho</option>
-              <option value="scheduled">Agendado</option>
-              <option value="active">Ativo</option>
-            </select>
+                {/* Header Modal */}
+                <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
+                    <h2 className="text-xl font-bold text-gray-900">{isEditing ? "Editar Banner" : "Novo Banner"}</h2>
+                    <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
 
-            {/* ACTIONS */}
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-gray-600"
-              >
-                Cancelar
-              </button>
+                <div className="p-8 overflow-y-auto custom-scrollbar space-y-6">
+                    
+                    {/* Título e Status */}
+                    <div className="grid grid-cols-3 gap-6">
+                        <div className="col-span-2">
+                            <label className={labelClass}>Título Interno</label>
+                            <input
+                                className={inputClass}
+                                placeholder="Ex: Promoção Black Friday"
+                                value={form.title}
+                                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className={labelClass}>Status</label>
+                            <select
+                                className={inputClass}
+                                value={form.status}
+                                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                            >
+                                <option value="draft">Rascunho</option>
+                                <option value="scheduled">Agendado</option>
+                                <option value="active">Ativo</option>
+                            </select>
+                        </div>
+                    </div>
 
-              <button
-                onClick={saveBanner}
-                disabled={uploading}
-                className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-              >
-                {isEditing ? "Salvar" : "Criar"}
-              </button>
+                    {/* Imagens (Grid) */}
+                    <div className="grid sm:grid-cols-2 gap-6">
+                        {/* Desktop */}
+                        <div className="space-y-2">
+                            <label className={labelClass}>
+                                <Monitor size={14} className="inline mr-1" /> Imagem Desktop (1920x400)
+                            </label>
+                            <div 
+                                className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden group"
+                            >
+                                <input type="file" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => uploadImage(e.target.files[0], "image_desktop_url")} />
+                                {form.image_desktop_url ? (
+                                    <>
+                                        <img src={form.image_desktop_url} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                            <span className="text-white text-xs font-bold flex items-center gap-1"><Eye size={14}/> Alterar</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-gray-400 flex flex-col items-center">
+                                        <ImageIcon size={24} />
+                                        <span className="text-xs mt-1">Carregar imagem</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Mobile */}
+                        <div className="space-y-2">
+                            <label className={labelClass}>
+                                <Smartphone size={14} className="inline mr-1" /> Imagem Mobile (400x400)
+                            </label>
+                            <div 
+                                className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden group"
+                            >
+                                <input type="file" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => uploadImage(e.target.files[0], "image_mobile_url")} />
+                                {form.image_mobile_url ? (
+                                    <>
+                                        <img src={form.image_mobile_url} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                            <span className="text-white text-xs font-bold flex items-center gap-1"><Eye size={14}/> Alterar</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-gray-400 flex flex-col items-center">
+                                        <ImageIcon size={24} />
+                                        <span className="text-xs mt-1">Carregar imagem</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Link */}
+                    <div>
+                        <label className={labelClass}><LinkIcon size={12} className="inline mr-1"/> Link de destino (Opcional)</label>
+                        <input
+                            className={inputClass}
+                            placeholder="https://..."
+                            value={form.link_url}
+                            onChange={(e) => setForm({ ...form, link_url: e.target.value })}
+                        />
+                    </div>
+
+                    {/* Agendamento */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1"><Clock size={12}/> Agendamento</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Início</label>
+                                <input
+                                    type="datetime-local"
+                                    className={`${inputClass} bg-white`}
+                                    value={form.start_at}
+                                    onChange={(e) => setForm({ ...form, start_at: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Fim</label>
+                                <input
+                                    type="datetime-local"
+                                    className={`${inputClass} bg-white`}
+                                    value={form.end_at}
+                                    onChange={(e) => setForm({ ...form, end_at: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* Footer Modal */}
+                <div className="px-8 py-5 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 shrink-0">
+                    <button onClick={() => setModalOpen(false)} className={btnSecondary}>Cancelar</button>
+                    <button 
+                        onClick={saveBanner} 
+                        disabled={uploading}
+                        className={btnPrimary}
+                    >
+                        {uploading ? <Loader2 size={18} className="animate-spin" /> : (isEditing ? "Salvar Alterações" : "Criar Banner")}
+                    </button>
+                </div>
             </div>
-          </div>
         </div>
       )}
     </div>

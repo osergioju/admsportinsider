@@ -38,7 +38,7 @@ import GestaoClubes from "./Pages/Admin/GestaoClubes";
 // ADMIN - Gestão do usuário 
 import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
 import AdminNewUsuario from "./Pages/Admin/Usuarios/NovoUsuario";
-import UnicoUsuario from "./Pages/Admin/Usuarios/UnicoUsuario";
+import UnicoUsuario from "./Pages/Admin/Usuarios/UserDetailPage";
 
 // ADMIN - Gestão dos planos
 import GestaoPlanos from "./Pages/Admin/Planos/GestaoPlanos";
@@ -49,8 +49,7 @@ import EditarPlano from "./Pages/Admin/Planos/EditarPlano";
 import InsightUsuarios from "./Pages/Admin/Insights/Users/Index"
 
 // ADMIN - Notificações 
-import Notifications from "./Pages/Admin/Notificacoes/Index";
-import NewNotification from "./Pages/Admin/Notificacoes/NewNotification";
+import Notifications from "./Pages/Admin/Notificacoes/Notifications";
 
 // Banners 
 import Banners from "./Pages/Admin/Banners/Banners";
@@ -168,7 +167,6 @@ export default function App() {
               <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
 
               {/* Notificações */}
-              <Route path="/admin/new-notification" element={<NewNotification />} />
               <Route path="/admin/notifications" element={<Notifications />} />
 
               {/* Banners */}

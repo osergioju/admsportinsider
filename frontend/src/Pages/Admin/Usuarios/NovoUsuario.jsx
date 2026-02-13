@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../../services/api";
-import { Loader, Check } from "lucide-react";
+import { Loader2, CheckCircle2, UserPlus, AlertCircle, Mail, Lock, Shield, CreditCard, User } from "lucide-react";
 
 export default function NovoUsuario() {
 
@@ -14,8 +14,9 @@ export default function NovoUsuario() {
 
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState("");
+    
+    // Feedback System
+    const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: '' }
 
     // Buscar planos
     useEffect(() => {
@@ -32,16 +33,21 @@ export default function NovoUsuario() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
+        setFeedback(null);
         setLoading(true);
 
+        // Validação básica front-end
+        if (form.password.length < 6) {
+            setLoading(false);
+            return setFeedback({ type: 'error', text: 'A senha deve ter no mínimo 6 caracteres.' });
+        }
+
         try {
-            const { data } = await api.post("/admin/create-user", form);
+            await api.post("/admin/create-user", form);
 
-            setSuccess(true);
-            setTimeout(() => setSuccess(false), 2000);
-
-            // reset
+            setFeedback({ type: 'success', text: 'Usuário criado com sucesso!' });
+            
+            // Reset do formulário após sucesso
             setForm({
                 name: "",
                 email: "",
@@ -50,116 +56,154 @@ export default function NovoUsuario() {
                 plan_id: ""
             });
 
+            // Limpa mensagem após 4s
+            setTimeout(() => setFeedback(null), 4000);
+
         } catch (err) {
-            setError(err.response?.data?.message || "Erro ao criar usuário.");
+            const errorMsg = err.response?.data?.message || "Erro ao criar usuário. Verifique os dados.";
+            setFeedback({ type: 'error', text: errorMsg });
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <div className="space-y-8">
+    // Componente de Feedback Visual
+    const FeedbackMessage = ({ msg }) => {
+        if (!msg) return null;
+        const isSuccess = msg.type === 'success';
+        return (
+            <div className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${isSuccess ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                {isSuccess ? <CheckCircle2 size={18} className="text-green-600 shrink-0"/> : <AlertCircle size={18} className="text-red-600 shrink-0"/>}
+                <span>{msg.text}</span>
+            </div>
+        );
+    };
 
-            <div className="pb-4 border-b border-gray-200">
-                <h1 className="text-2xl font-bold">Criar Novo Usuário</h1>
+    // Estilos
+    const inputClass = "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400 pl-10";
+    const labelClass = "block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1";
+    const btnPrimary = "flex items-center justify-center gap-2 px-6 py-3 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 w-full sm:w-auto min-w-[200px]";
+
+    return (
+        <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 animate-in fade-in duration-500">
+
+            {/* Header */}
+            <div className="mb-8">
+                <h1 className="text-2xl font-bold text-[#111] tracking-tight flex items-center gap-2">
+                    <UserPlus className="text-[#7F33D9]" size={28}/> Criar Novo Usuário
+                </h1>
+                <p className="text-gray-500 text-sm mt-1 ml-9">Preencha os dados abaixo para cadastrar manualmente um usuário na plataforma.</p>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow">
-
-                <form className="space-y-4" onSubmit={handleSubmit}>
-
-                    {error && (
-                        <div className="bg-red-100 text-red-600 p-2 rounded">
-                            {error}
+            {/* Card Principal */}
+            <div className="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden p-8">
+                
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    
+                    {/* Linha 1: Nome e Email */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className={labelClass}>Nome Completo</label>
+                            <div className="relative">
+                                <User size={18} className="absolute left-3 top-2.5 text-gray-400 pointer-events-none"/>
+                                <input
+                                    type="text"
+                                    value={form.name}
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                    className={inputClass}
+                                    placeholder="Ex: João Silva"
+                                    required
+                                />
+                            </div>
                         </div>
-                    )}
 
-                    {success && (
-                        <div className="bg-green-100 text-green-700 p-2 rounded flex items-center gap-2">
-                            <Check className="w-4 h-4" />
-                            Usuário criado com sucesso!
+                        <div>
+                            <label className={labelClass}>Email de Acesso</label>
+                            <div className="relative">
+                                <Mail size={18} className="absolute left-3 top-2.5 text-gray-400 pointer-events-none"/>
+                                <input
+                                    type="email"
+                                    value={form.email}
+                                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                                    className={inputClass}
+                                    placeholder="Ex: joao@email.com"
+                                    required
+                                />
+                            </div>
                         </div>
-                    )}
-
-                    {/* Nome */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Nome</label>
-                        <input
-                            type="text"
-                            value={form.name}
-                            onChange={(e) => setForm({ ...form, name: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
-                            required
-                        />
                     </div>
 
-                    {/* Email */}
+                    {/* Linha 2: Senha */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input
-                            type="email"
-                            value={form.email}
-                            onChange={(e) => setForm({ ...form, email: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
-                            required
-                        />
+                        <label className={labelClass}>Senha Inicial</label>
+                        <div className="relative">
+                            <Lock size={18} className="absolute left-3 top-2.5 text-gray-400 pointer-events-none"/>
+                            <input
+                                type="password"
+                                value={form.password}
+                                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                                className={inputClass}
+                                placeholder="Mínimo 6 caracteres"
+                                required
+                            />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1 ml-1">O usuário poderá alterar esta senha posteriormente.</p>
                     </div>
 
-                    {/* Senha */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Senha</label>
-                        <input
-                            type="password"
-                            value={form.password}
-                            onChange={(e) => setForm({ ...form, password: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
-                            required
-                        />
+                    <div className="border-t border-gray-100 my-6"></div>
+
+                    {/* Linha 3: Função e Plano */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className={labelClass}>Função do Sistema</label>
+                            <div className="relative">
+                                <Shield size={18} className="absolute left-3 top-2.5 text-gray-400 pointer-events-none"/>
+                                <select
+                                    value={form.role}
+                                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                                    className={inputClass}
+                                >
+                                    <option value="user">Usuário Comum</option>
+                                    <option value="admin">Administrador</option>
+                                    <option value="admin_master">Admin Master</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className={labelClass}>Plano de Assinatura</label>
+                            <div className="relative">
+                                <CreditCard size={18} className="absolute left-3 top-2.5 text-gray-400 pointer-events-none"/>
+                                <select
+                                    value={form.plan_id}
+                                    onChange={(e) => setForm({ ...form, plan_id: e.target.value })}
+                                    className={inputClass}
+                                >
+                                    <option value="">Sem plano (Gratuito)</option>
+                                    {plans.map((p) => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Função */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Função</label>
-                        <select
-                            value={form.role}
-                            onChange={(e) => setForm({ ...form, role: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
+                    {/* Mensagem de Feedback Inline */}
+                    <FeedbackMessage msg={feedback} />
+
+                    {/* Botão de Ação */}
+                    <div className="pt-4 flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={btnPrimary}
                         >
-                            <option value="user">Usuário</option>
-                            <option value="admin">Admin</option>
-                            <option value="admin_master">Admin Master</option>
-                        </select>
+                            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Criar Usuário"}
+                        </button>
                     </div>
 
-                    {/* Plano */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Plano</label>
-                        <select
-                            value={form.plan_id}
-                            onChange={(e) => setForm({ ...form, plan_id: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
-                        >
-                            <option value="">Selecione um plano</option>
-                            {plans.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Botão */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 flex gap-2 items-center"
-                    >
-                        {loading && <Loader className="animate-spin w-4 h-4" />}
-                        Criar Usuário
-                    </button>
                 </form>
             </div>
-
         </div>
     );
 }
