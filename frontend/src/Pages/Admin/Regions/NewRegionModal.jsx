@@ -81,7 +81,7 @@ export default function NewRegionModal({ isOpen, onClose, onSave }) {
             <input 
               type="text" 
               className={inputClass(errors.name)} 
-              placeholder="Ex: América do Norte" 
+              placeholder="Ex: País" 
               value={form.name} 
               onChange={e => handleChange("name", e.target.value)}
             />

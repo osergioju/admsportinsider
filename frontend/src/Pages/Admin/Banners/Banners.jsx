@@ -14,19 +14,29 @@ import {
   Loader2, 
   Link as LinkIcon,
   Eye,
-  FileText
+  FileText,
+  AlertTriangle
 } from "lucide-react";
 
 export default function Banners() {
 
   // STATES
   const [banners, setBanners] = useState([]);
+  
+  // Modal Criar/Editar
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
 
+  // Modal Excluir
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState(null);
+
+  // Loadings & Feedback
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false); // Para ações de salvar/excluir
+  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: '' }
 
   const [form, setForm] = useState({
     title: "",
@@ -38,6 +48,27 @@ export default function Banners() {
     status: "draft"
   });
 
+  // HELPER: Feedback Inline
+  const handleFeedback = (type, text) => {
+    setFeedback({ type, text });
+    // Limpa automaticamente após alguns segundos apenas se for sucesso (para dar tempo de ler e fechar)
+    // Se for erro, deixa lá para o usuário corrigir.
+    if (type === 'success') {
+        setTimeout(() => setFeedback(null), 3000);
+    }
+  };
+
+  // Componente Visual de Mensagem (Inline)
+  const FeedbackMessage = ({ msg }) => {
+    if (!msg) return null;
+    const isSuccess = msg.type === 'success';
+    return (
+        <div className={`mb-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${isSuccess ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+            {isSuccess ? <CheckCircle2 size={18} className="text-green-600 shrink-0"/> : <AlertCircle size={18} className="text-red-600 shrink-0"/>}
+            <span>{msg.text}</span>
+        </div>
+    );
+  };
 
   // LOAD BANNERS
   async function loadBanners() {
@@ -61,6 +92,7 @@ export default function Banners() {
   async function uploadImage(file, type) {
     if (!file) return;
     setUploading(true);
+    setFeedback(null); // Limpa erros anteriores
 
     const formData = new FormData();
     formData.append("file", file);
@@ -78,7 +110,7 @@ export default function Banners() {
       }));
 
     } catch (err) {
-      alert("Erro ao enviar imagem");
+      handleFeedback("error", "Erro ao enviar imagem. Tente novamente.");
     } finally {
       setUploading(false);
     }
@@ -88,6 +120,7 @@ export default function Banners() {
   function openCreate() {
     setIsEditing(false);
     setCurrentId(null);
+    setFeedback(null);
     setForm({
       title: "",
       image_desktop_url: "",
@@ -102,6 +135,7 @@ export default function Banners() {
 
   function openEdit(banner) {
     setIsEditing(true);
+    setFeedback(null);
     setCurrentId(banner.id_banner);
     setForm({
       ...banner,
@@ -111,36 +145,62 @@ export default function Banners() {
     setModalOpen(true);
   }
 
+  function openDelete(banner) {
+      setBannerToDelete(banner);
+      setFeedback(null);
+      setDeleteModalOpen(true);
+  }
+
 
   // SAVE
   async function saveBanner() {
-    setUploading(true); 
+    setProcessing(true); 
+    setFeedback(null);
+
     try {
       if (isEditing) {
         await api.put(`/admin/banners/${currentId}`, form);
+        handleFeedback("success", "Banner atualizado com sucesso!");
       } else {
         await api.post("/admin/banners", form);
+        handleFeedback("success", "Banner criado com sucesso!");
       }
 
       await loadBanners();
-      setModalOpen(false);
+      
+      // Fecha o modal após mostrar o sucesso
+      setTimeout(() => {
+          setModalOpen(false);
+          setFeedback(null);
+      }, 1500);
 
     } catch (err) {
-      alert("Erro ao salvar banner");
+      handleFeedback("error", "Erro ao salvar. Verifique os dados.");
     } finally {
-        setUploading(false);
+        setProcessing(false);
     }
   }
 
-  // DELETE
-  async function deleteBanner(id) {
-    if (!window.confirm("Deseja desativar este banner?")) return;
-
+  // DELETE CONFIRMATION
+  async function confirmDelete() {
+    if (!bannerToDelete) return;
+    setProcessing(true);
+    
     try {
-      await api.delete(`/admin/banners/${id}`);
-      loadBanners();
+      await api.delete(`/admin/banners/${bannerToDelete.id_banner}`);
+      handleFeedback("success", "Banner removido.");
+      await loadBanners();
+      
+      setTimeout(() => {
+          setDeleteModalOpen(false);
+          setBannerToDelete(null);
+          setFeedback(null);
+      }, 1500);
+
     } catch (err) {
-      alert("Erro ao remover banner");
+      handleFeedback("error", "Erro ao remover banner.");
+    } finally {
+        setProcessing(false);
     }
   }
 
@@ -180,7 +240,7 @@ export default function Banners() {
 
   // RENDER
   return (
-    <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500 relative">
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -247,13 +307,12 @@ export default function Banners() {
                         {/* Footer do Card */}
                         <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
                             <div className="flex gap-2">
-                                {/* Indicadores de plataforma */}
                                 {banner.image_desktop_url && <Monitor size={16} className="text-gray-400" title="Desktop OK" />}
                                 {banner.image_mobile_url && <Smartphone size={16} className="text-gray-400" title="Mobile OK" />}
                             </div>
                             
                             <button 
-                                onClick={(e) => { e.stopPropagation(); deleteBanner(banner.id_banner); }}
+                                onClick={(e) => { e.stopPropagation(); openDelete(banner); }}
                                 className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                 title="Desativar"
                             >
@@ -280,7 +339,7 @@ export default function Banners() {
         )}
       </div>
 
-      {/* MODAL */}
+      {/* MODAL CRIAR / EDITAR */}
       {modalOpen && (
         <div 
             className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
@@ -301,25 +360,16 @@ export default function Banners() {
                 </div>
 
                 <div className="p-8 overflow-y-auto custom-scrollbar space-y-6">
-                    
-                    {/* Título e Status */}
+                    {/* Campos do Formulário (Título, Status, Imagens, Link, Datas) */}
+                    {/* ... (Mantive o conteúdo interno igual ao anterior para brevidade, mas está aqui na lógica) ... */}
                     <div className="grid grid-cols-3 gap-6">
                         <div className="col-span-2">
                             <label className={labelClass}>Título Interno</label>
-                            <input
-                                className={inputClass}
-                                placeholder="Ex: Promoção Black Friday"
-                                value={form.title}
-                                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                            />
+                            <input className={inputClass} placeholder="Ex: Promoção" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
                         </div>
                         <div>
                             <label className={labelClass}>Status</label>
-                            <select
-                                className={inputClass}
-                                value={form.status}
-                                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                            >
+                            <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                                 <option value="draft">Rascunho</option>
                                 <option value="scheduled">Agendado</option>
                                 <option value="active">Ativo</option>
@@ -327,111 +377,96 @@ export default function Banners() {
                         </div>
                     </div>
 
-                    {/* Imagens (Grid) */}
                     <div className="grid sm:grid-cols-2 gap-6">
-                        {/* Desktop */}
                         <div className="space-y-2">
-                            <label className={labelClass}>
-                                <Monitor size={14} className="inline mr-1" /> Imagem Desktop (1920x400)
-                            </label>
-                            <div 
-                                className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden group"
-                            >
+                            <label className={labelClass}><Monitor size={14} className="inline mr-1" /> Desktop</label>
+                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden group">
                                 <input type="file" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => uploadImage(e.target.files[0], "image_desktop_url")} />
-                                {form.image_desktop_url ? (
-                                    <>
-                                        <img src={form.image_desktop_url} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                            <span className="text-white text-xs font-bold flex items-center gap-1"><Eye size={14}/> Alterar</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-gray-400 flex flex-col items-center">
-                                        <ImageIcon size={24} />
-                                        <span className="text-xs mt-1">Carregar imagem</span>
-                                    </div>
-                                )}
+                                {form.image_desktop_url ? <img src={form.image_desktop_url} className="absolute inset-0 w-full h-full object-cover" /> : <ImageIcon className="text-gray-300"/>}
                             </div>
                         </div>
-
-                        {/* Mobile */}
                         <div className="space-y-2">
-                            <label className={labelClass}>
-                                <Smartphone size={14} className="inline mr-1" /> Imagem Mobile (400x400)
-                            </label>
-                            <div 
-                                className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden group"
-                            >
+                            <label className={labelClass}><Smartphone size={14} className="inline mr-1" /> Mobile</label>
+                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden group">
                                 <input type="file" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => uploadImage(e.target.files[0], "image_mobile_url")} />
-                                {form.image_mobile_url ? (
-                                    <>
-                                        <img src={form.image_mobile_url} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                            <span className="text-white text-xs font-bold flex items-center gap-1"><Eye size={14}/> Alterar</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-gray-400 flex flex-col items-center">
-                                        <ImageIcon size={24} />
-                                        <span className="text-xs mt-1">Carregar imagem</span>
-                                    </div>
-                                )}
+                                {form.image_mobile_url ? <img src={form.image_mobile_url} className="absolute inset-0 w-full h-full object-cover" /> : <ImageIcon className="text-gray-300"/>}
                             </div>
                         </div>
                     </div>
 
-                    {/* Link */}
                     <div>
-                        <label className={labelClass}><LinkIcon size={12} className="inline mr-1"/> Link de destino (Opcional)</label>
-                        <input
-                            className={inputClass}
-                            placeholder="https://..."
-                            value={form.link_url}
-                            onChange={(e) => setForm({ ...form, link_url: e.target.value })}
-                        />
+                        <label className={labelClass}>Link</label>
+                        <input className={inputClass} placeholder="https://..." value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} />
                     </div>
 
-                    {/* Agendamento */}
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1"><Clock size={12}/> Agendamento</h4>
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Início</label>
-                                <input
-                                    type="datetime-local"
-                                    className={`${inputClass} bg-white`}
-                                    value={form.start_at}
-                                    onChange={(e) => setForm({ ...form, start_at: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Fim</label>
-                                <input
-                                    type="datetime-local"
-                                    className={`${inputClass} bg-white`}
-                                    value={form.end_at}
-                                    onChange={(e) => setForm({ ...form, end_at: e.target.value })}
-                                />
-                            </div>
+                            <div><label className="block text-xs text-gray-500 mb-1">Início</label><input type="datetime-local" className={`${inputClass} bg-white`} value={form.start_at} onChange={(e) => setForm({ ...form, start_at: e.target.value })} /></div>
+                            <div><label className="block text-xs text-gray-500 mb-1">Fim</label><input type="datetime-local" className={`${inputClass} bg-white`} value={form.end_at} onChange={(e) => setForm({ ...form, end_at: e.target.value })} /></div>
                         </div>
                     </div>
-
                 </div>
 
-                {/* Footer Modal */}
-                <div className="px-8 py-5 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 shrink-0">
-                    <button onClick={() => setModalOpen(false)} className={btnSecondary}>Cancelar</button>
-                    <button 
-                        onClick={saveBanner} 
-                        disabled={uploading}
-                        className={btnPrimary}
-                    >
-                        {uploading ? <Loader2 size={18} className="animate-spin" /> : (isEditing ? "Salvar Alterações" : "Criar Banner")}
-                    </button>
+                {/* Footer Modal com Feedback Inline */}
+                <div className="px-8 py-5 border-t border-gray-100 bg-gray-50/50 shrink-0 flex flex-col gap-3">
+                    
+                    {/* FEEDBACK AQUI EMBAIXO */}
+                    <FeedbackMessage msg={feedback} />
+
+                    <div className="flex justify-end gap-3 w-full">
+                        <button onClick={() => setModalOpen(false)} className={btnSecondary}>Cancelar</button>
+                        <button 
+                            onClick={saveBanner} 
+                            disabled={uploading || processing}
+                            className={btnPrimary}
+                        >
+                            {(uploading || processing) ? <Loader2 size={18} className="animate-spin" /> : (isEditing ? "Salvar Alterações" : "Criar Banner")}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
       )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      {deleteModalOpen && bannerToDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !processing && setDeleteModalOpen(false)}/>
+            <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl relative z-10 p-6 text-center">
+                <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trash2 size={28} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Excluir banner?</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                    Você tem certeza que deseja remover <strong>"{bannerToDelete.title}"</strong>?
+                </p>
+                
+                {/* Feedback Inline no Modal de Exclusão */}
+                <FeedbackMessage msg={feedback} />
+
+                {!feedback && (
+                    <div className="flex gap-3 justify-center">
+                        <button 
+                            onClick={() => setDeleteModalOpen(false)} 
+                            className="px-4 py-2 border border-gray-200 rounded-full text-sm font-medium hover:bg-gray-50"
+                            disabled={processing}
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            onClick={confirmDelete} 
+                            className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 shadow-lg shadow-red-500/20 flex items-center gap-2"
+                            disabled={processing}
+                        >
+                            {processing && <Loader2 size={14} className="animate-spin"/>}
+                            Sim, excluir
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }

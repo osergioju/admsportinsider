@@ -1,55 +1,32 @@
 import { useEffect, useState } from "react";
 import { api } from "../../../services/api";
 import { 
-  Plus, 
-  Search, 
-  Trash2, 
-  Edit3, 
-  Bell, 
-  CheckCircle2, 
-  Clock, 
-  FileText, 
-  Users, 
-  AlertCircle,
-  Calendar,
-  X
+  Plus, Search, Trash2, Edit3, Bell, CheckCircle2, Clock, FileText, Users, AlertCircle, Calendar, Loader2
 } from "lucide-react";
 
 import NotificationFormModal from "./NotificationFormModal"; 
 
 export default function Notifications() {
-  // --- STATES ---
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Modais
+  // Modal Form
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingNotification, setEditingNotification] = useState(null); 
-  const [isSaving, setIsSaving] = useState(false);
 
-  // Delete
+  // Modal Delete
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
+  const [deleteProcessing, setDeleteProcessing] = useState(false);
+  const [deleteFeedback, setDeleteFeedback] = useState(null); // Feedback INLINE para o modal de delete
 
-  // FEEDBACK SYSTEM (TOAST)
-  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message: '' }
-
-  // Helper para mostrar notificações
-  const showToast = (type, message) => {
-    setFeedback({ type, message });
-    // Auto-hide após 4 segundos
-    setTimeout(() => setFeedback(null), 4000);
-  };
-
-  // --- DATA FETCHING ---
   async function fetchNotifications() {
     try {
       const response = await api.get("/admin/notifications");
       setNotifications(response.data);
     } catch (error) {
-      console.error(error);
-      showToast("error", "Não foi possível carregar a lista de notificações.");
+      console.error("Erro ao carregar notificações", error);
     } finally {
       setLoading(false);
     }
@@ -58,8 +35,6 @@ export default function Notifications() {
   useEffect(() => {
     fetchNotifications();
   }, []);
-
-  // --- HANDLERS ---
 
   const handleOpenCreate = () => {
     setEditingNotification(null);
@@ -71,40 +46,37 @@ export default function Notifications() {
     setIsFormOpen(true);
   };
 
+  // Funções passadas para o Modal (apenas lógica de dados, sem UI de sucesso)
   const handleSave = async (formData) => {
-    setIsSaving(true);
-    try {
-      if (editingNotification) {
-        // Update
+    if (editingNotification) {
         await api.put(`/admin/notifications/${editingNotification.id}`, formData);
         setNotifications(prev => prev.map(n => n.id === editingNotification.id ? { ...n, ...formData } : n));
-        showToast("success", "Notificação atualizada com sucesso!");
-      } else {
-        // Create
-        // Idealmente, a API retorna o objeto criado com ID. Vamos simular reload ou push.
+    } else {
         await api.post("/admin/notifications", formData);
-        showToast("success", "Notificação criada com sucesso!");
-        fetchNotifications(); 
-      }
-      setIsFormOpen(false); // Fecha modal apenas no sucesso
-    } catch (error) {
-      console.error(error);
-      // Mantém o modal aberto para o usuário tentar de novo
-      showToast("error", "Erro ao salvar. Verifique sua conexão ou tente novamente.");
-    } finally {
-      setIsSaving(false);
+        await fetchNotifications(); 
     }
+    // NÃO fechamos o modal aqui. O modal fecha sozinho após mostrar o sucesso.
   };
 
   const handleDelete = async () => {
+    setDeleteProcessing(true);
+    setDeleteFeedback(null);
     try {
       await api.delete(`/admin/notifications/${notificationToDelete.id}`);
+      
+      setDeleteFeedback({ type: 'success', text: 'Notificação excluída com sucesso!' });
       setNotifications(prev => prev.filter(n => n.id !== notificationToDelete.id));
-      showToast("success", "Notificação removida.");
-      setDeleteModalOpen(false);
+
+      setTimeout(() => {
+          setDeleteModalOpen(false);
+          setNotificationToDelete(null);
+          setDeleteFeedback(null);
+      }, 1500);
+
     } catch (error) {
-      console.error(error);
-      showToast("error", "Erro ao excluir notificação.");
+      setDeleteFeedback({ type: 'error', text: 'Erro ao excluir notificação.' });
+    } finally {
+        setDeleteProcessing(false);
     }
   };
 
@@ -120,27 +92,22 @@ export default function Notifications() {
     }
   };
 
+  const FeedbackMessage = ({ msg }) => {
+    if (!msg) return null;
+    const isSuccess = msg.type === 'success';
+    return (
+        <div className={`mb-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${isSuccess ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+            {isSuccess ? <CheckCircle2 size={18} className="text-green-600 shrink-0"/> : <AlertCircle size={18} className="text-red-600 shrink-0"/>}
+            <span>{msg.text}</span>
+        </div>
+    );
+  };
+
   const btnPrimary = "flex items-center gap-2 px-5 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20";
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500 relative">
+    <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500">
       
-      {/* --- TOAST NOTIFICATION (Fixed no topo direito) --- */}
-      {feedback && (
-        <div className={`
-            fixed top-5 right-5 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border transition-all duration-300 animate-in slide-in-from-right-10
-            ${feedback.type === 'success' ? 'bg-white border-green-100 text-green-800' : 'bg-white border-red-100 text-red-800'}
-        `}>
-            <div className={`p-1 rounded-full ${feedback.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                {feedback.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-            </div>
-            <p className="text-sm font-medium">{feedback.message}</p>
-            <button onClick={() => setFeedback(null)} className="ml-2 text-gray-400 hover:text-gray-600 p-1">
-                <X size={16} />
-            </button>
-        </div>
-      )}
-
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -231,23 +198,31 @@ export default function Notifications() {
         onClose={() => setIsFormOpen(false)} 
         onSave={handleSave} 
         initialData={editingNotification}
-        isLoading={isSaving}
       />
 
       {/* MODAL DELETE */}
       {deleteModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteModalOpen(false)}/>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !deleteProcessing && setDeleteModalOpen(false)}/>
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 p-6 text-center">
                 <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Trash2 size={28} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Excluir notificação?</h3>
                 <p className="text-sm text-gray-500 mb-6">Você tem certeza que deseja remover <strong>"{notificationToDelete?.title}"</strong>?</p>
-                <div className="flex gap-3 justify-center">
-                    <button onClick={() => setDeleteModalOpen(false)} className="px-4 py-2 border border-gray-200 rounded-full text-sm font-medium hover:bg-gray-50">Cancelar</button>
-                    <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 shadow-lg shadow-red-500/20">Sim, excluir</button>
-                </div>
+                
+                {/* Feedback INLINE para o Modal de Delete */}
+                <FeedbackMessage msg={deleteFeedback} />
+
+                {!deleteFeedback && (
+                    <div className="flex gap-3 justify-center">
+                        <button onClick={() => setDeleteModalOpen(false)} disabled={deleteProcessing} className="px-4 py-2 border border-gray-200 rounded-full text-sm font-medium hover:bg-gray-50">Cancelar</button>
+                        <button onClick={handleDelete} disabled={deleteProcessing} className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 shadow-lg shadow-red-500/20 flex items-center gap-2">
+                            {deleteProcessing && <Loader2 size={14} className="animate-spin"/>}
+                            Sim, excluir
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
       )}
