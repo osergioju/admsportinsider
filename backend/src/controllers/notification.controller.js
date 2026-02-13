@@ -2,7 +2,7 @@ import db from  "../config/db.js";
 
 // Criar as notificações
 export const newNotification = async (req, res) => {
-  const { title, message, target, status, send_at } = req.body;
+  const { title, message, target, send_at } = req.body;
 
   try {
     if (!title || !message) {
@@ -11,9 +11,13 @@ export const newNotification = async (req, res) => {
       });
     }
 
-    const sendAtUtc = send_at
-      ? new Date(`${send_at}:00-03:00`).toISOString()
-      : null;
+    const isScheduled = !!send_at && !isNaN(new Date(send_at));
+
+    const sendAtUtc = isScheduled
+      ? new Date(send_at).toISOString()
+      : new Date().toISOString(); // 🔥 AGORA
+
+    const status = isScheduled ? "scheduled" : "sent";
 
     await db.query(
       `
@@ -30,7 +34,7 @@ export const newNotification = async (req, res) => {
         title,
         message,
         target || "all",
-        status || "draft",
+        status,
         sendAtUtc
       ]
     );

@@ -17,7 +17,7 @@ import { multerErrorHandler } from "./src/middlewares/multerErrorHandler.js";
 import { startNotificationCron } from "./src/jobs/notificationCron.js";
  
 dotenv.config();
-// startNotificationCron();
+startNotificationCron();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

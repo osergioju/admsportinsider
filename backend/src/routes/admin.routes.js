@@ -63,10 +63,11 @@ router.put("/plans/:id", updatePlan);
 router.delete("/plans/:id", disablePlan);
 
 // Notificações 
-router.post("/new-notification", newNotification);
+router.post("/notifications", newNotification);
 router.get("/notifications", listNotifications);
 router.put("/notifications/:id", updateNotification);
 router.delete("/notifications/:id", deleteNotification);
+
 
 // Banners 
 // BANNERS

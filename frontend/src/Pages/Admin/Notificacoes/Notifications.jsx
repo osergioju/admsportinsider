@@ -48,15 +48,26 @@ export default function Notifications() {
 
   // Funções passadas para o Modal (apenas lógica de dados, sem UI de sucesso)
   const handleSave = async (formData) => {
-    if (editingNotification) {
-        await api.put(`/admin/notifications/${editingNotification.id}`, formData);
-        setNotifications(prev => prev.map(n => n.id === editingNotification.id ? { ...n, ...formData } : n));
-    } else {
-        await api.post("/admin/notifications", formData);
-        await fetchNotifications(); 
+    const payload = { ...formData };
+
+    // ENVIO IMEDIATO
+    if (!payload.send_at) {
+        delete payload.send_at;
     }
-    // NÃO fechamos o modal aqui. O modal fecha sozinho após mostrar o sucesso.
-  };
+
+    if (editingNotification) {
+        await api.put(`/admin/notifications/${editingNotification.id}`, payload);
+        setNotifications(prev =>
+        prev.map(n =>
+            n.id === editingNotification.id ? { ...n, ...payload } : n
+        )
+        );
+    } else {
+        await api.post("/admin/notifications", payload);
+        await fetchNotifications();
+    }
+    };
+
 
   const handleDelete = async () => {
     setDeleteProcessing(true);
@@ -167,12 +178,19 @@ export default function Notifications() {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500">
-                                    {n.send_at ? (
-                                        <div className="flex items-center gap-1.5">
-                                            <Calendar size={14} className="text-gray-400"/>
-                                            {new Date(n.send_at).toLocaleString("pt-BR", { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                    ) : <span className="text-gray-300">-</span>}
+                                    {n.send_at && !isNaN(new Date(n.send_at)) ? (
+                                    <div className="flex items-center gap-1.5">
+                                        <Calendar size={14} className="text-gray-400"/>
+                                        {new Date(n.send_at).toLocaleString("pt-BR", {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                        })}
+                                    </div>
+                                    ) : (
+                                    <span className="text-gray-300">-</span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
