@@ -492,8 +492,8 @@ export async function getNetResultEvolution(req, res) {
       WHERE cf.id_club = $1
         AND fi.code = 'net_income'
       ORDER BY cf.year ASC;
-    `, [id, fromCurrency, toCurrency]); // ✅ CORRIGIDO: 3 parâmetros
-
+    `, [id, fromCurrency, toCurrency]); 
+      console.log(result);
     return res.json({
       fromCurrency,
       toCurrency,

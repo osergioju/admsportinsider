@@ -2,14 +2,18 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import bgimage from "../../../assets/img/bg-clubs.jpg";
-import {ChevronRight, Loader2} from "lucide-react"
+import {ChevronRight, ChevronLeft} from "lucide-react"
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
 
 export default function DashClubs() {
 
     const [search, setSearch] = useState("");
     const [country, setCountry] = useState("");
     const [submitted, setSubmitted] = useState(false);
-
+    const [groupedClubs, setGroupedClubs] = useState([]);
     const [listCountries, setListCountries] = useState([]);
     const [loadingCountries, setLoadingCountries] = useState(true);
 
@@ -63,6 +67,21 @@ export default function DashClubs() {
             handleSearch();
         }
     }, [page]);
+
+    async function fetchGroupedClubs() {
+        try {
+            const { data } = await api.get("/admin/clubs-grouped-by-country");
+            setGroupedClubs(data);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+     useEffect(() => {
+        fetchGroupedClubs();
+    }, []);
+
+
 
     return (
         <div className="w-full">
@@ -131,47 +150,101 @@ export default function DashClubs() {
                 </div>
 
                 {/* Resulatdo padrão, agrupado por país */}
-                {
-                    submitted && (
-                        <div className="mt-8 w-full flex flex-col gap-2">
-                            <div className="w-full p-4 border rounded-3xl">
-                                <div className="flex items-center gap-3">
-                                    {clubs.map((club) => (
-                                        <Link
-                                            key={club.id_club}
-                                            to={`/dashboard/clubs/${club.id_club}`}
-                                            className="bg-black flex items-center w-1/2 lg:w-1/3 rounded-3xl"
-                                        >
-                                            <div className="w-20 h-20 lg:h-30 xl:h-40 p-2 lg:p-4 xl:p-7"
-                                                style={{
-                                                background: `linear-gradient(135deg, ${club.primary_color} 60%, ${club.secondary_color} 160%)`
-                                                }}>
-                                                <div className="relative bg-contain bg-center bg-no-repeat w-full h-full"
-                                                    style={{ backgroundImage: `url(${club.crest_url})` }}
-                                                >
-                                                    <div className="w-5 h-5 lg:w-8 lg:h-8 bg-black rounded-full absolute right-0 top-0 translate-x-3 -translate-y-3 bg-center bg-cover"
-                                                    style={{ backgroundImage: `url(${club.flag_url})` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                            <div className="text-center p-2 lg:p-6">
-                                                <h2 className="text-lg lg:text-xl xl:text-2xl font-light text-[#111]">
-                                                    {club.name}
-                                                </h2>
-                                                <p className="text-sm text-gray-500 mt-1">
-                                                    {club.country}
-                                                </p>
-                                                <span className="hover:text-white hover:bg-black transition-all rounded-full px-4 py-3 lg:px-6 inline-block mt-4 text-sm text-[#000000] border border-[#000000]">
-                                                    Ver detalhes →
-                                                </span>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
+                {groupedClubs.map((country) => (
+                    <div key={country.id_country} className="mb-16 mt-10">
+
+                        {/* Header do país */}
+                        <div className="flex items-center gap-3 mb-5">
+                            <img
+                            src={country.flag_url}
+                            alt={country.country_name}
+                            className="w-8 h-5 rounded object-cover shadow-sm"
+                            />
+                            <h2 className="text-xl font-bold tracking-tight text-gray-900">
+                            {country.country_name}
+                            </h2>
+                            <span className="text-sm text-gray-400 font-normal">
+                            {country.clubs.length} clubes
+                            </span>
                         </div>
-                    )
-                }
+
+                        {/* Swiper com navegação */}
+                        <div className="relative group">
+
+                            {/* Botão anterior */}
+                            <button
+                            className={`swiper-prev-${country.id_country} absolute -left-4 top-1/2 -translate-y-1/2 z-10
+                                w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md
+                                flex items-center justify-center
+                                opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                                hover:bg-gray-50 disabled:opacity-0`}
+                            >
+                            <ChevronLeft size={18} className="text-gray-600" />
+                            </button>
+
+                            {/* Botão próximo */}
+                            <button
+                            className={`swiper-next-${country.id_country} absolute -right-4 top-1/2 -translate-y-1/2 z-10
+                                w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md
+                                flex items-center justify-center
+                                opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                                hover:bg-gray-50 disabled:opacity-0`}
+                            >
+                            <ChevronRight size={18} className="text-gray-600" />
+                            </button>
+
+                            <Swiper
+                            modules={[Navigation]}
+                            slidesPerView={5}
+                            spaceBetween={16}
+                            navigation={{
+                                prevEl: `.swiper-prev-${country.id_country}`,
+                                nextEl: `.swiper-next-${country.id_country}`,
+                            }}
+                            breakpoints={{
+                                320:  { slidesPerView: 1.3, spaceBetween: 12 },
+                                640:  { slidesPerView: 2.3, spaceBetween: 14 },
+                                1024: { slidesPerView: 4,   spaceBetween: 16 },
+                                1280: { slidesPerView: 5,   spaceBetween: 16 },
+                            }}
+                            >
+                            {country.clubs.map((club) => (
+                                <SwiperSlide key={club.id_club}>
+                                <Link
+                                    to={`/dashboard/clubs/${club.id_club}`}
+                                    className="block rounded-2xl overflow-hidden border border-gray-100 bg-white
+                                    shadow-sm hover:shadow-lg hover:-translate-y-1
+                                    transition-all duration-200 ease-out"
+                                >
+                                    {/* Banner com gradiente e escudo */}
+                                    <div
+                                    className="relative h-36 flex items-center justify-center p-5"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${club.primary_color}ee 0%, ${club.secondary_color}cc 100%)`,
+                                    }}
+                                    >
+                                    <img
+                                        src={club.crest_url}
+                                        alt={club.name}
+                                        className="w-16 h-16 object-contain drop-shadow-md"
+                                    />
+                                    </div>
+
+                                    {/* Nome do clube */}
+                                    <div className="px-4 py-3 text-center">
+                                    <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">
+                                        {club.name}
+                                    </p>
+                                    </div>
+                                </Link>
+                                </SwiperSlide>
+                            ))}
+                            </Swiper>
+                        </div>
+                        </div>
+                ))}
+
+
                 {/* Resultado */}
                 {submitted && (
                     <div className="mt-10">
