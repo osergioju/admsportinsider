@@ -8,7 +8,9 @@ export function useRedirectIfAuthenticated() {
 
   useEffect(() => {
     if (!loadingAuth && user) {
-      navigate("/dashboard", { replace: true });
+      if (user.role === "user") navigate("/dashboard");
+      if (user.role === "admin") navigate("/admin");
+      if (user.role === "admin_master") navigate("/admin");
     }
   }, [user, loadingAuth, navigate]);
 

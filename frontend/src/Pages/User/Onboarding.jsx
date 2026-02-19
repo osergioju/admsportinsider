@@ -61,7 +61,7 @@ export default function Onboarding() {
       setSuccess(true);
 
       setTimeout(() => {
-        navigate("/dashboard");
+        // navigate("/dashboard");
       }, 800);
     } catch (error) {
       console.error("Erro ao salvar preferências", error);

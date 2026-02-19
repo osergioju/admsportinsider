@@ -54,10 +54,11 @@ import Notifications from "./Pages/Admin/Notificacoes/Notifications";
 // Banners 
 import Banners from "./Pages/Admin/Banners/Banners";
 
-// Regiões e idiomas
+// Regiões,idiomas e moedas
 import Regions from "./Pages/Admin/Regions/Regions";
 import RegionsDetailPage from "./Pages/Admin/Regions/RegionsDetailPage";
 import FinancialTransPage from "./Pages/Admin/Regions/FinancialTransPage";
+import Currencies from "./Pages/Admin/Currencies/Currencies";
 
 // Faq Admin 
 import FaqAdmin from "./Pages/Admin/Faq/FaqAdmin";
@@ -176,6 +177,9 @@ export default function App() {
               <Route path="/admin/regions" element={<Regions />} />
               <Route path="/admin/regions/:id" element={<RegionsDetailPage />} />
               <Route path="/admin/regions/:id/financial-indicators" element={<FinancialTransPage />} />
+
+              {/* Moedas */}
+              <Route path="/admin/currencies" element={<Currencies />} />
 
               {/* FAQ */}
               <Route path="/admin/faq" element={<FaqAdmin />} />
