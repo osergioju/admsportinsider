@@ -20,7 +20,8 @@ import {
   CircleX,
   Cog,
   Languages,
-  MessageCircleQuestionMark
+  MessageCircleQuestionMark,
+  CircleDollarSign
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -137,7 +138,8 @@ export default function AdminLayout() {
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/upload/ligas" icon={<Upload strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Upload de dados</span>} /></div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/banners" icon={<ImageIcon strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Banners</span>} /></div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/notifications" icon={<Bell strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Notificações</span>} /></div>
-                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/regions" icon={<Languages strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Regiões</span>} /></div>
+                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/regions" icon={<Languages strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Idioma e regiões</span>} /></div>
+                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/currencies" icon={<CircleDollarSign strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Moeda</span>} /></div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/faq" icon={<MessageCircleQuestionMark strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Faqs</span>} /></div>
                     </ul>
                 </div>

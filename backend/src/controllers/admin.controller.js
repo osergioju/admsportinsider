@@ -303,6 +303,55 @@ export async function clubsSearch(req, res) {
   }
 }
 
+export async function clubsGroupedByCountry(req, res) {
+  try {
+    const result = await db.query(`
+      SELECT 
+        co.id_country,
+        co.name AS country_name,
+        co.flag_url,
+        c.id_club,
+        c.name,
+        c.crest_url,
+        c.primary_color,
+        c.secondary_color
+      FROM countries co
+      JOIN clubs c 
+        ON c.id_country = co.id_country
+      WHERE c.active = TRUE
+      ORDER BY co.name ASC, c.name ASC;
+    `);
+
+    const grouped = {};
+
+    result.rows.forEach(row => {
+      if (!grouped[row.id_country]) {
+        grouped[row.id_country] = {
+          id_country: row.id_country,
+          country_name: row.country_name,
+          flag_url: row.flag_url,
+          clubs: []
+        };
+      }
+
+      grouped[row.id_country].clubs.push({
+        id_club: row.id_club,
+        name: row.name,
+        crest_url: row.crest_url,
+        primary_color: row.primary_color,
+        secondary_color: row.secondary_color
+      });
+    });
+
+    return res.json(Object.values(grouped));
+
+  } catch (err) {
+    console.error("Erro ao buscar clubes agrupados:", err);
+    return res.status(500).json({ message: "Erro ao buscar clubes" });
+  }
+}
+
+
 export async function leaguesSearch(req, res) {
   try {
     const { name, country } = req.body;

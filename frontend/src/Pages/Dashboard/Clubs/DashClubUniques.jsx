@@ -298,7 +298,7 @@ export default function DashClubUniques() {
           }}
         ></div>
 
-        <div className="ml-4 lg:ml-10 border-b border-white pb-4">
+        <div className="ml-4 lg:ml-10 pb-4">
           <h3 className="text-white text-2xl mb-3 lg:text-3xl font-light">
             {theClub.club.name}
           </h3>
@@ -319,19 +319,6 @@ export default function DashClubUniques() {
               {theClub.club?.ownership_model || "Modelo não informado"}
             </li>
           </ul>
-
-          <div className="flex items-center gap-3 mt-4">
-            <span className="text-white text-sm">Moeda</span>
-            <select
-              value={toCurrency}
-              onChange={(e) => setToCurrency(e.target.value)}
-              className="rounded px-5 py-3 text-sm bg-white rounded-full text-[#4d4d4d]"
-            >
-              <option value="RUB">Rublo (Rússia)</option>
-              <option value="USD">Dólar (EUA)</option>
-              <option value="BRL">Real (Brasil)</option>
-            </select>
-          </div>
         </div>
       </div>
 

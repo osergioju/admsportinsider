@@ -1,7 +1,5 @@
 import db from  "../config/db.js";
 
-
-
 // GET /admin/regions
 export async function getAllRegions(req, res) {
   try {
