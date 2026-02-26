@@ -120,7 +120,7 @@ export default function DashboardLayout() {
                     {/* Outros itens */}
                     { user ? ( <div className="group"><MenuItem to="/dashboard/meu-dashboard" icon={<Heart strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>Meu Dashboard</span>} className={textStyle}/></div> ) : ( null ) }
                     <div className="group">
-                        <MenuItem onClick={() => setOpenMenu(false)} to="/relatorios" icon={<FileText strokeWidth={1} size={20} className={iconStyle}/>} label={<span className={textStyle}>Relatórios</span>} /></div>
+                        <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={20} className={iconStyle}/>} label={<span className={textStyle}>Relatórios</span>} /></div>
                 </ul>
             </div>
 
@@ -283,7 +283,7 @@ export default function DashboardLayout() {
 
                 <div className="flex items-center gap-6 ml-4">
                     
-                    {/* Toggle Modo */}
+                    {/* Toggle Modo 
                     <div className="flex items-center gap-3">
                         <div className="border border-gray-300 rounded-full p-1 flex items-center bg-white cursor-pointer h-9 shadow-sm hover:shadow-md transition-shadow">
                             <div className="w-7 h-7 bg-[#F3E8FF] rounded-full flex items-center justify-center text-[#7F33D9]">
@@ -293,13 +293,16 @@ export default function DashboardLayout() {
                                 <Moon size={16} strokeWidth={2} />
                             </div>
                         </div>
-                        <span className="text-sm font-medium text-[#111]">Modo</span>
+                        <span className="text-sm font-medium text-[#111]">Modo</span> 
                     </div>
+                    */}
 
                     <div className="w-px h-6 bg-gray-200 mx-1"></div>
 
                     {/* Avatar */}
-                    <div className="relative group cursor-pointer">
+                    <div 
+                        onClick={() => navigate("/me/profile")}
+                        className="relative group cursor-pointer">
                         <div className="w-11 h-11 rounded-full p-0.5 border border-[#7F33D9] flex items-center justify-center shadow-sm hover:shadow-purple-500/20 transition-all">
                             {user?.avatar_url ? (
                                 <img src={user.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
@@ -313,11 +316,11 @@ export default function DashboardLayout() {
                     
                     <NotificationDropdown />
 
-                    {/* Botão Config */}
+                    {/* Botão Config
                     <button className="w-11 h-11 bg-white border border-gray-300 rounded-full flex items-center justify-center text-[#7F33D9] hover:bg-gray-50 transition shadow-sm hover:rotate-45 active:scale-95 duration-300">
                         <Settings size={22} strokeWidth={1.5} />
                     </button>
-
+                    */}
                 </div>
             </header>
  

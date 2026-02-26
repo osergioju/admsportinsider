@@ -167,13 +167,12 @@ export default function SubscriptionManagement() {
             </div>
           </div>
 
-          {/* Histórico de Faturas */}
+          {/* Histórico de Faturas 
           <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
              <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
                     <FileText size={18} className="text-gray-400" /> Histórico de Faturas
                 </h3>
-                {/* FUNCIONALIDADE: Botão para ver todo o histórico */}
                 <button 
                     onClick={() => setIsHistoryModalOpen(true)}
                     className="text-xs font-bold text-[#7F33D9] hover:underline"
@@ -201,12 +200,13 @@ export default function SubscriptionManagement() {
                 ))}
              </div>
           </div>
+          */}
         </div>
 
         {/* --- COLUNA DIREITA (1/3) --- */}
         <div className="space-y-6">
             
-            {/* Método de Pagamento */}
+            {/* Método de Pagamento 
             <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
                     <CreditCard size={18} className="text-gray-400" /> Método de Pagamento
@@ -232,7 +232,7 @@ export default function SubscriptionManagement() {
                              </div>
                         </div>
                     ))}
-                    {/* BOTÃO ADICIONAR CARTÃO */}
+
                     <button 
                         onClick={() => setIsCardModalOpen(true)}
                         className="w-full py-3 border border-dashed border-gray-300 rounded-2xl text-sm font-medium text-gray-500 hover:border-[#7F33D9] hover:text-[#7F33D9] hover:bg-[#7F33D9]/5 transition-all flex items-center justify-center gap-2"
@@ -241,12 +241,13 @@ export default function SubscriptionManagement() {
                     </button>
                 </div>
             </div>
+            */}
 
-            {/* Dados de Faturamento */}
+            {/* Dados de Faturamento 
             <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm">
                  <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-gray-900 text-sm">Dados de Faturamento</h3>
-                    {/* BOTÃO EDITAR FATURAMENTO */}
+
                     <button 
                         onClick={() => setIsBillingModalOpen(true)}
                         className="text-xs font-bold text-[#7F33D9] hover:underline"
@@ -262,7 +263,8 @@ export default function SubscriptionManagement() {
                     <p className="mt-2 text-xs text-gray-400">CPF/CNPJ: {billingInfo.cnpj}</p>
                  </div>
             </div>
-
+            */}
+            
             {/* Card Suporte */}
             <div className="bg-gradient-to-br from-[#7F33D9] to-[#6025A8] rounded-3xl p-5 text-white shadow-xl shadow-purple-500/20 relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-[60px] -mr-10 -mt-10 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>

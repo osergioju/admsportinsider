@@ -24,6 +24,7 @@ import Faq from "./Pages/User/Profile/Components/Faq";
 import ContactUs from "./Pages/User/Profile/Components/ContactUs";
 import MeuDashboard from "./Pages/User/MeuDashboard";
 import SubscriptionManagement from "./Pages/User/Profile/Components/Financial";
+import Relatorios from "./Pages/User/Relatorios";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
@@ -80,6 +81,7 @@ import DashLeagues from "./Pages/Dashboard/Leagues/Index";
 import DashLeagueUniques from "./Pages/Dashboard/Leagues/DashLeagueUniques";
 import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
 
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -127,6 +129,9 @@ export default function App() {
 
               {/* Meu Dashboard */}
               <Route path="/dashboard/meu-dashboard" element={<MeuDashboard />} />
+
+              {/* Relatórios */}
+              <Route path="/dashboard/relatorios" element={<Relatorios />} />
             </Route>
 
           </Route>

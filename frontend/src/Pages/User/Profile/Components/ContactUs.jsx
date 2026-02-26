@@ -5,6 +5,7 @@ import {
   Loader2, CheckCircle2, ArrowRight 
 } from "lucide-react";
 import banner2 from "../../../../assets/img/banner2.png";
+import { api } from "../../../../services/api"
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({
@@ -22,17 +23,21 @@ export default function ContactUs() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulação de envio
-    setTimeout(() => {
-        console.log("Formulário enviado:", formData);
-        setIsSubmitting(false);
+    try {
+        await api.post("/public/contact", formData);
+
         setSubmitted(true);
-    }, 1500);
-  };
+    } catch (error) {
+        console.error("Erro ao enviar:", error);
+        alert("Erro ao enviar mensagem.");
+    } finally {
+        setIsSubmitting(false);
+    }
+    };
 
   const ContactCard = ({ icon: Icon, title, desc, info, link, delay }) => (
     <a 

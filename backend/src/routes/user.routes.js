@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { updatePassword, getProfile, updateProfile, addPreferences,updatePreferences, getRegions, getCurrencies, getFaqs} from "../controllers/user.controller.js";
 import { getNotifications, markAsRead, getUnreadCount, markAllAsRead } from "../controllers/user.notification.controller.js";
+import { getRelatorios, getRelatorioById } from "../controllers/user.relatorios.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -31,6 +32,16 @@ router.put("/security/password", updatePassword);
 
 // Faq 
 router.get("/faq", getFaqs);
+
+// Importar seus middlewares já existentes de autenticação, se necessário:
+// const { authMiddleware } = require("../middlewares/authMiddleware");
+
+// GET /user/relatorios?first=12&after=cursor
+router.get("/relatorios", getRelatorios);
+
+// GET /user/relatorios/:id
+router.get("/relatorios/:id", getRelatorioById);
+
 
 
 export default router;
