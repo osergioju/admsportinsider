@@ -9,7 +9,10 @@ export const uploadXlsx = multer({
 
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
+      "text/csv",
+      "application/csv",
+      "application/vnd.ms-excel" // alguns CSVs vêm assim
     ];
 
     if (allowedMimes.includes(file.mimetype)) {

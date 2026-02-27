@@ -30,6 +30,9 @@ import Relatorios from "./Pages/User/Relatorios";
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
 import AdminProfileDetails from "./Pages/Admin/AdminProfileDetails";
+import UploadCompetitionStatsPage from "./Pages/Admin/Datasend/UploadCompetitionStatsPage";
+import UploadPlayerStatsPage from "./Pages/Admin/Datasend/UploadPlayerStatsPage";
+import UploadMatchStatsPage from "./Pages/Admin/Datasend/UploadMatchStatsPage";
 
 // ADMIN - Gestão de ligas, países e clubes
 import GestaoPaises from "./Pages/Admin/GestaoPaises";
@@ -171,6 +174,11 @@ export default function App() {
 
               {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
               <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
+
+              {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
+              <Route path="/admin/upload/competition-stats" element={<UploadCompetitionStatsPage />} />
+              <Route path="/admin/upload/player-stats" element={<UploadPlayerStatsPage />}/>
+              <Route path="/admin/upload/match-stats" element={<UploadMatchStatsPage />}/>
 
               {/* Notificações */}
               <Route path="/admin/notifications" element={<Notifications />} />

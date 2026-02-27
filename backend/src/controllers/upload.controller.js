@@ -773,3 +773,560 @@ export async function importClubBalance(req, res) {
   }
 }
 */
+
+export async function importCompetitionStats(req, res) {
+  const client = await db.connect();
+
+  try {
+    const { competitionId, seasonYear, sheetName } = req.body;
+
+    if (!competitionId || !seasonYear || !sheetName) {
+      return res.status(400).json({
+        message: "competitionId, seasonYear e sheetName são obrigatórios"
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Arquivo não enviado"
+      });
+    }
+
+    const fileName = req.file.originalname.toLowerCase();
+    const isCSV = fileName.endsWith(".csv");
+
+    const workbook = xlsx.read(req.file.buffer, {
+      type: "buffer",
+      raw: false,
+      FS: isCSV ? ";" : undefined
+    });
+
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) {
+      return res.status(400).json({
+        message: `Sheet '${sheetName}' não encontrada`
+      });
+    }
+
+    const rows = xlsx.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: null
+    });
+
+    if (rows.length <= 1) {
+      return res.status(400).json({
+        message: "Planilha sem dados"
+      });
+    }
+
+    await client.query("BEGIN");
+
+    // --------------------------------------------------
+    // 1️⃣ Garantir Season
+    // --------------------------------------------------
+    const seasonResult = await client.query(
+      `
+      INSERT INTO seasons (year)
+      VALUES ($1)
+      ON CONFLICT (year)
+      DO UPDATE SET year = EXCLUDED.year
+      RETURNING id_season
+      `,
+      [seasonYear]
+    );
+
+    const id_season = seasonResult.rows[0].id_season;
+
+    // --------------------------------------------------
+    // 2️⃣ Garantir League_Season
+    // --------------------------------------------------
+    const compSeasonResult = await client.query(
+      `
+      INSERT INTO competition_seasons (id_league, id_season)
+      VALUES ($1, $2)
+      ON CONFLICT (id_league, id_season)
+      DO UPDATE SET id_league = EXCLUDED.id_league
+      RETURNING id_competition_season
+      `,
+      [competitionId, id_season]
+    );
+
+    const id_competition_season =
+      compSeasonResult.rows[0].id_competition_season;
+
+    // 🔥 Limpar dados antigos da temporada
+    await client.query(
+      `DELETE FROM club_competition_stats WHERE id_competition_season = $1`,
+      [id_competition_season]
+    );
+
+    // --------------------------------------------------
+    // 3️⃣ Cache de clubes (MUITO MAIS RÁPIDO)
+    // --------------------------------------------------
+    const clubsResult = await client.query(
+      `SELECT id_club, LOWER(name) as name FROM clubs`
+    );
+
+    const clubMap = {};
+    for (const c of clubsResult.rows) {
+      clubMap[c.name] = c.id_club;
+    }
+
+    // --------------------------------------------------
+    // 4️⃣ Mapear header
+    // --------------------------------------------------
+    const header = rows[0];
+
+    const colIndex = (colName) => {
+      const index = header.indexOf(colName);
+      if (index === -1) {
+        throw new Error(`Coluna não encontrada: ${colName}`);
+      }
+      return index;
+    };
+
+    // --------------------------------------------------
+    // 5️⃣ Loop nas linhas
+    // --------------------------------------------------
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+
+      const clubName = row[colIndex("team_name")];
+      if (!clubName) continue;
+
+      const id_club = clubMap[clubName.toLowerCase()];
+
+      if (!id_club) {
+        console.warn(`Clube não encontrado: ${clubName}`);
+        continue;
+      }
+
+      await client.query(
+        `
+        INSERT INTO club_competition_stats
+          (
+            id_competition_season,
+            id_club,
+            position_total,
+            position_home,
+            position_away,
+            points,
+            matches_total,
+            matches_home,
+            matches_away,
+            wins_total,
+            wins_home,
+            wins_away,
+            draws_total,
+            draws_home,
+            draws_away,
+            losses_total,
+            losses_home,
+            losses_away,
+            goals_for_total,
+            goals_for_home,
+            goals_for_away,
+            goals_against_total,
+            goals_against_home,
+            goals_against_away,
+            goal_difference,
+            shots_total,
+            shots_on_target_total,
+            possession_total,
+            clean_sheets_total,
+            fouls_total
+          )
+        VALUES
+          (
+            $1,$2,
+            $3,$4,$5,
+            $6,$7,$8,$9,
+            $10,$11,$12,
+            $13,$14,$15,
+            $16,$17,$18,
+            $19,$20,$21,
+            $22,$23,$24,
+            $25,$26,$27,$28,$29,$30
+          )
+        `,
+        [
+          id_competition_season,
+          id_club,
+
+          parseInt(row[colIndex("league_position")]) || 0,
+          parseInt(row[colIndex("league_position_home")]) || 0,
+          parseInt(row[colIndex("league_position_away")]) || 0,
+
+          Math.round(
+            (parseFloat(row[colIndex("points_per_game")]) || 0) *
+            (parseInt(row[colIndex("matches_played")]) || 0)
+          ),
+
+          parseInt(row[colIndex("matches_played")]) || 0,
+          parseInt(row[colIndex("matches_played_home")]) || 0,
+          parseInt(row[colIndex("matches_played_away")]) || 0,
+
+          parseInt(row[colIndex("wins")]) || 0,
+          parseInt(row[colIndex("wins_home")]) || 0,
+          parseInt(row[colIndex("wins_away")]) || 0,
+
+          parseInt(row[colIndex("draws")]) || 0,
+          parseInt(row[colIndex("draws_home")]) || 0,
+          parseInt(row[colIndex("draws_away")]) || 0,
+
+          parseInt(row[colIndex("losses")]) || 0,
+          parseInt(row[colIndex("losses_home")]) || 0,
+          parseInt(row[colIndex("losses_away")]) || 0,
+
+          parseInt(row[colIndex("goals_scored")]) || 0,
+          parseInt(row[colIndex("goals_scored_home")]) || 0,
+          parseInt(row[colIndex("goals_scored_away")]) || 0,
+
+          parseInt(row[colIndex("goals_conceded")]) || 0,
+          parseInt(row[colIndex("goals_conceded_home")]) || 0,
+          parseInt(row[colIndex("goals_conceded_away")]) || 0,
+
+          parseInt(row[colIndex("goal_difference")]) || 0,
+          parseInt(row[colIndex("shots")]) || 0,
+          parseInt(row[colIndex("shots_on_target")]) || 0,
+          parseFloat(row[colIndex("average_possession")]) || 0,
+          parseInt(row[colIndex("clean_sheets")]) || 0,
+          parseInt(row[colIndex("fouls")]) || 0
+        ]
+      );
+    }
+
+    // 🔥 COMMIT DEPOIS DO LOOP
+    await client.query("COMMIT");
+
+    return res.json({
+      message: "Estatísticas importadas com sucesso"
+    });
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("❌ Erro:", error);
+
+    return res.status(500).json({
+      message: "Erro ao importar estatísticas"
+    });
+  } finally {
+    client.release();
+  }
+}
+
+export async function importPlayerStats(req, res) {
+  const client = await db.connect();
+
+  try {
+    const { competitionId, seasonYear, sheetName } = req.body;
+
+    if (!competitionId || !seasonYear || !sheetName) {
+      return res.status(400).json({
+        message: "competitionId, seasonYear e sheetName são obrigatórios"
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Arquivo XLSX não enviado"
+      });
+    }
+
+    const fileName = req.file.originalname.toLowerCase();
+    const isCSV = fileName.endsWith(".csv");
+
+    const workbook = xlsx.read(req.file.buffer, {
+      type: "buffer",
+      raw: false,
+      FS: isCSV ? ";" : undefined // importante se CSV usa ;
+    });
+    const sheet = workbook.Sheets[sheetName];
+
+    if (!sheet) {
+      return res.status(400).json({
+        message: `Sheet '${sheetName}' não encontrada`
+      });
+    }
+
+    const rows = xlsx.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: null
+    });
+
+    await client.query("BEGIN");
+
+    // pegar competition_season
+    const seasonResult = await client.query(
+      `SELECT cs.id_competition_season
+       FROM competition_seasons cs
+       JOIN seasons s ON s.id_season = cs.id_season
+       WHERE cs.id_competition = $1 AND s.year = $2`,
+      [competitionId, seasonYear]
+    );
+
+    if (!seasonResult.rowCount) {
+      throw new Error("Competition season não encontrada");
+    }
+
+    const id_competition_season =
+      seasonResult.rows[0].id_competition_season;
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+
+      const playerName = row[0];
+      const clubName = row[1];
+
+      if (!playerName || !clubName) continue;
+
+      // criar jogador se não existir
+      const playerResult = await client.query(
+        `
+        INSERT INTO players (full_name)
+        VALUES ($1)
+        ON CONFLICT (full_name)
+        DO UPDATE SET full_name = EXCLUDED.full_name
+        RETURNING id_player
+        `,
+        [playerName]
+      );
+
+      const id_player = playerResult.rows[0].id_player;
+
+      const clubResult = await client.query(
+        `SELECT id_club FROM clubs WHERE LOWER(name) = LOWER($1)`,
+        [clubName]
+      );
+
+      if (!clubResult.rowCount) continue;
+
+      const id_club = clubResult.rows[0].id_club;
+
+      await client.query(
+        `
+        INSERT INTO player_season_stats
+          (
+            id_player,
+            id_club,
+            id_competition_season,
+            goals_total,
+            assists_total,
+            minutes_total,
+            yellow_cards,
+            red_cards
+          )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        ON CONFLICT (id_player, id_club, id_competition_season)
+        DO UPDATE SET
+          goals_total = EXCLUDED.goals_total,
+          assists_total = EXCLUDED.assists_total,
+          minutes_total = EXCLUDED.minutes_total,
+          yellow_cards = EXCLUDED.yellow_cards,
+          red_cards = EXCLUDED.red_cards
+        `,
+        [
+          id_player,
+          id_club,
+          id_competition_season,
+          row[2],  // gols
+          row[3],  // assistências
+          row[4],  // minutos
+          row[5],  // amarelos
+          row[6]   // vermelhos
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return res.json({
+      message: "Player stats importado com sucesso"
+    });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    return res.status(500).json({
+      message: "Erro ao importar player stats"
+    });
+  } finally {
+    client.release();
+  }
+}
+
+export async function importMatchStats(req, res) {
+  const client = await db.connect();
+
+  try {
+    const { competitionId, seasonYear, sheetName } = req.body;
+
+    if (!competitionId || !seasonYear || !sheetName) {
+      return res.status(400).json({
+        message: "competitionId, seasonYear e sheetName são obrigatórios"
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Arquivo XLSX não enviado"
+      });
+    }
+
+    const fileName = req.file.originalname.toLowerCase();
+    const isCSV = fileName.endsWith(".csv");
+
+    const workbook = xlsx.read(req.file.buffer, {
+      type: "buffer",
+      raw: false,
+      FS: isCSV ? ";" : undefined // importante se CSV usa ;
+    });
+    const sheet = workbook.Sheets[sheetName];
+
+    if (!sheet) {
+      return res.status(400).json({
+        message: `Sheet '${sheetName}' não encontrada`
+      });
+    }
+
+    const rows = xlsx.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: null
+    });
+
+    await client.query("BEGIN");
+
+    // --------------------------------------------------
+    // 1️⃣ Buscar competition_season
+    // --------------------------------------------------
+    const seasonResult = await client.query(
+      `
+      SELECT cs.id_competition_season
+      FROM competition_seasons cs
+      JOIN seasons s ON s.id_season = cs.id_season
+      WHERE cs.id_competition = $1
+        AND s.year = $2
+      `,
+      [competitionId, seasonYear]
+    );
+
+    if (!seasonResult.rowCount) {
+      throw new Error("Competition season não encontrada");
+    }
+
+    const id_competition_season =
+      seasonResult.rows[0].id_competition_season;
+
+    // 🔥 limpar antes de importar (temporada fechada)
+    await client.query(
+      `DELETE FROM matches WHERE id_competition_season = $1`,
+      [id_competition_season]
+    );
+
+    // --------------------------------------------------
+    // 2️⃣ Cache de clubes
+    // --------------------------------------------------
+    const clubsResult = await client.query(
+      `SELECT id_club, LOWER(name) as name FROM clubs`
+    );
+
+    const clubMap = {};
+    for (const c of clubsResult.rows) {
+      clubMap[c.name] = c.id_club;
+    }
+
+    // --------------------------------------------------
+    // 3️⃣ Loop nas partidas
+    // --------------------------------------------------
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+
+      const homeName = row[4];  // coluna Mandante
+      const awayName = row[5];  // coluna Visitante
+
+      if (!homeName || !awayName) continue;
+
+      const id_home = clubMap[homeName.toLowerCase()];
+      const id_away = clubMap[awayName.toLowerCase()];
+
+      if (!id_home || !id_away) continue;
+
+      await client.query(
+        `
+        INSERT INTO matches (
+          id_competition_season,
+          match_date,
+          stadium,
+          referee,
+          id_home_club,
+          id_away_club,
+          home_goals,
+          away_goals,
+          home_shots,
+          away_shots,
+          home_shots_on_target,
+          away_shots_on_target,
+          home_possession,
+          away_possession,
+          home_xg,
+          away_xg,
+          home_fouls,
+          away_fouls,
+          home_yellow,
+          away_yellow,
+          home_red,
+          away_red,
+          attendance
+        )
+        VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+          $11,$12,$13,$14,$15,$16,$17,$18,
+          $19,$20,$21,$22,$23
+        )
+        `,
+        [
+          id_competition_season,
+          row[1],  // data
+          row[65], // estádio (ajuste conforme coluna real)
+          row[6],  // árbitro
+          id_home,
+          id_away,
+          row[12], // gols casa
+          row[13], // gols fora
+          row[30], // chutes casa
+          row[31], // chutes fora
+          row[32], // chutes gol casa
+          row[33], // chutes gol fora
+          row[38], // posse casa
+          row[39], // posse fora
+          row[40], // xg casa
+          row[41], // xg fora
+          row[34], // faltas casa
+          row[35], // faltas fora
+          row[22], // amarelos casa
+          row[24], // amarelos fora
+          row[23], // vermelhos casa
+          row[25], // vermelhos fora
+          row[3]   // público
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return res.json({
+      message: "Match stats importado com sucesso"
+    });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+
+    return res.status(500).json({
+      message: "Erro ao importar partidas"
+    });
+
+  } finally {
+    client.release();
+  }
+}

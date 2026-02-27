@@ -519,7 +519,7 @@ export async function createClub(req, res) {
         id_country, name, description, crest_url,
         founded_at, stadium_name, ownership_model, location
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING id_club
       `,
       [
