@@ -24,6 +24,7 @@ import Faq from "./Pages/User/Profile/Components/Faq";
 import ContactUs from "./Pages/User/Profile/Components/ContactUs";
 import MeuDashboard from "./Pages/User/MeuDashboard";
 import SubscriptionManagement from "./Pages/User/Profile/Components/Financial";
+import PlansFinancial from "./Pages/User/Profile/Components/PlansFinancial";
 import Relatorios from "./Pages/User/Relatorios";
 
 // ADMIN PAGES // 
@@ -120,6 +121,7 @@ export default function App() {
 
               <Route path="me/profile" element={<ProfileDetails />} />
               <Route path="me/financial" element={<SubscriptionManagement />} />
+              <Route path="me/plans" element={<PlansFinancial/>} />
               <Route path="me/subscription" element={<SubscriptionPlan />} />
 
               {/* Dados - páginas de gráficos de clubes */}

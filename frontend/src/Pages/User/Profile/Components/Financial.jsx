@@ -107,7 +107,7 @@ export default function SubscriptionManagement() {
         
         {/* Upgrade mantido como botão pois geralmente é uma ação de modal ou checkout direto, mas link para pricing também funcionaria aqui se desejado */}
         <Link 
-            to="/pricing" 
+            to="/me/plans" 
             className="px-6 py-2.5 bg-[#7F33D9] text-white text-sm font-bold rounded-xl hover:bg-[#6025A8] hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300 flex items-center gap-2"
         >
             <Zap size={16} /> Fazer Upgrade
@@ -151,7 +151,7 @@ export default function SubscriptionManagement() {
             <div className="mt-8 flex gap-3">
                 {/* FUNCIONALIDADE: Link para /pricing */}
                 <Link 
-                    to="/pricing"
+                    to="/me/plans"
                     className="text-sm font-semibold text-[#7F33D9] hover:text-[#6025A8] transition-colors"
                 >
                     Alterar Plano
