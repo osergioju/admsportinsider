@@ -137,10 +137,35 @@ export default function AdminLayout() {
                     <ul className="space-y-1">
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/upload/ligas" icon={<Upload strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Upload de dados</span>} /></div>
 
-                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/upload/competition-stats" icon={<Upload strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Upload - Competição</span>} /></div>
-                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/upload/player-stats" icon={<Upload strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Upload - Jogadores</span>} /></div>
-                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/upload/match-stats" icon={<Upload strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Upload - Partidas</span>} /></div>
+                       <div className="group">
+                        <MenuItem
+                            onClick={() => setOpenMenu(false)}
+                            className={menuItemStyle}
+                            to="/admin/upload/teams"
+                            icon={<Upload strokeWidth={1.5} size={20} className={iconStyle} />}
+                            label={<span className={textStyle}>Upload - Times</span>}
+                        />
+                        </div>
 
+                        <div className="group">
+                        <MenuItem
+                            onClick={() => setOpenMenu(false)}
+                            className={menuItemStyle}
+                            to="/admin/upload/players"
+                            icon={<Upload strokeWidth={1.5} size={20} className={iconStyle} />}
+                            label={<span className={textStyle}>Upload - Jogadores</span>}
+                        />
+                        </div>
+
+                        <div className="group">
+                        <MenuItem
+                            onClick={() => setOpenMenu(false)}
+                            className={menuItemStyle}
+                            to="/admin/upload/matches"
+                            icon={<Upload strokeWidth={1.5} size={20} className={iconStyle} />}
+                            label={<span className={textStyle}>Upload - Partidas</span>}
+                        />
+                        </div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/banners" icon={<ImageIcon strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Banners</span>} /></div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/notifications" icon={<Bell strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Notificações</span>} /></div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/regions" icon={<Languages strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Idioma e regiões</span>} /></div>

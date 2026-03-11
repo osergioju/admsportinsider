@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
-import { analyzeXlsx, validateXlsxImport, importLeagueCountry, importCompetitionStats, importPlayerStats, importMatchStats } from "../controllers/upload.controller.js";
+import { analyzeXlsx, validateXlsxImport, importLeagueCountry } from "../controllers/upload.controller.js";
+import { importMatches, importPlayers } from "../controllers/import.controller.js";
 
 const router = Router();
 
@@ -13,12 +14,13 @@ router.post("/xlsx/validate", uploadXlsx, validateXlsxImport);
 // Importa tudo, tanto liga quanto clube
 router.post( "/xlsx/import-country", uploadXlsx, importLeagueCountry);
 
-// Importar o dado da competição 
-router.post("/xlsx/import-competition-stats", uploadXlsx, importCompetitionStats);
+// Importar estatísticas de clubes (teams.csv)
+//router.post("/import/teams", uploadXlsx, importTeams);
 
-// Importar jogadores
-router.post("/xlsx/import-player-stats", uploadXlsx, importPlayerStats);
+// Importar estatísticas de jogadores (players.csv)
+router.post("/import/players", uploadXlsx, importPlayers);
 
-// Imprtar estatísticas da partida
-router.post("/xlsx/import-match-stats",uploadXlsx,importMatchStats);
+// Importar partidas (matches.csv)importMatches
+router.post("/import/matches", uploadXlsx, importMatches);
+
 export default router;
