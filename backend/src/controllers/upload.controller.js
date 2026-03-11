@@ -1,7 +1,6 @@
 import { supabase } from "../utils/supabase.js";
 import db from  "../config/db.js";
 import xlsx from "xlsx";
-import slugify from "slugify";
 
 // Ajusta os planos, q tá em virghual
 function parsePlans(raw) {

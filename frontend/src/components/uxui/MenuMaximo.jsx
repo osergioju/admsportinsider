@@ -84,6 +84,7 @@ export default function SideMenu() {
           </li>
 
           {/* Itens simples */}
+          <MenuItem icon={<Heart strokeWidth={1} size={20} />} label="Jodores" />
           <MenuItem icon={<Heart strokeWidth={1} size={20} />} label="Meu Dashboard" />
           <MenuItem icon={<FileText strokeWidth={1} size={20} />} label="Relatórios" />
         </ul>

@@ -26,14 +26,15 @@ import MeuDashboard from "./Pages/User/MeuDashboard";
 import SubscriptionManagement from "./Pages/User/Profile/Components/Financial";
 import PlansFinancial from "./Pages/User/Profile/Components/PlansFinancial";
 import Relatorios from "./Pages/User/Relatorios";
+import Players from "./Pages/User/Players";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
 import AdminProfileDetails from "./Pages/Admin/AdminProfileDetails";
-import UploadCompetitionStatsPage from "./Pages/Admin/Datasend/UploadCompetitionStatsPage";
-import UploadPlayerStatsPage from "./Pages/Admin/Datasend/UploadPlayerStatsPage";
-import UploadMatchStatsPage from "./Pages/Admin/Datasend/UploadMatchStatsPage";
+import UploadTeamsPage from "./Pages/Admin/Datasend/UploadTeamsPage";
+import UploadPlayersPage from "./Pages/Admin/Datasend/UploadPlayersPage";
+import UploadMatchesPage from "./Pages/Admin/Datasend/UploadMatchesPage";
 
 // ADMIN - Gestão de ligas, países e clubes
 import GestaoPaises from "./Pages/Admin/GestaoPaises";
@@ -133,6 +134,9 @@ export default function App() {
               <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
 
               {/* Meu Dashboard */}
+              <Route path="/dashboard/players" element={<Players />} />
+
+              {/* Meu Dashboard */}
               <Route path="/dashboard/meu-dashboard" element={<MeuDashboard />} />
 
               {/* Relatórios */}
@@ -178,9 +182,9 @@ export default function App() {
               <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
 
               {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
-              <Route path="/admin/upload/competition-stats" element={<UploadCompetitionStatsPage />} />
-              <Route path="/admin/upload/player-stats" element={<UploadPlayerStatsPage />}/>
-              <Route path="/admin/upload/match-stats" element={<UploadMatchStatsPage />}/>
+              <Route path="/admin/upload/teams" element={<UploadTeamsPage />} />
+              <Route path="/admin/upload/players" element={<UploadPlayersPage />} />
+              <Route path="/admin/upload/matches" element={<UploadMatchesPage />} />
 
               {/* Notificações */}
               <Route path="/admin/notifications" element={<Notifications />} />

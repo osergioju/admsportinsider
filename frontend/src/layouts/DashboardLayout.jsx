@@ -9,7 +9,7 @@ import FixedMenu from "../components/uxui/FixedMenu";
 import LinkButton from "../components/uxui/LinkButton";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
 // Ícones do Usuário
-import { Home, Search, Sun, Moon, Settings, Trophy, Shield, BarChart2, Heart, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare, ChevronDown, LogOut, CircleX } from "lucide-react";
+import { Home, PersonStanding, Trophy, Shield, Heart, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare, ChevronDown, LogOut, CircleX } from "lucide-react";
 
 export default function DashboardLayout() {
   const [openMenu, setOpenMenu] = useState(false);
@@ -118,6 +118,7 @@ export default function DashboardLayout() {
                     </li>
 
                     {/* Outros itens */}
+                    { user ? ( <div className="group"><MenuItem to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>Jogadores</span>} className={textStyle}/></div> ) : ( null ) }
                     { user ? ( <div className="group"><MenuItem to="/dashboard/meu-dashboard" icon={<Heart strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>Meu Dashboard</span>} className={textStyle}/></div> ) : ( null ) }
                     <div className="group">
                         <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={20} className={iconStyle}/>} label={<span className={textStyle}>Relatórios</span>} /></div>
