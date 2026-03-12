@@ -47,9 +47,9 @@ export async function importMatches(req, res) {
       raw: false,
       defval: null
     });
+ 
 
     await client.query("BEGIN");
-
     /* -----------------------------
        GARANTE TEMPORADA
     ------------------------------ */

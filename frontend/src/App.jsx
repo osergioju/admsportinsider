@@ -80,10 +80,13 @@ import RoleRoute from "./routes/RoleRoute";
 import ScrollToTop from "./components/uxui/ScrollTop";
 
 // Páginas do dashboard 
+import PrePageClubs from "./Pages/Dashboard/Clubs/PrePageClubs";
 import DashClubs from "./Pages/Dashboard/Clubs/Index";
 import DashClubUniques from "./Pages/Dashboard/Clubs/DashClubUniques";
 import DashLeagues from "./Pages/Dashboard/Leagues/Index";
 import DashLeagueUniques from "./Pages/Dashboard/Leagues/DashLeagueUniques";
+import CompetitionsClubs from "./Pages/Dashboard/Clubs/CompetitionsClubs";
+import ClubPlayers from "./Pages/Dashboard/Clubs/ClubPlayers";
 import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
 
 
@@ -127,14 +130,16 @@ export default function App() {
 
               {/* Dados - páginas de gráficos de clubes */}
               <Route path="/dashboard/clubs" element={<DashClubs />} />
-              <Route path="/dashboard/clubs/:id" element={<DashClubUniques />} />
-
+              <Route path="/dashboard/clubs/:id" element={<PrePageClubs />} />
+              <Route path="/dashboard/clubs/finance/:id" element={<DashClubUniques />} />
+              <Route path="/dashboard/clubs/competitions/:id" element={<CompetitionsClubs />} />
+              <Route path="/dashboard/clubs/club-players/:id" element={<ClubPlayers />} />
+              <Route path="/dashboard/players/:id" element={<Players />} />
+              
               {/* Dados - páginas de gráficos de ligas */}
               <Route path="/dashboard/leagues" element={<DashLeagues />} />
               <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
-
-              {/* Meu Dashboard */}
-              <Route path="/dashboard/players" element={<Players />} />
+              
 
               {/* Meu Dashboard */}
               <Route path="/dashboard/meu-dashboard" element={<MeuDashboard />} />
