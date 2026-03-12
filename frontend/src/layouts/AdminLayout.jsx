@@ -338,11 +338,6 @@ export default function AdminLayout() {
                     
                     <NotificationDropdown />
 
-                    {/* Botão Config (Cog) */}
-                    <button className="w-11 h-11 bg-white border border-gray-300 rounded-full flex items-center justify-center text-[#7F33D9] hover:bg-gray-50 transition shadow-sm hover:rotate-45 active:scale-95 duration-300">
-                        <Cog size={22} strokeWidth={1.5} />
-                    </button>
-
                 </div>
             </header>
  

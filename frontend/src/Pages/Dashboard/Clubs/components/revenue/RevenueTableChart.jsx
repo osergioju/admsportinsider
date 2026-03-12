@@ -7,20 +7,49 @@ export default function RevenueTableChart({
   clubesSelecionados,
   clubMap,
   mainClubId,
-  clubColorMap
+  clubColorMap,
+  startYear,
+  endYear
 }) {
-  
-  const adapted = useMemo(() => {
-  if (!data || Object.keys(data).length === 0) return null;
 
-  return adaptRevenueLineData(
+  const adapted = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    let filteredData = data;
+
+    if (startYear || endYear) {
+      filteredData = {};
+
+      Object.keys(data).forEach((clubId) => {
+        filteredData[clubId] = data[clubId].filter((item) => {
+
+          if (item.code !== "revenue") return true;
+
+          if (startYear && item.year < startYear) return false;
+          if (endYear && item.year > endYear) return false;
+
+          return true;
+        });
+      });
+    }
+
+    return adaptRevenueLineData(
+      filteredData,
+      mainClubId,
+      clubesSelecionados,
+      clubMap,
+      clubColorMap
+    );
+
+  }, [
     data,
     mainClubId,
     clubesSelecionados,
+    clubColorMap,
     clubMap,
-    clubColorMap
-  );
-}, [data, mainClubId, clubesSelecionados, clubColorMap, clubMap]);
+    startYear,
+    endYear
+  ]);
 
 
   function formatMoney(value) {
@@ -37,7 +66,9 @@ export default function RevenueTableChart({
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-[#F8F9FB] border-b">
-            <th className="sticky left-0 z-10 bg-[#F8F9FB] text-left py-2 pl-4 font-[400] text-base text-[#B1B6BA]">Clube</th>
+            <th className="sticky left-0 z-10 bg-[#F8F9FB] text-left py-2 pl-4 font-[400] text-base text-[#B1B6BA]">
+              Clube
+            </th>
 
             {adapted.years.map((year) => (
               <th
@@ -52,13 +83,13 @@ export default function RevenueTableChart({
 
         <tbody>
           {adapted.series.map((serie) => (
-            <tr key={serie.name} className="border-b last:border-0 sticky left-0  bg-white py-2 pl-4">
+            <tr key={serie.name} className="border-b last:border-0">
               <td className="sticky left-0 bg-white py-2 pl-4">
                 <span className="flex gap-2 items-center">
                   <div
                     className="w-2 h-2 rounded-lg"
                     style={{
-                      backgroundColor: clubColorMap[serie.id]?.color_one
+                      backgroundColor: clubColorMap?.[serie.id]?.color_one
                     }}
                   />
                   {serie.name}
@@ -78,6 +109,5 @@ export default function RevenueTableChart({
         </tbody>
       </table>
     </div>
-
   );
 }

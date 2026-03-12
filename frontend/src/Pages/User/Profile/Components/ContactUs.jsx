@@ -4,8 +4,9 @@ import {
   Facebook, Instagram, Linkedin, Twitter, 
   Loader2, CheckCircle2, ArrowRight 
 } from "lucide-react";
-import banner2 from "../../../../assets/img/banner2.png";
+import banner2 from "../../../../assets/img/cultura-insider.jpeg";
 import { api } from "../../../../services/api"
+import { useNavigate } from "react-router-dom";
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({
@@ -16,6 +17,10 @@ export default function ContactUs() {
     message: ""
   });
   
+   const socialLinks = [
+        { icon: Instagram, url: "https://www.instagram.com/sportinsider" },
+        { icon: Linkedin, url: "https://www.linkedin.com/company/sportinsider/" }
+    ];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -39,8 +44,11 @@ export default function ContactUs() {
     }
     };
 
-  const ContactCard = ({ icon: Icon, title, desc, info, link, delay }) => (
+const navigate = useNavigate();
+
+  const ContactCard = ({ icon: Icon, title, desc, info, link, delay, target }) => (
     <a 
+      target={target}
       href={link}
       className={`
         flex flex-col p-6 rounded-3xl border border-gray-200 bg-white 
@@ -58,7 +66,7 @@ export default function ContactUs() {
       </div>
       <h3 className="font-bold text-[#111] text-sm mb-1">{title}</h3>
       <p className="text-gray-500 text-xs mb-3">{desc}</p>
-      <span className="text-xs font-bold text-[#7F33D9] mt-auto break-all relative z-10 flex items-center gap-1 opacity-80 group-hover:opacity-100">
+      <span className="text-xs font-bold text-[#7F33D9] mt-auto break-all relative z-10 flex items-center gap-1 opacity-80 group-hover:opacity-100 lg:text-sm">
         {info} <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" />
       </span>
     </a>
@@ -73,7 +81,7 @@ export default function ContactUs() {
       
       {/* Container Principal Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-6 flex flex-col gap-6">
             
            <div className="w-full h-50 sm:h-70 lg:h-80 relative rounded-[2rem] overflow-hidden group shadow-md bg-black">
                 <img 
@@ -97,10 +105,16 @@ export default function ContactUs() {
             <div className="bg-white rounded-[2rem] border border-gray-200 p-5 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-backwards" style={{ animationFillMode: 'both' }}>
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2">Siga-nos</span>
                 <div className="flex gap-2">
-                    {[Facebook, Instagram, Twitter, Linkedin].map((Icon, i) => (
-                        <button key={i} className="w-10 h-10 rounded-full bg-gray-50 text-gray-500 hover:bg-[#7F33D9] hover:text-white transition-all duration-300 flex items-center justify-center hover:-translate-y-1">
+                    {socialLinks.map(({ icon: Icon, url }, i) => (
+                        <a
+                            key={i}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 rounded-full bg-gray-50 text-gray-500 hover:bg-[#7F33D9] hover:text-white transition-all duration-300 flex items-center justify-center hover:-translate-y-1"
+                        >
                             <Icon size={18} />
-                        </button>
+                        </a>
                     ))}
                 </div>
             </div>
@@ -108,28 +122,13 @@ export default function ContactUs() {
             {/* Grid de Contatos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
                 <ContactCard 
-                    icon={MessageCircle}
-                    title="Chat ao Vivo"
-                    desc="Fale com nosso time agora."
-                    info="Iniciar Chat"
-                    link="#"
-                    delay={200}
-                />
-                <ContactCard 
                     icon={Phone}
-                    title="Telefone"
+                    title="WhatsApp"
                     desc="Seg-Sex das 9h às 18h"
-                    info="+55 (11) 99999-8888"
-                    link="tel:+5511999998888"
+                    info="+55 (11) 96629-5142"
+                    link="https://wa.me/5511966295142"
+                    target="_blank"
                     delay={300}
-                />
-                <ContactCard 
-                    icon={MapPin}
-                    title="Visite a Sede"
-                    desc="Av. Paulista, 1000 - SP"
-                    info="Ver no Mapa"
-                    link="#"
-                    delay={400}
                 />
                 <ContactCard 
                     icon={Mail}
@@ -143,7 +142,7 @@ export default function ContactUs() {
         </div>
 
         {/* --- COLUNA DIREITA (Formulário) --- */}
-        <div className="lg:col-span-7 animate-in fade-in slide-in-from-right-8 duration-700 delay-300 fill-mode-backwards" style={{ animationFillMode: 'both' }}>
+        <div className="lg:col-span-6 animate-in fade-in slide-in-from-right-8 duration-700 delay-300 fill-mode-backwards" style={{ animationFillMode: 'both' }}>
             <div className="bg-white rounded-[2.5rem] p-8 sm:p-12 border border-gray-200 shadow-2xl shadow-gray-200/50 h-full flex flex-col justify-center relative overflow-hidden">
                 
                 <div className="absolute top-0 right-0 w-96 h-96 bg-purple-50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none opacity-50 animate-pulse" style={{ animationDuration: '4s' }}></div>

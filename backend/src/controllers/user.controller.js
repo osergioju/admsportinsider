@@ -68,7 +68,7 @@ export async function updateProfile(req, res) {
 
       if (emailCheck.rows.length) {
         return res.status(409).json({
-          error: "Email already in use"
+          error: "Falha ao alterar email"
         });
       }
 
@@ -111,7 +111,7 @@ export async function updateProfile(req, res) {
     // 🛟 fallback caso a constraint UNIQUE dispare
     if (err.code === "23505") {
       return res.status(409).json({
-        error: "Email already in use"
+        error: "Falha ao alterar email"
       });
     }
 

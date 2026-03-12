@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Heart } from "lucide-react";
 import { api } from "../../../../../services/api";
+import { Range } from "react-range";
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 
@@ -196,12 +197,17 @@ export default function ChartFilter({
   country = null,
   currency,
   onChangeCurrency,
+  startYear,
+  endYear,
+  onChangeStartYear,
+  onChangeEndYear,
+  availableYears
 }) {
   const [busca,   setBusca]   = useState("");
   const [isOpen,  setIsOpen]  = useState(false);
   const [loading, setLoading] = useState(false);
   const [clubs,   setClubs]   = useState([]);
-
+  
   // Fecha dropdown ao clicar fora
   useEffect(() => {
     function handleClickOutside(e) {
@@ -259,10 +265,80 @@ export default function ChartFilter({
   return (
     <div className="w-full mb-2 z-20">
       {/* ── Linha única: busca | moeda | favorito ── */}
-      <div className="justify-between flex flex-wrap items-end gap-4 lg:gap-6">
-        <div className="flex flex-wrap items-end gap-4 lg:gap-6">
+      <div className="-mt-12 justify-between flex flex-wrap items-end gap-4 lg:gap-6">
+        {/* Período */}
+          <div className="flex flex-col w-1/2 ml-auto">
+            {availableYears && availableYears.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {/* Labels dos anos selecionados */}
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold text-[#7f34d9] bg-[#7f34d9]/10 px-2 py-0.5 rounded-full">
+                    {startYear}
+                  </span>
+                  <span className="text-xs font-semibold text-[#7f34d9] bg-[#7f34d9]/10 px-2 py-0.5 rounded-full">
+                    {endYear}
+                  </span>
+                </div>
+
+                {/* Slider */}
+                <div className="px-1 py-2">
+                  <Range
+                    step={1}
+                    min={availableYears[0]}
+                    max={availableYears[availableYears.length - 1]}
+                    values={[
+                      startYear ?? availableYears[0],
+                      endYear ?? availableYears[availableYears.length - 1],
+                    ]}
+                    onChange={(values) => {
+                      onChangeStartYear(values[0]);
+                      onChangeEndYear(values[1]);
+                    }}
+                    renderTrack={({ props, children }) => (
+                      <div
+                        {...props}
+                        style={{
+                          ...props.style,
+                          background: `linear-gradient(
+                            to right,
+                            #e5e7eb ${((( startYear ?? availableYears[0]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%,
+                            #7f34d9 ${(((startYear ?? availableYears[0]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%,
+                            #7f34d9 ${(((endYear ?? availableYears[availableYears.length - 1]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%,
+                            #e5e7eb ${(((endYear ?? availableYears[availableYears.length - 1]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%
+                          )`,
+                        }}
+                        className="h-[3px] w-full rounded-full"
+                      >
+                        {children}
+                      </div>
+                    )}
+                    renderThumb={({ props, isDragged }) => (
+                      <div
+                        {...props}
+                        style={{ ...props.style }}
+                        className="h-4 w-4 cursor-pointer outline-none"
+                      >
+                        {/* O scale fica no filho, não no thumb raiz */}
+                        <div
+                          className={`
+                            h-4 w-4 rounded-full border-2 border-white
+                            transition-all duration-150
+                            ${isDragged
+                              ? "bg-[#6a26c0] scale-125 shadow-[0_0_0_4px_rgba(127,52,217,0.2)]"
+                              : "bg-[#7f34d9] hover:scale-110 hover:shadow-[0_0_0_3px_rgba(127,52,217,0.15)]"
+                            }
+                          `}
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        <div className="grid grid-cols-2 items-end gap-0 lg:gap-6">
           {/* Busca de clube */}
-          <div className="relative w-64" data-club-search>
+          <div className="relative" data-club-search>
             <span className="inline-block font-light text-[#AFAFB2] text-sm mb-2">
               Comparar clubes{" "}
               <span className="text-xs">
@@ -328,6 +404,9 @@ export default function ChartFilter({
               ))}
             </select>
           </div>
+
+          
+
         </div>
 
         {/* Favorito — alinhado à base dos inputs */}

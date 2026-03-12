@@ -74,7 +74,7 @@ export default function ProfilePreferences() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [user?.preferences]);
 
   /* =========================
      Handlers
@@ -139,16 +139,19 @@ export default function ProfilePreferences() {
       const response = await api.put("/user/preferences", payload);
       const updatedPreferences = response.data.preferences || response.data;
 
-      updateUser(prev => ({
-        ...prev,
+      const region = regions.find(r => r.id == updatedPreferences.region_id);
+      const currency = currencies.find(c => c.id == updatedPreferences.currency_id);
+
+      updateUser({
         email_notifications: updatedPreferences.email_notifications,
         product_updates: updatedPreferences.product_updates,
+        region_name: region?.name,
+        currency_name: currency?.name,
         preferences: {
-          ...prev.preferences,
           region_id: updatedPreferences.region_id,
           currency_id: updatedPreferences.currency_id
         }
-      }));
+      });
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);

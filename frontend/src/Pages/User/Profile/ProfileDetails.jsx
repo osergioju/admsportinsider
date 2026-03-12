@@ -32,7 +32,7 @@ export default function ProfileDetails() {
   const btnPurpleClass = "group flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium text-white bg-[#7F33D9] hover:bg-[#6025A8] shadow-md shadow-purple-500/20 transition-all duration-300";
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#111]">Perfil</h1>

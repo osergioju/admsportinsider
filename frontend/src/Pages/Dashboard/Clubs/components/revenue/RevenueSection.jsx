@@ -1,9 +1,11 @@
 // components/revenue/RevenueSection.jsx
 import { X } from "lucide-react";
-
+import { useState } from "react";
 import RevenueLineChart from "./RevenueLineChart";
 import RevenueTableChart from "./RevenueTableChart";
 import ChartFilter from "../filter/ChartFilter";
+import { useMemo } from "react";
+import { useEffect } from "react";
 
 export default function RevenueSection({
   data,
@@ -12,12 +14,16 @@ export default function RevenueSection({
   mainClubId,
   clubColorMap,
   setClubColorMap,
-  // ⬇️ AGORA VEM DO PAI
   selectedClubs,
   setSelectedClubs,
   currency,
   setCurrency
 }) {
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+
+  
+
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
       prev.includes(clube.id_club)
@@ -46,6 +52,34 @@ export default function RevenueSection({
     );
   }
 
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((clubData) => {
+      clubData.forEach((item) => {
+        if (item.code === "revenue") {
+          years.add(item.year);
+        }
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+
+    if (!startYear) {
+      setStartYear(availableYears[0]);
+    }
+
+    if (!endYear) {
+      setEndYear(availableYears[availableYears.length - 1]);
+    }
+
+  }, [availableYears]);
+
   return (
     <div className="relative max-w-full w-full min-w-0 bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
@@ -57,6 +91,11 @@ export default function RevenueSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        availableYears={availableYears}
       />
       
       <RevenueLineChart
@@ -65,7 +104,9 @@ export default function RevenueSection({
         clubMap={clubMap}
         mainClubId={mainClubId}
         clubColorMap={clubColorMap}
-      />  
+        startYear={startYear}
+        endYear={endYear}
+      />
 
       <div className="h-6"></div>
 
@@ -75,6 +116,8 @@ export default function RevenueSection({
         clubMap={clubMap}
         mainClubId={mainClubId}
         clubColorMap={clubColorMap}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       {selectedClubs.length > 0 && (

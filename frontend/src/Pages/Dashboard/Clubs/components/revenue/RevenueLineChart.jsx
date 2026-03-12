@@ -7,7 +7,9 @@ export default function RevenueLineChart({
   clubesSelecionados,
   clubMap,
   clubColorMap,
-  mainClubId
+  mainClubId,
+  startYear,
+  endYear
 }) {
 
   /**
@@ -19,14 +21,32 @@ export default function RevenueLineChart({
     const adapted = useMemo(() => {
       if (!data || Object.keys(data).length === 0) return null;
 
+      let filteredData = data;
+
+      if (startYear || endYear) {
+        filteredData = {};
+
+        Object.keys(data).forEach((clubId) => {
+          filteredData[clubId] = data[clubId].filter((item) => {
+            if (item.code !== "revenue") return true;
+
+            if (startYear && item.year < startYear) return false;
+            if (endYear && item.year > endYear) return false;
+
+            return true;
+          });
+        });
+      }
+
       return adaptRevenueLineData(
-        data,
+        filteredData,
         mainClubId,
         clubesSelecionados,
         clubMap,
         clubColorMap
       );
-    }, [data, mainClubId, clubesSelecionados, clubMap, clubColorMap]);
+
+    }, [data, mainClubId, clubesSelecionados, clubMap, clubColorMap, startYear, endYear]);
 
 
   if (!adapted) {

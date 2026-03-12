@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   CreditCard, CheckCircle2, Download, Clock, 
   AlertCircle, FileText, Zap, Shield, 
@@ -94,6 +95,8 @@ export default function SubscriptionManagement() {
       </div>
     </div>
   );
+
+  const navigate = useNavigate();
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
@@ -266,7 +269,9 @@ export default function SubscriptionManagement() {
             */}
             
             {/* Card Suporte */}
-            <div className="bg-gradient-to-br from-[#7F33D9] to-[#6025A8] rounded-3xl p-5 text-white shadow-xl shadow-purple-500/20 relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1">
+            <div 
+            onClick={() => navigate("/fale-conosco")}
+            className="bg-gradient-to-br from-[#7F33D9] to-[#6025A8] rounded-3xl p-5 text-white shadow-xl shadow-purple-500/20 relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-[60px] -mr-10 -mt-10 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
                 <div className="relative z-10 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm group-hover:bg-white/30 transition-colors border border-white/10">

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 export default function PersonalData() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, updateUser } = useContext(AuthContext);
   const isGoogleUser = user?.provider === "google";
   
   const [form, setForm] = useState({
@@ -115,21 +115,25 @@ export default function PersonalData() {
     if (errorProfile) setErrorProfile("");
     setSuccessProfile(false);
   }
-
+  
   async function handleSubmit(e) {
     e.preventDefault();
+
     setLoadingProfile(true);
     setSuccessProfile(false);
-    setErrorProfile(""); // Limpa erro de perfil
+    setErrorProfile("");
 
-    const isNameEmpty = !form.name.trim();
-    const isNameShort = form.name.trim().length < 3;
-    const isEmailEmpty = !isGoogleUser && !form.email.trim();
+    const name = form.name.trim();
+    const email = form.email.trim();
+
+    const isNameEmpty = !name;
+    const isNameShort = name.length < 3;
+    const isEmailEmpty = !isGoogleUser && !email;
 
     if (isNameEmpty && isEmailEmpty) {
-        setErrorProfile("Por favor, preencha o nome e o e-mail.");
-        setLoadingProfile(false);
-        return;
+      setErrorProfile("Por favor, preencha o nome e o e-mail.");
+      setLoadingProfile(false);
+      return;
     }
 
     if (isNameEmpty) {
@@ -139,20 +143,21 @@ export default function PersonalData() {
     }
 
     if (isNameShort) {
-        setErrorProfile("O nome deve ter pelo menos 3 caracteres.");
-        setLoadingProfile(false);
-        return;
+      setErrorProfile("O nome deve ter pelo menos 3 caracteres.");
+      setLoadingProfile(false);
+      return;
     }
 
     if (isEmailEmpty) {
-        setErrorProfile("O e-mail é obrigatório.");
-        setLoadingProfile(false);
-        return;
+      setErrorProfile("O e-mail é obrigatório.");
+      setLoadingProfile(false);
+      return;
     }
 
     const payload = {};
-    if (form.name !== user.name) payload.name = form.name;
-    if (!isGoogleUser && form.email !== user.email) payload.email = form.email;
+
+    if (name !== user.name) payload.name = name;
+    if (!isGoogleUser && email !== user.email) payload.email = email;
 
     if (!Object.keys(payload).length) {
       setLoadingProfile(false);
@@ -161,18 +166,22 @@ export default function PersonalData() {
 
     try {
       await api.put("/user/profile", payload);
-      setUser(prev => ({ ...prev, ...payload }));
+
+      updateUser(payload); // 🔥 atualiza o contexto global
+
       setSuccessProfile(true);
       setTimeout(() => setSuccessProfile(false), 3000);
     } catch (err) {
       console.error("Erro ao atualizar perfil", err);
-      
+
       if (err.response?.status === 401) {
-         alert("Sua sessão expirou. Faça login novamente.");
-         return;
+        alert("Sua sessão expirou. Faça login novamente.");
+        return;
       }
-      
-      const serverMessage = err.response?.data?.message || err.response?.data?.error;
+
+      const serverMessage =
+        err.response?.data?.message || err.response?.data?.error;
+
       if (serverMessage) {
         setErrorProfile(serverMessage);
       } else {
@@ -245,22 +254,32 @@ export default function PersonalData() {
                   <Mail size={18} />
                 </div>
                 <input
+                  disabled
                   type="email"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  disabled={isGoogleUser}
                   className={inputClass}
                   placeholder="seu@email.com"
                 />
               </div>
               
-              {isGoogleUser && (
-                <div className="mt-3 flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
-                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                  <p>Sua conta está conectada com o Google. O e-mail não pode ser alterado por aqui.</p>
-                </div>
-              )}
+              {
+                isGoogleUser ?(
+                  <div className="mt-3 flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <p>Sua conta está conectada com o Google. O e-mail não pode ser alterado por aqui.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="mt-3 flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
+                      <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                      <p>Entre em contato com o suporte para alterar seu e-mail</p>
+                    </div>
+                  </div>
+                )
+                  
+              }
             </div>
         </div>
 
