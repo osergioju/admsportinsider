@@ -28,53 +28,54 @@ export default function FaqAdmin() {
   const [isActive, setIsActive] = useState(true);
 
   async function loadFaqs() {
-  try {
-    const res = await api.get("/admin/faq");
-    const sortedData = res.data.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    setFaqs(sortedData);
-  } catch (error) {
-    console.error("Erro ao carregar FAQ", error);
-  } finally {
-    setLoading(false);
+    try {
+      const res = await api.get("/admin/faq");
+      const sortedData = res.data.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      setFaqs(sortedData);
+    } catch (error) {
+      console.error("Erro ao carregar FAQ", error);
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   useEffect(() => {
     loadFaqs();
   }, []);
 
- async function handleOnDragEnd(result) {
-  if (!result.destination) return;
-
-  const newItems = Array.from(faqs);
-  const [reorderedItem] = newItems.splice(result.source.index, 1);
-  newItems.splice(result.destination.index, 0, reorderedItem);
-
-  const fullUpdatedItems = newItems.map((item, index) => ({
-    ...item,
-    sort_order: index
-  }));
-
-  setFaqs(fullUpdatedItems);
-
-  try {
-    await Promise.all(
-      fullUpdatedItems.map(item => 
-        api.put(`/admin/faq/${item.id}`, {
-          question: item.question,
-          answer: item.answer,
-          sort_order: item.sort_order,
-          is_active: item.is_active
-        })
-      )
-    );
-    
-  } catch (error) {
-    console.error("Erro detalhado:", error.response?.data);
-    alert("Houve um problema ao salvar a nova ordem. Recarregando dados...");
-    loadFaqs();
+  // FUNÇÃO AUXILIAR: Reordena todos os itens para evitar duplicidade
+  async function syncServerOrder(updatedList) {
+    try {
+      await Promise.all(
+        updatedList.map((item, index) => 
+          api.put(`/admin/faq/${item.id}`, {
+            question: item.question,
+            answer: item.answer,
+            sort_order: index, // Força a ordem baseada no índice real do array
+            is_active: item.is_active
+          })
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao sincronizar ordem:", error);
     }
-}
+  }
+
+  async function handleOnDragEnd(result) {
+    if (!result.destination) return;
+
+    const newItems = Array.from(faqs);
+    const [reorderedItem] = newItems.splice(result.source.index, 1);
+    newItems.splice(result.destination.index, 0, reorderedItem);
+
+    const fullUpdatedItems = newItems.map((item, index) => ({
+      ...item,
+      sort_order: index
+    }));
+
+    setFaqs(fullUpdatedItems);
+    await syncServerOrder(fullUpdatedItems);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -90,11 +91,23 @@ export default function FaqAdmin() {
     try {
       if (editingId) {
         await api.put(`/admin/faq/${editingId}`, payload);
+        resetForm();
+        loadFaqs();
       } else {
-        await api.post("/admin/faq", payload);
+        // LÓGICA DE CRIAÇÃO CORRIGIDA:
+        const { data: newFaq } = await api.post("/admin/faq", payload);
+        
+        // Criamos uma lista temporária inserindo o novo item na posição desejada
+        let tempData = [...faqs];
+        const insertIndex = Math.min(payload.sort_order, tempData.length);
+        tempData.splice(insertIndex, 0, newFaq);
+
+        // Sincronizamos tudo para que ninguém tenha a mesma ordem
+        await syncServerOrder(tempData);
+        
+        resetForm();
+        loadFaqs();
       }
-      resetForm();
-      loadFaqs();
     } catch (error) {
       alert("Erro ao salvar pergunta");
     } finally {
@@ -105,7 +118,7 @@ export default function FaqAdmin() {
   function resetForm() {
     setQuestion("");
     setAnswer("");
-    setSortOrder(0);
+    setSortOrder(faqs.length); // Sugere o próximo número disponível
     setEditingId(null);
     setIsActive(true);
   }
@@ -123,6 +136,9 @@ export default function FaqAdmin() {
     if (!confirm("Deseja realmente excluir esta pergunta?")) return;
     try {
       await api.delete(`/admin/faq/${id}`);
+      // Reordenar os restantes para não deixar buracos na sequência
+      const remaining = faqs.filter(f => f.id !== id);
+      await syncServerOrder(remaining);
       loadFaqs();
     } catch (error) {
       alert("Erro ao excluir");
@@ -180,8 +196,8 @@ export default function FaqAdmin() {
                             className={inputClass} 
                             placeholder="Ex: Como cancelo minha assinatura?" 
                             value={question} 
-                            onChange={(e) => setQuestion(e.target.value)}
-                            required
+                            onChange={(e) => setQuestion(e.target.value)} 
+                            required 
                         />
                     </div>
 
@@ -192,8 +208,8 @@ export default function FaqAdmin() {
                             className={inputClass} 
                             placeholder="Digite a resposta detalhada..." 
                             value={answer} 
-                            onChange={(e) => setAnswer(e.target.value)}
-                            required
+                            onChange={(e) => setAnswer(e.target.value)} 
+                            required 
                         />
                     </div>
 
@@ -204,7 +220,7 @@ export default function FaqAdmin() {
                                 type="number" 
                                 className={inputClass} 
                                 value={sortOrder} 
-                                onChange={(e) => setSortOrder(e.target.value)}
+                                onChange={(e) => setSortOrder(e.target.value)} 
                             />
                         </div>
                         <div>
@@ -261,22 +277,21 @@ export default function FaqAdmin() {
                     <Droppable droppableId="faq-admin-list">
                         {(provided) => (
                             <div 
-                                {...provided.droppableProps}
-                                ref={provided.innerRef}
+                                {...provided.droppableProps} 
+                                ref={provided.innerRef} 
                                 className="space-y-4"
                             >
                                 {filteredFaqs.map((faq, index) => (
                                     <Draggable key={faq.id} draggableId={String(faq.id)} index={index}>
                                         {(provided, snapshot) => (
                                             <div 
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
+                                                ref={provided.innerRef} 
+                                                {...provided.draggableProps} 
                                                 className={`group bg-white border rounded-xl p-5 transition-all ${snapshot.isDragging ? 'shadow-2xl border-[#7F33D9] z-50' : 'hover:shadow-md border-gray-200'} ${editingId === faq.id ? 'border-[#7F33D9] ring-1 ring-[#7F33D9]' : ''}`}
                                             >
                                                 <div className="flex justify-between items-start gap-4">
-                                                    {/* Alça de Arrasto */}
                                                     <div 
-                                                        {...provided.dragHandleProps}
+                                                        {...provided.dragHandleProps} 
                                                         className="mt-1 text-gray-300 hover:text-[#7F33D9] transition-colors cursor-grab active:cursor-grabbing"
                                                     >
                                                         <GripVertical size={22} />

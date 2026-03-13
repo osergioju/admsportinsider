@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
+import { ChevronRight, ChevronLeft, Globe, Loader2 } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
 
 export default function DashLeagues() {
     const [search, setSearch] = useState("");
@@ -9,9 +14,33 @@ export default function DashLeagues() {
 
     const [listCountries, setListCountries] = useState([]);
     const [loadingCountries, setLoadingCountries] = useState(true);
+    const [leagues, setLeagues] = useState([]);
+    const [loadingLeagues, setLoadingLeagues] = useState(false);
+    const [groupedLeagues, setGroupedLeagues] = useState([]);
 
-    const [clubs, setClubs] = useState([]);
-    const [loadingClubs, setLoadingClubs] = useState(false);
+    const getInitials = (name) => {
+        if (!name) return "";
+        return name.substring(0, 3).toUpperCase();
+    };
+
+    const groupLeaguesByCountry = (leaguesList) => {
+        if (!leaguesList) return [];
+        const grouped = leaguesList.reduce((acc, league) => {
+            const countryName = league.country_name || league.country || "Outros";
+            const flagUrl = league.flag_url || null;
+            if (!acc[countryName]) {
+                acc[countryName] = {
+                    country_name: countryName,
+                    id_country: league.id_country || countryName,
+                    flag_url: flagUrl,
+                    leagues: []
+                };
+            }
+            acc[countryName].leagues.push(league);
+            return acc;
+        }, {});
+        return Object.values(grouped).sort((a, b) => a.country_name.localeCompare(b.country_name));
+    };
 
     async function getCountries() {
         try {
@@ -25,135 +54,159 @@ export default function DashLeagues() {
         }
     }
 
-    useEffect(() => {
-        getCountries();
-    }, []);
-
-    async function handleSearch() {
+    async function fetchInitialLeagues() {
         try {
-            setLoadingClubs(true);
-            setSubmitted(true);
-
-            const { data } = await api.post("/admin/leagues/search", {
-                name: search || null,
-                country: country || null
-            });
-
-            setClubs(data.leagues);
+            setLoadingLeagues(true);
+            const { data } = await api.post("/admin/leagues/search", { name: null, country: null });
+            setGroupedLeagues(groupLeaguesByCountry(data.leagues));
         } catch (error) {
             console.error(error);
         } finally {
-            setLoadingClubs(false);
+            setLoadingLeagues(false);
+        }
+    }
+
+    useEffect(() => {
+        getCountries();
+        fetchInitialLeagues();
+    }, []);
+
+    async function handleSearch() {
+        if (!search && !country) {
+            setSubmitted(false);
+            return;
+        }
+        try {
+            setLoadingLeagues(true);
+            setSubmitted(true);
+            const { data } = await api.post("/admin/leagues/search", { name: search || null, country: country || null });
+            setLeagues(groupLeaguesByCountry(data.leagues));
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoadingLeagues(false);
         }
     }
 
     return (
-        <div className="w-full">
-            <div className="w-full p-6 lg:p-10 border bg-white rounded-xl shadow-sm">
-                {/* Header */}
+        <div className="w-full pb-20">
+            {/* --- HEADER (Padrão Original com Font-Light) --- */}
+            <div className="w-full p-6 lg:p-10 border bg-white rounded-xl shadow-sm mb-10">
                 <div className="mb-8">
-                    <h1 className="text-2xl font-light text-[#111]">
-                        Ligas
-                    </h1>
-                    <p className="text-gray-500 text-sm mt-1">
-                        Busque por nome ou filtre pelo país
-                    </p>
+                    <h2 className="text-[#111] text-xl mb-2 lg:text-2xl lg:font-[300]">Ligas</h2>
+                    <p className="text-gray-500 font-light">Busque por nome ou filtre pelo país</p>
                 </div>
 
-                {/* Filtros */}
                 <div className="flex flex-col lg:flex-row gap-4 items-end">
-                    {/* Busca por nome */}
                     <div className="w-full">
-                        <label className="block text-sm text-gray-600 mb-1">
-                            Nome da liga
-                        </label>
+                        <label className="block text-sm text-gray-600 mb-1">Nome da liga</label>
                         <input
                             type="text"
                             placeholder="Ex: La Liga"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-light"
                         />
                     </div>
 
-                    {/* Filtro por país */}
                     <div className="w-full lg:w-64">
-                        <label className="block text-sm text-gray-600 mb-1">
-                            País
-                        </label>
-
+                        <label className="block text-sm text-gray-600 mb-1">País</label>
                         <select
                             value={country}
                             onChange={(e) => setCountry(e.target.value)}
                             disabled={loadingCountries}
-                            className={`w-full px-4 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                                loadingCountries
-                                    ? "opacity-60 cursor-not-allowed"
-                                    : ""
-                            }`}
+                            className="w-full px-4 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-light"
                         >
-                            {loadingCountries ? (
-                                <option>Carregando países...</option>
-                            ) : (
-                                <>
-                                    <option value="">
-                                        Todos os países
-                                    </option>
-                                    {listCountries.map((c) => (
-                                        <option
-                                            key={c.id_country}
-                                            value={c.id_country}
-                                        >
-                                            {c.name}
-                                        </option>
-                                    ))}
-                                </>
-                            )}
+                            <option value="">Todos os países</option>
+                            {!loadingCountries && listCountries.map((c) => (
+                                <option key={c.id_country} value={c.id_country}>{c.name}</option>
+                            ))}
                         </select>
                     </div>
 
-                    {/* Botão */}
-                    <button
-                        onClick={handleSearch}
-                        className="px-6 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition font-medium"
-                    >
+                    <button onClick={handleSearch} className="px-8 py-2 bg-black text-white rounded-full font-light hover:bg-[#7F33D9] transition shadow-md">
                         Buscar
                     </button>
                 </div>
+            </div>
 
-                {/* Resultado */}
-                {submitted && (
-                    <div className="mt-10">
-                        {loadingClubs ? (
-                            <p className="text-sm text-gray-500">
-                                Buscando clubes...
-                            </p>
-                        ) : clubs.length === 0 ? (
-                            <p className="text-gray-500 text-sm">
-                                Nenhum clube encontrado.
-                            </p>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {clubs.map((club) => (
-                                    <Link
-                                        key={club.id_league}
-                                        to={`/dashboard/league/${club.id_league}`}
-                                        className="group border rounded-xl p-5 hover:shadow-md transition bg-white"
-                                    >
-                                        <h2 className="text-lg font-medium text-[#111] group-hover:text-purple-600">
-                                            {club.name}
-                                        </h2>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            {club.country}
-                                        </p>
-                                        <span className="inline-block mt-4 text-sm text-purple-600 group-hover:underline">
-                                            Ver detalhes →
-                                        </span>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
+            {/* --- CONTAINER DAS LIGAS --- */}
+            <div className="w-full p-6 lg:px-12 border bg-white rounded-xl">
+                {loadingLeagues ? (
+                    <div className="flex flex-col items-center justify-center py-32">
+                        <Loader2 className="animate-spin text-purple-600 mb-4" size={40} />
+                        <p className="text-gray-400 font-light">Buscando informações...</p>
                     </div>
+                ) : (
+                    (submitted ? leagues : groupedLeagues).map((item) => (
+                        <div key={item.id_country} className="mb-12 mt-6">
+                            {/* País Header */}
+                            <div className="flex items-center gap-3 mb-5 px-2">
+                                {item.flag_url ? (
+                                    <img src={item.flag_url} className="w-8 h-5 object-cover rounded shadow-sm" alt="" />
+                                ) : (
+                                    <Globe size={18} className="text-gray-400" />
+                                )}
+                                <h2 className="text-xl font-bold tracking-tight text-gray-900">{item.country_name}</h2>
+                                <span className="text-sm text-gray-400 font-normal">{item.leagues.length} ligas</span>
+                            </div>
+
+                            {/* Container Swiper com Padding para evitar cortes no hover */}
+                            <div className="relative group px-2 py-4">
+                                <button className={`swiper-prev-${item.id_country} absolute -left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-50`}>
+                                    <ChevronLeft size={18} className="text-gray-600" />
+                                </button>
+                                <button className={`swiper-next-${item.id_country} absolute -right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-50`}>
+                                    <ChevronRight size={18} className="text-gray-600" />
+                                </button>
+
+                                <Swiper
+                                    modules={[Navigation]}
+                                    slidesPerView={5}
+                                    spaceBetween={16}
+                                    navigation={{ prevEl: `.swiper-prev-${item.id_country}`, nextEl: `.swiper-next-${item.id_country}` }}
+                                    breakpoints={{
+                                        320: { slidesPerView: 1.3, spaceBetween: 12 },
+                                        640: { slidesPerView: 2.3, spaceBetween: 14 },
+                                        1024: { slidesPerView: 4, spaceBetween: 16 },
+                                        1280: { slidesPerView: 5, spaceBetween: 16 },
+                                    }}
+                                >
+                                    {item.leagues.map((league) => (
+                                        <SwiperSlide key={league.id_league} className="!h-auto py-2">
+                                            <Link to={`/dashboard/league/${league.id_league}`} className="block group/card h-full">
+                                                <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out h-full">
+                                                    
+                                                    {/* Topo do Card - Cor Sólida */}
+                                                    <div className="h-36 flex items-center justify-center p-5 relative"
+                                                         style={{ backgroundColor: league.primary_color || '#7F33D9' }}>
+                                                        
+                                                        {/* Efeito Glass sutil no container do logo */}
+                                                        <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
+                                                            {league.logo_url ? (
+                                                                <img src={league.logo_url} alt={league.name} className="w-16 h-16 object-contain drop-shadow-md" />
+                                                            ) : (
+                                                                <span className="text-white font-bold text-xl italic tracking-tighter">
+                                                                    {getInitials(league.name)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Nome - Fonte Light como a de Clubes */}
+                                                    <div className="px-4 py-4 text-center">
+                                                        <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">
+                                                            {league.name}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </SwiperSlide>
+                                    ))}
+                                </Swiper>
+                            </div>
+                        </div>
+                    ))
                 )}
             </div>
         </div>
