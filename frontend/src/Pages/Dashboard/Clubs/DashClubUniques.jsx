@@ -156,38 +156,38 @@ export default function DashClubUniques() {
    * fetch genérico por gráfico
    */
   async function fetchChartData(chartKey, endpointBuilder, force = false) {
-  const clubs = clubsForChart(chartKey);
-  const existingData = chartData[chartKey];
+    const clubs = clubsForChart(chartKey);
+    const existingData = chartData[chartKey];
 
-  const clubsToFetch = force
-    ? clubs
-    : clubs.filter((clubId) => !existingData[clubId]);
+    const clubsToFetch = force
+      ? clubs
+      : clubs.filter((clubId) => !existingData[clubId]);
 
-  if (clubsToFetch.length === 0) return;
+    if (clubsToFetch.length === 0) return;
 
-    try {
-      const responses = await Promise.all(
-        clubsToFetch.map((clubId) =>
-          api.get(endpointBuilder(clubId))
-        )
-      );
+      try {
+        const responses = await Promise.all(
+          clubsToFetch.map((clubId) =>
+            api.get(endpointBuilder(clubId))
+          )
+        );
 
-      const newData = {};
-      responses.forEach((res, index) => {
-        newData[clubsToFetch[index]] = res.data.data;
-      });
+        const newData = {};
+        responses.forEach((res, index) => {
+          newData[clubsToFetch[index]] = res.data.data;
+        });
 
-      setChartData((prev) => ({
-        ...prev,
-        [chartKey]: {
-          ...prev[chartKey],
-          ...newData
-        }
-      }));
-    } catch (err) {
-      console.error(`Erro ao buscar dados do gráfico ${chartKey}:`, err);
+        setChartData((prev) => ({
+          ...prev,
+          [chartKey]: {
+            ...prev[chartKey],
+            ...newData
+          }
+        }));
+      } catch (err) {
+        console.error(`Erro ao buscar dados do gráfico ${chartKey}:`, err);
+      }
     }
-  }
 
   /**
    * efeitos por gráfico
