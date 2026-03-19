@@ -1,8 +1,9 @@
-// components/revenue/RevenueSection.jsx
+// components/revenue/ReceitaSection.jsx
 import { X } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 
 import RevenueLineChart from "./ReceitaLineChart";
+import ReceitaTable from "./ReceitaTable";
 import ChartFilter from "../ChartFilter";
 
 export default function ReceitaSection({
@@ -14,15 +15,11 @@ export default function ReceitaSection({
   selectedLeagues,
   setSelectedLeagues,
   currency,
-  setCurrency
+  setCurrency,
 }) {
   const [selectedYear, setSelectedYear] = useState(null);
-  const [startYear, setStartYear] = useState(null);
-  const [endYear, setEndYear] = useState(null);
-
 
   function handleAddLeague(league) {
-
     setSelectedLeagues((prev) =>
       prev.includes(league.id_league)
         ? prev
@@ -31,20 +28,17 @@ export default function ReceitaSection({
 
     setLeagueMap((prev) => ({
       ...prev,
-      [league.id_league]: league.name
+      [league.id_league]: league.name,
     }));
-
   }
 
   function handleRemoveLeague(leagueId) {
-    setSelectedLeagues((prev) =>
-      prev.filter((id) => id !== leagueId)
-    );
+    setSelectedLeagues((prev) => prev.filter((id) => id !== leagueId));
   }
 
   /**
    * Descobrir anos disponíveis
-  */
+   */
   const availableYears = useMemo(() => {
     const years = new Set();
     Object.values(data || {}).forEach((leagueData) => {
@@ -57,49 +51,55 @@ export default function ReceitaSection({
     return Array.from(years).sort((a, b) => a - b);
   }, [data]);
 
-
   /**
-   * Inicializar range de anos
+   * Inicializar ano selecionado
    */
   useEffect(() => {
     if (!availableYears || availableYears.length === 0) return;
-
     if (!selectedYear) {
       setSelectedYear(availableYears[availableYears.length - 1]);
     }
-
   }, [availableYears]);
 
+  console.log(data);
   return (
     <div className="relative max-w-full w-full min-w-0 bg-white lg:p-10 p-6 rounded-xl">
-
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
         Receitas das ligas <small className="text-xs">(por ano)</small>
       </h2>
 
-     <ChartFilter
-      ligasSelecionadas={selectedLeagues}
-      onAddLeague={handleAddLeague}
-      currency={currency}
-      onChangeCurrency={setCurrency}
-      selectedYear={selectedYear}
-      onChangeYear={setSelectedYear}
-      availableYears={availableYears}
-    />
+      <ChartFilter
+        ligasSelecionadas={selectedLeagues}
+        onAddLeague={handleAddLeague}
+        currency={currency}
+        onChangeCurrency={setCurrency}
+        selectedYear={selectedYear}
+        onChangeYear={setSelectedYear}
+        availableYears={availableYears}
+      />
 
-    <RevenueLineChart
-      data={data}
-      ligasSelecionadas={selectedLeagues}
-      leagueMap={leagueMap}
-      leagueColor={leagueColor}
-      selectedYear={selectedYear}
-    />
+      {/* Gráfico de barras */}
+      <RevenueLineChart
+        data={data}
+        ligasSelecionadas={selectedLeagues}
+        leagueMap={leagueMap}
+        leagueColor={leagueColor}
+        selectedYear={selectedYear}
+      />
 
-      <div className="h-6"></div>
+      {/* Tabela receita x despesa por liga/ano */}
+      <ReceitaTable
+        data={data}
+        ligasSelecionadas={selectedLeagues}
+        leagueMap={leagueMap}
+        leagueColor={leagueColor}
+      />
 
+      <div className="h-6" />
+
+      {/* Tags das ligas selecionadas */}
       {selectedLeagues.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
-
           {selectedLeagues.map((leagueId) => (
             <button
               key={leagueId}
@@ -110,10 +110,8 @@ export default function ReceitaSection({
               <X className="w-4" />
             </button>
           ))}
-
         </div>
       )}
-
     </div>
   );
 }

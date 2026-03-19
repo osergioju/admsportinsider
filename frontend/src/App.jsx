@@ -27,6 +27,8 @@ import SubscriptionManagement from "./Pages/User/Profile/Components/Financial";
 import PlansFinancial from "./Pages/User/Profile/Components/PlansFinancial";
 import Relatorios from "./Pages/User/Relatorios";
 import Players from "./Pages/User/Players";
+import ClubsFavorites from "./Pages/User/ClubsFavorites";
+import LeaguesFavorites from "./Pages/User/LeaguesFavorites";
 
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
@@ -139,7 +141,10 @@ export default function App() {
               {/* Dados - páginas de gráficos de ligas */}
               <Route path="/dashboard/leagues" element={<DashLeagues />} />
               <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
-              
+
+              {/* Favoritos */}
+              <Route path="/dashboard/clubs/favorites" element={<ClubsFavorites />} />
+              <Route path="/dashboard/leagues/favorites" element={<LeaguesFavorites />} />
 
               {/* Meu Dashboard */}
               <Route path="/dashboard/meu-dashboard" element={<MeuDashboard />} />

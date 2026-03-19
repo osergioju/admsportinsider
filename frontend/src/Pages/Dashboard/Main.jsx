@@ -90,8 +90,7 @@ export default function Main() {
     <div className="space-y-8">
 
       {/* Banners */}
-      <div className="w-full grid lg:grid-cols-2 lg:gap-4 mb-4">
-        <HomeBanners />
+      <div className="w-full grid mb-4">
         <HomeBanners />
       </div>
 

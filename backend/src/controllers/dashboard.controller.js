@@ -722,7 +722,7 @@ export async function getLeagueRevenues(req, res) {
       JOIN financial_indicators fi 
         ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
-        AND fi.code IN ('revenue', 'recurring_revenue')
+        AND fi.code IN ('revenue', 'recurring_revenue', 'costs')
         ${yearFilter}
       ORDER BY lf.year ASC;
     `, values);

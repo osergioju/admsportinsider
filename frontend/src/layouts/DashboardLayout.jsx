@@ -95,7 +95,7 @@ export default function DashboardLayout() {
                         {openLigas && (
                             <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                 <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/leagues" label="Todas as ligas" />
-                                <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/leagues" label="Favoritas" />
+                                <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/leagues/favorites" label="Favoritos" />
                             </ul>
                         )}
                     </li>
@@ -112,14 +112,13 @@ export default function DashboardLayout() {
                         {openClubes && (
                             <ul className="groupml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                 <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/clubs" label="Todos os clubes" />
-                                <SubItem onClick={() => setOpenMenu(false)}  to="/clubes/favoritos" label="Favoritos" />
+                                <SubItem onClick={() => setOpenMenu(false)}  to="/dashboard/clubs/favorites" label="Favoritos" />
                             </ul>
                         )}
                     </li>
 
                     {/* Outros itens */}
                     { user ? ( <div className="group"><MenuItem to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>Jogadores</span>} className={textStyle}/></div> ) : ( null ) }
-                    { user ? ( <div className="group"><MenuItem to="/dashboard/meu-dashboard" icon={<Heart strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>Meu Dashboard</span>} className={textStyle}/></div> ) : ( null ) }
                     <div className="group">
                         <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={20} className={iconStyle}/>} label={<span className={textStyle}>Relatórios</span>} /></div>
                 </ul>

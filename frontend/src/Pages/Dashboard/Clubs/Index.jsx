@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import bgimage from "../../../assets/img/bg-clubs.jpg";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, Heart } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
+import { useFavorites } from "../../../hooks/useFavorites";
 import "swiper/css";
 import "swiper/css/navigation";
 
 export default function DashClubs() {
+    const { isFavorited, toggleFavorite } = useFavorites();
     const [search, setSearch] = useState("");
     const [country, setCountry] = useState("");
     const [submitted, setSubmitted] = useState(false);
@@ -160,35 +162,57 @@ export default function DashClubs() {
                                     <SwiperSlide key={club.id_club} className="!h-auto py-2">
                                         <Link to={`/dashboard/clubs/${club.id_club}`} className="block group/card h-full">
                                             <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-1 h-full">
-                                                
+
                                                 {/* Header do Card (Cor Primária) */}
-                                                <div 
-                                                    className="h-36 flex items-center justify-center p-5 relative"
-                                                    style={{ backgroundColor: club.primary_color || '#7F33D9' }}
+                                                <div
+                                                className="h-36 flex items-center justify-center p-5 relative"
+                                                style={{ backgroundColor: club.primary_color || '#7F33D9' }}
                                                 >
-                                                    <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
-                                                        {club.crest_url ? (
-                                                            <img src={club.crest_url} alt={club.name} className="w-14 h-14 object-contain drop-shadow-2xl" />
-                                                        ) : (
-                                                            <span className="text-white font-black text-xl tracking-tighter italic">
-                                                                {getInitials(club.name)}
-                                                            </span>
-                                                        )}
-                                                    </div>
+
+                                                {/* Botão Favoritar */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleFavorite(club.id_club, "club");
+                                                    }}
+
+                                                    className="cursor-pointer absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-sm transition-all duration-200"
+                                                    aria-label="Favoritar clube"
+                                                >
+                                                    <Heart
+                                                    size={14}
+                                                    strokeWidth={2}
+                                                    className="text-white transition-all duration-200"
+                                                    fill={isFavorited(club.id_club, "club") ? "white" : "transparent"}
+
+                                                    />
+                                                </button>
+
+                                                <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
+                                                    {club.crest_url ? (
+                                                    <img src={club.crest_url} alt={club.name} className="w-14 h-14 object-contain drop-shadow-2xl" />
+                                                    ) : (
+                                                    <span className="text-white font-black text-xl tracking-tighter italic">
+                                                        {getInitials(club.name)}
+                                                    </span>
+                                                    )}
+                                                </div>
                                                 </div>
 
                                                 {/* Informações do Clube */}
                                                 <div className="p-5 text-center">
-                                                    <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-1 group-hover/card:text-[#7F33D9] transition-colors">
-                                                        {club.name}
-                                                    </p>
-                                                    <div className="mt-2 flex items-center justify-center gap-1.5 opacity-60">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ativo</span>
-                                                    </div>
+                                                <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-1 group-hover/card:text-[#7F33D9] transition-colors">
+                                                    {club.name}
+                                                </p>
+                                                <div className="mt-2 flex items-center justify-center gap-1.5 opacity-60">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ativo</span>
                                                 </div>
+                                                </div>
+
                                             </div>
-                                        </Link>
+                                            </Link>
                                     </SwiperSlide>
                                 ))}
                             </Swiper>

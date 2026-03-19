@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
-import { ChevronRight, ChevronLeft, Globe, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Globe, Loader2, Heart} from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
+import { useFavorites } from "../../../hooks/useFavorites";
 import "swiper/css";
 import "swiper/css/navigation";
 
 export default function DashLeagues() {
+    const { isFavorited, toggleFavorite } = useFavorites();
     const [search, setSearch] = useState("");
     const [country, setCountry] = useState("");
     const [submitted, setSubmitted] = useState(false);
@@ -176,31 +178,52 @@ export default function DashLeagues() {
                                         <SwiperSlide key={league.id_league} className="!h-auto py-2">
                                             <Link to={`/dashboard/league/${league.id_league}`} className="block group/card h-full">
                                                 <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out h-full">
-                                                    
+
                                                     {/* Topo do Card - Cor Sólida */}
-                                                    <div className="h-36 flex items-center justify-center p-5 relative"
-                                                         style={{ backgroundColor: league.primary_color || '#7F33D9' }}>
-                                                        
-                                                        {/* Efeito Glass sutil no container do logo */}
-                                                        <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
-                                                            {league.logo_url ? (
-                                                                <img src={league.logo_url} alt={league.name} className="w-16 h-16 object-contain drop-shadow-md" />
-                                                            ) : (
-                                                                <span className="text-white font-bold text-xl italic tracking-tighter">
-                                                                    {getInitials(league.name)}
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                    <div
+                                                    className="h-36 flex items-center justify-center p-5 relative"
+                                                    style={{ backgroundColor: league.primary_color || '#7F33D9' }}
+                                                    >
+
+                                                    {/* Botão Favoritar */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleFavorite(league.id_league, "league");
+                                                        }}
+                                                        className="cursor-pointer absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-sm transition-all duration-200"
+                                                        aria-label="Favoritar liga"
+                                                    >
+                                                        <Heart
+                                                        size={14}
+                                                        strokeWidth={2}
+                                                        className="text-white transition-all duration-200"
+                                                        fill={isFavorited(league.id_league, "league") ? "white" : "transparent"}
+                                                        />
+                                                    </button>
+
+                                                    {/* Efeito Glass sutil no container do logo */}
+                                                    <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
+                                                        {league.logo_url ? (
+                                                        <img src={league.logo_url} alt={league.name} className="w-16 h-16 object-contain drop-shadow-md" />
+                                                        ) : (
+                                                        <span className="text-white font-bold text-xl italic tracking-tighter">
+                                                            {getInitials(league.name)}
+                                                        </span>
+                                                        )}
+                                                    </div>
                                                     </div>
 
-                                                    {/* Nome - Fonte Light como a de Clubes */}
+                                                    {/* Nome */}
                                                     <div className="px-4 py-4 text-center">
-                                                        <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">
-                                                            {league.name}
-                                                        </p>
+                                                    <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">
+                                                        {league.name}
+                                                    </p>
                                                     </div>
+
                                                 </div>
-                                            </Link>
+                                                </Link>
                                         </SwiperSlide>
                                     ))}
                                 </Swiper>
