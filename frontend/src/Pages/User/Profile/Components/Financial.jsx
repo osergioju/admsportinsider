@@ -1,505 +1,472 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  CreditCard, CheckCircle2, Download, Clock, 
-  AlertCircle, FileText, Zap, Shield, 
-  MoreHorizontal, Plus, MessageCircle, ArrowRight,
-  X, Building2, MapPin, Hash, User, Lock, Calendar, AlertTriangle
+import {
+  CheckCircle2, Clock, AlertCircle, Zap, Shield,
+  MessageCircle, ArrowRight, X, AlertTriangle, Loader2,
+  Star, Package, ExternalLink, CalendarX2
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { AuthContext } from "../../../../context/AuthContext";
+import { api } from "../../../../services/api";
 
 export default function SubscriptionManagement() {
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const [isBillingModalOpen, setIsBillingModalOpen] = useState(false);
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
-  // Novos estados para as funcionalidades solicitadas
+  const [plans, setPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
+  const [checkoutError, setCheckoutError] = useState(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
-  const [currentPlan] = useState({
-    name: "Plano Premium",
-    price: "R$ 49,90",
-    interval: "mês",
-    status: "active",
-    nextBilling: "15 de Março, 2026",
-    features: ["Acesso ilimitado", "Suporte prioritário", "Analytics avançado"]
-  });
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        setLoadingPlans(true);
+        const response = await api.get("/admin/plans");
+        setPlans(response.data.plans || []);
+      } catch (err) {
+        console.error("Erro ao buscar planos:", err);
+      } finally {
+        setLoadingPlans(false);
+      }
+    }
+    fetchPlans();
+  }, []);
 
-  const [paymentMethods, setPaymentMethods] = useState([
-    { id: 1, brand: "Mastercard", last4: "8842", expiry: "04/29", isDefault: true },
-  ]);
+  const currentPlan = plans.find((p) => p.id === user?.plan_id) || null;
+  const isFreePlan = !user?.plan_id || (currentPlan && Number(currentPlan.price) === 0);
 
-  const [billingInfo, setBillingInfo] = useState({
-    name: "David Silva",
-    company: "Sport Insider Ltda.",
-    address: "Av. Paulista, 1000 - Bela Vista",
-    city: "São Paulo, SP - 01310-100",
-    cnpj: "00.000.000/0001-00"
-  });
+  // Cancelamento agendado — vem direto do user (SELECT u.* no /auth/me)
+  const isCanceling = user?.cancel_at_period_end === true;
+  const expiresAt = user?.subscription_current_period_end
+    ? new Date(user.subscription_current_period_end).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
 
-  // Dados para a visualização resumida
-  const [invoices] = useState([
-    { id: "INV-2024-001", date: "15 Fev 2026", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2024-002", date: "15 Jan 2026", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2023-012", date: "15 Dez 2025", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2023-011", date: "15 Nov 2025", amount: "R$ 97,00", status: "failed" },
-  ]);
+  const benefits = currentPlan?.benefits
+    ? typeof currentPlan.benefits === "string"
+      ? JSON.parse(currentPlan.benefits)
+      : currentPlan.benefits
+    : [];
+  const benefitsList = Array.isArray(benefits) ? benefits : Object.values(benefits);
 
-  // Mock de dados completo para o modal de histórico
-  const fullHistoryInvoices = [
-    ...invoices,
-    { id: "INV-2023-010", date: "15 Out 2025", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2023-009", date: "15 Set 2025", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2023-008", date: "15 Ago 2025", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2023-007", date: "15 Jul 2025", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2023-006", date: "15 Jun 2025", amount: "R$ 97,00", status: "paid" },
-    { id: "INV-2023-005", date: "15 Mai 2025", amount: "R$ 97,00", status: "paid" },
-  ];
+  const upgradePlan = plans.find((p) => Number(p.price) > 0 && p.active);
 
+  async function handleSubscribe(plan_id) {
+    if (!plan_id || checkoutLoading) return;
+    try {
+      setCheckoutLoading(plan_id);
+      setCheckoutError(null);
+      const response = await api.post("/stripe/create-checkout-session", {
+        userId: user.id,
+        plan_id,
+      });
+      window.location.href = response.data.url;
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setCheckoutError("Não foi possível iniciar o checkout. Tente novamente.");
+      setCheckoutLoading(null);
+    }
+  }
+
+  async function handleOpenBillingPortal() {
+    try {
+      setPortalLoading(true);
+      setCheckoutError(null);
+      const response = await api.post("/stripe/billing/portal");
+      window.location.href = response.data.url;
+    } catch (err) {
+      console.error("Billing portal error:", err);
+      setCheckoutError("Não foi possível abrir o portal. Tente novamente.");
+      setPortalLoading(false);
+    }
+  }
+
+  function UpgradeButton({ plan_id, label = "Fazer Upgrade", size = "md", className = "" }) {
+    const isThisLoading = checkoutLoading === plan_id;
+    const iconSize = size === "sm" ? 13 : 16;
+    const baseClass =
+      size === "sm"
+        ? "inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl"
+        : "px-6 py-2.5 text-sm font-bold rounded-xl flex items-center gap-2";
+
+    return (
+      <button
+        onClick={() => handleSubscribe(plan_id)}
+        disabled={!!checkoutLoading || portalLoading}
+        className={`${baseClass} bg-[#7F33D9] text-white hover:bg-[#6025A8] hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
+      >
+        {isThisLoading
+          ? <Loader2 size={iconSize} className="animate-spin" />
+          : <Zap size={iconSize} />
+        }
+        {isThisLoading ? "Aguarde..." : label}
+      </button>
+    );
+  }
 
   const StatusBadge = ({ status }) => {
     const styles = {
       active: "bg-green-100 text-green-700 border-green-200",
-      paid: "bg-green-50 text-green-700 border-green-100",
-      pending: "bg-yellow-50 text-yellow-700 border-yellow-100",
-      failed: "bg-red-50 text-red-700 border-red-100",
-      canceled: "bg-gray-100 text-gray-600 border-gray-200",
+      free: "bg-gray-100 text-gray-600 border-gray-200",
+      canceling: "bg-amber-50 text-amber-700 border-amber-200",
+      canceled: "bg-red-50 text-red-600 border-red-100",
     };
-    
-    const labels = { active: "Ativo", paid: "Pago", pending: "Pendente", failed: "Falhou", canceled: "Cancelado" };
+    const labels = {
+      active: "Ativo",
+      free: "Gratuito",
+      canceling: "Cancelamento agendado",
+      canceled: "Cancelado",
+    };
+    const icons = {
+      active: <CheckCircle2 size={12} />,
+      free: <Package size={12} />,
+      canceling: <CalendarX2 size={12} />,
+      canceled: <AlertCircle size={12} />,
+    };
 
     return (
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${styles[status] || styles.active} flex items-center gap-1 w-fit`}>
-        {status === 'active' || status === 'paid' ? <CheckCircle2 size={12} /> : null}
-        {status === 'failed' ? <AlertCircle size={12} /> : null}
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 w-fit ${styles[status] || styles.free}`}>
+        {icons[status]}
         {labels[status]}
       </span>
     );
   };
 
-  // Componente Reutilizável de Input para os Modals
-  const ModalInput = ({ label, icon: Icon, placeholder, value, onChange, type = "text", className }) => (
-    <div className={`space-y-1.5 ${className}`}>
-      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">{label}</label>
-      <div className="relative group">
-        <div className="absolute left-3 top-3 text-gray-400 group-focus-within:text-[#7F33D9] transition-colors">
-          <Icon size={18} />
-        </div>
-        <input 
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#7F33D9] focus:ring-4 focus:ring-[#7F33D9]/10 transition-all"
-        />
-      </div>
-    </div>
-  );
-
-  const navigate = useNavigate();
+  // Resolve o status do badge do plano atual
+  const planStatus = isFreePlan ? "free" : isCanceling ? "canceling" : "active";
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
-      
-      {/* --- CABEÇALHO --- */}
+
+      {/* CABEÇALHO */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#111] tracking-tight">Assinatura e Cobrança</h1>
-          <p className="text-gray-500 text-sm mt-1">Gerencie seu plano, métodos de pagamento e notas fiscais.</p>
+          <h1 className="text-2xl font-bold text-[#111] tracking-tight">
+            Assinatura e Cobrança
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Gerencie seu plano, métodos de pagamento e notas fiscais.
+          </p>
         </div>
-        
-        {/* Upgrade mantido como botão pois geralmente é uma ação de modal ou checkout direto, mas link para pricing também funcionaria aqui se desejado */}
-        <Link 
-            to="/me/plans" 
-            className="px-6 py-2.5 bg-[#7F33D9] text-white text-sm font-bold rounded-xl hover:bg-[#6025A8] hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300 flex items-center gap-2"
-        >
-            <Zap size={16} /> Fazer Upgrade
-        </Link>
+
+        {!loadingPlans && upgradePlan && !isCanceling && (
+          <UpgradeButton
+            plan_id={isFreePlan ? upgradePlan.id : currentPlan?.id}
+            label={isFreePlan ? "Fazer Upgrade" : "Mudar Plano"}
+          />
+        )}
+
+        {/* Se está cancelando, o botão do header vira "Reativar" via portal */}
+        {!loadingPlans && isCanceling && (
+          <button
+            onClick={handleOpenBillingPortal}
+            disabled={portalLoading}
+            className="px-6 py-2.5 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-500/20 transition-all duration-300 flex items-center gap-2 disabled:opacity-60"
+          >
+            {portalLoading
+              ? <Loader2 size={16} className="animate-spin" />
+              : <Zap size={16} />
+            }
+            {portalLoading ? "Aguarde..." : "Reativar assinatura"}
+          </button>
+        )}
       </div>
+
+      {/* Banner de erro global */}
+      {checkoutError && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm">
+          <AlertCircle size={18} className="shrink-0" />
+          <span>{checkoutError}</span>
+          <button onClick={() => setCheckoutError(null)} className="ml-auto text-red-400 hover:text-red-600">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Banner de cancelamento agendado */}
+      {isCanceling && expiresAt && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800">
+          <CalendarX2 size={18} className="shrink-0 mt-0.5 text-amber-500" />
+          <div className="flex-1">
+            <p className="text-sm font-bold">Cancelamento agendado</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Seu acesso ao <strong>{currentPlan?.name}</strong> será encerrado em{" "}
+              <strong>{expiresAt}</strong>. Até lá, todos os recursos continuam disponíveis.
+            </p>
+          </div>
+          <button
+            onClick={handleOpenBillingPortal}
+            disabled={portalLoading}
+            className="shrink-0 text-xs font-bold text-amber-700 hover:text-amber-900 underline underline-offset-2 transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {portalLoading ? "Aguarde..." : "Reativar"}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* --- COLUNA ESQUERDA (2/3) --- */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Card do Plano Atual */}
-          <div className="bg-white rounded-3xl border border-gray-200 p-8 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none opacity-50"></div>
-            <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-6">
-                <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-xl font-bold text-gray-900">{currentPlan.name}</h2>
-                        <StatusBadge status={currentPlan.status} />
-                    </div>
-                    <div className="flex items-baseline gap-1 mb-4">
-                        <span className="text-3xl font-bold text-[#7F33D9]">{currentPlan.price}</span>
-                        <span className="text-gray-500 text-sm">/{currentPlan.interval}</span>
-                    </div>
-                    <p className="text-gray-500 text-sm mb-6 flex items-center gap-2">
-                        <Clock size={16} /> Próxima renovação em <span className="font-semibold text-gray-700">{currentPlan.nextBilling}</span>
-                    </p>
-                </div>
-                <div className="w-16 h-16 rounded-2xl bg-[#7F33D9]/10 flex items-center justify-center text-[#7F33D9]">
-                    <Shield size={32} />
-                </div>
-            </div>
-            <div className="pt-6 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {currentPlan.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#7F33D9]"></div>
-                        {feature}
-                    </div>
-                ))}
-            </div>
-            <div className="mt-8 flex gap-3">
-                {/* FUNCIONALIDADE: Link para /pricing */}
-                <Link 
-                    to="/me/plans"
-                    className="text-sm font-semibold text-[#7F33D9] hover:text-[#6025A8] transition-colors"
-                >
-                    Alterar Plano
-                </Link>
-                <span className="text-gray-300">|</span>
-                {/* FUNCIONALIDADE: Modal de confirmação de cancelamento */}
-                <button 
-                    onClick={() => setIsCancelModalOpen(true)}
-                    className="text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors"
-                >
-                    Cancelar Assinatura
-                </button>
-            </div>
-          </div>
 
-          {/* Histórico de Faturas 
-          <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-             <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    <FileText size={18} className="text-gray-400" /> Histórico de Faturas
-                </h3>
-                <button 
-                    onClick={() => setIsHistoryModalOpen(true)}
-                    className="text-xs font-bold text-[#7F33D9] hover:underline"
-                >
-                    Ver todas
-                </button>
-             </div>
-             <div className="divide-y divide-gray-100">
-                {invoices.map((inv) => (
-                    <div key={inv.id} className="px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${inv.status === 'paid' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                {inv.status === 'paid' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold text-gray-900">{inv.amount}</p>
-                                <p className="text-xs text-gray-500">{inv.date} • {inv.id}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4 self-end sm:self-auto">
-                            <StatusBadge status={inv.status} />
-                            <button className="p-2 text-gray-400 hover:text-[#7F33D9] hover:bg-[#7F33D9]/10 rounded-lg transition-all"><Download size={18} /></button>
-                        </div>
+        {/* COLUNA ESQUERDA */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {loadingPlans ? (
+            <div className="bg-white rounded-3xl border border-gray-200 p-8 shadow-sm flex items-center justify-center min-h-[220px]">
+              <div className="flex flex-col items-center gap-3 text-gray-400">
+                <Loader2 size={28} className="animate-spin" />
+                <span className="text-sm">Carregando seu plano...</span>
+              </div>
+            </div>
+          ) : (
+            <div className={`bg-white rounded-3xl border p-8 shadow-sm relative overflow-hidden group transition-all ${
+              isCanceling ? "border-amber-200" : "border-gray-200"
+            }`}>
+              <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none opacity-50 ${
+                isCanceling ? "bg-amber-50" : "bg-purple-50"
+              }`} />
+
+              <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {currentPlan?.name || "Plano Gratuito"}
+                    </h2>
+                    <StatusBadge status={planStatus} />
+                  </div>
+
+                  <div className="flex items-baseline gap-1 mb-4">
+                    {isFreePlan ? (
+                      <span className="text-3xl font-bold text-gray-700">Grátis</span>
+                    ) : (
+                      <>
+                        <span className={`text-3xl font-bold ${isCanceling ? "text-amber-600" : "text-[#7F33D9]"}`}>
+                          {Number(currentPlan?.price).toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })}
+                        </span>
+                        <span className="text-gray-500 text-sm">/mês</span>
+                      </>
+                    )}
+                  </div>
+
+                  <p className="text-gray-500 text-sm mb-2 flex items-center gap-2">
+                    {isFreePlan ? (
+                      <><Star size={16} /> Faça upgrade para desbloquear recursos premium</>
+                    ) : isCanceling && expiresAt ? (
+                      <><CalendarX2 size={16} className="text-amber-500" /> Acesso garantido até <span className="font-semibold text-amber-700">{expiresAt}</span></>
+                    ) : (
+                      <><Clock size={16} /> Assinatura ativa via <span className="font-semibold text-gray-700">Stripe</span></>
+                    )}
+                  </p>
+                </div>
+
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                  isCanceling ? "bg-amber-50 text-amber-500" : "bg-[#7F33D9]/10 text-[#7F33D9]"
+                }`}>
+                  <Shield size={32} />
+                </div>
+              </div>
+
+              {benefitsList.length > 0 && (
+                <div className="pt-6 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {benefitsList.map((benefit, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCanceling ? "bg-amber-400" : "bg-[#7F33D9]"}`} />
+                      {typeof benefit === "string"
+                        ? benefit
+                        : benefit.label || benefit.name || JSON.stringify(benefit)}
                     </div>
-                ))}
-             </div>
-          </div>
-          */}
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-8 flex items-center gap-3">
+                {isFreePlan ? (
+                  <button
+                    onClick={() => handleSubscribe(upgradePlan?.id)}
+                    disabled={!!checkoutLoading || portalLoading}
+                    className="text-sm font-semibold text-[#7F33D9] hover:text-[#6025A8] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {checkoutLoading === upgradePlan?.id && <Loader2 size={14} className="animate-spin" />}
+                    Ver planos disponíveis
+                  </button>
+                ) : isCanceling ? (
+                  // Se está cancelando, só oferece reativação
+                  <button
+                    onClick={handleOpenBillingPortal}
+                    disabled={portalLoading || !!checkoutLoading}
+                    className="text-sm font-semibold text-amber-600 hover:text-amber-800 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {portalLoading && <Loader2 size={14} className="animate-spin" />}
+                    Reativar assinatura
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleSubscribe(currentPlan?.id)}
+                      disabled={!!checkoutLoading || portalLoading}
+                      className="text-sm font-semibold text-[#7F33D9] hover:text-[#6025A8] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {checkoutLoading === currentPlan?.id && <Loader2 size={14} className="animate-spin" />}
+                      Alterar Plano
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      onClick={() => setIsCancelModalOpen(true)}
+                      disabled={portalLoading || !!checkoutLoading}
+                      className="text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50"
+                    >
+                      Cancelar Assinatura
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* --- COLUNA DIREITA (1/3) --- */}
+        {/* COLUNA DIREITA */}
         <div className="space-y-6">
-            
-            {/* Método de Pagamento 
-            <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <CreditCard size={18} className="text-gray-400" /> Método de Pagamento
-                </h3>
-                <div className="space-y-4">
-                    {paymentMethods.map((method) => (
-                        <div key={method.id} className="relative group p-4 rounded-2xl border border-gray-200 hover:border-[#7F33D9] transition-all duration-300 bg-gray-50/50 hover:bg-white">
-                             <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-12 bg-white border border-gray-200 rounded flex items-center justify-center relative overflow-hidden">
-                                        <div className="absolute left-2 w-4 h-4 rounded-full bg-[#EB001B] opacity-90 mix-blend-multiply"></div>
-                                        <div className="absolute right-2 w-4 h-4 rounded-full bg-[#F79E1B] opacity-90 mix-blend-multiply"></div>
-                                    </div>
-                                    <span className="text-sm font-bold text-gray-900">{method.brand}</span>
-                                </div>
-                                {method.isDefault && (
-                                    <span className="text-[10px] font-bold uppercase text-[#7F33D9] bg-[#7F33D9]/10 px-2 py-0.5 rounded-full">Padrão</span>
-                                )}
-                             </div>
-                             <div className="flex justify-between items-end">
-                                <span className="text-xs text-gray-500 font-medium">•••• {method.last4} <span className="mx-1 text-gray-300">|</span> Expira em {method.expiry}</span>
-                                <button className="text-gray-400 hover:text-[#7F33D9]"><MoreHorizontal size={18} /></button>
-                             </div>
-                        </div>
-                    ))}
 
-                    <button 
-                        onClick={() => setIsCardModalOpen(true)}
-                        className="w-full py-3 border border-dashed border-gray-300 rounded-2xl text-sm font-medium text-gray-500 hover:border-[#7F33D9] hover:text-[#7F33D9] hover:bg-[#7F33D9]/5 transition-all flex items-center justify-center gap-2"
-                    >
-                        <Plus size={16} /> Adicionar novo cartão
-                    </button>
-                </div>
-            </div>
-            */}
-
-            {/* Dados de Faturamento 
-            <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm">
-                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-gray-900 text-sm">Dados de Faturamento</h3>
-
-                    <button 
-                        onClick={() => setIsBillingModalOpen(true)}
-                        className="text-xs font-bold text-[#7F33D9] hover:underline"
-                    >
-                        Editar
-                    </button>
-                 </div>
-                 <div className="text-sm text-gray-600 space-y-1">
-                    <p className="font-medium text-gray-900">{billingInfo.name}</p>
-                    <p>{billingInfo.company}</p>
-                    <p>{billingInfo.address}</p>
-                    <p>{billingInfo.city}</p>
-                    <p className="mt-2 text-xs text-gray-400">CPF/CNPJ: {billingInfo.cnpj}</p>
-                 </div>
-            </div>
-            */}
-            
-            {/* Card Suporte */}
-            <div 
+          <div
             onClick={() => navigate("/fale-conosco")}
-            className="bg-gradient-to-br from-[#7F33D9] to-[#6025A8] rounded-3xl p-5 text-white shadow-xl shadow-purple-500/20 relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-[60px] -mr-10 -mt-10 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
-                <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm group-hover:bg-white/30 transition-colors border border-white/10">
-                         <MessageCircle size={24} className="text-white" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="font-bold text-sm text-white mb-0.5">Suporte Financeiro</h3>
-                        <p className="text-purple-100 text-[11px] mb-1.5 leading-tight opacity-90">Dúvidas sobre faturas ou mudança de plano?</p>
-                        <div className="flex items-center gap-1 text-xs font-bold text-white group-hover:gap-2 transition-all">Falar com suporte <ArrowRight size={12} /></div>
-                    </div>
+            className="bg-gradient-to-br from-[#7F33D9] to-[#6025A8] rounded-3xl p-5 text-white shadow-xl shadow-purple-500/20 relative overflow-hidden group cursor-pointer transition-transform hover:-translate-y-1"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-[60px] -mr-10 -mt-10 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity" />
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm group-hover:bg-white/30 transition-colors border border-white/10">
+                <MessageCircle size={24} className="text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-sm text-white mb-0.5">Suporte Financeiro</h3>
+                <p className="text-purple-100 text-[11px] mb-1.5 leading-tight opacity-90">
+                  Dúvidas sobre faturas ou mudança de plano?
+                </p>
+                <div className="flex items-center gap-1 text-xs font-bold text-white group-hover:gap-2 transition-all">
+                  Falar com suporte <ArrowRight size={12} />
                 </div>
+              </div>
             </div>
+          </div>
+
+          {!loadingPlans && !isFreePlan && currentPlan && (
+            <div className={`bg-white rounded-3xl border p-6 shadow-sm ${isCanceling ? "border-amber-200" : "border-gray-200"}`}>
+              <h3 className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2">
+                <Package size={16} className="text-gray-400" /> Seu Plano
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Plano</span>
+                  <span className="font-bold text-gray-900">{currentPlan.name}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Valor</span>
+                  <span className={`font-bold ${isCanceling ? "text-amber-600" : "text-[#7F33D9]"}`}>
+                    {Number(currentPlan.price).toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                    <span className="text-gray-400 font-normal">/mês</span>
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Status</span>
+                  <StatusBadge status={planStatus} />
+                </div>
+                {isCanceling && expiresAt && (
+                  <div className="flex justify-between items-center text-sm pt-1 border-t border-amber-100">
+                    <span className="text-gray-500">Expira em</span>
+                    <span className="font-bold text-amber-700">{expiresAt}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!loadingPlans && isFreePlan && upgradePlan && (
+            <div className="bg-white rounded-3xl border border-dashed border-[#7F33D9]/30 p-6 shadow-sm text-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#7F33D9]/10 flex items-center justify-center mx-auto mb-4">
+                <Star size={22} className="text-[#7F33D9]" />
+              </div>
+              <h3 className="font-bold text-gray-900 text-sm mb-1">Desbloqueie o Premium</h3>
+              <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+                Acesse recursos avançados e suporte prioritário.
+              </p>
+              <UpgradeButton plan_id={upgradePlan.id} label="Ver Planos" size="sm" />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* EDITAR FATURAMENTO */}
-      {isBillingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div 
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
-                onClick={() => setIsBillingModalOpen(false)}
-            ></div>
-
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <Building2 size={20} className="text-[#7F33D9]" /> Dados da Empresa
-                    </h3>
-                    <button 
-                        onClick={() => setIsBillingModalOpen(false)} 
-                        className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors"
-                    >
-                        <X size={18} />
-                    </button>
-                </div>
-
-                <div className="p-8 space-y-5">
-                    <ModalInput 
-                        label="Nome do Responsável" icon={User} 
-                        value={billingInfo.name} onChange={(e) => setBillingInfo({...billingInfo, name: e.target.value})} 
-                    />
-                    <ModalInput 
-                        label="Razão Social / Nome da Empresa" icon={Building2} 
-                        value={billingInfo.company} onChange={(e) => setBillingInfo({...billingInfo, company: e.target.value})} 
-                    />
-                    <div className="grid grid-cols-2 gap-5">
-                         <ModalInput 
-                            label="CPF/CNPJ" icon={Hash} 
-                            value={billingInfo.cnpj} onChange={(e) => setBillingInfo({...billingInfo, cnpj: e.target.value})} 
-                        />
-                         <ModalInput 
-                            label="CEP" icon={MapPin} 
-                            placeholder="00000-000" 
-                            value={billingInfo.city.split('-')[1]?.trim()} 
-                            onChange={() => {}} 
-                        />
-                    </div>
-                    <ModalInput 
-                        label="Endereço Completo" icon={MapPin} 
-                        value={billingInfo.address} onChange={(e) => setBillingInfo({...billingInfo, address: e.target.value})} 
-                    />
-
-                    <div className="pt-4 flex gap-3">
-                        <button 
-                            onClick={() => setIsBillingModalOpen(false)}
-                            className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button 
-                            onClick={() => setIsBillingModalOpen(false)}
-                            className="flex-1 py-3 rounded-xl bg-[#111] text-white font-bold text-sm hover:bg-[#7F33D9] transition-all shadow-lg shadow-gray-200"
-                        >
-                            Salvar Alterações
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-      )}
-
-      {/* NOVO CARTÃO */}
-      {isCardModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div 
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
-                onClick={() => setIsCardModalOpen(false)}
-            ></div>
-
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <CreditCard size={20} className="text-[#7F33D9]" /> Adicionar Cartão
-                    </h3>
-                    <button onClick={() => setIsCardModalOpen(false)} className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors"><X size={18} /></button>
-                </div>
-
-                <div className="p-8 space-y-5">
-                    <div className="w-full h-40 rounded-2xl bg-gradient-to-br from-[#1e1e1e] to-[#3a3a3a] p-6 relative overflow-hidden shadow-lg mb-6">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-[50px] opacity-10 -mr-10 -mt-10"></div>
-                        <div className="flex justify-between items-start mb-8">
-                             <div className="w-10 h-6 bg-white/20 rounded-md backdrop-blur-sm"></div>
-                             <span className="text-white/50 text-xs font-mono">DEBIT/CREDIT</span>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="w-full h-4 bg-white/10 rounded"></div>
-                            <div className="flex justify-between">
-                                <div className="w-20 h-3 bg-white/10 rounded"></div>
-                                <div className="w-10 h-3 bg-white/10 rounded"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <ModalInput label="Número do Cartão" icon={CreditCard} placeholder="0000 0000 0000 0000" />
-                    
-                    <div className="grid grid-cols-2 gap-5">
-                        <ModalInput label="Validade" icon={Calendar} placeholder="MM/AA" />
-                        <ModalInput label="CVV" icon={Lock} placeholder="123" />
-                    </div>
-
-                    <ModalInput label="Nome no Cartão" icon={User} placeholder="COMO NO CARTÃO" />
-
-                    <div className="pt-4">
-                        <button 
-                            onClick={() => setIsCardModalOpen(false)}
-                            className="w-full py-3.5 rounded-xl bg-[#7F33D9] text-white font-bold text-sm hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
-                        >
-                            <Lock size={16} /> Adicionar com Segurança
-                        </button>
-                        <p className="text-center text-[10px] text-gray-400 mt-3 flex items-center justify-center gap-1">
-                            <Lock size={10} /> Seus dados são criptografados com segurança SSL.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-      )}
-
-      {/* --- NOVO: MODAL DE CONFIRMAÇÃO DE CANCELAMENTO --- */}
+      {/* MODAL CANCELAMENTO */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div 
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !portalLoading && setIsCancelModalOpen(false)}
+          />
+
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertTriangle size={32} />
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Cancelar Assinatura?
+              </h3>
+              <p className="text-gray-500 text-sm mb-2 leading-relaxed">
+                Tem certeza que deseja cancelar o <strong>{currentPlan?.name}</strong>?
+              </p>
+              <p className="text-gray-400 text-xs mb-2 leading-relaxed">
+                Você perderá acesso a todos os recursos premium ao final do ciclo atual.
+              </p>
+
+              <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-xl mb-8 text-left">
+                <ExternalLink size={14} className="text-gray-400 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  Você será redirecionado para o portal seguro do Stripe para confirmar o cancelamento.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => setIsCancelModalOpen(false)}
+                  disabled={portalLoading}
+                  className="w-full py-3.5 rounded-xl bg-[#111] text-white font-bold text-sm hover:bg-[#333] transition-all disabled:opacity-50"
+                >
+                  Não, manter meu plano
+                </button>
+                <button
+                  onClick={handleOpenBillingPortal}
+                  disabled={portalLoading}
+                  className="w-full py-3.5 rounded-xl border border-red-100 text-red-600 font-bold text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {portalLoading ? (
+                    <><Loader2 size={16} className="animate-spin" /> Abrindo portal...</>
+                  ) : (
+                    <><ExternalLink size={15} /> Ir para o portal de cancelamento</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {!portalLoading && (
+              <button
                 onClick={() => setIsCancelModalOpen(false)}
-            ></div>
-
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className="p-8 text-center">
-                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <AlertTriangle size={32} />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Cancelar Assinatura?</h3>
-                    <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-                        Tem certeza que deseja cancelar? Você perderá acesso a todos os recursos premium, incluindo analytics e suporte prioritário, ao final do ciclo atual.
-                    </p>
-                    
-                    <div className="flex flex-col gap-3">
-                        <button 
-                            onClick={() => setIsCancelModalOpen(false)}
-                            className="w-full py-3.5 rounded-xl bg-[#111] text-white font-bold text-sm hover:bg-[#333] transition-all shadow-lg shadow-gray-200"
-                        >
-                            Não, manter meu plano
-                        </button>
-                        <button 
-                            onClick={() => {
-                                console.log("Assinatura cancelada");
-                                setIsCancelModalOpen(false);
-                            }}
-                            className="w-full py-3.5 rounded-xl border border-red-100 text-red-600 font-bold text-sm hover:bg-red-50 transition-colors"
-                        >
-                            Sim, quero cancelar
-                        </button>
-                    </div>
-                </div>
-            </div>
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 text-gray-400 hover:text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </div>
       )}
-
-      {/* --- NOVO: MODAL DE HISTÓRICO DE FATURAS COMPLETO --- */}
-      {isHistoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div 
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
-                onClick={() => setIsHistoryModalOpen(false)}
-            ></div>
-
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[80vh]">
-                <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <FileText size={20} className="text-[#7F33D9]" /> Histórico Completo
-                    </h3>
-                    <button onClick={() => setIsHistoryModalOpen(false)} className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors"><X size={18} /></button>
-                </div>
-
-                <div className="overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-                    <div className="divide-y divide-gray-100">
-                        {fullHistoryInvoices.map((inv) => (
-                            <div key={inv.id} className="px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${inv.status === 'paid' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                        {inv.status === 'paid' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900">{inv.amount}</p>
-                                        <p className="text-xs text-gray-500">{inv.date} • {inv.id}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 self-end sm:self-auto">
-                                    <StatusBadge status={inv.status} />
-                                    <button className="p-2 text-gray-400 hover:text-[#7F33D9] hover:bg-[#7F33D9]/10 rounded-lg transition-all"><Download size={18} /></button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                
-                <div className="p-6 border-t border-gray-100 bg-gray-50/50 text-center shrink-0">
-                    <button 
-                        onClick={() => setIsHistoryModalOpen(false)}
-                        className="text-sm font-bold text-[#7F33D9] hover:underline"
-                    >
-                        Fechar
-                    </button>
-                </div>
-            </div>
-        </div>
-      )}
-
     </div>
   );
 }

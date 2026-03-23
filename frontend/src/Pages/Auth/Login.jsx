@@ -54,8 +54,6 @@ export default function Login() {
         try {
             const { data } = await api.post("/auth/login", { email, senha });
             login(data.token, data.user);
-            setIsLoggingIn(false);
-
             if (data.user.role === "user") navigate("/dashboard");
             if (data.user.role === "admin") navigate("/admin");
             if (data.user.role === "admin_master") navigate("/admin");
@@ -73,6 +71,7 @@ export default function Login() {
 
     if (loadingAuth || user) return null;
 
+    
     return (
         <div className="relative z-40 w-full min-h-screen text-white bg-[#0C0718]">
             <div className="w-80 h-80 lg:w-120 lg:h-120 absolute top-0 left-0  bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] blur-[137px] rounded-full hidden lg:block -translate-x-1/2 -translate-y-1/2"></div>
@@ -166,8 +165,7 @@ export default function Login() {
                                         </div>
                                         */}
 
-                                            <SubmitButton text="Entrar">
-                                                
+                                            <SubmitButton loading={isLoggingIn} text="Entrar">
                                                 {/*seta*/}
                                                 <svg 
                                                     width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"

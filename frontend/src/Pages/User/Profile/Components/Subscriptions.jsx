@@ -99,7 +99,7 @@ export default function Subscriptions() {
 
           <div className="flex justify-end">
             <button
-              onClick={() => navigate("/pricing")}
+              onClick={() => navigate("/me/plans")}
               className={btnPrimaryClass}
             >
               <Crown size={16} />
@@ -206,7 +206,7 @@ export default function Subscriptions() {
                                  <p className="text-xs text-gray-500">Desbloqueie recursos exclusivos.</p>
                              </div>
                         </div>
-                        <button onClick={() => navigate("/pricing")} className="text-sm font-medium text-[#7F33D9] flex items-center gap-1 hover:gap-2 transition-all">
+                        <button onClick={() => navigate("/me/financial")} className="text-sm font-medium text-[#7F33D9] flex items-center gap-1 hover:gap-2 transition-all">
                             Ver planos <ArrowRight size={16} />
                         </button>
                     </div>
