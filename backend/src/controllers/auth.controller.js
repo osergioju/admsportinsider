@@ -23,18 +23,19 @@ export const login = async (req, res) => {
     // 1. Buscar usuário no banco
     const user = await findUserByEmail(email);
 
+    console.log("[LOGIN 1] Usuário encontrado:", user ? { id: user.id, email: user.email, active: user.active, email_verified: user.email_verified, tem_password_hash: !!user.password_hash } : "NÃO ENCONTRADO");
+
     if (!user || !user.active || !user.email_verified) {
-      return res.status(401).json({
-        error: "Credenciais inválidas"
-      });
+      console.log("[LOGIN 2] Bloqueado no guard:", { user_existe: !!user, active: user?.active, email_verified: user?.email_verified });
+      return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
     const passwordMatch = await bcrypt.compare(senha, user.password_hash);
+    console.log("[LOGIN 3] bcrypt.compare resultado:", passwordMatch);
 
     if (!passwordMatch) {
-      return res.status(401).json({
-        error: "Credenciais inválidas"
-      });
+      console.log("[LOGIN 4] Senha não bateu. Hash no banco:", user.password_hash);
+      return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
     // 5. Gerar JWT
