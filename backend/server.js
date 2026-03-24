@@ -35,7 +35,7 @@ const allowedOrigins = [
   "https://sportinsider.com",
   "https://dashboard.sportinsider.com",
   "https://dash.crtcomunicacao.com.br",
-
+  "https://pro.sportinsider.com.br",
   "http://146.190.159.239",
   "https://146.190.159.239",
   "http://146.190.159.239:3000"
