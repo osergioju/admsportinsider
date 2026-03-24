@@ -66,6 +66,7 @@ import Banners from "./Pages/Admin/Banners/Banners";
 import Regions from "./Pages/Admin/Regions/Regions";
 import RegionsDetailPage from "./Pages/Admin/Regions/RegionsDetailPage";
 import FinancialTransPage from "./Pages/Admin/Regions/FinancialTransPage";
+import CommonTermsTransPage from "./Pages/Admin/Regions/CommonTermsTransPage";
 import Currencies from "./Pages/Admin/Currencies/Currencies";
 
 // Faq Admin 
@@ -206,6 +207,7 @@ export default function App() {
               <Route path="/admin/regions" element={<Regions />} />
               <Route path="/admin/regions/:id" element={<RegionsDetailPage />} />
               <Route path="/admin/regions/:id/financial-indicators" element={<FinancialTransPage />} />
+              <Route path="/admin/regions/:id/common-terms" element={<CommonTermsTransPage />} />
 
               {/* Moedas */}
               <Route path="/admin/currencies" element={<Currencies />} />

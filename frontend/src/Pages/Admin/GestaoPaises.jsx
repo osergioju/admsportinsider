@@ -35,15 +35,11 @@ export default function GestaoPaises() {
     );
 
     // --- HANDLERS ---
-    const handleOpenDeleteModal = async (countryId) =>  {
-        setEditCountryId(countryId);
+    const handleOpenDeleteModal = (country) => {
+        setEditCountryId(country.id_country);
+        setCurrentCountry(country);
+        setPaisSelecionado(null);
         setModal(true);
-        setPaisSelecionado(null); 
-        try {
-            // Busca dados específicos apenas se precisar confirmar algo que não veio na lista
-            const { data } = await api.get("/admin/countries/" + countryId);
-            setCurrentCountry(data.countries[0]); 
-        } catch (err) { console.error(err); }
     };
 
     const handleOpenCreateModal = () => {
@@ -76,15 +72,17 @@ export default function GestaoPaises() {
         } catch (error) { setLoading(false); alert("Erro ao cadastrar."); }
     };
 
-   const deleteCountry = async (countryId) => {
+    const deleteCountry = async (countryId) => {
         setLoading(true);
         try {
-            const res = await api.delete(`/admin/disable-country/${countryId}`);
-            if (res.status === 200) {
-                setLoading(false); setModal(false);
-                loadCountries();
-            } else { setLoading(false); alert("Erro ao deletar."); }
-        } catch (error) { setLoading(false); alert("Erro ao realizar operação."); }
+            await api.delete(`/admin/disable-country/${countryId}`);
+            setLoading(false);
+            setModal(false);
+            loadCountries();
+        } catch (error) {
+            setLoading(false);
+            alert("Erro ao realizar operação.");
+        }
     };
 
     // Estilos
@@ -121,7 +119,7 @@ export default function GestaoPaises() {
                                 </div>
                                 <span className="font-bold text-gray-900 text-lg group-hover:text-[#7F33D9] transition-colors">{country.name}</span>
                                 <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
-                                    <button onClick={() => handleOpenDeleteModal(country.id_country)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"><Trash2 size={14} /> Remover</button>
+                                    <button onClick={() => handleOpenDeleteModal(country)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"><Trash2 size={14} /> Remover</button>
                                 </div>
                             </div>
                         ))}

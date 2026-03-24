@@ -1,461 +1,771 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Coins, Globe, TrendingUp, Calendar } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  Plus, Trash2, Coins, Globe, TrendingUp, ChevronRight,
+  ArrowLeft, Loader2, X, Calendar, AlertTriangle
+} from "lucide-react";
 import { api } from "../../../services/api";
-const btnPrimary = "px-4 py-2 bg-[#7F33D9] text-white rounded-lg hover:bg-[#6B2BB8] transition-all flex items-center gap-2 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed";
-const btnSecondary = "px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:border-[#7F33D9] hover:text-[#7F33D9] transition-all flex items-center gap-2 font-medium shadow-sm";
-const btnDanger = "p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all";
-const inputClass = "w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7F33D9] focus:border-transparent transition-all";
 
-function FeedbackMessage({ msg }) {
-  if (!msg) return null;
-  const isError = msg.includes('Erro') || msg.includes('erro');
+// ---------------------------------------------------------------------------
+// Estilos
+// ---------------------------------------------------------------------------
+const btnPrimary =
+  "flex items-center gap-2 px-5 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed";
+const btnSecondary =
+  "flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors";
+const inputClass =
+  "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400";
+const labelClass =
+  "block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5";
+
+// ---------------------------------------------------------------------------
+// Modal genérico de confirmação de exclusão
+// ---------------------------------------------------------------------------
+function ConfirmDeleteModal({ title, description, onConfirm, onClose, loading }) {
   return (
-    <div className={`mb-6 p-4 rounded-xl border-l-4 ${isError ? 'bg-red-50 border-red-500 text-red-700' : 'bg-green-50 border-green-500 text-green-700'} animate-in slide-in-from-top-2 duration-300`}>
-      <p className="font-medium">{msg}</p>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !loading && onClose()} />
+      <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl relative z-10 p-6 text-center animate-in zoom-in-95 duration-200">
+        <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Trash2 size={28} />
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 mb-6">{description}</p>
+        <div className="flex gap-3 justify-center">
+          <button onClick={onClose} disabled={loading} className={btnSecondary}>Cancelar</button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 shadow-lg shadow-red-500/20 disabled:opacity-70"
+          >
+            {loading && <Loader2 size={14} className="animate-spin" />}
+            Sim, excluir
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default function Currencies() {
-    const [currencies, setCurrencies] = useState([]);
-    const [countries, setCountries] = useState([]);
-    const [showModal, setShowModal] = useState(false);
-    const [selectedCurrency, setSelectedCurrency] = useState(null);
-    const [feedback, setFeedback] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [formData, setFormData] = useState({
-        id_country: '',
-        code: '',
-        name: '',
-        symbol: ''
-    });
+// ---------------------------------------------------------------------------
+// Tela de taxas de um par (RUB → BRL com histórico por ano)
+// ---------------------------------------------------------------------------
+function PairRatesView({ currency, pair, onBack }) {
+  const [rates, setRates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ year: new Date().getFullYear(), rate: "" });
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, year }
+  const [deleting, setDeleting] = useState(false);
 
-    useEffect(() => {
-        loadCurrencies();
-    }, []);
+  async function fetchRates() {
+    setLoading(true);
+    try {
+      const res = await api.get(`/currency/currency-rates/${pair.base_currency}/${pair.reference_currency}`);
+      setRates(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    const loadCurrencies = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/currency/currencies');
-            setCurrencies(response.data);
-        } catch (error) {
-            showFeedback('Erro ao carregar moedas', true);
-        } finally {
-            setLoading(false);
-        }
-    };
+  useEffect(() => { fetchRates(); }, []);
 
-    const loadAvailableCountries = async () => {
-        try {
-            const response = await api.get('/admin/countries');
-            setCountries(response.data.countries);
-        } catch (error) {
-            showFeedback('Erro ao carregar países disponíveis', true);
-        }
-    };
+  async function handleSave() {
+    if (!formData.year || !formData.rate) return;
+    setSaving(true);
+    try {
+      await api.post("/currency/currency-rates", {
+        base_currency: pair.base_currency,
+        reference_currency: pair.reference_currency,
+        year: formData.year,
+        rate: formData.rate,
+      });
+      setShowForm(false);
+      setFormData({ year: new Date().getFullYear(), rate: "" });
+      fetchRates();
+    } catch (err) {
+      alert(err.response?.data?.error || "Erro ao salvar taxa");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-    const handleNewCurrency = () => {
-        loadAvailableCountries();
-        setFormData({ id_country: '', code: '', name: '', symbol: '' });
-        setShowModal(true);
-    };
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/currency/currency-rates/${deleteTarget.id}`);
+      setDeleteTarget(null);
+      fetchRates();
+    } catch {
+      alert("Erro ao deletar taxa");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await api.post('/currency/currencies', formData);
-            showFeedback('Moeda cadastrada com sucesso!');
-            setShowModal(false);
-            loadCurrencies();
-            setFormData({ id_country: '', code: '', name: '', symbol: '' });
-        } catch (error) {
-            showFeedback(error.response?.data?.error || 'Erro ao cadastrar moeda', true);
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm('Tem certeza que deseja excluir esta moeda?')) return;
-        try {
-            await api.delete(`/currencies/${id}`);
-            showFeedback('Moeda excluída com sucesso!');
-            loadCurrencies();
-        } catch (error) {
-            showFeedback('Erro ao excluir moeda', true);
-        }
-    };
-
-    const showFeedback = (message, isError = false) => {
-        setFeedback(message);
-        setTimeout(() => setFeedback(''), 4000);
-    };
-
-    return (
-        <div className="w-full max-w-6xl mx-auto p-4 sm:p-8 animate-in fade-in duration-500">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-[#111] flex items-center gap-2">
-                        <Coins className="text-[#7F33D9]" size={28} />
-                        Gestão de Moedas
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Cadastre moedas, vincule países e configure taxas de câmbio
-                    </p>
-                </div>
-                <button onClick={handleNewCurrency} className={btnPrimary}>
-                    <Plus size={18} />
-                    Nova Moeda
-                </button>
-            </div>
-
-            <FeedbackMessage msg={feedback} />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {loading ? (
-                    <div className="col-span-full text-center py-10 text-gray-400">
-                        Carregando moedas...
-                    </div>
-                ) : currencies.length === 0 ? (
-                    <div className="col-span-full bg-white rounded-2xl border border-gray-200 p-10 text-center">
-                        <Coins size={48} className="mx-auto text-gray-300 mb-4" />
-                        <p className="text-gray-500 mb-4">Nenhuma moeda cadastrada ainda</p>
-                        <button onClick={handleNewCurrency} className={btnSecondary}>
-                            <Plus size={18} />
-                            Cadastrar primeira moeda
-                        </button>
-                    </div>
-                ) : (
-                    currencies.map((currency) => (
-                        <CurrencyCard 
-                            key={currency.id} 
-                            currency={currency} 
-                            onDelete={handleDelete}
-                            onManage={setSelectedCurrency}
-                        />
-                    ))
-                )}
-            </div>
-
-            {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                            <Plus size={24} className="text-[#7F33D9]" />
-                            Nova Moeda
-                        </h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">País</label>
-                                <select value={formData.id_country} onChange={(e) => setFormData({...formData, id_country: e.target.value})} className={inputClass} required>
-                                    <option value="">Selecione um país</option>
-                                    {countries.map(c => (
-                                        <option key={c.id_country} value={c.id_country}>{c.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Código da Moeda</label>
-                                <input type="text" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})} className={inputClass} placeholder="BRL" maxLength={3} required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Nome da Moeda</label>
-                                <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className={inputClass} placeholder="Real Brasileiro" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Símbolo</label>
-                                <input type="text" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value})} className={inputClass} placeholder="R$" required />
-                            </div>
-                            <div className="flex gap-3 pt-4">
-                                <button type="submit" className={btnPrimary + " flex-1"}>Cadastrar</button>
-                                <button type="button" onClick={() => setShowModal(false)} className={btnSecondary}>Cancelar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {selectedCurrency && (
-                <CurrencyManagementModal currency={selectedCurrency} onClose={() => setSelectedCurrency(null)} />
-            )}
+  return (
+    <div className="space-y-6">
+      {/* Header do par */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onBack}
+          className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#7F33D9] hover:border-[#7F33D9] transition-all shadow-sm"
+        >
+          <ArrowLeft size={16} />
+        </button>
+        <div className="bg-white border border-gray-200 rounded-2xl px-5 py-3 flex items-center gap-4 shadow-sm flex-1">
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Par de câmbio</p>
+            <p className="font-bold text-gray-900 text-lg">
+              {pair.base_currency} → {pair.reference_currency}
+            </p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Taxa mais recente</p>
+            <p className="font-mono font-bold text-[#7F33D9]">{Number(pair.latest_rate).toFixed(6)}</p>
+          </div>
         </div>
-    );
-}
+      </div>
 
-function CurrencyCard({ currency, onDelete, onManage }) {
-    return (
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-lg transition-all group">
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#7F33D9] to-[#9D5CE8] flex items-center justify-center text-white font-bold text-lg">
-                        {currency.symbol}
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-gray-900">{currency.code}</h3>
-                        <p className="text-xs text-gray-500">{currency.name}</p>
-                    </div>
-                </div>
-                <button onClick={() => onDelete(currency.id)} className={btnDanger}>
-                    <Trash2 size={16} />
-                </button>
+      {/* Card de taxas */}
+      <div className="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+            <Calendar size={16} className="text-gray-400" /> Histórico de Taxas
+          </h3>
+          <button onClick={() => setShowForm((v) => !v)} className={btnPrimary}>
+            <Plus size={16} /> Nova Taxa
+          </button>
+        </div>
+
+        {/* Formulário inline */}
+        {showForm && (
+          <div className="px-6 py-4 bg-purple-50/50 border-b border-purple-100">
+            <div className="flex gap-3 items-end">
+              <div className="w-32">
+                <label className={labelClass}>Ano</label>
+                <input
+                  type="number"
+                  min="1900" max="2100"
+                  className={inputClass}
+                  value={formData.year}
+                  onChange={(e) => setFormData((p) => ({ ...p, year: e.target.value }))}
+                />
+              </div>
+              <div className="flex-1">
+                <label className={labelClass}>Taxa ({pair.base_currency}/{pair.reference_currency})</label>
+                <input
+                  type="number"
+                  step="0.000001"
+                  placeholder="Ex: 0.072500"
+                  className={inputClass}
+                  value={formData.rate}
+                  onChange={(e) => setFormData((p) => ({ ...p, rate: e.target.value }))}
+                />
+              </div>
+              <button onClick={handleSave} disabled={saving} className={btnPrimary}>
+                {saving ? <Loader2 size={14} className="animate-spin" /> : "Salvar"}
+              </button>
+              <button onClick={() => setShowForm(false)} className="p-2.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                <X size={16} />
+              </button>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                <Globe size={14} />
-                <span>{currency.country_name || 'País não vinculado'}</span>
-            </div>
-            <button onClick={() => onManage(currency)} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg hover:bg-[#7F33D9] hover:text-white hover:border-[#7F33D9] transition-all flex items-center justify-center gap-2 text-sm font-medium group-hover:bg-[#7F33D9] group-hover:text-white group-hover:border-[#7F33D9]">
-                <TrendingUp size={16} />
-                Gerenciar Câmbio
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 size={28} className="animate-spin text-[#7F33D9]" />
+          </div>
+        ) : rates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Calendar size={32} className="text-gray-300 mb-3" />
+            <p className="text-sm font-medium text-gray-500">Nenhuma taxa cadastrada</p>
+            <button onClick={() => setShowForm(true)} className={`mt-3 ${btnPrimary}`}>
+              <Plus size={14} /> Adicionar taxa
             </button>
-        </div>
-    );
+          </div>
+        ) : (
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50/50 border-b border-gray-100">
+                <th className="px-6 py-3">Ano</th>
+                <th className="px-6 py-3">Taxa</th>
+                <th className="px-6 py-3">Fonte</th>
+                <th className="px-6 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {rates.map((r) => (
+                <tr key={r.id} className="group hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-3 font-bold text-gray-900">
+                    {new Date(r.period).getFullYear()}
+                  </td>
+                  <td className="px-6 py-3 font-mono text-sm text-[#7F33D9] font-bold">
+                    {Number(r.rate).toFixed(6)}
+                  </td>
+                  <td className="px-6 py-3">
+                    <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {r.source}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    <button
+                      onClick={() => setDeleteTarget({ id: r.id, year: new Date(r.period).getFullYear() })}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          title="Remover taxa?"
+          description={`Deseja remover a taxa de ${deleteTarget.year} do par ${pair.base_currency}/${pair.reference_currency}?`}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteTarget(null)}
+          loading={deleting}
+        />
+      )}
+    </div>
+  );
 }
 
-function CurrencyManagementModal({ currency, onClose }) {
-    const [pairs, setPairs] = useState([]);
-    const [availableCurrencies, setAvailableCurrencies] = useState([]);
-    const [selectedPair, setSelectedPair] = useState(null);
-    const [showPairModal, setShowPairModal] = useState(false);
-    const [showRateModal, setShowRateModal] = useState(false);
-    const [newPairCurrency, setNewPairCurrency] = useState('');
-    const [rates, setRates] = useState([]);
-    const [newRate, setNewRate] = useState({ year: new Date().getFullYear(), rate: '' });
-    const [feedback, setFeedback] = useState('');
+// ---------------------------------------------------------------------------
+// Tela de pares de uma moeda (RUB → [BRL, USD, EUR])
+// ---------------------------------------------------------------------------
+function CurrencyPairsView({ currency, onBack }) {
+  const [pairs, setPairs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [otherCurrencies, setOtherCurrencies] = useState([]);
+  const [showNewPairForm, setShowNewPairForm] = useState(false);
+  const [selectedPair, setSelectedPair] = useState(null);
+  const [newPairCode, setNewPairCode] = useState("");
+  const [newPairYear, setNewPairYear] = useState(new Date().getFullYear());
+  const [newPairRate, setNewPairRate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-    useEffect(() => {
-        loadPairs();
-        loadAvailableCurrencies();
-    }, []);
+  async function fetchPairs() {
+    setLoading(true);
+    try {
+      const res = await api.get(`/currency/currencies/${currency.id}/pairs`);
+      setPairs(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    const loadPairs = async () => {
-        try {
-            const response = await api.get(`/currency/currencies/${currency.id}/pairs`);
-            setPairs(response.data);
-        } catch (error) {
-            console.error('Erro ao carregar pares:', error);
-        }
-    };
+  async function fetchOtherCurrencies() {
+    try {
+      const res = await api.get(`/currency/currencies/${currency.id}/other-currencies`);
+      setOtherCurrencies(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
-    const loadAvailableCurrencies = async () => {
-        try {
-            const response = await api.get(`/currency/currencies/${currency.id}/other-currencies`);
-            setAvailableCurrencies(response.data);
-            console.log(response.data);
-        } catch (error) {
-            console.error('Erro ao carregar moedas:', error);
-        }
-    };
+  useEffect(() => {
+    fetchPairs();
+    fetchOtherCurrencies();
+  }, []);
 
-    const handleCreatePair = async () => {
-        if (!newPairCurrency) return;
-        try {
-            await api.post('/currency/currency-pairs', {
-                from_currency_id: currency.id,
-                to_currency_id: newPairCurrency
-            });
-            showFeedback('Par criado com sucesso!');
-            setShowPairModal(false);
-            setNewPairCurrency('');
-            loadPairs();
-        } catch (error) {
-            showFeedback(error.response?.data?.error || 'Erro ao criar par', true);
-        }
-    };
+  async function handleCreatePair() {
+    if (!newPairCode || !newPairYear || !newPairRate) return;
+    setSaving(true);
+    try {
+      await api.post("/currency/currency-rates", {
+        base_currency: currency.code,
+        reference_currency: newPairCode,
+        year: newPairYear,
+        rate: newPairRate,
+      });
+      setShowNewPairForm(false);
+      setNewPairCode(""); setNewPairYear(new Date().getFullYear()); setNewPairRate("");
+      fetchPairs();
+      fetchOtherCurrencies();
+    } catch (err) {
+      alert(err.response?.data?.error || "Erro ao criar par");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-    const handleDeletePair = async (pairId) => {
-        if (!window.confirm('Remover este par de câmbio?')) return;
-        try {
-            await api.delete(`/currency/currency-pairs/${pairId}`);
-            showFeedback('Par removido com sucesso!');
-            loadPairs();
-            if (selectedPair?.id === pairId) setSelectedPair(null);
-        } catch (error) {
-            showFeedback('Erro ao remover par', true);
-        }
-    };
+  async function handleDeletePair() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/currency/currency-pairs/${deleteTarget.base}/${deleteTarget.reference}`);
+      setDeleteTarget(null);
+      fetchPairs();
+      fetchOtherCurrencies();
+    } catch {
+      alert("Erro ao deletar par");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
-    const handleManageRates = async (pair) => {
-        setSelectedPair(pair);
-        try {
-            const response = await api.get(`/currency-pairs/${pair.id}/rates`);
-            setRates(response.data);
-        } catch (error) {
-            console.error('Erro ao carregar taxas:', error);
-        }
-    };
-
-    const handleCreateRate = async () => {
-        if (!newRate.year || !newRate.rate) return;
-        try {
-            await api.post('/currency-rates', {
-                pair_id: selectedPair.id,
-                year: newRate.year,
-                rate: newRate.rate
-            });
-            showFeedback('Taxa cadastrada com sucesso!');
-            setShowRateModal(false);
-            setNewRate({ year: new Date().getFullYear(), rate: '' });
-            handleManageRates(selectedPair);
-        } catch (error) {
-            showFeedback(error.response?.data?.error || 'Erro ao cadastrar taxa', true);
-        }
-    };
-
-    const handleDeleteRate = async (rateId) => {
-        if (!window.confirm('Remover esta taxa?')) return;
-        try {
-            await api.delete(`/currency-rates/${rateId}`);
-            showFeedback('Taxa removida com sucesso!');
-            handleManageRates(selectedPair);
-        } catch (error) {
-            showFeedback('Erro ao remover taxa', true);
-        }
-    };
-
-    const showFeedback = (message, isError = false) => {
-        setFeedback(message);
-        setTimeout(() => setFeedback(''), 3000);
-    };
-
+  // Drilldown para taxas do par
+  if (selectedPair) {
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full my-8 animate-in zoom-in-95 duration-200">
-                <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                <TrendingUp className="text-[#7F33D9]" size={24} />
-                                Gerenciar Câmbio - {currency.code}
-                            </h2>
-                            <p className="text-sm text-gray-500 mt-1">{currency.name}</p>
-                        </div>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">✕</button>
-                    </div>
-                </div>
-
-                <FeedbackMessage msg={feedback} />
-
-                <div className="p-6">
-                    {!selectedPair ? (
-                        <>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold text-gray-700">Pares de Câmbio</h3>
-                                <button onClick={() => setShowPairModal(true)} className={btnSecondary}>
-                                    <Plus size={16} />
-                                    Novo Par
-                                </button>
-                            </div>
-
-                            {pairs.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 border border-dashed border-gray-300 rounded-xl">
-                                    <p>Nenhum par cadastrado ainda</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {pairs.map(pair => (
-                                        <div key={pair.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#7F33D9] transition-all">
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-2xl">{pair.from_symbol} → {pair.to_symbol}</div>
-                                                <div>
-                                                    <p className="font-medium text-gray-900">{pair.from_code} / {pair.to_code}</p>
-                                                    <p className="text-xs text-gray-500">{pair.to_country_name}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => handleManageRates(pair)} className={btnSecondary}>
-                                                    <Calendar size={16} />
-                                                    Taxas
-                                                </button>
-                                                <button onClick={() => handleDeletePair(pair.id)} className={btnDanger}>
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            <button onClick={() => setSelectedPair(null)} className="mb-4 text-[#7F33D9] hover:underline text-sm">
-                                ← Voltar aos pares
-                            </button>
-
-                            <div className="mb-4 p-4 bg-gradient-to-r from-[#7F33D9] to-[#9D5CE8] text-white rounded-xl">
-                                <p className="text-sm opacity-90">Par de Câmbio</p>
-                                <p className="text-2xl font-bold">{selectedPair.from_code} → {selectedPair.to_code}</p>
-                            </div>
-
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold text-gray-700">Taxas por Ano</h3>
-                                <button onClick={() => setShowRateModal(true)} className={btnSecondary}>
-                                    <Plus size={16} />
-                                    Nova Taxa
-                                </button>
-                            </div>
-
-                            {rates.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 border border-dashed border-gray-300 rounded-xl">
-                                    <p>Nenhuma taxa cadastrada ainda</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {rates.map(rate => (
-                                        <div key={rate.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                            <div>
-                                                <p className="font-bold text-gray-900 text-lg">{rate.year}</p>
-                                                <p className="text-sm text-gray-500">Taxa: {rate.rate}</p>
-                                            </div>
-                                            <button onClick={() => handleDeleteRate(rate.id)} className={btnDanger}>
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                {showPairModal && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center p-4 rounded-2xl">
-                        <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
-                            <h3 className="font-bold mb-4">Criar Novo Par</h3>
-                            <select value={newPairCurrency} onChange={(e) => setNewPairCurrency(e.target.value)} className={inputClass + " mb-4"}>
-                                <option value="">Selecione uma moeda</option>
-                                {availableCurrencies.map(c => (
-                                    <option key={c.id} value={c.id}>{c.code} - {c.name} ({c.country_name})</option>
-                                ))}
-                            </select>
-                            <div className="flex gap-3">
-                                <button onClick={handleCreatePair} className={btnPrimary + " flex-1"}>Criar</button>
-                                <button onClick={() => setShowPairModal(false)} className={btnSecondary}>Cancelar</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {showRateModal && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center p-4 rounded-2xl">
-                        <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
-                            <h3 className="font-bold mb-4">Cadastrar Taxa</h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Ano</label>
-                                    <input type="number" value={newRate.year} onChange={(e) => setNewRate({...newRate, year: e.target.value})} className={inputClass} min="1900" max="2100" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Taxa de Câmbio</label>
-                                    <input type="number" step="0.000001" value={newRate.rate} onChange={(e) => setNewRate({...newRate, rate: e.target.value})} className={inputClass} placeholder="Ex: 5.25" />
-                                </div>
-                            </div>
-                            <div className="flex gap-3 mt-4">
-                                <button onClick={handleCreateRate} className={btnPrimary + " flex-1"}>Cadastrar</button>
-                                <button onClick={() => setShowRateModal(false)} className={btnSecondary}>Cancelar</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+      <PairRatesView
+        currency={currency}
+        pair={selectedPair}
+        onBack={() => setSelectedPair(null)}
+      />
     );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onBack}
+          className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#7F33D9] hover:border-[#7F33D9] transition-all shadow-sm"
+        >
+          <ArrowLeft size={16} />
+        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#7F33D9] to-[#9D5CE8] flex items-center justify-center text-white font-bold">
+            {currency.symbol}
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-900 text-lg">{currency.code}</h2>
+            <p className="text-xs text-gray-500">{currency.name} · {currency.country_name}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Card de pares */}
+      <div className="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+            <TrendingUp size={16} className="text-gray-400" /> Pares de Câmbio
+          </h3>
+          <button
+            onClick={() => setShowNewPairForm((v) => !v)}
+            className={btnPrimary}
+          >
+            <Plus size={16} /> Novo Par
+          </button>
+        </div>
+
+        {/* Formulário novo par */}
+        {showNewPairForm && (
+          <div className="px-6 py-5 bg-purple-50/50 border-b border-purple-100 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className={labelClass}>Moeda destino</label>
+                <select
+                  className={inputClass}
+                  value={newPairCode}
+                  onChange={(e) => setNewPairCode(e.target.value)}
+                >
+                  <option value="">Selecione...</option>
+                  {otherCurrencies.map((c) => (
+                    <option key={c.id} value={c.code}>
+                      {c.code} — {c.name} ({c.country_name})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Ano inicial</label>
+                <input
+                  type="number" min="1900" max="2100"
+                  className={inputClass}
+                  value={newPairYear}
+                  onChange={(e) => setNewPairYear(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Taxa inicial ({currency.code}/…)</label>
+                <input
+                  type="number" step="0.000001"
+                  placeholder="Ex: 0.0725"
+                  className={inputClass}
+                  value={newPairRate}
+                  onChange={(e) => setNewPairRate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowNewPairForm(false)} className={btnSecondary}>
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreatePair}
+                disabled={saving || !newPairCode || !newPairRate}
+                className={btnPrimary}
+              >
+                {saving ? <Loader2 size={14} className="animate-spin" /> : "Criar par"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 size={28} className="animate-spin text-[#7F33D9]" />
+          </div>
+        ) : pairs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <TrendingUp size={32} className="text-gray-300 mb-3" />
+            <p className="text-sm font-medium text-gray-500">Nenhum par cadastrado ainda</p>
+            <button onClick={() => setShowNewPairForm(true)} className={`mt-3 ${btnPrimary}`}>
+              <Plus size={14} /> Criar primeiro par
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {pairs.map((pair) => (
+              <div
+                key={pair.reference_currency}
+                className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors group"
+              >
+                {pair.to_flag && (
+                  <img
+                    src={pair.to_flag}
+                    alt={pair.reference_currency}
+                    className="w-8 h-5 rounded object-cover shadow-sm shrink-0"
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900">
+                      {pair.base_currency} → {pair.reference_currency}
+                    </span>
+                    <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                      {pair.total_rates} ano{pair.total_rates > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{pair.to_currency_name} · {pair.to_country_name}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-mono text-sm font-bold text-[#7F33D9]">
+                    {Number(pair.latest_rate).toFixed(6)}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    {new Date(pair.latest_period).getFullYear()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedPair(pair)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-[#7F33D9] bg-gray-50 hover:bg-purple-50 rounded-lg border border-gray-200 hover:border-[#7F33D9]/30 transition-all"
+                >
+                  Ver taxas <ChevronRight size={12} />
+                </button>
+                <button
+                  onClick={() => setDeleteTarget({ base: pair.base_currency, reference: pair.reference_currency })}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          title="Remover par?"
+          description={`Isso vai deletar todas as taxas do par ${deleteTarget.base}/${deleteTarget.reference}. Esta ação não pode ser desfeita.`}
+          onConfirm={handleDeletePair}
+          onClose={() => setDeleteTarget(null)}
+          loading={deleting}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tela principal — listagem de moedas
+// ---------------------------------------------------------------------------
+export default function Currencies() {
+  const [currencies, setCurrencies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState(null);
+
+  // Modal nova moeda
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [availableCountries, setAvailableCountries] = useState([]);
+  const [formData, setFormData] = useState({ id_country: "", code: "", name: "", symbol: "" });
+  const [saving, setSaving] = useState(false);
+
+  // Modal delete moeda
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function fetchCurrencies() {
+    setLoading(true);
+    try {
+      const res = await api.get("/currency/currencies");
+      setCurrencies(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchAvailableCountries() {
+    try {
+      const res = await api.get("/currency/currencies/available/countries");
+      setAvailableCountries(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  useEffect(() => { fetchCurrencies(); }, []);
+
+  async function handleCreate() {
+    if (!formData.id_country || !formData.code || !formData.name || !formData.symbol) return;
+    setSaving(true);
+    try {
+      await api.post("/currency/currencies", formData);
+      setShowNewModal(false);
+      setFormData({ id_country: "", code: "", name: "", symbol: "" });
+      fetchCurrencies();
+    } catch (err) {
+      alert(err.response?.data?.error || "Erro ao cadastrar moeda");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/currency/currencies/${deleteTarget.id}`);
+      setDeleteTarget(null);
+      fetchCurrencies();
+    } catch {
+      alert("Erro ao desativar moeda");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const openNewModal = () => {
+    fetchAvailableCountries();
+    setFormData({ id_country: "", code: "", name: "", symbol: "" });
+    setShowNewModal(true);
+  };
+
+  // Drilldown para pares
+  if (selectedCurrency) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 animate-in fade-in duration-300">
+        <CurrencyPairsView
+          currency={selectedCurrency}
+          onBack={() => setSelectedCurrency(null)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-6xl mx-auto p-4 sm:p-8 animate-in fade-in duration-500">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-[#111] tracking-tight flex items-center gap-2">
+            <Coins className="text-[#7F33D9]" size={26} /> Gestão de Moedas
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Cadastre moedas, vincule países e configure taxas de câmbio por ano.
+          </p>
+        </div>
+        <button onClick={openNewModal} className={btnPrimary}>
+          <Plus size={18} /> Nova Moeda
+        </button>
+      </div>
+
+      {/* Grid de moedas */}
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 size={32} className="animate-spin text-[#7F33D9]" />
+        </div>
+      ) : currencies.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-3xl p-16 text-center shadow-sm">
+          <Coins size={48} className="mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-bold text-gray-900 mb-1">Nenhuma moeda cadastrada</h3>
+          <p className="text-sm text-gray-500 mb-6">Comece cadastrando a primeira moeda do sistema.</p>
+          <button onClick={openNewModal} className={`${btnPrimary} mx-auto`}>
+            <Plus size={16} /> Cadastrar moeda
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {currencies.map((currency) => (
+            <div
+              key={currency.id}
+              className="group bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-lg hover:border-[#7F33D9]/30 transition-all duration-300 flex flex-col gap-4"
+            >
+              {/* Topo */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#7F33D9] to-[#9D5CE8] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                    {currency.symbol}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">{currency.code}</p>
+                    <p className="text-xs text-gray-500 leading-tight">{currency.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDeleteTarget({ id: currency.id, name: currency.name, code: currency.code })}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+
+              {/* País */}
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                {currency.flag_url ? (
+                  <img
+                    src={currency.flag_url}
+                    alt={currency.country_name}
+                    className="w-5 h-3.5 rounded object-cover shadow-sm"
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
+                ) : (
+                  <Globe size={13} />
+                )}
+                <span>{currency.country_name || "País não vinculado"}</span>
+              </div>
+
+              {/* Botão gerenciar câmbio */}
+              <button
+                onClick={() => setSelectedCurrency(currency)}
+                className="mt-auto w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-[#7F33D9] hover:text-white hover:border-[#7F33D9] transition-all group-hover:bg-[#7F33D9] group-hover:text-white group-hover:border-[#7F33D9]"
+              >
+                <TrendingUp size={14} /> Gerenciar Câmbio
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal nova moeda */}
+      {showNewModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => !saving && setShowNewModal(false)}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Coins size={18} className="text-[#7F33D9]" /> Nova Moeda
+              </h2>
+              <button onClick={() => setShowNewModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={labelClass}>País</label>
+                <select
+                  className={inputClass}
+                  value={formData.id_country}
+                  onChange={(e) => setFormData((p) => ({ ...p, id_country: e.target.value }))}
+                >
+                  <option value="">Selecione um país...</option>
+                  {availableCountries.map((c) => (
+                    <option key={c.id_country} value={c.id_country}>{c.name}</option>
+                  ))}
+                </select>
+                {availableCountries.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    <AlertTriangle size={11} /> Todos os países já têm moeda cadastrada.
+                  </p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Código (ex: BRL)</label>
+                  <input
+                    type="text"
+                    maxLength={3}
+                    placeholder="BRL"
+                    className={inputClass}
+                    value={formData.code}
+                    onChange={(e) => setFormData((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Símbolo (ex: R$)</label>
+                  <input
+                    type="text"
+                    placeholder="R$"
+                    className={inputClass}
+                    value={formData.symbol}
+                    onChange={(e) => setFormData((p) => ({ ...p, symbol: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Nome completo</label>
+                <input
+                  type="text"
+                  placeholder="Real Brasileiro"
+                  className={inputClass}
+                  value={formData.name}
+                  onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowNewModal(false)} className={btnSecondary}>Cancelar</button>
+              <button
+                onClick={handleCreate}
+                disabled={saving || !formData.id_country || !formData.code || !formData.name || !formData.symbol}
+                className={`flex-1 ${btnPrimary} justify-center`}
+              >
+                {saving ? <Loader2 size={16} className="animate-spin" /> : "Cadastrar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal delete moeda */}
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          title="Desativar moeda?"
+          description={`Deseja desativar ${deleteTarget.code} — ${deleteTarget.name}? Os pares de câmbio vinculados serão preservados.`}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteTarget(null)}
+          loading={deleting}
+        />
+      )}
+    </div>
+  );
 }

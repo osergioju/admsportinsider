@@ -151,7 +151,7 @@ export default function GestaoPlanos() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm text-gray-600 font-medium">
-                                                    R$ {Number(plan.price_display).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    R$ {Number(plan.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">

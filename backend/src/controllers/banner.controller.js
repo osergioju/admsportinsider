@@ -95,6 +95,7 @@ export async function getAllBanners(req, res) {
     const result = await db.query(`
       SELECT *
       FROM banners
+      where status != 'draft'
       ORDER BY created_at DESC
     `);
 

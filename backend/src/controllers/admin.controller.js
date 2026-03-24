@@ -3,6 +3,7 @@ import XLSX from "xlsx";
 import { reSendMail } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
 import Stripe from "stripe";
+import allCountries from "world-countries";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -21,12 +22,14 @@ export async function getAllCountries(req, res) {
     const offset = (page - 1) * limit;
 
     const countriesQuery = await db.query(`
-      SELECT id_country, name, flag_url FROM countries ORDER BY name ASC
+      SELECT id_country, name, flag_url FROM countries
+      where active = true
+      ORDER BY name ASC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
-    const countQuery = await db.query(`SELECT COUNT(*) FROM countries`);
-
+    const countQuery = await db.query(`SELECT COUNT(*) FROM countries WHERE active = true`);
+    
     const total = parseInt(countQuery.rows[0].count);
     const totalPages = Math.ceil(total / limit);
 
@@ -87,7 +90,6 @@ export async function getAllLeagues(req, res) {
     res.status(500).json({ message: "Erro ao listar ligas" });
   }
 }
-
 
 export async function getLeagueById(req, res) {
   const { id } = req.params;
@@ -1038,6 +1040,7 @@ export async function resendConfirmationEmail(req, res) {
 }
 
 export async function updateUserPassword(req, res) {
+    
     const { id } = req.params;
     const { password } = req.body;
 
@@ -1104,6 +1107,7 @@ export async function createUser(req, res) {
   }
 }
 
+/*
 export async function uploadClubXlsx(req, res) {
   const { id_country } = req.body;
 
@@ -1218,7 +1222,7 @@ export async function uploadClubXlsx(req, res) {
     });
   }
 }
-
+*/
 
 // FAQ 
 /**
@@ -1366,5 +1370,242 @@ export async function updateFaqOrder(req, res) {
     return res.status(500).json({ message: "Erro ao atualizar ordem" });
   } finally {
     client.release();
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Helper: dado um nome em pt-BR vindo do Excel, tenta achar o país no banco.
+// Estratégia em camadas:
+//   1. Match direto pelo nome do banco (case-insensitive)
+//   2. Match pelo nome pt-BR do world-countries → pega o cca2 → busca no banco
+//      pelo nome em inglês (name.common) do mesmo pacote
+// ---------------------------------------------------------------------------
+function resolveCountry(fileNamePtBr, dbCountries) {
+  const normalized = fileNamePtBr.toLowerCase().trim();
+
+  // 1. Match direto (funciona se o banco já tiver o nome em pt-BR)
+  const direct = dbCountries.find((c) => c.name.toLowerCase() === normalized);
+  if (direct) return { id_country: direct.id_country, name: direct.name };
+
+  // 2. Procura no world-countries pelo nome pt-BR
+  const wcEntry = allCountries.find((wc) => {
+    const ptbr = wc.translations?.por?.common?.toLowerCase() ?? "";
+    const ptbrOfficial = wc.translations?.por?.official?.toLowerCase() ?? "";
+    return ptbr === normalized || ptbrOfficial === normalized;
+  });
+
+  if (!wcEntry) return null;
+
+  // Tenta achar no banco pelo nome em inglês (common ou official)
+  const engNames = [
+    wcEntry.name.common.toLowerCase(),
+    wcEntry.name.official.toLowerCase(),
+  ];
+
+  const byEng = dbCountries.find((c) =>
+    engNames.includes(c.name.toLowerCase())
+  );
+
+  if (byEng) return { id_country: byEng.id_country, name: byEng.name };
+
+  // Não está no banco — devolve os dados do world-countries para o
+  // frontend poder cadastrar o país inline
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: monta o payload de sugestão de cadastro para países não encontrados
+// (usado pelo frontend para pré-preencher o mini-modal de criação)
+// ---------------------------------------------------------------------------
+function buildSuggestionPayload(fileNamePtBr) {
+  const normalized = fileNamePtBr.toLowerCase().trim();
+
+  const wcEntry = allCountries.find((wc) => {
+    const ptbr = wc.translations?.por?.common?.toLowerCase() ?? "";
+    const ptbrOfficial = wc.translations?.por?.official?.toLowerCase() ?? "";
+    return ptbr === normalized || ptbrOfficial === normalized;
+  });
+
+  if (!wcEntry) return null;
+
+  // Flag SVG via flagcdn (confiável e gratuito)
+  const flag = `https://flagcdn.com/${wcEntry.cca2.toLowerCase()}.svg`;
+
+  return {
+    namePtBr: wcEntry.translations?.por?.common ?? wcEntry.name.common,
+    nameEn: wcEntry.name.common,
+    cca2: wcEntry.cca2,
+    flag,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// POST /admin/preview-import
+// Body (multipart): file, sheetName? (opcional — sem ela, só lista as abas)
+// ---------------------------------------------------------------------------
+export async function previewClubImport(req, res) {
+  try {
+    const { sheetName } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Arquivo não enviado" });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+
+    // STEP 1 — listar abas
+    if (!sheetName) {
+      return res.json({ sheets: workbook.SheetNames });
+    }
+
+    // STEP 2 — ler aba escolhida
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) {
+      return res.status(400).json({ error: "Aba inválida" });
+    }
+
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    if (!rows.length) {
+      return res.status(400).json({ error: "Aba vazia" });
+    }
+
+    // Remove header se a segunda coluna contiver "nome"
+    if (
+      rows[0][1] &&
+      typeof rows[0][1] === "string" &&
+      rows[0][1].toLowerCase().includes("nome")
+    ) {
+      rows.shift();
+    }
+
+    const countriesInFile = [
+      ...new Set(rows.map((r) => r[0]).filter(Boolean)),
+    ];
+
+    const { rows: dbRows } = await db.query(
+      `SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`
+    );
+
+    const result = countriesInFile.map((fileCountry) => {
+      const resolved = resolveCountry(fileCountry, dbRows);
+
+      if (resolved) {
+        return {
+          file: fileCountry,
+          resolved,
+          status: "ok",
+          registerSuggestion: null,
+        };
+      }
+
+      // Não está no banco — tenta montar sugestão de cadastro
+      const registerSuggestion = buildSuggestionPayload(fileCountry);
+
+      return {
+        file: fileCountry,
+        resolved: null,
+        // "unknown" = nem no banco nem no world-countries
+        // "unregistered" = achou no world-countries mas não no banco
+        status: registerSuggestion ? "unregistered" : "unknown",
+        registerSuggestion,
+      };
+    });
+
+    return res.json({ countries: result });
+  } catch (err) {
+    console.error("Erro preview:", err);
+    return res.status(500).json({ error: "Erro ao processar preview" });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// uploadClubXlsx — sem alterações (contrato de country_map não mudou)
+// ---------------------------------------------------------------------------
+export async function uploadClubXlsx(req, res) {
+  try {
+    const { sheetName } = req.body;
+    const country_map = JSON.parse(req.body.country_map || "{}");
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Arquivo XLSX não enviado" });
+    }
+    if (!sheetName) {
+      return res.status(400).json({ error: "Aba não informada" });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[sheetName];
+
+    if (!sheet) {
+      return res.status(400).json({ error: "Aba inválida" });
+    }
+
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+    if (!rows.length) {
+      return res.status(400).json({ error: "Aba vazia" });
+    }
+
+    if (
+      rows[0][1] &&
+      typeof rows[0][1] === "string" &&
+      rows[0][1].toLowerCase().includes("nome")
+    ) {
+      rows.shift();
+    }
+
+    let inserted = 0;
+    let skipped = 0;
+
+    await db.query("BEGIN");
+
+    for (const row of rows) {
+      const countryName = row[0];
+      const name = row[1];
+      const location = row[3];
+      const founded_at = row[4];
+      const stadium_name = row[5];
+      const primary_color = row[8];
+      const secondary_color = row[10];
+
+      if (!name) { skipped++; continue; }
+
+      const countryId = country_map[countryName];
+      if (!countryId) { skipped++; continue; }
+
+      const exists = await db.query(
+        `SELECT 1 FROM clubs WHERE name ILIKE $1 AND id_country = $2`,
+        [name, countryId]
+      );
+
+      if (exists.rows.length) { skipped++; continue; }
+
+      await db.query(
+        `INSERT INTO clubs (
+          id_country, name, location, founded_at,
+          stadium_name, primary_color, secondary_color
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          countryId,
+          name,
+          location || null,
+          founded_at || null,
+          stadium_name || null,
+          primary_color || null,
+          secondary_color || null,
+        ]
+      );
+
+      inserted++;
+    }
+
+    await db.query("COMMIT");
+
+    return res.json({ message: "Importação concluída", inserted, skipped });
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.error("Erro ao importar:", err);
+    return res.status(500).json({ error: "Erro ao importar clubes" });
   }
 }

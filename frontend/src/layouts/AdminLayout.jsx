@@ -18,10 +18,10 @@ import {
   LogOut,
   User,
   CircleX,
-  Cog,
   Languages,
   MessageCircleQuestionMark,
-  CircleDollarSign
+  CircleDollarSign,
+  ChartArea
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -33,6 +33,7 @@ export default function AdminLayout() {
   const [openDados, setOpenDados] = useState(false);
   const [openInsights, setOpenInsights] = useState(false);
   const [openConfig, setOpenConfig] = useState(false);
+  const [openUpload, setOpenUpload] = useState(false);
   const [openPlanos, setOpenPlanos] = useState(false);
 
   const { logout, user } = useContext(AuthContext);
@@ -101,6 +102,17 @@ export default function AdminLayout() {
                 <div>
                     <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Geral</span>
                     <ul className="space-y-1">
+                        
+                        <div className="group">
+                            <MenuItem 
+                                to="/dashboard" 
+                                onClick={() => { handleGoPerfil(user.id); setOpenMenu(false); }} 
+                                className={menuItemStyle}
+                                icon={<ChartArea strokeWidth={1.5} size={20} className={iconStyle}/>} 
+                                label={<span className={textStyle}>Dashboard</span>} 
+                            />
+                        </div>
+
                         <div className="group">
                             <MenuItem 
                                 to="/admin/profile" 
@@ -135,37 +147,25 @@ export default function AdminLayout() {
                 <div>
                     <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Conteúdo & Dados</span>
                     <ul className="space-y-1">
-                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/upload/ligas" icon={<Upload strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Upload de dados</span>} /></div>
+                        
+                        <li>
+                            <button onClick={() => setOpenUpload(!openUpload)} className={menuItemStyle}>
+                                <div className="flex items-center gap-3">
+                                <Upload strokeWidth={1.5} className={iconStyle} size={20} />
+                                <span className={textStyle}>Upload de dados</span>
+                                </div>
+                                <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openUpload ? "rotate-180 text-purple-500" : ""}`} />
+                            </button>
+                            {openUpload && (
+                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/ligas" label="Financeiro" />
+                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/teams" label="Times" />
+                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/players" label="Jogadores" />
+                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/matches" label="Partidas" />
+                                </ul>
+                            )}
+                        </li>
 
-                       <div className="group">
-                        <MenuItem
-                            onClick={() => setOpenMenu(false)}
-                            className={menuItemStyle}
-                            to="/admin/upload/teams"
-                            icon={<Upload strokeWidth={1.5} size={20} className={iconStyle} />}
-                            label={<span className={textStyle}>Upload - Times</span>}
-                        />
-                        </div>
-
-                        <div className="group">
-                        <MenuItem
-                            onClick={() => setOpenMenu(false)}
-                            className={menuItemStyle}
-                            to="/admin/upload/players"
-                            icon={<Upload strokeWidth={1.5} size={20} className={iconStyle} />}
-                            label={<span className={textStyle}>Upload - Jogadores</span>}
-                        />
-                        </div>
-
-                        <div className="group">
-                        <MenuItem
-                            onClick={() => setOpenMenu(false)}
-                            className={menuItemStyle}
-                            to="/admin/upload/matches"
-                            icon={<Upload strokeWidth={1.5} size={20} className={iconStyle} />}
-                            label={<span className={textStyle}>Upload - Partidas</span>}
-                        />
-                        </div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/banners" icon={<ImageIcon strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Banners</span>} /></div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/notifications" icon={<Bell strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Notificações</span>} /></div>
                         <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/regions" icon={<Languages strokeWidth={1.5} size={20} className={iconStyle}/>} label={<span className={textStyle}>Idioma e regiões</span>} /></div>
@@ -208,13 +208,13 @@ export default function AdminLayout() {
                             {openInsights && (
                                 <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                     <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/usuarios" label="Usuários" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/clubes" label="Clubes" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/ligas" label="Ligas" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/financeiro" label="Financeiro" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/planos" label="Planos" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/importacoes" label="Importações" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/uso" label="Uso do Sistema" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/performance" label="Performance" />
+                                    <div className="opacity-50 pointer-events-none"><SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/clubes" label="Clubes - Em breve" /></div>
+                                    <div className="opacity-50 pointer-events-none"><SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/ligas" label="Ligas - Em breve" /></div>
+                                    <div className="opacity-50 pointer-events-none"><SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/financeiro" label="Financeiro - Em breve" /></div>
+                                    <div className="opacity-50 pointer-events-none"><SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/planos" label="Planos - Em breve" /></div>
+                                    <div className="opacity-50 pointer-events-none"><SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/importacoes" label="Importações - Em breve" /></div>
+                                    <div className="opacity-50 pointer-events-none"><SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/uso" label="Uso do Sistema - Em breve" /></div>
+                                    <div className="opacity-50 pointer-events-none"><SubItem onClick={() => setOpenMenu(false)} to="/admin/painel/performance" label="Performance - Em breve" /></div>
                                 </ul>
                             )}
                         </li>

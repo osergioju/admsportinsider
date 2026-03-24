@@ -1,409 +1,305 @@
-import db from  "../config/db.js";
+import db from "../config/db.js";
 
-// LISTAR TODAS AS MOEDAS ATIVAS
+// ---------------------------------------------------------------------------
+// MOEDAS
+// ---------------------------------------------------------------------------
+
+// GET /currency/currencies
 export async function getAllCurrencies(req, res) {
-    try {
-        const { rows: currencies } = await db.query(`
-            SELECT 
-                c.*,
-                co.name AS country_name,
-                co.flag_url
-            FROM currencies c
-            LEFT JOIN countries co 
-                ON c.id_country = co.id_country
-            WHERE c.active = true
-            ORDER BY c.created_at DESC
-        `);
+  try {
+    const { rows } = await db.query(`
+      SELECT 
+        c.id, c.code, c.name, c.symbol, c.active, c.created_at, c.id_country,
+        co.name AS country_name,
+        co.flag_url
+      FROM currencies c
+      LEFT JOIN countries co ON c.id_country = co.id_country
+      WHERE c.active = true
+      ORDER BY c.code ASC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao buscar moedas:", err);
+    res.status(500).json({ error: "Erro ao buscar moedas" });
+  }
+}
 
-        
-        res.json(currencies);
-    } catch (error) {
-        console.error('Erro ao buscar moedas:', error);
-        res.status(500).json({ error: 'Erro ao buscar moedas' });
-    }
-};
-
-// BUSCAR MOEDA POR ID
+// GET /currency/currencies/:id
 export async function getCurrencyById(req, res) {
-    try {
-        const { id } = req.params;
-        
-        const [currency] = await db.query(`
-            SELECT 
-                c.*, 
-                co.name AS country_name,
-                co.flag_url
-            FROM currencies c
-            LEFT JOIN countries co 
-                ON c.id_country = co.id_country
-            WHERE c.id = "?"
-            AND c.active = true;;
+  try {
+    const { id } = req.params;
+    const { rows } = await db.query(`
+      SELECT 
+        c.id, c.code, c.name, c.symbol, c.active, c.created_at, c.id_country,
+        co.name AS country_name,
+        co.flag_url
+      FROM currencies c
+      LEFT JOIN countries co ON c.id_country = co.id_country
+      WHERE c.id = $1 AND c.active = true
+    `, [id]);
 
-        `, [id]);
-        
-        if (!currency.length) {
-            return res.status(404).json({ error: 'Moeda não encontrada' });
-        }
-        
-        res.json(currency[0]);
-    } catch (error) {
-        console.error('Erro ao buscar moeda:', error);
-        res.status(500).json({ error: 'Erro ao buscar moeda' });
-    }
-};
+    if (!rows.length) return res.status(404).json({ error: "Moeda não encontrada" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao buscar moeda:", err);
+    res.status(500).json({ error: "Erro ao buscar moeda" });
+  }
+}
 
-// CRIAR NOVA MOEDA
+// POST /currency/currencies
 export async function createCurrency(req, res) {
-    try {
-        const { id_country, code, name, symbol } = req.body;
+  try {
+    const { id_country, code, name, symbol } = req.body;
 
-        if (!id_country || !code || !name || !symbol) {
-            return res.status(400).json({ 
-                error: 'Todos os campos são obrigatórios' 
-            });
-        }
-
-        // Verifica se já existe moeda ativa para o país
-        const { rows: existing } = await db.query(
-            `
-            SELECT id 
-            FROM currencies 
-            WHERE id_country = $1 
-              AND active = true
-            `,
-            [id_country]
-        );
-
-        if (existing.length > 0) {
-            return res.status(400).json({ 
-                error: 'Já existe uma moeda cadastrada para este país' 
-            });
-        }
-
-        // Insere e retorna o ID criado
-        const { rows } = await db.query(
-            `
-            INSERT INTO currencies 
-                (id_country, code, name, symbol, active, created_at)
-            VALUES 
-                ($1, $2, $3, $4, true, NOW())
-            RETURNING id
-            `,
-            [id_country, code.toUpperCase(), name, symbol]
-        );
-
-        res.status(201).json({
-            id: rows[0].id,
-            id_country,
-            code: code.toUpperCase(),
-            name,
-            symbol,
-            message: 'Moeda cadastrada com sucesso!'
-        });
-
-    } catch (error) {
-        console.error('Erro ao criar moeda:', error);
-        res.status(500).json({ 
-            error: 'Erro ao cadastrar moeda' 
-        });
+    if (!id_country || !code || !name || !symbol) {
+      return res.status(400).json({ error: "Todos os campos são obrigatórios" });
     }
+
+    // Verifica duplicata de código
+    const { rows: existing } = await db.query(
+      `SELECT id FROM currencies WHERE code = $1 AND active = true`,
+      [code.toUpperCase()]
+    );
+    if (existing.length) {
+      return res.status(400).json({ error: "Já existe uma moeda com este código" });
+    }
+
+    const { rows } = await db.query(`
+      INSERT INTO currencies (id_country, code, name, symbol, active, created_at)
+      VALUES ($1, $2, $3, $4, true, NOW())
+      RETURNING *
+    `, [id_country, code.toUpperCase(), name, symbol]);
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao criar moeda:", err);
+    res.status(500).json({ error: "Erro ao cadastrar moeda" });
+  }
 }
 
-
-// ATUALIZAR MOEDA
-export async function updateCurrency(req, res) {
-    try {
-        const { id } = req.params;
-        const { code, name, symbol } = req.body;
-        
-        const [result] = await db.query(`
-            UPDATE currencies 
-            SET code = ?, name = ?, symbol = ?
-            WHERE id = ? AND active = 1
-        `, [code.toUpperCase(), name, symbol, id]);
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Moeda não encontrada' });
-        }
-        
-        res.json({ message: 'Moeda atualizada com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao atualizar moeda:', error);
-        res.status(500).json({ error: 'Erro ao atualizar moeda' });
-    }
-};
-
-// DESABILITAR MOEDA
+// DELETE /currency/currencies/:id  (soft delete)
 export async function disableCurrency(req, res) {
-    try {
-        const { id } = req.params;
-        
-        const [result] = await db.query(
-            'UPDATE currencies SET active = 0 WHERE id = ?',
-            [id]
-        );
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Moeda não encontrada' });
-        }
-        
-        res.json({ message: 'Moeda desabilitada com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao desabilitar moeda:', error);
-        res.status(500).json({ error: 'Erro ao desabilitar moeda' });
-    }
-};
+  try {
+    const { id } = req.params;
+    const { rowCount } = await db.query(
+      `UPDATE currencies SET active = false WHERE id = $1 AND active = true`,
+      [id]
+    );
+    if (!rowCount) return res.status(404).json({ error: "Moeda não encontrada" });
+    res.json({ success: true, message: "Moeda desativada com sucesso" });
+  } catch (err) {
+    console.error("Erro ao desativar moeda:", err);
+    res.status(500).json({ error: "Erro ao desativar moeda" });
+  }
+}
 
-// LISTAR PAÍSES DISPONÍVEIS (que ainda não têm moeda)
+// ---------------------------------------------------------------------------
+// AUXILIARES
+// ---------------------------------------------------------------------------
+
+// GET /currency/currencies/available/countries
+// Países que ainda não têm moeda ativa cadastrada
 export async function getAvailableCountries(req, res) {
-    try {
-        const [countries] = await db.query(`
-            SELECT co.id, co.name, co.code
-            FROM countries co
-            LEFT JOIN currencies c ON co.id = c.id_country AND c.active = 1
-            WHERE co.active = 1 AND c.id IS NULL
-            ORDER BY co.name
-        `);
-        
-        res.json(countries);
-    } catch (error) {
-        console.error('Erro ao buscar países disponíveis:', error);
-        res.status(500).json({ error: 'Erro ao buscar países disponíveis' });
-    }
-};
+  try {
+    const { rows } = await db.query(`
+      SELECT co.id_country, co.name, co.flag_url
+      FROM countries co
+      LEFT JOIN currencies c 
+        ON co.id_country = c.id_country AND c.active = true
+      WHERE co.active = true
+        AND c.id IS NULL
+      ORDER BY co.name
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao buscar países disponíveis:", err);
+    res.status(500).json({ error: "Erro ao buscar países disponíveis" });
+  }
+}
 
-// LISTAR OUTRAS MOEDAS PARA CRIAR PARES (exceto a moeda atual)
+// GET /currency/currencies/:currencyId/other-currencies
+// Moedas ativas exceto a atual (para criar par)
 export async function getOtherCurrencies(req, res) {
-    try {
-        const { currencyId } = req.params;
-        
-        const { rows: currencies } = await db.query(`
-        SELECT 
-            c.id,
-            c.code,
-            c.name,
-            c.symbol,
-            co.name AS country_name
-        FROM currencies c
-        LEFT JOIN countries co 
-            ON c.id_country = co.id_country
-        WHERE c.id <> $1
-        AND c.active = true
-        ORDER BY c.code
-    `, [currencyId]);
+  try {
+    const { currencyId } = req.params;
 
-        
-        res.json(currencies);
-    } catch (error) {
-        console.error('Erro ao buscar outras moedas:', error);
-        res.status(500).json({ error: 'Erro ao buscar outras moedas' });
-    }
-};
+    // Pega o code da moeda atual pra excluir dos pares já existentes
+    const { rows: self } = await db.query(
+      `SELECT code FROM currencies WHERE id = $1`,
+      [currencyId]
+    );
+    if (!self.length) return res.status(404).json({ error: "Moeda não encontrada" });
 
-// CRIAR PAR DE CÂMBIO
-export async function createCurrencyPair(req, res) {
-    try {
-        const { from_currency_id, to_currency_id } = req.body;
-        console.log(req.body);
+    const selfCode = self[0].code;
 
-        if (!base_currency || !reference_currency || !rate || !period) {
-            return res.status(400).json({
-                error: 'Base, referência, taxa e ano são obrigatórios'
-            });
-        }
+    // Retorna moedas que ainda não têm par com a moeda atual
+    const { rows } = await db.query(`
+      SELECT 
+        c.id, c.code, c.name, c.symbol,
+        co.name AS country_name
+      FROM currencies c
+      LEFT JOIN countries co ON c.id_country = co.id_country
+      WHERE c.active = true
+        AND c.id <> $1
+        AND c.code NOT IN (
+          SELECT reference_currency FROM currency_rates WHERE base_currency = $2
+        )
+      ORDER BY c.code
+    `, [currencyId, selfCode]);
 
-        if (base_currency === reference_currency) {
-            return res.status(400).json({
-                error: 'Não é possível usar a mesma moeda'
-            });
-        }
-
-        const year = Number(period);
-
-        if (isNaN(year) || year < 2000) {
-            return res.status(400).json({
-                error: 'Ano inválido'
-            });
-        }
-
-        const { rows } = await db.query(`
-            INSERT INTO currency_rates
-                (base_currency, reference_currency, period, rate, source, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, 'manual', NOW(), NOW())
-            ON CONFLICT (base_currency, reference_currency, period)
-            DO UPDATE SET
-                rate = EXCLUDED.rate,
-                updated_at = NOW()
-            RETURNING id
-        `, [base_currency, reference_currency, year, rate]);
-
-        res.status(201).json({
-            id: rows[0].id,
-            message: 'Taxa cadastrada com sucesso'
-        });
-
-    } catch (error) {
-        console.error('Erro ao salvar taxa:', error);
-        res.status(500).json({
-            error: 'Erro ao salvar taxa'
-        });
-    }
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao buscar outras moedas:", err);
+    res.status(500).json({ error: "Erro ao buscar outras moedas" });
+  }
 }
 
+// ---------------------------------------------------------------------------
+// PARES E TAXAS (currency_rates)
+// schema: id, base_currency (code), reference_currency (code), period (date), rate, source, created_at, updated_at
+// Um "par" = (base_currency, reference_currency) com N linhas de period/rate
+// ---------------------------------------------------------------------------
 
-// LISTAR PARES DE CÂMBIO DE UMA MOEDA
+// GET /currency/currencies/:currencyId/pairs
+// Retorna os pares distintos da moeda, com a taxa mais recente de cada um
 export async function getCurrencyPairs(req, res) {
-    try {
-        const currencyId = req.params.currencyId;
+  try {
+    const { currencyId } = req.params;
 
-        const { rows } = await db.query(`
-            SELECT 
-                cr.id,
-                cr.base_currency,
-                cr.reference_currency,
-                cr.period,
-                cr.rate,
-                c_from.code AS from_code,
-                c_from.name AS from_name,
-                c_from.symbol AS from_symbol, 
-                c_to.code AS to_code,
-                c_to.name AS to_name,
-                c_to.symbol AS to_symbol,
-                co_to.name AS to_country_name
-            FROM currency_rates cr
-            INNER JOIN currencies c_from 
-                ON cr.base_currency = c_from.id
-            INNER JOIN currencies c_to 
-                ON cr.reference_currency = c_to.id
-            LEFT JOIN countries co_to 
-                ON c_to.id_country = co_to.id_country
-            WHERE cr.base_currency = $1
-            ORDER BY cr.period DESC, c_to.code
-        `, [currencyId]);
+    const { rows: self } = await db.query(
+      `SELECT code FROM currencies WHERE id = $1`,
+      [currencyId]
+    );
+    if (!self.length) return res.status(404).json({ error: "Moeda não encontrada" });
 
-        res.json(rows);
+    const selfCode = self[0].code;
 
-    } catch (error) {
-        console.error('Erro ao buscar taxas:', error);
-        res.status(500).json({ error: 'Erro ao buscar taxas de moedas' });
-    }
+    // Agrupa por par, traz taxa mais recente e total de registros
+    const { rows } = await db.query(`
+      SELECT
+        cr.base_currency,
+        cr.reference_currency,
+        COUNT(*) AS total_rates,
+        MAX(cr.period) AS latest_period,
+        (
+          SELECT cr2.rate 
+          FROM currency_rates cr2 
+          WHERE cr2.base_currency = cr.base_currency 
+            AND cr2.reference_currency = cr.reference_currency
+          ORDER BY cr2.period DESC 
+          LIMIT 1
+        ) AS latest_rate,
+        c_to.id AS to_currency_id,
+        c_to.name AS to_currency_name,
+        c_to.symbol AS to_symbol,
+        co.name AS to_country_name,
+        co.flag_url AS to_flag
+      FROM currency_rates cr
+      INNER JOIN currencies c_to 
+        ON c_to.code = cr.reference_currency AND c_to.active = true
+      LEFT JOIN countries co 
+        ON co.id_country = c_to.id_country
+      WHERE cr.base_currency = $1
+      GROUP BY 
+        cr.base_currency, cr.reference_currency,
+        c_to.id, c_to.name, c_to.symbol, co.name, co.flag_url
+      ORDER BY cr.reference_currency
+    `, [selfCode]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao buscar pares:", err);
+    res.status(500).json({ error: "Erro ao buscar pares de câmbio" });
+  }
 }
 
+// GET /currency/currency-rates/:baseCurrencyCode/:referenceCurrencyCode
+// Retorna todas as taxas de um par específico
+export async function getRatesByPair(req, res) {
+  try {
+    const { baseCurrencyCode, referenceCurrencyCode } = req.params;
 
+    const { rows } = await db.query(`
+      SELECT id, base_currency, reference_currency, period, rate, source, created_at, updated_at
+      FROM currency_rates
+      WHERE base_currency = $1 AND reference_currency = $2
+      ORDER BY period DESC
+    `, [baseCurrencyCode, referenceCurrencyCode]);
 
-// DELETAR PAR DE CÂMBIO
-export async function deleteCurrencyPair(req, res) {
-    try {
-        const { id } = req.params;
-        
-        const [result] = await db.query(
-            'UPDATE currency_pairs SET active = 0 WHERE id = ?',
-            [id]
-        );
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Par não encontrado' });
-        }
-        
-        res.json({ message: 'Par removido com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao deletar par:', error);
-        res.status(500).json({ error: 'Erro ao deletar par' });
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao buscar taxas:", err);
+    res.status(500).json({ error: "Erro ao buscar taxas" });
+  }
+}
+
+// POST /currency/currency-rates
+// Cria ou atualiza uma taxa para um par em um período
+export async function createOrUpdateRate(req, res) {
+  try {
+    const { base_currency, reference_currency, year, rate } = req.body;
+
+    if (!base_currency || !reference_currency || !year || rate == null) {
+      return res.status(400).json({ error: "base_currency, reference_currency, year e rate são obrigatórios" });
     }
-};
 
-// CRIAR TAXA DE CÂMBIO
-export async function createCurrencyRate(req, res) {
-    try {
-        const { pair_id, year, rate } = req.body;
-        
-        if (!pair_id || !year || !rate) {
-            return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
-        }
-        
-        const [existing] = await db.query(`
-            SELECT id FROM currency_rates 
-            WHERE pair_id = ? AND year = ? AND active = 1
-        `, [pair_id, year]);
-        
-        if (existing.length > 0) {
-            return res.status(400).json({ error: 'Já existe uma taxa cadastrada para este ano' });
-        }
-        
-        const [result] = await db.query(`
-            INSERT INTO currency_rates (pair_id, year, rate, active, created_at)
-            VALUES (?, ?, ?, 1, NOW())
-        `, [pair_id, year, rate]);
-        
-        res.status(201).json({
-            id: result.insertId,
-            message: 'Taxa de câmbio cadastrada com sucesso!'
-        });
-    } catch (error) {
-        console.error('Erro ao criar taxa:', error);
-        res.status(500).json({ error: 'Erro ao cadastrar taxa de câmbio' });
+    if (base_currency === reference_currency) {
+      return res.status(400).json({ error: "Não é possível criar par com a mesma moeda" });
     }
-};
 
-// LISTAR TAXAS DE CÂMBIO DE UM PAR
-export async function getCurrencyRates(req, res) {
-    try {
-        const { pairId } = req.params;
-        
-        const [rates] = await db.query(`
-            SELECT id, pair_id, year, rate, created_at
-            FROM currency_rates
-            WHERE pair_id = ? AND active = 1
-            ORDER BY year DESC
-        `, [pairId]);
-        
-        res.json(rates);
-    } catch (error) {
-        console.error('Erro ao buscar taxas:', error);
-        res.status(500).json({ error: 'Erro ao buscar taxas de câmbio' });
+    const yearNum = Number(year);
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
+      return res.status(400).json({ error: "Ano inválido" });
     }
-};
 
-// ATUALIZAR TAXA DE CÂMBIO
-export async function updateCurrencyRate(req, res) {
-    try {
-        const { id } = req.params;
-        const { rate } = req.body;
-        
-        const [result] = await db.query(`
-            UPDATE currency_rates 
-            SET rate = ?
-            WHERE id = ? AND active = 1
-        `, [rate, id]);
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Taxa não encontrada' });
-        }
-        
-        res.json({ message: 'Taxa atualizada com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao atualizar taxa:', error);
-        res.status(500).json({ error: 'Erro ao atualizar taxa' });
-    }
-};
+    // period como primeiro dia do ano
+    const period = `${yearNum}-01-01`;
 
-// DELETAR TAXA DE CÂMBIO
-export async function deleteCurrencyRate(req, res) {
-    try {
-        const { id } = req.params;
-        
-        const [result] = await db.query(
-            'UPDATE currency_rates SET active = 0 WHERE id = ?',
-            [id]
-        );
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Taxa não encontrada' });
-        }
-        
-        res.json({ message: 'Taxa removida com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao deletar taxa:', error);
-        res.status(500).json({ error: 'Erro ao deletar taxa' });
-    }
-};
+    const { rows } = await db.query(`
+      INSERT INTO currency_rates 
+        (base_currency, reference_currency, period, rate, source, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, 'manual', NOW(), NOW())
+      ON CONFLICT (base_currency, reference_currency, period)
+      DO UPDATE SET rate = EXCLUDED.rate, updated_at = NOW()
+      RETURNING *
+    `, [base_currency.toUpperCase(), reference_currency.toUpperCase(), period, rate]);
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao salvar taxa:", err);
+    res.status(500).json({ error: "Erro ao salvar taxa de câmbio" });
+  }
+}
+
+// DELETE /currency/currency-rates/:id  (hard delete — tabela não tem active)
+export async function deleteRate(req, res) {
+  try {
+    const { id } = req.params;
+    const { rowCount } = await db.query(
+      `DELETE FROM currency_rates WHERE id = $1`,
+      [id]
+    );
+    if (!rowCount) return res.status(404).json({ error: "Taxa não encontrada" });
+    res.json({ success: true, message: "Taxa removida com sucesso" });
+  } catch (err) {
+    console.error("Erro ao deletar taxa:", err);
+    res.status(500).json({ error: "Erro ao deletar taxa" });
+  }
+}
+
+// DELETE /currency/currency-pairs/:base/:reference
+// Remove TODAS as taxas de um par (hard delete em lote)
+export async function deletePair(req, res) {
+  try {
+    const { base, reference } = req.params;
+    const { rowCount } = await db.query(
+      `DELETE FROM currency_rates WHERE base_currency = $1 AND reference_currency = $2`,
+      [base.toUpperCase(), reference.toUpperCase()]
+    );
+    if (!rowCount) return res.status(404).json({ error: "Par não encontrado" });
+    res.json({ success: true, message: "Par removido com sucesso" });
+  } catch (err) {
+    console.error("Erro ao deletar par:", err);
+    res.status(500).json({ error: "Erro ao deletar par" });
+  }
+}

@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 
 export default function AdminProfile() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, updateUser } = useContext(AuthContext);
+
   
   // Check if the user is logged in via Google
   const isGoogleUser = user?.provider === "google"; 
@@ -171,7 +172,7 @@ export default function AdminProfile() {
 
     try {
       await api.put("/user/profile", payload);
-      setUser(prev => ({ ...prev, ...payload }));
+      updateUser(payload);
       setSuccessProfile(true);
       setTimeout(() => setSuccessProfile(false), 3000);
     } catch (err) {
@@ -207,29 +208,6 @@ export default function AdminProfile() {
 
       {/*  FORMULÁRIO DE PERFIL*/}
       <form onSubmit={handleSubmit} className="space-y-6 w-full">
-        
-        <div className="flex items-center gap-5 pb-6 border-b border-gray-100">
-          <div className="relative group cursor-pointer">
-            <div className="w-20 h-20 rounded-full bg-purple-50 border-2 border-white shadow-sm flex items-center justify-center text-[#7F33D9] font-bold text-2xl overflow-hidden">
-               {user.photo ? (
-                 <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
-               ) : (
-                 user.name?.charAt(0).toUpperCase()
-               )}
-            </div>
-            <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-               <Camera size={20} className="text-white" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-[#111]">Foto de perfil</h3>
-            <p className="text-xs text-gray-500 mb-2">Recomendado: PNG ou JPG.</p>
-            <button type="button" className="text-sm text-[#7F33D9] font-medium hover:text-[#6025A8] transition-colors underline decoration-transparent hover:decoration-[#6025A8]">
-              Alterar foto
-            </button>
-          </div>
-        </div>
-
         <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>

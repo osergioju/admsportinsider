@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder} from "../controllers/admin.controller.js";
+import {previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder} from "../controllers/admin.controller.js";
 import { getUsersInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -7,7 +7,9 @@ import { uploadImage } from "../middlewares/uploadImage.js";
 import { uploadClubLogo } from "../controllers/upload.controller.js";
 import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
 import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage } from "../controllers/banner.controller.js";
-import { getAllRegions, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations } from "../controllers/adminRegionsController.js";
+import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations, getCommonTermsByRegion, saveCommonTermsTranslations } from "../controllers/adminRegionsController.js";
+
+import { authGuard } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 
@@ -37,6 +39,7 @@ router.put("/clubs/:id/update", updateClub);
 router.delete("/disable-club/:id", disableClub);
 router.get("/attribute-keys", getAttributeKeys);
 router.post("/import-clubs-xlsx", uploadXlsx, uploadClubXlsx);
+router.post("/preview-import", uploadXlsx, previewClubImport)
 router.post("/clubs/search", clubsSearch);
 router.get("/clubs-grouped-by-country", clubsGroupedByCountry);
 
@@ -47,7 +50,7 @@ router.post("/users/:id", getUserById);
 router.post("/users/:id/disable", disableUser);
 router.post("/users/:id/enable", enableUser);
 router.post("/users/:id/change-plan", changeUserPlan);
-router.put("/users/:id/update", updateUser);
+router.put("/users/:id/update", authGuard, updateUser);
 router.post("/users/:id/resend-confirmation", resendConfirmationEmail);
 router.get("/insights/users", getUsersInsights);
 router.put("/users/:id/update-password", updateUserPassword);
@@ -84,8 +87,11 @@ router.get("/regions", getAllRegions);
 router.get("/regions/:id", getRegionById);
 router.post("/regions", createRegion);
 router.put("/regions/:id", updateRegion);
+router.delete("/regions/:id", deleteRegion);
 router.get("/regions/:id/financial-indicators",getFinancialIndicatorsByRegion);
 router.post("/regions/:id/financial-indicators", saveFinancialIndicatorsTranslations);
+router.get("/regions/:id/common-terms",  getCommonTermsByRegion);
+router.post("/regions/:id/common-terms", saveCommonTermsTranslations);
 
 // Faq
 router.get("/faq", getAllFaqs);
@@ -101,4 +107,5 @@ export default router;
 /***
  * DEPPOS VER SE VAI SER MELHOR DIVIDIR OS CONTROLERS DO ADMIN PQ VAI FICAR ENORME
  */
+
 

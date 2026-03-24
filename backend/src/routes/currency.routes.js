@@ -1,29 +1,37 @@
-
 import { Router } from "express";
-import { getAllCurrencies, getCurrencyById, createCurrency, updateCurrency, disableCurrency, getAvailableCountries, getOtherCurrencies, getCurrencyPairs, createCurrencyPair, deleteCurrencyPair, getCurrencyRates, createCurrencyRate, updateCurrencyRate, deleteCurrencyRate } from "../controllers/currency.controller.js";
+import {
+  getAllCurrencies,
+  getCurrencyById,
+  createCurrency,
+  disableCurrency,
+  getAvailableCountries,
+  getOtherCurrencies,
+  getCurrencyPairs,
+  getRatesByPair,
+  createOrUpdateRate,
+  deleteRate,
+  deletePair,
+} from "../controllers/currency.controller.js";
 
 const router = Router();
 
-// ROTAS DE MOEDAS
-router.get('/currencies', getAllCurrencies);
-router.get('/currencies/:id', getCurrencyById);
-router.post('/currencies', createCurrency);
-router.put('/currencies/:id', updateCurrency);
-router.delete('/currencies/:id', disableCurrency);
+// Moedas
+router.get("/currencies", getAllCurrencies);
+router.get("/currencies/available/countries", getAvailableCountries); // antes de /:id
+router.get("/currencies/:id", getCurrencyById);
+router.post("/currencies", createCurrency);
+router.delete("/currencies/:id", disableCurrency);
 
-// ROTAS AUXILIARES
-router.get('/currencies/available/countries', getAvailableCountries);
-router.get('/currencies/:currencyId/other-currencies', getOtherCurrencies);
+// Auxiliar
+router.get("/currencies/:currencyId/other-currencies", getOtherCurrencies);
 
-// ROTAS DE PARES DE CÂMBIO
-router.get('/currencies/:currencyId/pairs', getCurrencyPairs);
-router.post('/currency-pairs', createCurrencyPair);
-router.delete('/currency-pairs/:id', deleteCurrencyPair);
+// Pares (agrupados por base+reference)
+router.get("/currencies/:currencyId/pairs", getCurrencyPairs);
+router.delete("/currency-pairs/:base/:reference", deletePair);
 
-// ROTAS DE TAXAS DE CÂMBIO
-router.get('/currency-pairs/:pairId/rates', getCurrencyRates);
-router.post('/currency-rates', createCurrencyRate);
-router.put('/currency-rates/:id', updateCurrencyRate);
-router.delete('/currency-rates/:id', deleteCurrencyRate);
+// Taxas individuais
+router.get("/currency-rates/:baseCurrencyCode/:referenceCurrencyCode", getRatesByPair);
+router.post("/currency-rates", createOrUpdateRate);
+router.delete("/currency-rates/:id", deleteRate);
 
 export default router;
