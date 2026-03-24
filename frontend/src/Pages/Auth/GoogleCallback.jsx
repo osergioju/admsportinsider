@@ -9,34 +9,67 @@ export default function GoogleCallback() {
 
   useEffect(() => {
     async function handleGoogleLogin() {
+      console.log("🚀 Iniciando callback Google");
+
       try {
+        console.log("🌐 URL completa:", window.location.href);
+
         const params = new URLSearchParams(window.location.search);
         const token = params.get("token");
 
+        console.log("🔑 Token recebido:", token);
+
         // Se não veio token, volta pro login
         if (!token) {
+          console.warn("⚠️ Token não encontrado na URL");
           navigate("/login");
           return;
         }
 
-        // Guarda o token (se seu AuthContext já faz isso, depois podemos simplificar)
+        // Salva token
         localStorage.setItem("token", token);
-        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        console.log("💾 Token salvo no localStorage");
 
-        // Busca os dados do usuário no backend
+        // Seta header
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        console.log("📡 Header Authorization setado:", api.defaults.headers.common["Authorization"]);
+
+        // Teste rápido antes do /me
+        console.log("🧪 Testando chamada /auth/me...");
+
         const response = await api.get("/auth/me");
+
+        console.log("✅ Resposta /auth/me:", response);
+
         const user = response.data.user || response.data;
 
-        // Usa o mesmo login do fluxo normal
+        console.log("👤 Usuário identificado:", user);
+
+        // Login no contexto
+        console.log("🔐 Chamando login()...");
         login(token, user);
 
-        // Redireciona igual à página de login
-        if (user.role === "user") navigate("/dashboard");
-        if (user.role === "admin") navigate("/admin");
-        if (user.role === "admin_master") navigate("/admin");
+        console.log("📍 Role do usuário:", user.role);
+
+        // Redirecionamento
+        if (user.role === "user") {
+          console.log("➡️ Indo para /dashboard");
+          navigate("/dashboard");
+        }
+
+        if (user.role === "admin" || user.role === "admin_master") {
+          console.log("➡️ Indo para /admin");
+          navigate("/admin");
+        }
 
       } catch (error) {
-        console.error("Erro ao finalizar login com Google:", error);
+        console.error("❌ Erro no login com Google:", error);
+
+        if (error.response) {
+          console.error("📦 response:", error.response.data);
+          console.error("📊 status:", error.response.status);
+        }
+
         navigate("/login");
       }
     }

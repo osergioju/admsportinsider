@@ -23,18 +23,13 @@ export const login = async (req, res) => {
     // 1. Buscar usuário no banco
     const user = await findUserByEmail(email);
 
-    console.log("[LOGIN 1] Usuário encontrado:", user ? { id: user.id, email: user.email, active: user.active, email_verified: user.email_verified, tem_password_hash: !!user.password_hash } : "NÃO ENCONTRADO");
-
     if (!user || !user.active || !user.email_verified) {
-      console.log("[LOGIN 2] Bloqueado no guard:", { user_existe: !!user, active: user?.active, email_verified: user?.email_verified });
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
     const passwordMatch = await bcrypt.compare(senha, user.password_hash);
-    console.log("[LOGIN 3] bcrypt.compare resultado:", passwordMatch);
 
     if (!passwordMatch) {
-      console.log("[LOGIN 4] Senha não bateu. Hash no banco:", user.password_hash);
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
@@ -412,8 +407,6 @@ export async function resetPasswordConfirm(req, res) {
   try {
     const { token, senha } = req.body;
 
-    console.log("[1] Body recebido:", { token: token?.slice(0, 10) + "...", senha: senha ? "***" : "AUSENTE" });
-
     if (!token || !senha) {
       return res.status(400).json({
         status: "error",
@@ -422,7 +415,6 @@ export async function resetPasswordConfirm(req, res) {
     }
 
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    console.log("[2] Token hash gerado:", tokenHash);
 
     const result = await db.query(
       `
@@ -434,8 +426,6 @@ export async function resetPasswordConfirm(req, res) {
       [tokenHash]
     );
 
-    console.log("[3] Resultado da busca do token:", result.rows);
-
     if (result.rows.length === 0) {
       return res.status(400).json({
         status: "error",
@@ -444,41 +434,31 @@ export async function resetPasswordConfirm(req, res) {
     }
 
     const reset = result.rows[0];
-    console.log("[4] Reset encontrado:", { id: reset.id, user_id: reset.user_id, expires_at: reset.expires_at, email: reset.email });
 
     if (new Date(reset.expires_at) < new Date()) {
-      console.log("[5] Token EXPIRADO. expires_at:", reset.expires_at, "| Agora:", new Date());
       return res.status(400).json({
         status: "error",
         message: "Token expirado. Solicite uma nova redefinição."
       });
     }
 
-    console.log("[5] Token válido. Gerando hash da nova senha...");
-    const hashedPassword = await bcrypt.hash(senha, 10);
-    console.log("[6] Hash gerado:", hashedPassword);
 
-    const updateResult = await db.query(
-      "UPDATE users SET password_hash = $1 WHERE id = $2",
+    const hashedPassword = await bcrypt.hash(senha, 10);
+
+     const updateResult = await db.query(
+      "UPDATE users SET password_hash = $1, email_verified = true WHERE id = $2",
       [hashedPassword, reset.user_id]
     );
-
-    console.log("[7] UPDATE users rowCount:", updateResult.rowCount);
-    // Se rowCount for 0, o user_id não existe na tabela users
 
     const deleteResult = await db.query(
       "DELETE FROM password_resets WHERE id = $1",
       [reset.id]
     );
 
-    console.log("[8] DELETE password_resets rowCount:", deleteResult.rowCount);
-
     // ✅ CORREÇÃO: email já veio na primeira query, não precisa buscar de novo
     const email = reset.email;
-    console.log("[9] Email para notificação:", email);
 
     await sendResetEmailSucess(email);
-    console.log("[10] E-mail de sucesso enviado.");
 
     return res.json({
       status: "ok",
