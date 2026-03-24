@@ -409,7 +409,9 @@ export async function resetPasswordRequest(req, res) {
 // RESET PASSWORD CONFIRM
 export async function resetPasswordConfirm(req, res) {
   try {
-    const { token, senha,  } = req.body;
+    const { token, senha } = req.body;
+
+    console.log("[1] Body recebido:", { token: token?.slice(0, 10) + "...", senha: senha ? "***" : "AUSENTE" });
 
     if (!token || !senha) {
       return res.status(400).json({
@@ -418,10 +420,9 @@ export async function resetPasswordConfirm(req, res) {
       });
     }
 
-    // Criar hash do token enviado
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    console.log("[2] Token hash gerado:", tokenHash);
 
-    // buscar token no banco
     const result = await db.query(
       `
       SELECT pr.id, pr.user_id, pr.expires_at, u.email
@@ -432,6 +433,8 @@ export async function resetPasswordConfirm(req, res) {
       [tokenHash]
     );
 
+    console.log("[3] Resultado da busca do token:", result.rows);
+
     if (result.rows.length === 0) {
       return res.status(400).json({
         status: "error",
@@ -440,43 +443,41 @@ export async function resetPasswordConfirm(req, res) {
     }
 
     const reset = result.rows[0];
+    console.log("[4] Reset encontrado:", { id: reset.id, user_id: reset.user_id, expires_at: reset.expires_at, email: reset.email });
 
-    // Verificar expiração
     if (new Date(reset.expires_at) < new Date()) {
+      console.log("[5] Token EXPIRADO. expires_at:", reset.expires_at, "| Agora:", new Date());
       return res.status(400).json({
         status: "error",
         message: "Token expirado. Solicite uma nova redefinição."
       });
     }
-    
-    // gerar hash da nova senha
-    const hashedPassword = await bcrypt.hash(senha, 10);
 
-    // atualizar senha do usuário
-    await db.query(
+    console.log("[5] Token válido. Gerando hash da nova senha...");
+    const hashedPassword = await bcrypt.hash(senha, 10);
+    console.log("[6] Hash gerado:", hashedPassword);
+
+    const updateResult = await db.query(
       "UPDATE users SET password_hash = $1 WHERE id = $2",
       [hashedPassword, reset.user_id]
     );
 
-    // Apagar token após o uso
-    await db.query(
+    console.log("[7] UPDATE users rowCount:", updateResult.rowCount);
+    // Se rowCount for 0, o user_id não existe na tabela users
+
+    const deleteResult = await db.query(
       "DELETE FROM password_resets WHERE id = $1",
       [reset.id]
     );
 
-    // Pega o e-mail do user com base no id fazendo select na base
-    const getUserMail = await db.query(
-      `
-      SELECT email
-      FROM users WHERE id = $1
-      `,
-      [reset.user_id]
-    );
+    console.log("[8] DELETE password_resets rowCount:", deleteResult.rowCount);
 
-    const email = getUserMail.rows[0].email
+    // ✅ CORREÇÃO: email já veio na primeira query, não precisa buscar de novo
+    const email = reset.email;
+    console.log("[9] Email para notificação:", email);
 
-    // enviar e-mail de sucesso falando q ele mudou a senha 
     await sendResetEmailSucess(email);
+    console.log("[10] E-mail de sucesso enviado.");
 
     return res.json({
       status: "ok",
@@ -484,7 +485,7 @@ export async function resetPasswordConfirm(req, res) {
     });
 
   } catch (error) {
-    console.error("Erro no resetPasswordConfirm:", error);
+    console.error("[ERRO] resetPasswordConfirm:", error);
     return res.status(500).json({ error: "Erro interno no servidor." });
   }
 }
