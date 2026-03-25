@@ -72,7 +72,6 @@ export default function ReceitaTable({
             {years.map((year) => (
               <th
                 key={year}
-                colSpan={2}
                 className="text-center py-3 px-2 font-semibold text-[#0A0A0A]"
               >
                 {year}
@@ -90,12 +89,6 @@ export default function ReceitaTable({
                   className="py-2 px-3 text-xs font-medium text-[#7f34d9] text-center whitespace-nowrap"
                 >
                   Receita
-                </th>
-                <th
-                  key={`${year}-desp`}
-                  className="py-2 px-3 text-xs font-medium text-[#d93434] text-center whitespace-nowrap"
-                >
-                  Despesa
                 </th>
               </>
             ))}
@@ -121,10 +114,10 @@ export default function ReceitaTable({
                 <td className="py-3 pr-4 whitespace-nowrap font-medium text-[#0A0A0A]">
                   <div className="flex items-center gap-2">
                     <span
-                      className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      className="inline-block w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: color }}
                     />
-                    <span className="truncate max-w-[140px]" title={name}>
+                    <span className="max-w-[140px]" title={name}>
                       {name}
                     </span>
                   </div>
@@ -134,7 +127,6 @@ export default function ReceitaTable({
                 {years.map((year) => {
                   const entry = yearMap[year] || {};
                   const revenue = entry.revenue;
-                  const costs = entry.costs;
 
                   return (
                     <>
@@ -143,12 +135,6 @@ export default function ReceitaTable({
                         className="py-3 px-3 text-center text-[#7f34d9] font-medium tabular-nums whitespace-nowrap"
                       >
                         {formatValue(revenue)}
-                      </td>
-                      <td
-                        key={`${year}-cost`}
-                        className="py-3 px-3 text-center text-[#d93434] font-medium tabular-nums whitespace-nowrap"
-                      >
-                        {formatValue(costs)}
                       </td>
                     </>
                   );

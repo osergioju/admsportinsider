@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { updatePassword, getProfile, updateProfile, addPreferences,updatePreferences, getRegions, getCurrencies, getFaqs} from "../controllers/user.controller.js";
 import { getNotifications, markAsRead, getUnreadCount, markAllAsRead } from "../controllers/user.notification.controller.js";
-import { getRelatorios, getRelatorioById } from "../controllers/user.relatorios.controller.js";
+import { getRelatorios, getRelatorioById, getNotas } from "../controllers/user.relatorios.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -38,6 +38,7 @@ router.get("/faq", getFaqs);
 
 // GET /user/relatorios?first=12&after=cursor
 router.get("/relatorios", getRelatorios);
+router.get("/notas", getNotas);
 
 // GET /user/relatorios/:id
 router.get("/relatorios/:id", getRelatorioById);

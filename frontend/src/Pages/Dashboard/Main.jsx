@@ -1,5 +1,7 @@
 import HomeBanners from "../../components/uxui/banner"
 import ReceitaSection from "./Charts/Receitas/ReceitaSection"
+import NotasSection from "./../Dashboard/Notas/NotasSection"
+
 import { useState, useEffect } from "react"
 import { api } from "../../services/api"
 
@@ -104,6 +106,10 @@ export default function Main() {
         leagueColor={leagueColor}
         setLeagueColor={setLeagueColor}
       />
+
+      <NotasSection></NotasSection>
     </div>
+
+    
   );
 }
