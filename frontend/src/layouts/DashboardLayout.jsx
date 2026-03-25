@@ -21,7 +21,6 @@ export default function DashboardLayout() {
   const { logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  console.log();
   useEffect(() => {
     if (!user) { navigate("/login"); return; } 
     if (!user.preferences || !user.preferences.first_login_completed) {

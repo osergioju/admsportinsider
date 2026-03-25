@@ -61,8 +61,8 @@ app.use(express.json());
 
 // Teste banco
 db.query("SELECT NOW()")
-  .then((res) => console.log("Conectado ao banco:", res.rows[0].now))
-  .catch((err) => console.error("Erro ao conectar no banco:", err));
+  .then((res) => console.log("SPORTINSIDER PRO CONNECTED"))
+  .catch((err) => console.error("ERROR DATABASE:", err));
 
 // Rotas principais
 app.get("/", (req, res) => {

@@ -115,7 +115,7 @@ export default function UserDetailPage() {
         e.preventDefault();
         setSavingProfile(true);
         setProfileMsg(null);
-        console.log(form);
+
         try {
             await api.put(`/admin/users/${id}/update`, form);
             handleFeedback(setProfileMsg, 'success', 'Perfil atualizado com sucesso!');

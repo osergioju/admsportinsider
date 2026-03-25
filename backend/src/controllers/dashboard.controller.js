@@ -233,8 +233,6 @@ export async function getRevenues(req, res) {
       ORDER BY cf.year ASC;
     `, values);
 
-    console.log(toCurrency);
-
     return res.json({
       fromCurrency,
       toCurrency,
@@ -493,7 +491,7 @@ export async function getNetResultEvolution(req, res) {
         AND fi.code = 'net_income'
       ORDER BY cf.year ASC;
     `, [id, fromCurrency, toCurrency]); 
-      console.log(result);
+
     return res.json({
       fromCurrency,
       toCurrency,

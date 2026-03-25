@@ -16,7 +16,6 @@ const formatDate = (dateString) => {
 const RelatorioCard = ({ relatorio }) => {
   const { id, title, uri, featuredImage } = relatorio;
   const cover = featuredImage?.node?.sourceUrl;
-  console.log(relatorio);
 
   return (
     <article className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">

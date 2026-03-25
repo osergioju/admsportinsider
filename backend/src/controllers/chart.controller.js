@@ -60,7 +60,7 @@ export async function getClubsByCountry(req, res) {
 
 export async function getRevenuesChart(req, res) {
   const { id_country, id_league, club_ids } = req.body;
-  console.log(id_country, id_league, club_ids);
+
   if (!id_country || !id_league || !club_ids?.length) {
     return res.status(400).json({
       message: "Parâmetros inválidos"

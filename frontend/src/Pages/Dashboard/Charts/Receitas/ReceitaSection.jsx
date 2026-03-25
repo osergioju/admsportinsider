@@ -61,7 +61,6 @@ export default function ReceitaSection({
     }
   }, [availableYears]);
 
-  console.log(data);
   return (
     <div className="relative max-w-full w-full min-w-0 bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">

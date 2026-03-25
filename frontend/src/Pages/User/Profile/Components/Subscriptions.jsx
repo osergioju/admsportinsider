@@ -38,7 +38,7 @@ export default function Subscriptions() {
     // Função auxiliar para renderizar badge de status
     const renderStatusBadge = () => {
         const status = user.subscription_current_period_end;
-        console.log(user);
+
         let colorClass = "bg-gray-100 text-gray-600";
         let label = "Desconhecido";
 

@@ -56,7 +56,7 @@ export default function UploadPlayersPage() {
 
       setSuccess(true);
       alert("Players importados com sucesso!");
-      console.log(data);
+
       setFile(null);
 
     } catch (err) {

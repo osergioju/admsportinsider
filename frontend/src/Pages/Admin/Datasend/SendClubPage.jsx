@@ -29,7 +29,6 @@ export default function SendClubPage() {
       );
 
       alert("Dados dos clubes importados com sucesso!");
-      console.log(data);
 
       setFile(null);
 

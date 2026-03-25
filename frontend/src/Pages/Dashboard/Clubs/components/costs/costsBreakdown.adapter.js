@@ -4,7 +4,7 @@ export function adaptCostsBreakdown(
   mainClubId,
   clubMap
 ) {
-  console.log("dataByClub:", dataByClub);
+
   if (!dataByClub || Object.keys(dataByClub).length === 0) {
     return null;
   }
@@ -13,7 +13,6 @@ export function adaptCostsBreakdown(
 
   const series = clubIds.map((clubId, index) => {
     const apiData = dataByClub[clubId];
-    console.log(`Dados do clube ${clubId}:`, apiData);
     
     if (!Array.isArray(apiData)) return null;
 
@@ -24,7 +23,6 @@ export function adaptCostsBreakdown(
         value: Math.abs(Number(item.converted_value)) // ← Simplificado
       }));
 
-    console.log(`Values processados do clube ${clubId}:`, values);
 
     const total = clubIds.length;
 

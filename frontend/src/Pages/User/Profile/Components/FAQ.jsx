@@ -23,7 +23,6 @@ export default function Faq() {
 
   useEffect(() => {
     api.get("/user/faq").then(res => setFaqData(res.data));
-    console.log(faqData);
   }, []);
 
   const filteredFaqs = faqData.filter(item => 

@@ -20,7 +20,6 @@ export default function SubscriptionInvoices() {
       try {
         const response = await api.post("/stripe/billing/portal");
         window.location.href = response.data.url;
-        console.log(response.data.url);
       } catch (err) {
         console.error("Error redirecting to billing portal", err);
         navigate("/me/profile");

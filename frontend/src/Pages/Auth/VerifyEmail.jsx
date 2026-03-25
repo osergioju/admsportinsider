@@ -32,7 +32,6 @@ export default function VerifyEmail() {
                 setStatus("success");
                 setMessage(data.message);
             } catch (err) {
-                console.log(err);
                 setStatus("error");
                 setMessage(err.response?.data?.error || "Erro ao verificar e-mail.");
             }

@@ -725,8 +725,6 @@ export async function importClubBalance(req, res) {
       const yearColumns = Object.keys(row).filter(k =>
         k.startsWith("year_")
       );
-      console.log(yearColumns);
-      console.log(row);
       for (const col of yearColumns) {
         const year = Number(col.replace("year_", ""));
         const value = row[col];

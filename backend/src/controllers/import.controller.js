@@ -290,8 +290,6 @@ export async function importPlayers(req, res) {
       return res.status(400).json({ error: "Arquivo não enviado" });
     }
 
-    console.log("📂 Lendo CSV...");
-
     const workbook = xlsx.read(req.file.buffer, { 
       type: "buffer",
       raw: true,        // <-- não interpreta tipos
@@ -305,8 +303,6 @@ export async function importPlayers(req, res) {
       defval: null,
       blankrows: false
     });
-
-    console.log("📊 Linhas:", rows.length);
 
     await client.query("BEGIN");
 
@@ -382,8 +378,6 @@ export async function importPlayers(req, res) {
 
     }
 
-    console.log("👤 Players únicos:", playersData.length);
-
     /* -----------------------------
        BULK INSERT PLAYERS
     ------------------------------ */
@@ -415,8 +409,6 @@ export async function importPlayers(req, res) {
       `,params);
 
     }
-
-    console.log("✅ Players inseridos");
 
     /* -----------------------------
        CACHE PLAYERS
@@ -475,8 +467,6 @@ export async function importPlayers(req, res) {
 
     }
 
-    console.log("📊 Player seasons:", playerSeasonData.length);
-
     /* -----------------------------
        BULK PLAYER_SEASON
     ------------------------------ */
@@ -507,8 +497,6 @@ export async function importPlayers(req, res) {
       `,params);
 
     }
-
-    console.log("✅ Player seasons inseridos");
 
     await client.query("COMMIT");
 

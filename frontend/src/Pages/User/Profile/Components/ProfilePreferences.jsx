@@ -48,8 +48,6 @@ export default function ProfilePreferences() {
           return;
         } 
 
-        console.log(user);
-
         setForm({
           email_notifications: !!user.email_notifications,
           product_updates: !!user.product_updates,

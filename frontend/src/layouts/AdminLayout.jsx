@@ -67,7 +67,6 @@ export default function AdminLayout() {
   }, []);
 
   const handleGoPerfil = (id) => {
-    console.log("Ir para perfil do admin", id);
     navigate("/admin/profile");
   };
 

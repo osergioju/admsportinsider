@@ -8,7 +8,7 @@ export default function UserNotification() {
   async function fetchNotifications() {
     try {
       const { data } = await api.get("/user/notifications");
-      console.log(data);
+
       setNotifications(data);
     } catch (error) {
       console.error(error);

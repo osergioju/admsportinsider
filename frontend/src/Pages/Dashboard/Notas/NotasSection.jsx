@@ -5,7 +5,7 @@ import { api } from "../../../services/api"
 
 const NotaCard = ({ nota }) => {
   const { title, slug, featuredImage } = nota;
-  console.log(nota);
+
   const cover = featuredImage?.node?.sourceUrl;
   const altText = featuredImage?.node?.altText;
 

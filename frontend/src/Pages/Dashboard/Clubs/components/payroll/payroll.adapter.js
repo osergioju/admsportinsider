@@ -29,7 +29,6 @@ export function adaptPayrollLineData(
 
   const series = clubIds.map((clubId) => {
     const apiData = dataByClub[clubId];
-    console.log(dataByClub[clubId]);
 
     const sorted = Array.isArray(apiData)
       ? [...apiData].sort((a, b) => a.year - b.year)

@@ -41,7 +41,7 @@ export default function UploadTeamsPage() {
 
       setSuccess(true);
       alert("Dados dos clubes importados com sucesso!");
-      console.log(data);
+
       setFile(null);
 
     } catch (err) {
