@@ -19,6 +19,23 @@ import favoritesRoutes from "./src/routes/favorites.routes.js";
 import { multerErrorHandler } from "./src/middlewares/multerErrorHandler.js";
 import { startNotificationCron } from "./src/jobs/notificationCron.js";
  
+// Swagger
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Minha API",
+      version: "1.0.0",
+    },
+  },
+  apis: [process.cwd() + "/src/routes/*.js"], // onde estão suas rotas
+};
+
+const swaggerSpec = swaggerJsdoc(options);
+
 dotenv.config();
 startNotificationCron();
 
@@ -78,6 +95,7 @@ app.use("/chart", chartRoutes);
 app.use("/currency", currenciesRoutes);
 app.use("/public", contactRoutes);
 app.use("/favorites", favoritesRoutes);
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ===== ROTA DE CHECKOUT =====
 app.use("/stripe", stripeRoutes);
