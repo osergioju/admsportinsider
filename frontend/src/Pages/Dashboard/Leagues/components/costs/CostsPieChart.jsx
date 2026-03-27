@@ -17,7 +17,7 @@ export default function CostsPieChart({
   const sliceColors = ["#161616", "#6C6969", "#B2B1B1", "#D9D9D9"];
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">Sem dados de custos</p>;
+    return <p className="text-sm text-gray-400">Dados indisponíveis</p>;
   }
 
   const total = adapted.series[0].data.reduce(
@@ -113,14 +113,26 @@ export default function CostsPieChart({
     ]
   };
 
+
+  const lenghtData = option.series[0].data.length;
+      
   return (
-    <div className="w-full h-[400px]">
-      <ReactECharts
-        option={option}
-        style={{ height: "100%", width: "100%" }}
-        notMerge
-        lazyUpdate
-      />
-    </div>
-  );
+      <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
+        {
+          lenghtData === 0 ? (
+            <div className="flex items-center justify-center pt-20">
+              <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+            </div>
+          ) : (
+            <ReactECharts
+              option={option}
+              style={{ height: "100%", width: "100%" }}
+              notMerge
+              lazyUpdate
+            />
+          )
+        }
+      </div>
+    );
 }
+  

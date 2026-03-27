@@ -59,7 +59,7 @@ export default function ReceitaTable({
     })}`;
   }
 
-  
+
   return (
     <div className="mt-8 w-full overflow-x-auto">
       <table className="w-full text-sm border-collapse">
@@ -83,14 +83,12 @@ export default function ReceitaTable({
           <tr className="border-b border-gray-200 bg-[#FAFAFA]">
             <th className="py-2 pr-4" />
             {years.map((year) => (
-              <>
-                <th
-                  key={`${year}-rec`}
-                  className="py-2 px-3 text-xs font-medium text-[#7f34d9] text-center whitespace-nowrap"
-                >
-                  Receita
-                </th>
-              </>
+              <th
+                key={`${year}-rec`}
+                className="py-2 px-3 text-xs font-medium text-[#7f34d9] text-center whitespace-nowrap"
+              >
+                Receita
+              </th>
             ))}
           </tr>
         </thead>
@@ -106,9 +104,8 @@ export default function ReceitaTable({
             return (
               <tr
                 key={leagueId}
-                className={`border-b border-gray-100 transition-colors hover:bg-[#F9F5FF] ${
-                  rowIdx % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"
-                }`}
+                className={`border-b border-gray-100 transition-colors hover:bg-[#F9F5FF] ${rowIdx % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"
+                  }`}
               >
                 {/* Nome da liga com bolinha colorida */}
                 <td className="py-3 pr-4 whitespace-nowrap font-medium text-[#0A0A0A]">

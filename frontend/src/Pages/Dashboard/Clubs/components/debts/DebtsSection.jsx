@@ -43,7 +43,9 @@ export default function DebtsSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+        yearSelectionMode="multiple"
       />
+
 
       <DebtsBreakdownBarChart
         data={data}

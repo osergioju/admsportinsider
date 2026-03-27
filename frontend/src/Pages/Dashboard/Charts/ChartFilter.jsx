@@ -227,7 +227,7 @@ export default function ChartFilter({
             <span className="text-sm text-[#AFAFB2]">Ano</span>
 
             <select
-              value={selectedYear}
+              value={selectedYear ?? ""}
               onChange={(e) => onChangeYear(Number(e.target.value))}
               className="w-full border rounded-full px-4 py-3 text-sm"
             >

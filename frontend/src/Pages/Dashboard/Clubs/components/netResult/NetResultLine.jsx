@@ -6,15 +6,52 @@ export default function NetResultLine({
   clubesSelecionados,
   clubMap,
   mainClubId,
-  clubColorMap
+  clubColorMap,
+  startYear,
+  endYear
 }) {
-  const adapted = adaptNetResultEvolution(
+
+
+  const adapted = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    const safeClubes = Array.isArray(clubesSelecionados)
+      ? clubesSelecionados
+      : [];
+
+    const hasYearFilter = startYear || endYear;
+
+    const filteredData = hasYearFilter
+      ? Object.fromEntries(
+        Object.entries(data).map(([clubId, items]) => [
+          clubId,
+          items.filter((item) => {
+            if (startYear && item.year < startYear) return false;
+            if (endYear && item.year > endYear) return false;
+            return true;
+          })
+        ])
+      )
+      : data;
+
+    return adaptNetResultEvolution(
+      filteredData,
+      safeClubes,   // ✅ ordem corrigida
+      mainClubId,
+      clubMap,
+      clubColorMap
+    );
+  }, [
     data,
     clubesSelecionados,
     mainClubId,
     clubMap,
-    clubColorMap
-  );
+    clubColorMap,
+    startYear,
+    endYear
+  ]);
+
+
 
   if (!adapted) {
     return (

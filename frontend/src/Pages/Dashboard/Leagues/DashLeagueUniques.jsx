@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 
-// Sections (use as versões de League)
 import RevenueSection from "./components/revenue/RevenueSection";
 import RevenueBreakdownSection from "./components/revenueBreak/RevenueBreakdownSection";
 import PayrollSection from "./components/payroll/PayrollSection";
@@ -11,22 +10,50 @@ import NetResultTableSection from "./components/netResult/NetResultTableSection"
 import NetResultSection from "./components/netResult/NetResultSection";
 import DebtsSection from "./components/debts/DebtsSection";
 
+import { AuthContext } from "../../../context/AuthContext";
+import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
+
 export default function DashLeagueUniques() {
   const { id } = useParams();
   const mainLeagueId = Number(id);
 
+  // Usuário & plano
+  const { user } = useContext(AuthContext);
+  const planID = user?.plan_id;
+
+  // Permissões por gráfico
+  const chartPermissions = {
+    revenue: [1, 2, 3],
+    payroll: [2, 3],
+    costs: [3],
+    netResult: [2, 3],
+    netEvolution: [2, 3],
+    debts: [1, 2, 3],
+    revenueBreakdown: [1, 2, 3],
+  };
+
+  const hasAccess = (chartKey, planID) =>
+    chartPermissions[chartKey]?.includes(planID);
+
   const [loading, setLoading] = useState(true);
   const [theLeague, setTheLeague] = useState(null);
+
+  // id → nome da liga (global, reaproveitado)
+  const [leagueMap, setLeagueMap] = useState({});
   const [leagueColor, setLeagueColor] = useState({});
 
-  /**
-   * id → nome da liga
-   */
-  const [leagueMap, setLeagueMap] = useState({});
+  // Moeda por gráfico
+  const [chartCurrencies, setChartCurrencies] = useState({
+    revenue: user.currency_code,
+    payroll: user.currency_code,
+    costs: user.currency_code,
+    netResult: user.currency_code,
+    netEvolution: user.currency_code,
+    debts: user.currency_code,
+    revenueBreakdown: user.currency_code,
+  });
 
-  /**
-   * ligas selecionadas POR GRÁFICO
-   */
+  // Ligas selecionadas POR GRÁFICO
   const [chartComparisons, setChartComparisons] = useState({
     revenue: [],
     payroll: [],
@@ -34,13 +61,10 @@ export default function DashLeagueUniques() {
     netResult: [],
     netEvolution: [],
     debts: [],
-    revenueBreakdown: []
+    revenueBreakdown: [],
   });
 
-  /**
-   * dados POR GRÁFICO
-   * ex: chartData.revenue = { 1: [...], 3: [...] }
-   */
+  // Dados POR GRÁFICO — ex: chartData.revenue = { 1: [...], 3: [...] }
   const [chartData, setChartData] = useState({
     revenue: {},
     payroll: {},
@@ -48,45 +72,38 @@ export default function DashLeagueUniques() {
     netResult: {},
     netEvolution: {},
     debts: {},
-    revenueBreakdown: {}
+    revenueBreakdown: {},
   });
 
-  /**
-   * ligas por gráfico (sempre inclui a principal)
-   */
-  const leaguesForChart = (chartKey) => {
-    return [
-      mainLeagueId,
-      ...chartComparisons[chartKey].filter(
-        (leagueId) => Number(leagueId) !== mainLeagueId
-      )
-    ];
-  };
+  // Ligas por gráfico (sempre inclui a principal)
+  const leaguesForChart = (chartKey) => [
+    mainLeagueId,
+    ...chartComparisons[chartKey].filter(
+      (leagueId) => Number(leagueId) !== mainLeagueId
+    ),
+  ];
 
-  /**
-   * load inicial (dados fixos da liga)
-   */
+  // Load inicial (dados fixos da liga)
   useEffect(() => {
     async function loadDashboard() {
       try {
         setLoading(true);
 
         const [leagueRes] = await Promise.all([
-          api.get(`/admin/leagues/${id}`)
+          api.get(`/admin/leagues/${id}`),
         ]);
 
         setTheLeague(leagueRes.data);
 
         setLeagueMap({
-          [mainLeagueId]: leagueRes.data.league.name
+          [mainLeagueId]: leagueRes.data.league.name,
         });
 
         setLeagueColor({
           [mainLeagueId]: {
-            color_one: leagueRes.data.league.primary_color
-          }
+            color_one: leagueRes.data.league.primary_color,
+          },
         });
-
       } catch (err) {
         console.error("Erro ao carregar dashboard da liga:", err);
       } finally {
@@ -97,24 +114,20 @@ export default function DashLeagueUniques() {
     loadDashboard();
   }, [id, mainLeagueId]);
 
-  /**
-   * fetch genérico por gráfico
-   */
-  async function fetchChartData(chartKey, endpointBuilder) {
+  // Fetch genérico por gráfico (com suporte a force, igual ao Clubs)
+  async function fetchChartData(chartKey, endpointBuilder, force = false) {
     const leagues = leaguesForChart(chartKey);
     const existingData = chartData[chartKey];
 
-    const leaguesToFetch = leagues.filter(
-      (leagueId) => !existingData[leagueId]
-    );
+    const leaguesToFetch = force
+      ? leagues
+      : leagues.filter((leagueId) => !existingData[leagueId]);
 
     if (leaguesToFetch.length === 0) return;
 
     try {
       const responses = await Promise.all(
-        leaguesToFetch.map((leagueId) =>
-          api.get(endpointBuilder(leagueId))
-        )
+        leaguesToFetch.map((leagueId) => api.get(endpointBuilder(leagueId)))
       );
 
       const newData = {};
@@ -126,58 +139,83 @@ export default function DashLeagueUniques() {
         ...prev,
         [chartKey]: {
           ...prev[chartKey],
-          ...newData
-        }
+          ...newData,
+        },
       }));
     } catch (err) {
       console.error(`Erro ao buscar dados do gráfico ${chartKey}:`, err);
     }
   }
 
-  /**
-   * efeitos por gráfico
-   */
+  // ✅ Evolução temporal — com filtros de ano
   useEffect(() => {
-    fetchChartData("revenue", (leagueId) =>
-      `/dashboard/leagues/${leagueId}/financials/revenues`
+    fetchChartData(
+      "revenue",
+      (leagueId) =>
+        `/dashboard/leagues/${leagueId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
+      true
     );
-  }, [chartComparisons.revenue, mainLeagueId]);
+  }, [chartComparisons.revenue, mainLeagueId, chartCurrencies.revenue]);
 
+  // ✅ Evolução temporal — com filtros de ano
   useEffect(() => {
-    fetchChartData("payroll", (leagueId) =>
-      `/dashboard/leagues/${leagueId}/financials/costs/payroll`
+    fetchChartData(
+      "payroll",
+      (leagueId) =>
+        `/dashboard/leagues/${leagueId}/financials/costs/payroll?from=RUB&to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
+      true
     );
-  }, [chartComparisons.payroll, mainLeagueId]);
+  }, [chartComparisons.payroll, mainLeagueId, chartCurrencies.payroll]);
 
+  // ❌ Breakdown do último ano apenas — sem filtros de ano
   useEffect(() => {
-    fetchChartData("costs", (leagueId) =>
-      `/dashboard/leagues/${leagueId}/financials/costs/breakdown`
+    fetchChartData(
+      "costs",
+      (leagueId) =>
+        `/dashboard/leagues/${leagueId}/financials/costs/breakdown?from=RUB&to=${chartCurrencies.costs}`,
+      true
     );
-  }, [chartComparisons.costs, mainLeagueId]);
+  }, [chartComparisons.costs, mainLeagueId, chartCurrencies.costs]);
 
+  // ✅ Evolução temporal — últimos 3 anos, 12 registros
   useEffect(() => {
-    fetchChartData("netResult", (leagueId) =>
-      `/dashboard/leagues/${leagueId}/financials/net-result`
+    fetchChartData(
+      "netResult",
+      (leagueId) =>
+        `/dashboard/leagues/${leagueId}/financials/net-result?from=RUB&to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
+      true
     );
-  }, [chartComparisons.netResult, mainLeagueId]);
+  }, [chartComparisons.netResult, mainLeagueId, chartCurrencies.netResult]);
 
+  // ✅ Evolução temporal — com filtros de ano
   useEffect(() => {
-    fetchChartData("netEvolution", (leagueId) =>
-      `/dashboard/leagues/${leagueId}/financials/net-result/evolution`
+    fetchChartData(
+      "netEvolution",
+      (leagueId) =>
+        `/dashboard/leagues/${leagueId}/financials/net-result/evolution?from=RUB&to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
+      true
     );
-  }, [chartComparisons.netEvolution, mainLeagueId]);
+  }, [chartComparisons.netEvolution, mainLeagueId, chartCurrencies.netEvolution]);
 
+  // ❌ Breakdown do último ano apenas — sem filtros de ano
   useEffect(() => {
-    fetchChartData("debts", (leagueId) =>
-      `/dashboard/leagues/${leagueId}/financials/debts/breakdown`
+    fetchChartData(
+      "debts",
+      (leagueId) =>
+        `/dashboard/leagues/${leagueId}/financials/debts/breakdown?from=RUB&to=${chartCurrencies.debts}`,
+      true
     );
-  }, [chartComparisons.debts, mainLeagueId]);
+  }, [chartComparisons.debts, mainLeagueId, chartCurrencies.debts]);
 
+  // ❌ Breakdown do último ano apenas — sem filtros de ano
   useEffect(() => {
-    fetchChartData("revenueBreakdown", (leagueId) =>
-      `/dashboard/leagues/${leagueId}/financials/revenues/breakdown`
+    fetchChartData(
+      "revenueBreakdown",
+      (leagueId) =>
+        `/dashboard/leagues/${leagueId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
+      true
     );
-  }, [chartComparisons.revenueBreakdown, mainLeagueId]);
+  }, [chartComparisons.revenueBreakdown, mainLeagueId, chartCurrencies.revenueBreakdown]);
 
   if (loading || !theLeague) {
     return <p className="text-sm text-gray-500">Carregando dashboard…</p>;
@@ -193,7 +231,6 @@ export default function DashLeagueUniques() {
           className="w-20"
           alt={theLeague.league.name}
         />
-
         <div className="ml-6">
           <h3 className="text-2xl lg:text-3xl font-light flex items-center gap-2">
             {theLeague.league.name}
@@ -201,7 +238,6 @@ export default function DashLeagueUniques() {
             {theLeague.league.country_name}
             <img className="w-6" src={theLeague.league.flag_url} />
           </h3>
-
           {theLeague.league.description && (
             <p className="text-sm text-gray-500 mt-2 max-w-3xl">
               {theLeague.league.description}
@@ -211,9 +247,12 @@ export default function DashLeagueUniques() {
       </div>
 
       {/* GRÁFICOS */}
-      <div className="w-full">
-        <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          <div className="min-w-0">
+      <div className="max-w-full w-full overflow-hidden relative">
+
+        <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
+          {!hasAccess("revenue", planID) ? (
+            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+          ) : (
             <RevenueSection
               data={chartData.revenue}
               selectedLeagues={chartComparisons.revenue}
@@ -223,7 +262,34 @@ export default function DashLeagueUniques() {
                   revenue:
                     typeof updater === "function"
                       ? updater(prev.revenue)
-                      : updater
+                      : updater,
+                }))
+              }
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+              mainLeagueId={mainLeagueId}
+              currency={chartCurrencies.revenue}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({ ...prev, revenue: value }))
+              }
+            />
+          )}
+
+          {!hasAccess("revenueBreakdown", planID) ? (
+            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+          ) : (
+            <RevenueBreakdownSection
+              data={chartData.revenueBreakdown}
+              selectedLeagues={chartComparisons.revenueBreakdown}
+              setSelectedLeagues={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  revenueBreakdown:
+                    typeof updater === "function"
+                      ? updater(prev.revenueBreakdown)
+                      : updater,
                 }))
               }
               leagueMap={leagueMap}
@@ -231,125 +297,155 @@ export default function DashLeagueUniques() {
               mainLeagueId={mainLeagueId}
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
+              currency={chartCurrencies.revenueBreakdown}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({ ...prev, revenueBreakdown: value }))
+              }
             />
-          </div>
-
-          <RevenueBreakdownSection
-            data={chartData.revenueBreakdown}
-            selectedLeagues={chartComparisons.revenueBreakdown}
-            setSelectedLeagues={(updater) =>
-              setChartComparisons((prev) => ({
-                ...prev,
-                revenueBreakdown:
-                  typeof updater === "function"
-                    ? updater(prev.revenueBreakdown)
-                    : updater
-              }))
-            }
-            leagueMap={leagueMap}
-            setLeagueMap={setLeagueMap}
-            mainLeagueId={mainLeagueId}
-            leagueColor={leagueColor}
-            setLeagueColor={setLeagueColor}
-          />
+          )}
         </div>
 
-        <div className="grid lg:grid-cols-1 gap-4 mb-4">
-          <PayrollSection
-            data={chartData.payroll}
-            selectedLeagues={chartComparisons.payroll}
-            setSelectedLeagues={(updater) =>
-              setChartComparisons((prev) => ({
-                ...prev,
-                payroll:
-                  typeof updater === "function"
-                    ? updater(prev.payroll)
-                    : updater
-              }))
-            }
-            leagueMap={leagueMap}
-            setLeagueMap={setLeagueMap}
-            mainLeagueId={mainLeagueId}
-            leagueColor={leagueColor}
-            setLeagueColor={setLeagueColor}
-          />
+        <div className="w-full grid lg:grid-cols-1 gap-4 mb-4">
+          {!hasAccess("payroll", planID) ? (
+            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+          ) : (
+            <PayrollSection
+              data={chartData.payroll}
+              selectedLeagues={chartComparisons.payroll}
+              setSelectedLeagues={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  payroll:
+                    typeof updater === "function"
+                      ? updater(prev.payroll)
+                      : updater,
+                }))
+              }
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              mainLeagueId={mainLeagueId}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+              currency={chartCurrencies.payroll}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({ ...prev, payroll: value }))
+              }
+            />
+          )}
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          <CostsSection
-            data={chartData.costs}
-            selectedLeagues={chartComparisons.costs}
-            setSelectedLeagues={(updater) =>
-              setChartComparisons((prev) => ({
-                ...prev,
-                costs:
-                  typeof updater === "function"
-                    ? updater(prev.costs)
-                    : updater
-              }))
-            }
-            leagueMap={leagueMap}
-            setLeagueMap={setLeagueMap}
-            mainLeagueId={mainLeagueId}
-          />
+          {!hasAccess("costs", planID) ? (
+            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+          ) : (
+            <CostsSection
+              data={chartData.costs}
+              selectedLeagues={chartComparisons.costs}
+              setSelectedLeagues={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  costs:
+                    typeof updater === "function"
+                      ? updater(prev.costs)
+                      : updater,
+                }))
+              }
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              mainLeagueId={mainLeagueId}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+              currency={chartCurrencies.costs}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({ ...prev, costs: value }))
+              }
+            />
+          )}
 
-          <NetResultSection
-            data={chartData.netEvolution}
-            selectedLeagues={chartComparisons.netEvolution}
-            setSelectedLeagues={(updater) =>
-              setChartComparisons((prev) => ({
-                ...prev,
-                netEvolution:
-                  typeof updater === "function"
-                    ? updater(prev.netEvolution)
-                    : updater
-              }))
-            }
-            leagueMap={leagueMap}
-            setLeagueMap={setLeagueMap}
-            mainLeagueId={mainLeagueId}
-            leagueColor={leagueColor}
-            setLeagueColor={setLeagueColor}
-          />
+          {!hasAccess("netResult", planID) ? (
+            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+          ) : (
+            <NetResultSection
+              data={chartData.netEvolution}
+              selectedLeagues={chartComparisons.netEvolution}
+              setSelectedLeagues={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  netEvolution:
+                    typeof updater === "function"
+                      ? updater(prev.netEvolution)
+                      : updater,
+                }))
+              }
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              mainLeagueId={mainLeagueId}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+              currency={chartCurrencies.netEvolution}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({ ...prev, netEvolution: value }))
+              }
+            />
+          )}
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          <DebtsSection
-            data={chartData.debts}
-            selectedLeagues={chartComparisons.debts}
-            setSelectedLeagues={(updater) =>
-              setChartComparisons((prev) => ({
-                ...prev,
-                debts:
-                  typeof updater === "function"
-                    ? updater(prev.debts)
-                    : updater
-              }))
-            }
-            leagueMap={leagueMap}
-            setLeagueMap={setLeagueMap}
-            mainLeagueId={mainLeagueId}
-          />
+          {!hasAccess("debts", planID) ? (
+            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+          ) : (
+            <DebtsSection
+              data={chartData.debts}
+              selectedLeagues={chartComparisons.debts}
+              setSelectedLeagues={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  debts:
+                    typeof updater === "function"
+                      ? updater(prev.debts)
+                      : updater,
+                }))
+              }
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              mainLeagueId={mainLeagueId}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+              currency={chartCurrencies.debts}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({ ...prev, debts: value }))
+              }
+            />
+          )}
 
-          <NetResultTableSection
-            data={chartData.netResult}
-            selectedLeagues={chartComparisons.netResult}
-            setSelectedLeagues={(updater) =>
-              setChartComparisons((prev) => ({
-                ...prev,
-                netResult:
-                  typeof updater === "function"
-                    ? updater(prev.netResult)
-                    : updater
-              }))
-            }
-            leagueMap={leagueMap}
-            setLeagueMap={setLeagueMap}
-            mainLeagueId={mainLeagueId}
-            leagueColor={leagueColor}
-            setLeagueColor={setLeagueColor}
-          />
+          {!hasAccess("netResult", planID) ? (
+            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+          ) : (
+            <NetResultTableSection
+              data={chartData.netResult}
+              selectedLeagues={chartComparisons.netResult}
+              setSelectedLeagues={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  netResult:
+                    typeof updater === "function"
+                      ? updater(prev.netResult)
+                      : updater,
+                }))
+              }
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              mainLeagueId={mainLeagueId}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+              currency={chartCurrencies.netResult}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({ ...prev, netResult: value }))
+              }
+            />
+          )}
         </div>
+
       </div>
     </div>
   );

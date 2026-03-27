@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { findUserByEmail, createPublicUser } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 import { checkResetLimit } from "../utils/resetLimiter.js";
-import db from  "../config/db.js";
+import db from "../config/db.js";
 import { sendResetEmail, sendResetEmailSucess, reSendMail } from "../utils/mailer.js";
 
 // Tokens pro cadastro, pra chegar no e-mail e confirmar e tal
@@ -38,7 +38,7 @@ export const login = async (req, res) => {
       id: user.id,
       email: user.email,
       role: user.role
-    }); 
+    });
 
     // 6. Atualizar last_login
     await db.query(
@@ -101,18 +101,18 @@ export const register = async (req, res) => {
 
     // 5. Enviar e-mail de confirmação (depois a gente faz isso direito)
     try {
-        const token = generateEmailToken();
-        const tokenHash = hashToken(token);
+      const token = generateEmailToken();
+      const tokenHash = hashToken(token);
 
-        await db.query(`
+      await db.query(`
           INSERT INTO email_verifications (user_id, token_hash, expires_at)
           VALUES ($1, $2, NOW() + INTERVAL '24 hours')
         `, [newUser.id, tokenHash]);
 
-        await reSendMail(newUser.email, token); // agora manda token
+      await reSendMail(newUser.email, token); // agora manda token
     } catch (mailError) {
-        console.error("Erro ao enviar email de boas-vindas:", mailError);
-        // Não bloqueamos o cadastro se o email falhar
+      console.error("Erro ao enviar email de boas-vindas:", mailError);
+      // Não bloqueamos o cadastro se o email falhar
     }
 
     // 6. Gerar Token JWT para já logar o usuário direto
@@ -121,7 +121,7 @@ export const register = async (req, res) => {
       email: newUser.email,
       role: newUser.role
     });
-    
+
     // Registrar log de login (já que ele entrou ao se cadastrar)
     await db.query("INSERT INTO login_logs (user_id) VALUES ($1)", [newUser.id]);
 
@@ -303,10 +303,10 @@ export const me = async (req, res) => {
       row.first_login_completed === null
         ? null
         : {
-            region_id: row.region_id,
-            currency_id: row.currency_id,
-            first_login_completed: row.first_login_completed
-          };
+          region_id: row.region_id,
+          currency_id: row.currency_id,
+          first_login_completed: row.first_login_completed
+        };
 
     // Remove campos que não pertencem ao user direto
     delete row.region_id;
@@ -445,7 +445,7 @@ export async function resetPasswordConfirm(req, res) {
 
     const hashedPassword = await bcrypt.hash(senha, 10);
 
-     const updateResult = await db.query(
+    const updateResult = await db.query(
       "UPDATE users SET password_hash = $1, email_verified = true WHERE id = $2",
       [hashedPassword, reset.user_id]
     );

@@ -22,7 +22,7 @@ export default function RevenueSection({
   const [startYear, setStartYear] = useState(null);
   const [endYear, setEndYear] = useState(null);
 
-  
+
 
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -80,24 +80,31 @@ export default function RevenueSection({
 
   }, [availableYears]);
 
+
   return (
     <div className="relative max-w-full w-full min-w-0 bg-white lg:p-10 p-6 rounded-xl">
-      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas <small className="text-xs">(por ano)</small>
-      </h2>
+      <div className="flex items-center flex-wrap">
+        <div className="w-full">
+          <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
+            Receitas <small className="text-xs">(por ano)</small>
+          </h2>
+        </div>
+        <div className="w-full">
+          <ChartFilter
+            clubesSelecionados={selectedClubs}
+            onAddClub={handleAddClub}
+            currency={currency}
+            onChangeCurrency={setCurrency}
+            startYear={startYear}
+            endYear={endYear}
+            onChangeStartYear={setStartYear}
+            onChangeEndYear={setEndYear}
+            availableYears={availableYears}
+            yearSelectionMode="multiple"
+          />
+        </div>
+      </div>
 
-      <ChartFilter
-        clubesSelecionados={selectedClubs}
-        onAddClub={handleAddClub}
-        currency={currency}
-        onChangeCurrency={setCurrency}
-        startYear={startYear}
-        endYear={endYear}
-        onChangeStartYear={setStartYear}
-        onChangeEndYear={setEndYear}
-        availableYears={availableYears}
-      />
-      
       <RevenueLineChart
         data={data}
         clubesSelecionados={selectedClubs}

@@ -10,31 +10,31 @@ export default function Main() {
     { id: 5, name: "Premier League Russa de Futebol", color: "#1729b3" },
     { id: 3, name: "Brasileirão Série A", color: "#80de2e" },
   ];
-  
+
   const [currency, setCurrency] = useState("RUB");
 
   const [selectedLeagues, setSelectedLeagues] = useState(
-      DEFAULT_LEAGUES.map(l => l.id)
-    );
+    DEFAULT_LEAGUES.map(l => l.id)
+  );
 
-    const [leagueMap, setLeagueMap] = useState(
-      Object.fromEntries(DEFAULT_LEAGUES.map(l => [l.id, l.name]))
-    );
+  const [leagueMap, setLeagueMap] = useState(
+    Object.fromEntries(DEFAULT_LEAGUES.map(l => [l.id, l.name]))
+  );
 
-    const [leagueColor, setLeagueColor] = useState(
-      Object.fromEntries(
-        DEFAULT_LEAGUES.map(l => [
-          l.id,
-          { color_one: l.color }
-        ])
-      )
-    );
+  const [leagueColor, setLeagueColor] = useState(
+    Object.fromEntries(
+      DEFAULT_LEAGUES.map(l => [
+        l.id,
+        { color_one: l.color }
+      ])
+    )
+  );
 
-    const [chartData, setChartData] = useState({
-      revenue: {}
-    });
+  const [chartData, setChartData] = useState({
+    revenue: {}
+  });
 
-    
+
   /**
    * Fetch genérico
    */
@@ -110,6 +110,6 @@ export default function Main() {
       <NotasSection></NotasSection>
     </div>
 
-    
+
   );
 }

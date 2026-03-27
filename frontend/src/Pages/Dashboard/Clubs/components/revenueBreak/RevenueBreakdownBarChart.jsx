@@ -6,17 +6,54 @@ export default function RevenueBreakdownBarChart({
   clubesSelecionados,
   clubMap,
   mainClubId,
-  clubColorMap
+  clubColorMap,
+  startYear,
+  endYear
 }) {
-  const adapted = adaptRevenueBreakdown(
+
+
+
+  const adapted = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    const safeClubes = Array.isArray(clubesSelecionados)
+      ? clubesSelecionados
+      : [];
+
+    const hasYearFilter = startYear || endYear;
+
+    const filteredData = hasYearFilter
+      ? Object.fromEntries(
+        Object.entries(data).map(([clubId, items]) => [
+          clubId,
+          items.filter((item) => {
+            if (startYear && item.year < startYear) return false;
+            if (endYear && item.year > endYear) return false;
+            return true;
+          })
+        ])
+      )
+      : data;
+
+    return adaptRevenueBreakdown(
+      filteredData,
+      safeClubes,   // ✅ ordem corrigida
+      mainClubId,
+      clubMap,
+      clubColorMap
+    );
+  }, [
     data,
     clubesSelecionados,
     mainClubId,
     clubMap,
-    clubColorMap
-  );
+    clubColorMap,
+    startYear,
+    endYear
+  ]);
 
-  if (!adapted) {;
+  if (!adapted) {
+    ;
     return <p className="text-sm text-gray-400">Sem dados de receita</p>;
   }
 
@@ -32,7 +69,7 @@ export default function RevenueBreakdownBarChart({
       borderColor: "#ddd",
       borderWidth: 1,
       textStyle: {
-        color: "#000", 
+        color: "#000",
         fontFamily: "Effra Trial",
         fontWeight: "normal"
       },
@@ -66,7 +103,7 @@ export default function RevenueBreakdownBarChart({
       axisLabel: {
         interval: 0,
         rotate: 0,
-        width: 80,          
+        width: 80,
         overflow: "break",
         lineHeight: 16
       }
@@ -74,12 +111,24 @@ export default function RevenueBreakdownBarChart({
     series: adapted.series
   };
 
+
+
+  const lenghtData = option.series[0].data.length;
+
   return (
-    <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
-      <ReactECharts
-        option={option}
-        style={{ height: "100%", width: "100%" }}
-      />
+    <div className="w-full max-w-full h-[250px] lg:h-[460px] overflow-hidden">
+      {
+        lenghtData === 0 ? (
+          <div className="flex items-center justify-center pt-20">
+            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+          </div>
+        ) : (
+          <ReactECharts
+            option={option}
+            style={{ height: "100%", width: "100%" }}
+          />
+        )
+      }
     </div>
   );
 }

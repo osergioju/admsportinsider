@@ -3,18 +3,21 @@ import { X, Heart } from "lucide-react";
 import RevenueBreakdownBarChart from "./RevenueBreakdownBarChart";
 import ChartFilter from "../filter/ChartFilter";
 import { api } from "../../../../../services/api";
+import { useState, useMemo, useEffect } from "react";
+
 
 export default function RevenueBreakdownSection({
   data,
   clubMap,
   setClubMap,
   mainClubId,
-  selectedClubs, 
+  selectedClubs,
   setSelectedClubs,
   clubColorMap,
   setClubColorMap,
   currency,
-  setCurrency
+  setCurrency,
+  yearSelectionMode
 }) {
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -62,17 +65,55 @@ export default function RevenueBreakdownSection({
   }
 
 
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((clubData) => {
+      clubData.forEach((item) => {
+        years.add(item.year);
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+
+  const [selectedYears, setSelectedYears] = useState([]);
+
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+
+    // já tem seleção? não mexe
+    if (selectedYears.length > 0) return;
+
+    const lastYear = availableYears[availableYears.length - 1];
+
+    setStartYear(lastYear);
+    setEndYear(lastYear);
+
+    if (yearSelectionMode === "single") {
+      setSelectedYears([lastYear]);
+    } else {
+      setStartYear(availableYears[0]);
+      setEndYear(lastYear);
+      setSelectedYears(availableYears);
+    }
+  }, [availableYears, yearSelectionMode]);
+
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-          Receitas <small className="text-xs">(por ano)</small>
-         {selectedClubs.length > 0 && (
-            <button 
-              className="cursor-pointer border rounded-full w-10 h-10 flex items-center justify-center text-[#d9337e] hover:bg-[#d9337e] hover:text-white transition-all"
-              onClick={handleFavorite}>
-              <Heart className="w-4" />
-            </button>
-          )}
+        Receitas <small className="text-xs">(por ano)</small>
+        {selectedClubs.length > 0 && (
+          <button
+            className="cursor-pointer border rounded-full w-10 h-10 flex items-center justify-center text-[#d9337e] hover:bg-[#d9337e] hover:text-white transition-all"
+            onClick={handleFavorite}>
+            <Heart className="w-4" />
+          </button>
+        )}
       </h2>
 
       <ChartFilter
@@ -80,6 +121,16 @@ export default function RevenueBreakdownSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        yearSelectionMode="single"
+        availableYears={availableYears}
+
+        // 👇 FALTANDO ISSO AQUI
+        selectedYears={selectedYears}
+        onChangeSelectedYears={setSelectedYears}
       />
 
       <RevenueBreakdownBarChart
@@ -88,8 +139,10 @@ export default function RevenueBreakdownSection({
         clubMap={clubMap}
         mainClubId={mainClubId}
         clubColorMap={clubColorMap}
+        startYear={startYear}
+        endYear={endYear}
       />
- 
+
       {selectedClubs.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {selectedClubs.map((clubeId) => (

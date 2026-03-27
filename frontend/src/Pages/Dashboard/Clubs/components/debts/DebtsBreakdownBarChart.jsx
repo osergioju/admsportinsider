@@ -1,5 +1,8 @@
 import ReactECharts from "echarts-for-react";
 import { adaptDebtsBreakdown } from "./debtsBreakdown.adapter";
+import { useContext } from "react";
+import { AuthContext } from "../../../../../context/AuthContext"
+import PlanUpgradePrompt from "../blockplan/PlanUpgradePrompt";
 
 export default function DebtsBreakdownBarChart({
   data,
@@ -13,6 +16,9 @@ export default function DebtsBreakdownBarChart({
     mainClubId,
     clubMap
   );
+
+  const { user } = useContext(AuthContext);
+  const planID = user?.plan_id;
 
   if (!adapted) {
     return <p className="text-sm text-gray-400">Sem dados de dívidas</p>;
@@ -45,14 +51,24 @@ export default function DebtsBreakdownBarChart({
     series: adapted.series
   };
 
+  const lenghtData = option.series[0].data.length;
+
   return (
     <div className="w-full max-w-full overflow-hidden">
-      <ReactECharts
-        option={option}
-        style={{ height: "100%", width: "100%" }}
-        notMerge
-        lazyUpdate
-      />
+      {
+        lenghtData === 0 ? (
+          <div className="flex items-center justify-center pt-20">
+            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+          </div>
+        ) : (
+          <ReactECharts
+            option={option}
+            style={{ height: "100%", width: "100%" }}
+            notMerge
+            lazyUpdate
+          />
+        )
+      }
     </div>
   );
 }

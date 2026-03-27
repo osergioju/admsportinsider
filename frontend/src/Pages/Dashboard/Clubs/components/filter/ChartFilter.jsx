@@ -1,192 +1,15 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Heart } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { api } from "../../../../../services/api";
-import { Range } from "react-range";
-
-// ─── Styles ────────────────────────────────────────────────────────────────
-
-const HEART_STYLES = `
-  @keyframes cf-burst {
-    0%   { transform: translate(-50%, -50%) translateY(0px) scale(0); opacity: 1; }
-    60%  { transform: translate(-50%, -50%) translateY(-16px) scale(1); opacity: 1; }
-    100% { transform: translate(-50%, -50%) translateY(-20px) scale(0); opacity: 0; }
-  }
-  @keyframes cf-heartPop {
-    0%   { transform: scale(1); }
-    30%  { transform: scale(1.45); }
-    60%  { transform: scale(0.87); }
-    100% { transform: scale(1); }
-  }
-  @keyframes cf-heartUnpop {
-    0%   { transform: scale(1); }
-    40%  { transform: scale(0.72); }
-    100% { transform: scale(1); }
-  }
-  @keyframes cf-ripple {
-    0%   { transform: scale(0.5); opacity: 0.55; }
-    100% { transform: scale(2.6); opacity: 0; }
-  }
-
-  .cf-heart-btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.18s ease;
-    outline: none;
-  }
-  .cf-heart-btn:hover  { background: rgba(255, 77, 109, 0.08); }
-  .cf-heart-btn:active { background: rgba(255, 77, 109, 0.15); }
-
-  .cf-heart-icon {
-    transition: color 0.22s ease, fill 0.22s ease, filter 0.22s ease;
-    position: relative;
-    z-index: 2;
-    display: block;
-    width: 20px;
-    height: 20px;
-  }
-  .cf-heart-icon.fav {
-    color: #FF4D6D;
-    fill: #FF4D6D;
-    filter: drop-shadow(0 0 4px rgba(255, 77, 109, 0.48));
-  }
-  .cf-heart-icon.unfav {
-    color: #C8C8C8;
-    fill: transparent;
-  }
-  .cf-heart-icon.animating.fav   { animation: cf-heartPop   0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards; }
-  .cf-heart-icon.animating.unfav { animation: cf-heartUnpop  0.3s ease-out forwards; }
-
-  .cf-ripple {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 2px solid #FF4D6D;
-    animation: cf-ripple 0.48s ease-out forwards;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .cf-heart-tooltip {
-    position: absolute;
-    bottom: calc(100% + 7px);
-    left: 50%;
-    transform: translateX(-50%) translateY(4px);
-    background: #1a1a1a;
-    color: #fff;
-    font-size: 11px;
-    white-space: nowrap;
-    padding: 3px 8px;
-    border-radius: 6px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.14s ease, transform 0.14s ease;
-    z-index: 30;
-  }
-  .cf-heart-btn:hover .cf-heart-tooltip {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-`;
-
-// ─── Hook ──────────────────────────────────────────────────────────────────
-
-function useFavorite(initialState = false) {
-  const [isFavorited, setIsFavorited]   = useState(initialState);
-  const [isAnimating, setIsAnimating]   = useState(false);
-  const [showBurst,   setShowBurst]     = useState(false);
-
-  const toggle = useCallback(() => {
-    const willFavorite = !isFavorited;
-
-    setIsFavorited(willFavorite);
-    setIsAnimating(true);
-
-    if (willFavorite) {
-      setShowBurst(true);
-      setTimeout(() => setShowBurst(false), 650);
-    }
-
-    setTimeout(() => setIsAnimating(false), 420);
-  }, [isFavorited]);
-
-  return { isFavorited, isAnimating, showBurst, toggle };
-}
-
-// ─── FavoriteButton ────────────────────────────────────────────────────────
-
-const BURST_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
-
-function FavoriteButton() {
-  const { isFavorited, isAnimating, showBurst, toggle } = useFavorite();
-
-  return (
-    <>
-      <style>{HEART_STYLES}</style>
-
-      <button
-        className="cf-heart-btn"
-        onClick={toggle}
-        aria-label={isFavorited ? "Remover dos favoritos" : "Favoritar gráfico"}
-        aria-pressed={isFavorited}
-      >
-        {/* Ripple */}
-        {isAnimating && isFavorited && <span className="cf-ripple" />}
-
-        {/* Burst de partículas */}
-        {showBurst && (
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}>
-            {BURST_ANGLES.map((angle, i) => (
-              <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  top: "50%", left: "50%",
-                  width: 5, height: 5,
-                  borderRadius: "50%",
-                  backgroundColor: i % 2 === 0 ? "#FF4D6D" : "#FFCCD5",
-                  transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-14px) scale(0)`,
-                  animation: "cf-burst 0.55s ease-out forwards",
-                  animationDelay: `${i * 0.025}s`,
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Ícone */}
-        <Heart
-          size={17}
-          strokeWidth={2}
-          className={`cf-heart-icon ${isFavorited ? "fav" : "unfav"} ${isAnimating ? "animating" : ""}`}
-        />
-
-        {/* Tooltip */}
-        <span className="cf-heart-tooltip">
-          {isFavorited ? "Remover favorito" : "Favoritar"}
-        </span>
-      </button>
-    </>
-  );
-}
 
 // ─── Constantes ────────────────────────────────────────────────────────────
 
 const LIMITE_CLUBES = 4;
 
 const CURRENCIES = [
-  { value: "BRL", label: "R$", full: "Real (BRL)"      },
-  { value: "USD", label: "US$", full: "Dólar (USD)"    },
-  { value: "EUR", label: "€",   full: "Euro (EUR)"     },
-  { value: "RUB", label: "₽",   full: "Rublo (RUB)"   },
+  { value: "BRL", label: "R$", full: "Real (BRL)" },
+  { value: "USD", label: "US$", full: "Dólar (USD)" },
+  { value: "EUR", label: "€", full: "Euro (EUR)" },
+  { value: "RUB", label: "₽", full: "Rublo (RUB)" },
 ];
 
 // ─── ChartFilter ───────────────────────────────────────────────────────────
@@ -201,32 +24,30 @@ export default function ChartFilter({
   endYear,
   onChangeStartYear,
   onChangeEndYear,
-  availableYears
+  availableYears,
+  selectedYears: selectedYearsProp,
+  onChangeSelectedYears,
+  yearSelectionMode = "multiple", // "single" | "multiple"
 }) {
-  const [busca,   setBusca]   = useState("");
-  const [isOpen,  setIsOpen]  = useState(false);
+  const [busca, setBusca] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [clubs,   setClubs]   = useState([]);
-  
+  const [clubs, setClubs] = useState([]);
+
   // Fecha dropdown ao clicar fora
   useEffect(() => {
     function handleClickOutside(e) {
-      if (!e.target.closest("[data-club-search]")) {
-        setIsOpen(false);
-      }
+      if (!e.target.closest("[data-club-search]")) setIsOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+
+  // Busca de clubes com debounce via AbortController
   useEffect(() => {
-    if (!busca) {
-      setClubs([]);
-      return;
-    }
-
+    if (!busca) { setClubs([]); return; }
     const controller = new AbortController();
-
     async function search() {
       try {
         setLoading(true);
@@ -242,7 +63,6 @@ export default function ChartFilter({
         setLoading(false);
       }
     }
-
     search();
     return () => controller.abort();
   }, [busca, country]);
@@ -262,126 +82,136 @@ export default function ChartFilter({
 
   const atLimite = clubesSelecionados.length >= LIMITE_CLUBES;
 
-  return (
-    <div className="w-full mb-2 z-20">
-      {/* ── Linha única: busca | moeda | favorito ── */}
-      <div className="-mt-12 justify-between flex flex-wrap items-end gap-4 lg:gap-6">
-        {/* Período */}
-          <div className="flex flex-col w-1/2 ml-auto">
-            {availableYears && availableYears.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {/* Labels dos anos selecionados */}
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-[#7f34d9] bg-[#7f34d9]/10 px-2 py-0.5 rounded-full">
-                    {startYear}
-                  </span>
-                  <span className="text-xs font-semibold text-[#7f34d9] bg-[#7f34d9]/10 px-2 py-0.5 rounded-full">
-                    {endYear}
-                  </span>
-                </div>
+  const years = availableYears ?? [];
 
-                {/* Slider */}
-                <div className="px-1 py-2">
-                  <Range
-                    step={1}
-                    min={availableYears[0]}
-                    max={availableYears[availableYears.length - 1]}
-                    values={[
-                      startYear ?? availableYears[0],
-                      endYear ?? availableYears[availableYears.length - 1],
-                    ]}
-                    onChange={(values) => {
-                      onChangeStartYear(values[0]);
-                      onChangeEndYear(values[1]);
-                    }}
-                    renderTrack={({ props, children }) => (
-                      <div
-                        {...props}
-                        style={{
-                          ...props.style,
-                          background: `linear-gradient(
-                            to right,
-                            #e5e7eb ${((( startYear ?? availableYears[0]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%,
-                            #7f34d9 ${(((startYear ?? availableYears[0]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%,
-                            #7f34d9 ${(((endYear ?? availableYears[availableYears.length - 1]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%,
-                            #e5e7eb ${(((endYear ?? availableYears[availableYears.length - 1]) - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%
-                          )`,
-                        }}
-                        className="h-[3px] w-full rounded-full"
-                      >
-                        {children}
-                      </div>
-                    )}
-                    renderThumb={({ props, isDragged }) => (
-                      <div
-                        {...props}
-                        style={{ ...props.style }}
-                        className="h-4 w-4 cursor-pointer outline-none"
-                      >
-                        {/* O scale fica no filho, não no thumb raiz */}
-                        <div
-                          className={`
-                            h-4 w-4 rounded-full border-2 border-white
-                            transition-all duration-150
-                            ${isDragged
-                              ? "bg-[#6a26c0] scale-125 shadow-[0_0_0_4px_rgba(127,52,217,0.2)]"
-                              : "bg-[#7f34d9] hover:scale-110 hover:shadow-[0_0_0_3px_rgba(127,52,217,0.15)]"
-                            }
-                          `}
-                        />
-                      </div>
-                    )}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        <div className="grid grid-cols-2 items-end gap-0 lg:gap-6">
+  // Se o pai passar selectedYears explicitamente, usa ele.
+  // Caso contrário, deriva do intervalo start/end como fallback.
+  const isSingle = yearSelectionMode === "single";
+
+  const selectedYears = isSingle
+    ? (selectedYearsProp?.slice(-1) || [])
+    : (
+      selectedYearsProp && selectedYearsProp.length > 0
+        ? selectedYearsProp
+        : years.filter((y) => y >= startYear && y <= endYear)
+    );
+
+  function toggleYear(year) {
+    if (yearSelectionMode === "single") {
+      onChangeSelectedYears?.([year]);
+      onChangeStartYear?.(year);
+      onChangeEndYear?.(year);
+      return;
+    }
+
+    // comportamento atual (multi)
+    if (selectedYears.length <= 2 && selectedYears.includes(year)) return;
+
+    const next = selectedYears.includes(year)
+      ? selectedYears.filter((y) => y !== year)
+      : [...selectedYears, year].sort((a, b) => a - b);
+
+    onChangeSelectedYears?.(next);
+    onChangeStartYear?.(Math.min(...next));
+    onChangeEndYear?.(Math.max(...next));
+  }
+
+  return (
+    <div className="w-full flex items-start flex-wrap gap-2 justify-between mb-2 z-20 mt-4">
+      {/* ── Linha principal ── */}
+      <div className="xl:w-1/2w-full flex flex-wrap items-center gap-3">
+
+        {/* Busca + Moeda */}
+        <div className="flex items-center gap-2">
+
           {/* Busca de clube */}
           <div className="relative" data-club-search>
-            <span className="inline-block font-light text-[#AFAFB2] text-sm mb-2">
-              Comparar clubes{" "}
-              <span className="text-xs">
-                ({clubesSelecionados.length}/{LIMITE_CLUBES})
-              </span>
-            </span>
-
             <input
               type="text"
               value={busca}
               disabled={atLimite}
               onChange={(e) => { setBusca(e.target.value); setIsOpen(true); }}
               onFocus={() => setIsOpen(true)}
-              placeholder={atLimite ? "Limite atingido" : "Digite o nome do clube"}
-              className={`w-full border rounded-full px-4 py-3 font-light text-sm focus:outline-none focus:ring-2
-                ${atLimite
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
-                  : "focus:ring-[#7f34d9] border-gray-300"
-                }`}
+              placeholder={atLimite ? "Limite atingido" : "Comparar clube…"}
+              style={{
+                fontFamily: "inherit",
+                fontSize: 13,
+                padding: "7px 12px 7px 30px",
+                borderRadius: 24,
+                border: "1px solid #e8e8e4",
+                background: atLimite ? "#fafaf8" : "#fafaf8",
+                color: atLimite ? "#bbb" : "#333",
+                width: 175,
+                outline: "none",
+                cursor: atLimite ? "not-allowed" : "text",
+              }}
             />
+            {/* ícone lupa */}
+            <span
+              style={{
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#bbb",
+                fontSize: 14,
+                pointerEvents: "none",
+              }}
+            >
+              ⌕
+            </span>
 
             {/* Dropdown */}
             {isOpen && busca && (
-              <div className="absolute z-30 mt-1.5 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+              <div
+                style={{
+                  position: "absolute",
+                  zIndex: 30,
+                  marginTop: 6,
+                  width: "100%",
+                  background: "#fff",
+                  border: "1px solid #e8e8e4",
+                  borderRadius: 12,
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                  overflow: "hidden",
+                }}
+              >
                 {loading ? (
-                  <div className="px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 border-2 border-gray-300 border-t-[#7f34d9] rounded-full animate-spin" />
+                  <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa", display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        border: "2px solid #ddd",
+                        borderTopColor: "#7f34d9",
+                        borderRadius: "50%",
+                        animation: "spin 0.6s linear infinite",
+                      }}
+                    />
                     Buscando clubes...
                   </div>
                 ) : clubesFiltrados.length > 0 ? (
-                  <ul className="max-h-48 overflow-auto">
+                  <ul style={{ maxHeight: 192, overflowY: "auto", listStyle: "none" }}>
                     {clubesFiltrados.map((clube) => (
                       <li
                         key={clube.id_club}
                         onClick={() => handleAdd(clube)}
-                        className="px-4 py-2.5 text-sm cursor-pointer hover:bg-[#EDE6F6] transition-colors"
+                        style={{
+                          padding: "10px 14px",
+                          fontSize: 13,
+                          cursor: "pointer",
+                          transition: "background 0.12s",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "#f5f0fc"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                       >
                         {clube.name}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <div className="px-4 py-3 text-sm text-gray-400">
+                  <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa" }}>
                     Nenhum clube encontrado
                   </div>
                 )}
@@ -390,32 +220,75 @@ export default function ChartFilter({
           </div>
 
           {/* Seletor de moeda */}
-          <div className="flex flex-col">
-            <span className="font-light text-[#AFAFB2] text-sm mb-2">Moeda</span>
-            <select
-              value={currency}
-              onChange={(e) => onChangeCurrency(e.target.value)}
-              className="border border-gray-300 rounded-full px-4 py-3 text-sm font-light focus:outline-none focus:ring-2 focus:ring-[#7f34d9] bg-white cursor-pointer"
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label} — {c.full}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          
-
-        </div>
-
-        {/* Favorito — alinhado à base dos inputs */}
-        <div className="flex flex-col items-center">
-          <div className="flex items-center justify-center h-[46px]">
-            <FavoriteButton className="w-[46px] h-[46px]" />
-          </div>
+          <select
+            value={currency}
+            onChange={(e) => onChangeCurrency(e.target.value)}
+            style={{
+              fontFamily: "inherit",
+              fontSize: 13,
+              padding: "7px 10px",
+              borderRadius: 24,
+              border: "1px solid #e8e8e4",
+              background: "#fafaf8",
+              color: "#666",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label} {c.full}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
+
+      {/* ── Pills de ano ── */}
+      {years.length > 0 && (
+        <div className="xl:w-1/2w-full flex items-center flex-wrap">
+          {/* Slot para legenda (renderizado pelo pai acima daqui) */}
+          <div /> {/* espaçador — legenda fica no componente do gráfico */}
+
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              background: "#f5f4f0",
+              borderRadius: 24,
+              padding: 4,
+            }}
+          >
+            {years.map((year) => {
+              const active = selectedYears.includes(year);
+              return (
+                <button
+                  key={year}
+                  onClick={() => toggleYear(year)}
+                  style={{
+                    fontFamily: "inherit",
+                    fontSize: 12,
+                    fontWeight: active ? 500 : 400,
+                    padding: "4px 13px",
+                    borderRadius: 20,
+                    border: active ? "1px solid #e0dfd9" : "none",
+                    cursor: "pointer",
+                    background: active ? "#fff" : "transparent",
+                    color: active ? "#111" : "#999",
+                    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {year}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* spin keyframe */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

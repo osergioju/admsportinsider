@@ -11,14 +11,7 @@ export default function RevenueLineChart({
   startYear,
   endYear
 }) {
-
-  /**
-   * data agora é um objeto:
-   * {
-   *   [clubId]: [{ year, value, ... }]
-   * }
-   */
-    const adapted = useMemo(() => {
+  const adapted = useMemo(() => {
       if (!data || Object.keys(data).length === 0) return null;
 
       let filteredData = data;
@@ -46,7 +39,7 @@ export default function RevenueLineChart({
         clubColorMap
       );
 
-    }, [data, mainClubId, clubesSelecionados, clubMap, clubColorMap, startYear, endYear]);
+}, [data, mainClubId, clubesSelecionados, clubMap, clubColorMap, startYear, endYear]);
 
 
   if (!adapted) {
@@ -145,12 +138,24 @@ export default function RevenueLineChart({
     }))
   };
 
+
+
+  const lenghtData = option.series[0].data.length;
+    
   return (
-    <div className="max-w-full h-[250px] overflow-hidden">
-      <ReactECharts
-        option={option}
-        style={{ height: "100%", width: "100%" }}
-      />
-    </div>
-  );
+      <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
+        {
+          lenghtData === 0 ? (
+            <div className="flex items-center justify-center pt-20">
+              <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+            </div>
+          ) : (
+            <ReactECharts
+              option={option}
+              style={{ height: "100%", width: "100%" }}
+            />
+          )
+        }
+      </div>
+    );
 }

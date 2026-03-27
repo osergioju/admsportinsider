@@ -1500,13 +1500,11 @@ import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById,
 import { authGuard } from "../middlewares/auth.middleware.js";
 const router = Router();
 
-
-
 // GET /admin/dashboard
 router.get("/dashboard", getAdminDashboard);
 
 // PAÍSES - GESTÃO CRUD
-router.get("/countries", getAllCountries);
+router.get("/countries", authGuard, getAllCountries);
 router.get("/countries/:id", getAllCountriesById);
 router.post("/send-countries", createCountry);
 router.delete("/disable-country/:id", disableCountry);

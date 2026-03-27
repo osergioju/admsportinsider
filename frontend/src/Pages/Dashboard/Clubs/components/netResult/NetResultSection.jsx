@@ -2,6 +2,7 @@
 import { X } from "lucide-react";
 import NetResultLineChart from "./NetResultLineChart";
 import ChartFilter from "../filter/ChartFilter";
+import { useState, useMemo, useEffect } from "react";
 
 export default function NetResultSection({
   data,
@@ -23,7 +24,7 @@ export default function NetResultSection({
     );
 
     setClubMap((prev) => ({
-      ...prev, 
+      ...prev,
       [clube.id_club]: clube.name
     }));
 
@@ -42,6 +43,32 @@ export default function NetResultSection({
     );
   }
 
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((clubData) => {
+      clubData.forEach((item) => {
+        years.add(item.year);
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+
+  const [selectedYears, setSelectedYears] = useState([]);
+
+  // Inicializa selectedYears quando availableYears chega
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+    setStartYear(availableYears[0]);
+    setEndYear(availableYears[availableYears.length - 1]);
+    setSelectedYears(availableYears); // ← seleciona todos por padrão
+  }, [availableYears]);
+
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
@@ -53,6 +80,12 @@ export default function NetResultSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        availableYears={availableYears}
+        yearSelectionMode="multiple"
       />
 
       <NetResultLineChart
@@ -61,6 +94,8 @@ export default function NetResultSection({
         clubMap={clubMap}
         mainClubId={mainClubId}
         clubColorMap={clubColorMap}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       {selectedClubs.length > 0 && (

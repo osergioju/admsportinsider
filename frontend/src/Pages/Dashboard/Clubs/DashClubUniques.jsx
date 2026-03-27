@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 import { CalendarDays, Castle, Handshake } from "lucide-react";
@@ -12,9 +12,31 @@ import NetResultTableSection from "./components/netResult/NetResultTableSection"
 import NetResultSection from "./components/netResult/NetResultSection";
 import DebtsSection from "./components/debts/DebtsSection";
 
+import { AuthContext } from "../../../context/AuthContext"
+import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
+
 export default function DashClubUniques() {
   const { id } = useParams();
   const mainClubId = Number(id);
+
+  // Usuário & plano
+  const { user } = useContext(AuthContext);
+  const planID = user?.plan_id;
+  console.log(user);
+  // Cria vários níveis de acesso de acordo com o gráfico
+  const chartPermissions = {
+    revenue: [1, 2, 3],
+    payroll: [1, 2, 3],
+    costs: [1, 2, 3],
+    netResult: [1, 2, 3],
+    netEvolution: [1, 2, 3],
+    debts: [1, 2, 3],
+    revenueBreakdown: [1, 2, 3]
+  };
+
+  const hasAccess = (chartKey, planID) => {
+    return chartPermissions[chartKey]?.includes(planID);
+  };
 
   const [loading, setLoading] = useState(true);
   const [theClub, setTheClub] = useState(null);
@@ -24,16 +46,15 @@ export default function DashClubUniques() {
    */
   const [clubMap, setClubMap] = useState({});
   const [clubColorMap, setClubColorMap] = useState({});
-  const [toCurrency, setToCurrency] = useState("RUB");
 
   const [chartCurrencies, setChartCurrencies] = useState({
-    revenue: "RUB",
-    payroll: "RUB",
-    costs: "RUB",
-    netResult: "RUB",
-    netEvolution: "RUB",
-    debts: "RUB",
-    revenueBreakdown: "RUB"
+    revenue: user.currency_code,
+    payroll: user.currency_code,
+    costs: user.currency_code,
+    netResult: user.currency_code,
+    netEvolution: user.currency_code,
+    debts: user.currency_code,
+    revenueBreakdown: user.currency_code,
   });
 
   /**
@@ -58,7 +79,7 @@ export default function DashClubUniques() {
     payroll: {},
     costs: {},
     netResult: {},
-    netEvolution : {},
+    netEvolution: {},
     debts: {},
     revenueBreakdown: {}
   });
@@ -165,113 +186,113 @@ export default function DashClubUniques() {
 
     if (clubsToFetch.length === 0) return;
 
-      try {
-        const responses = await Promise.all(
-          clubsToFetch.map((clubId) =>
-            api.get(endpointBuilder(clubId))
-          )
-        );
+    try {
+      const responses = await Promise.all(
+        clubsToFetch.map((clubId) =>
+          api.get(endpointBuilder(clubId))
+        )
+      );
 
-        const newData = {};
-        responses.forEach((res, index) => {
-          newData[clubsToFetch[index]] = res.data.data;
-        });
+      const newData = {};
+      responses.forEach((res, index) => {
+        newData[clubsToFetch[index]] = res.data.data;
+      });
 
-        setChartData((prev) => ({
-          ...prev,
-          [chartKey]: {
-            ...prev[chartKey],
-            ...newData
-          }
-        }));
-      } catch (err) {
-        console.error(`Erro ao buscar dados do gráfico ${chartKey}:`, err);
-      }
+      setChartData((prev) => ({
+        ...prev,
+        [chartKey]: {
+          ...prev[chartKey],
+          ...newData
+        }
+      }));
+    } catch (err) {
+      console.error(`Erro ao buscar dados do gráfico ${chartKey}:`, err);
     }
+  }
 
   /**
    * efeitos por gráfico
    */
-    // ✅ ADICIONAR filtros de ano - evolução temporal
-    useEffect(() => {
-      fetchChartData(
-        "revenue",
-        (clubId) =>
-          `/dashboard/clubs/${clubId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
-        true
-      );
-    }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);
+  // ✅ ADICIONAR filtros de ano - evolução temporal
+  useEffect(() => {
+    fetchChartData(
+      "revenue",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
+      true
+    );
+  }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);
 
-    // ✅ ADICIONAR filtros de ano - evolução temporal
-    useEffect(() => {
-      fetchChartData(
-        "payroll",
-        (clubId) =>
-          `/dashboard/clubs/${clubId}/financials/costs/payroll?from=RUB&to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
-        true
-      );
-    }, [chartComparisons.payroll, mainClubId, chartCurrencies.payroll]);
+  // ✅ ADICIONAR filtros de ano - evolução temporal
+  useEffect(() => {
+    fetchChartData(
+      "payroll",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/costs/payroll?from=RUB&to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
+      true
+    );
+  }, [chartComparisons.payroll, mainClubId, chartCurrencies.payroll]);
 
-    // ❌ NÃO adicionar - breakdown do último ano apenas
-    useEffect(() => {
-      fetchChartData(
-        "costs",
-        (clubId) =>
-          `/dashboard/clubs/${clubId}/financials/costs/breakdown?from=RUB&to=${chartCurrencies.costs}`,
-        true
-      );
-    }, [chartComparisons.costs, mainClubId, chartCurrencies.costs]);
+  // ❌ NÃO adicionar - breakdown do último ano apenas
+  useEffect(() => {
+    fetchChartData(
+      "costs",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/costs/breakdown?from=RUB&to=${chartCurrencies.costs}`,
+      true
+    );
+  }, [chartComparisons.costs, mainClubId, chartCurrencies.costs]);
 
-    // ✅ ADICIONAR filtros de ano - evolução temporal (últimos 3 anos, 12 registros)
-    useEffect(() => {
-      fetchChartData(
-        "netResult",
-        (clubId) =>
-          `/dashboard/clubs/${clubId}/financials/net-result?from=RUB&to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
-        true
-      );
-    }, [chartComparisons.netResult, mainClubId, chartCurrencies.netResult]);
+  // ✅ ADICIONAR filtros de ano - evolução temporal (últimos 3 anos, 12 registros)
+  useEffect(() => {
+    fetchChartData(
+      "netResult",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/net-result?from=RUB&to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
+      true
+    );
+  }, [chartComparisons.netResult, mainClubId, chartCurrencies.netResult]);
 
-    // ✅ ADICIONAR filtros de ano - evolução temporal
-    useEffect(() => {
-      fetchChartData(
-        "netEvolution",
-        (clubId) =>
-          `/dashboard/clubs/${clubId}/financials/net-result/evolution?from=RUB&to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
-        true
-      );
-    }, [chartComparisons.netEvolution, mainClubId, chartCurrencies.netEvolution]);
+  // ✅ ADICIONAR filtros de ano - evolução temporal
+  useEffect(() => {
+    fetchChartData(
+      "netEvolution",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/net-result/evolution?from=RUB&to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
+      true
+    );
+  }, [chartComparisons.netEvolution, mainClubId, chartCurrencies.netEvolution]);
 
-    // ❌ NÃO adicionar - breakdown do último ano apenas
-    useEffect(() => {
-      fetchChartData(
-        "debts",
-        (clubId) =>
-          `/dashboard/clubs/${clubId}/financials/debts/breakdown?from=RUB&to=${chartCurrencies.debts}`,
-        true
-      );
-    }, [chartComparisons.debts, mainClubId, chartCurrencies.debts]);
+  // ❌ NÃO adicionar - breakdown do último ano apenas
+  useEffect(() => {
+    fetchChartData(
+      "debts",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/debts/breakdown?from=RUB&to=${chartCurrencies.debts}`,
+      true
+    );
+  }, [chartComparisons.debts, mainClubId, chartCurrencies.debts]);
 
-    // ❌ NÃO adicionar - breakdown do último ano apenas
-    useEffect(() => {
-      fetchChartData(
-        "revenueBreakdown",
-        (clubId) =>
-          `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
-        true
-      );
-    }, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);
-    
+  // ❌ NÃO adicionar - breakdown do último ano apenas
+  useEffect(() => {
+    fetchChartData(
+      "revenueBreakdown",
+      (clubId) =>
+        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
+      true
+    );
+  }, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);
+
   if (loading || !theClub) {
     return <p className="text-sm text-gray-500">Carregando dashboard…</p>;
   }
 
   const foundedAt = theClub?.club?.founded_at
     ? theClub.club.founded_at
-        .split("T")[0]
-        .split("-")
-        .reverse()
-        .join("/")
+      .split("T")[0]
+      .split("-")
+      .reverse()
+      .join("/")
     : "—";
 
 
@@ -281,11 +302,23 @@ export default function DashClubUniques() {
       <div
         className="relative w-full p-4 lg:py-12 flex items-center lg:px-6 rounded-2xl border"
         style={{
-          background: `linear-gradient(
-            135deg,
-            ${theClub.club.primary_color} 40%,
-            ${theClub.club.secondary_color || "#FFF5F5"} 100%
-          )`
+          background: `
+            radial-gradient(
+              circle at 10% 20%,
+              ${theClub.club.primary_color || "#FFF5F5"} 0%,
+              transparent 50%
+            ),
+            radial-gradient(
+              circle at 90% 80%,
+              ${theClub.club.tertiary_color || "#FFFFF5"} 0%,
+              transparent 50%
+            ),
+            radial-gradient(
+              circle at 50% 50%,
+              ${theClub.club.secondary_color} 0%,
+              ${theClub.club.secondary_color} 100%
+            )
+`,
         }}
       >
         <div className="overflow-hidden absolute bg-black rounded-full w-5 h-5 lg:w-10 lg:h-10 right-4 top-4">
@@ -325,6 +358,11 @@ export default function DashClubUniques() {
       {/* GRÁFICOS */}
       <div className="max-w-full w-full overflow-hidden relative ">
         <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
+          {!hasAccess("revenue", planID) ? (
+            <PlanUpgradePrompt
+              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+            ></PlanUpgradePrompt>
+          ) : (
             <RevenueSection
               data={chartData.revenue}
               selectedClubs={chartComparisons.revenue}
@@ -351,7 +389,14 @@ export default function DashClubUniques() {
                 }))
               }
             />
+          )
+          }
 
+          {!hasAccess("revenueBreakdown", planID) ? (
+            <PlanUpgradePrompt
+              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+            ></PlanUpgradePrompt>
+          ) : (
             <RevenueBreakdownSection
               data={chartData.revenueBreakdown}
               selectedClubs={chartComparisons.revenueBreakdown}
@@ -378,9 +423,17 @@ export default function DashClubUniques() {
                 }))
               }
             />
+          )
+          }
+
         </div>
-       
-         <div className="w-full grid lg:grid-cols-1 gap-4 mb-4">
+
+        <div className="w-full grid lg:grid-cols-1 gap-4 mb-4">
+          {!hasAccess("payroll", planID) ? (
+            <PlanUpgradePrompt
+              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+            ></PlanUpgradePrompt>
+          ) : (
             <PayrollSection
               data={chartData.payroll}
               selectedClubs={chartComparisons.payroll}
@@ -407,9 +460,17 @@ export default function DashClubUniques() {
                 }))
               }
             />
-         </div>
-    
-          <div className="grid lg:grid-cols-2 gap-4 mb-4">
+          )
+          }
+
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-4 mb-4">
+          {!hasAccess("costs", planID) ? (
+            <PlanUpgradePrompt
+              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+            ></PlanUpgradePrompt>
+          ) : (
             <CostsSection
               data={chartData.costs}
               selectedClubs={chartComparisons.costs}
@@ -425,7 +486,8 @@ export default function DashClubUniques() {
               clubMap={clubMap}
               setClubMap={setClubMap}
               mainClubId={mainClubId}
-
+              clubColorMap={clubColorMap}
+              setClubColorMap={setClubColorMap}
               currency={chartCurrencies.costs}
               setCurrency={(value) =>
                 setChartCurrencies((prev) => ({
@@ -434,7 +496,15 @@ export default function DashClubUniques() {
                 }))
               }
             />
+          )
+          }
 
+
+          {!hasAccess("netResult", planID) ? (
+            <PlanUpgradePrompt
+              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+            ></PlanUpgradePrompt>
+          ) : (
             <NetResultSection
               data={chartData.netEvolution}
               selectedClubs={chartComparisons.netEvolution}
@@ -461,9 +531,17 @@ export default function DashClubUniques() {
                 }))
               }
             />
-          </div>
-        
-          <div className="grid lg:grid-cols-2 gap-4 mb-4">
+          )
+          }
+
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-4 mb-4">
+          {!hasAccess("debts", planID) ? (
+            <PlanUpgradePrompt
+              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+            ></PlanUpgradePrompt>
+          ) : (
             <DebtsSection
               data={chartData.debts}
               selectedClubs={chartComparisons.debts}
@@ -488,38 +566,46 @@ export default function DashClubUniques() {
                 }))
               }
             />
+          )
+          }
 
-          
-
+          {!hasAccess("netResult", planID) ? (
+            <PlanUpgradePrompt
+              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+            ></PlanUpgradePrompt>
+          ) : (
             <NetResultTableSection
-                data={chartData.netResult}
-                selectedClubs={chartComparisons.netResult}
-                setSelectedClubs={(updater) =>
-                  setChartComparisons((prev) => ({
-                    ...prev,
-                    netResult:
-                      typeof updater === "function"
-                        ? updater(prev.netResult)
-                        : updater
-                  }))
-                }
-                clubMap={clubMap}
-                setClubMap={setClubMap}
-                mainClubId={mainClubId}
-                clubColorMap={clubColorMap}
-                setClubColorMap={setClubColorMap}
+              data={chartData.netResult}
+              selectedClubs={chartComparisons.netResult}
+              setSelectedClubs={(updater) =>
+                setChartComparisons((prev) => ({
+                  ...prev,
+                  netResult:
+                    typeof updater === "function"
+                      ? updater(prev.netResult)
+                      : updater
+                }))
+              }
+              clubMap={clubMap}
+              setClubMap={setClubMap}
+              mainClubId={mainClubId}
+              clubColorMap={clubColorMap}
+              setClubColorMap={setClubColorMap}
 
-                currency={chartCurrencies.netResult}
-                setCurrency={(value) =>
-                  setChartCurrencies((prev) => ({
-                    ...prev,
-                    netResult: value
-                  }))
-                }
-              />
+              currency={chartCurrencies.netResult}
+              setCurrency={(value) =>
+                setChartCurrencies((prev) => ({
+                  ...prev,
+                  netResult: value
+                }))
+              }
+            />
+          )
+          }
 
 
-          </div>
+
+        </div>
       </div>
     </div>
   );
