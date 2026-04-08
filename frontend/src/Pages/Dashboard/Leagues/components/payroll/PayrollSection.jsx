@@ -2,11 +2,15 @@
 import { X } from "lucide-react";
 import PayrollLineChart from "./PayrollLineChart";
 import ChartFilter from "../filter/ChartFilter";
+import { useMemo, useEffect, useState } from "react";
+
 
 export default function PayrollSection({
   data,
   leagueMap,
   setLeagueMap,
+  currency,
+  setCurrency,
   mainLeagueId,
   selectedLeagues,
   setSelectedLeagues,
@@ -41,6 +45,34 @@ export default function PayrollSection({
     );
   }
 
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((clubData) => {
+      clubData.forEach((item) => {
+        years.add(item.year);
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+
+    if (!startYear) {
+      setStartYear(availableYears[0]);
+    }
+
+    if (!endYear) {
+      setEndYear(availableYears[availableYears.length - 1]);
+    }
+
+  }, [availableYears]);
+
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
@@ -49,7 +81,15 @@ export default function PayrollSection({
 
       <ChartFilter
         ligasSelecionadas={selectedLeagues}
+        currency={currency}
+        onChangeCurrency={setCurrency}
         onAddLeague={handleAddLeague}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        availableYears={availableYears}
+        yearSelectionMode="multiple"
       />
 
       <PayrollLineChart
@@ -58,6 +98,8 @@ export default function PayrollSection({
         leagueMap={leagueMap}
         mainLeagueId={mainLeagueId}
         leagueColor={leagueColor}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       {selectedLeagues.length > 0 && (

@@ -459,3 +459,40 @@ export async function getFaqs(req, res) {
     return res.status(500).json({ message: "Erro ao buscar FAQs" });
   }
 }
+
+// GET /user/translations
+// Retorna mapa { code: text } com a tradução do locale do usuário,
+// usando name_pt como fallback quando não há tradução cadastrada.
+export async function getCommonTranslations(req, res) {
+  try {
+    const prefRes = await db.query(
+      `SELECT r.code AS locale
+       FROM user_preferences up
+       JOIN regions r ON r.id = up.region_id
+       WHERE up.user_id = $1
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    const locale = prefRes.rows[0]?.locale || "pt-BR";
+
+    const result = await db.query(
+      `SELECT ct.code,
+              COALESCE(ctt.name, ct.name_pt) AS text
+       FROM common_terms ct
+       LEFT JOIN common_term_translations ctt
+         ON ctt.common_term_id = ct.id AND ctt.locale = $1`,
+      [locale]
+    );
+
+    const map = {};
+    for (const row of result.rows) {
+      map[row.code] = row.text;
+    }
+
+    return res.json(map);
+  } catch (error) {
+    console.error("Erro ao buscar traduções:", error);
+    return res.status(500).json({ message: "Erro ao buscar traduções" });
+  }
+}

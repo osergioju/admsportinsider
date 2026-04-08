@@ -1,3 +1,4 @@
+
 export function adaptCostsBreakdown(
   dataByLeague,
   ligasSelecionadas,
@@ -11,14 +12,15 @@ export function adaptCostsBreakdown(
   const leagueIds = [mainLeagueId, ...ligasSelecionadas];
 
   const series = leagueIds.map((leagueId, index) => {
-    const apiData = dataByLeague[leagueId];
+    const entry = dataByLeague[leagueId];
+    const apiData = entry?.data || entry; // extrai o array de dentro da resposta
     if (!Array.isArray(apiData)) return null;
 
     const values = apiData
-      .filter((item) => item.name_pt)
+      .filter((item) => item.name)
       .map((item) => ({
-        name: item.name_pt.replace("(-)", ""),
-        value: Number(item.value.toString().replace("-", ""))
+        name: item.name.replace("(-)", ""), // `name` já traduzido
+        value: Number(String(item.converted_value).replace("-", "")) // usa converted_value
       }));
 
     const total = leagueIds.length;

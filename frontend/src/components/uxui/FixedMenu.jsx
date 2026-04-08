@@ -1,40 +1,65 @@
-import NotificationDropdown from "../notifications/NotificationDropdown"
-import { Heart, Search, Cog } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useContext } from "react";
+import { Home, Shield, Trophy, User } from "lucide-react";
+import { AuthContext } from "../../context/AuthContext";
 
-export default function FixedMenu({ mode : mode }) {
+export default function FixedMenu() {
+  const location = useLocation();
+  const { user } = useContext(AuthContext);
+
+  const isActive = (path) => location.pathname.startsWith(path);
+
+  const items = [
+    {
+      to: user ? "/dashboard" : "/dashboard-public",
+      icon: Home,
+      label: "Início",
+      active: location.pathname === "/dashboard" || location.pathname === "/dashboard-public",
+    },
+    {
+      to: "/dashboard/clubs",
+      icon: Shield,
+      label: "Clubes",
+      active: isActive("/dashboard/clubs"),
+    },
+    {
+      to: "/dashboard/leagues",
+      icon: Trophy,
+      label: "Ligas",
+      active: isActive("/dashboard/leagues") || isActive("/dashboard/league/"),
+    },
+    {
+      to: user ? "/me/profile" : "/login",
+      icon: User,
+      label: user ? "Perfil" : "Entrar",
+      active: isActive("/me/profile") || location.pathname === "/login",
+    },
+  ];
+
   return (
-    <div>
-        
-        {
-            mode ? (
-                <div className="fixed bottom-5 w-full left-0 z-40 lg:hidden">
-                    <div className="w-max mx-auto p-4 bg-white/30 backdrop-blur border border-[#E9E9E9] shadow-xl w-full left-0 rounded-xl">
-                        <div className="gap-2 flex items-center justify-between flex-wrap">
-                            <NotificationDropdown />
-                            <div className="text-center">
-                                <button className="cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full w-[36px] h-[36px] flex flex-col items-center justify-center">
-                                    <Heart strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[18px]"></Heart>
-                                </button>
-                            </div> 
-                            <div className="text-center">
-                                <button className="cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full w-[36px] h-[36px] flex flex-col items-center justify-center">
-                                    <Search strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[18px]"></Search>
-                                </button>
-                            </div>
-                            <div className="text-center">
-                                <button className="cursor-pointer transition-all group hover:bg-[#7F33D9] hover:border-[#7F33D9] border border-[#AFAFB2] rounded-full w-[36px] h-[36px] flex flex-col items-center justify-center">
-                                    <Cog strokeWidth={1} className="text-[#7F33D9] group-hover:text-white transition-all w-[18px]"></Cog>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ): (
-                <div>
-                    xxxxxxxx
-                </div>
-            )
-        }
+    <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+      <div className="flex items-center justify-around px-2 py-2 pb-safe">
+        {items.map(({ to, icon: Icon, label, active }) => (
+          <Link
+            key={to}
+            to={to}
+            className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all"
+          >
+            <Icon
+              size={22}
+              strokeWidth={active ? 2.2 : 1.5}
+              className={active ? "text-[#7F33D9]" : "text-gray-400"}
+            />
+            <span
+              className={`text-[10px] font-semibold tracking-wide ${
+                active ? "text-[#7F33D9]" : "text-gray-400"
+              }`}
+            >
+              {label}
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { findUserByEmail, createPublicUser } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 import { checkResetLimit } from "../utils/resetLimiter.js";
 import db from "../config/db.js";
-import { sendResetEmail, sendResetEmailSucess, reSendMail } from "../utils/mailer.js";
+import { sendResetEmail, sendResetEmailSucess, reSendMail, addContactToBrevo } from "../utils/mailer.js";
 
 // Tokens pro cadastro, pra chegar no e-mail e confirmar e tal
 function generateEmailToken() {
@@ -70,7 +70,7 @@ export const login = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { nome, email, senha } = req.body;
+  const { nome, email, senha, newsletter } = req.body;
 
   // 1. Validação básica
   if (!nome || !email || !senha) {
@@ -115,7 +115,19 @@ export const register = async (req, res) => {
       // Não bloqueamos o cadastro se o email falhar
     }
 
-    // 6. Gerar Token JWT para já logar o usuário direto
+    // 6. Adicionar contato na lista do Brevo (somente se aceitou newsletter)
+    if (newsletter === true) {
+      try {
+        const planRes = await db.query(`SELECT name FROM plans WHERE id = 1`);
+        const planName = planRes.rows[0]?.name || "Gratuito";
+        await addContactToBrevo({ email: newUser.email, name: newUser.name, planName });
+        console.log(`[Brevo] Contato adicionado: ${newUser.email} | Plano: ${planName}`);
+      } catch (brevoErr) {
+        console.error("[Brevo] Falha ao adicionar contato:", brevoErr.message);
+      }
+    }
+
+    // 7. Gerar Token JWT para já logar o usuário direto
     const token = generateAccessToken({
       id: newUser.id,
       email: newUser.email,

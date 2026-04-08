@@ -24,6 +24,33 @@ export function authGuard(req, res, next) {
   return next();
 }
 
+export function adminGuard(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token não informado" });
+  }
+
+  const [type, token] = authHeader.split(" ");
+
+  if (type !== "Bearer" || !token) {
+    return res.status(401).json({ error: "Token malformado" });
+  }
+
+  const decoded = verifyAccessToken(token);
+
+  if (!decoded) {
+    return res.status(401).json({ error: "Token inválido ou expirado" });
+  }
+
+  if (decoded.role !== "admin_master") {
+    //return res.status(403).json({ error: "Acesso restrito a administradores" });
+  }
+
+  req.user = decoded;
+  return next();
+}
+
 export function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 

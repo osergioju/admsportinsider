@@ -2,7 +2,7 @@ import HomeBanners from "../../components/uxui/banner"
 import ReceitaSection from "./Charts/Receitas/ReceitaSection"
 import NotasSection from "./../Dashboard/Notas/NotasSection"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { api } from "../../services/api"
 
 export default function Main() {
@@ -11,7 +11,7 @@ export default function Main() {
     { id: 3, name: "Brasileirão Série A", color: "#80de2e" },
   ];
 
-  const [currency, setCurrency] = useState("RUB");
+  const [currency, setCurrency] = useState("BRL");
 
   const [selectedLeagues, setSelectedLeagues] = useState(
     DEFAULT_LEAGUES.map(l => l.id)
@@ -23,70 +23,80 @@ export default function Main() {
 
   const [leagueColor, setLeagueColor] = useState(
     Object.fromEntries(
-      DEFAULT_LEAGUES.map(l => [
-        l.id,
-        { color_one: l.color }
-      ])
+      DEFAULT_LEAGUES.map(l => [l.id, { color_one: l.color }])
     )
   );
 
-  const [chartData, setChartData] = useState({
-    revenue: {}
-  });
-
+  const [revenueData, setRevenueData] = useState({});
 
   /**
-   * Fetch genérico
+   * ref para evitar closure stale: sempre aponta para o estado atual
    */
-  async function fetchChartData(chartKey, endpointBuilder) {
+  const revenueDataRef = useRef({});
+  useEffect(() => { revenueDataRef.current = revenueData; }, [revenueData]);
 
-    const existingData = chartData[chartKey];
+  /**
+   * ref de montagem: evita que o effect de moeda dispare no primeiro render
+   * (o effect de ligas já cobre o carregamento inicial)
+   */
+  const mountedRef = useRef(false);
 
-    const leaguesToFetch = selectedLeagues.filter(
-      (leagueId) => !existingData[leagueId]
-    );
+  /**
+   * Busca receitas das ligas.
+   * force=true  → re-busca TODAS as ligas (ex: moeda mudou).
+   * force=false → busca apenas ligas ainda não em cache.
+   */
+  async function fetchRevenue(leagues, cur, force) {
+    const existing = revenueDataRef.current;
 
-    if (leaguesToFetch.length === 0) return;
+    const toFetch = force
+      ? [...leagues]
+      : leagues.filter((id) => !existing[id]);
+
+    if (toFetch.length === 0) return;
 
     try {
-
       const responses = await Promise.all(
-        leaguesToFetch.map((leagueId) =>
-          api.get(endpointBuilder(leagueId))
+        toFetch.map((leagueId) =>
+          api.get(
+            `/dashboard/leagues/${leagueId}/financials/revenues?to=${cur}&fromYear=2018&toYear=2024`
+          )
         )
       );
 
       const newData = {};
-
-      responses.forEach((res, index) => {
-        newData[leaguesToFetch[index]] = res.data.data;
+      responses.forEach((res, i) => {
+        newData[toFetch[i]] = res.data.data;
       });
 
-      setChartData((prev) => ({
-        ...prev,
-        [chartKey]: {
-          ...prev[chartKey],
-          ...newData
-        }
-      }));
-
+      setRevenueData((prev) =>
+        force
+          ? newData                   // substitui tudo (moeda mudou)
+          : { ...prev, ...newData }   // mescla (liga nova adicionada)
+      );
     } catch (err) {
-      console.error("Erro ao buscar dados:", err);
+      console.error("Erro ao buscar receitas:", err);
     }
   }
 
   /**
-   * Carregar receitas das ligas
+   * Moeda mudou → re-fetch forçado de todas as ligas.
+   * Pulado no primeiro render (mountedRef ainda false).
    */
   useEffect(() => {
+    if (!mountedRef.current) return;
+    if (selectedLeagues.length === 0) return;
+    fetchRevenue(selectedLeagues, currency, true);
+  }, [currency]);
 
-    fetchChartData(
-      "revenue",
-      (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/revenues?from=RUB&to=${currency}&fromYear=2018&toYear=2024`
-    );
-
-  }, [selectedLeagues, currency]);
+  /**
+   * Ligas mudaram → fetch incremental (só novas).
+   * Marca montagem no primeiro run para liberar o effect de moeda.
+   */
+  useEffect(() => {
+    mountedRef.current = true;
+    fetchRevenue(selectedLeagues, currency, false);
+  }, [selectedLeagues]);
 
   return (
     <div className="space-y-8">
@@ -98,18 +108,18 @@ export default function Main() {
 
       {/* Gráfico receitas ligas */}
       <ReceitaSection
-        data={chartData.revenue}
+        data={revenueData}
         selectedLeagues={selectedLeagues}
         setSelectedLeagues={setSelectedLeagues}
         leagueMap={leagueMap}
         setLeagueMap={setLeagueMap}
         leagueColor={leagueColor}
         setLeagueColor={setLeagueColor}
+        currency={currency}
+        setCurrency={setCurrency}
       />
 
-      <NotasSection></NotasSection>
+      <NotasSection />
     </div>
-
-
   );
 }

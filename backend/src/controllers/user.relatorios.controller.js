@@ -1,12 +1,13 @@
 import axios from "axios";
 
+const INDEX_WORDPRESS_GRAPHQL_URL = "https://index.sportinsider.com.br/graphql";
 const WORDPRESS_GRAPHQL_URL = "https://sportinsider.com.br/graphql";
 
 /**
  * BUSCAR RELATÓRIOS (paginado via GraphQL cursor)
  */
 export const getRelatorios = async (req, res) => {
-  const page     = parseInt(req.query.page)     || 1;
+  const page = parseInt(req.query.page) || 1;
   const pageSize = parseInt(req.query.pageSize) || 12;
 
   try {
@@ -16,7 +17,7 @@ export const getRelatorios = async (req, res) => {
     const fetchCount = page * pageSize;
 
     const { data: wpData } = await axios.post(
-      WORDPRESS_GRAPHQL_URL,
+      INDEX_WORDPRESS_GRAPHQL_URL,
       {
         query: `
           query GetRelatorios($first: Int!) {
@@ -62,11 +63,11 @@ export const getRelatorios = async (req, res) => {
     const total = nodes.length; // total recebido até agora
 
     return res.status(200).json({
-        relatorios: pageItems,
-        pageInfo: {
-            hasNextPage: pageInfo?.hasNextPage ?? false,
-            endCursor: pageInfo?.endCursor ?? null,
-        },
+      relatorios: pageItems,
+      pageInfo: {
+        hasNextPage: pageInfo?.hasNextPage ?? false,
+        endCursor: pageInfo?.endCursor ?? null,
+      },
     });
 
   } catch (error) {
@@ -76,7 +77,7 @@ export const getRelatorios = async (req, res) => {
 };
 
 export const getNotas = async (req, res) => {
-  const page     = parseInt(req.query.page)     || 1;
+  const page = parseInt(req.query.page) || 1;
   const pageSize = parseInt(req.query.pageSize) || 12;
 
   try {

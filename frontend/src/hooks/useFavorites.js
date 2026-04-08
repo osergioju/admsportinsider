@@ -13,8 +13,14 @@ export function useFavorites() {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Carrega favoritos ao montar
+  // Carrega favoritos ao montar (apenas se autenticado)
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       try {
         const { data } = await api.get("/favorites/all");
@@ -47,6 +53,8 @@ export function useFavorites() {
    */
   const toggleFavorite = useCallback(
     async (entityId, entityType) => {
+      if (!localStorage.getItem("token")) return;
+
       const alreadyFavorited = favorites.some(
         (f) => f.entity_id === entityId && f.entity_type === entityType
       );

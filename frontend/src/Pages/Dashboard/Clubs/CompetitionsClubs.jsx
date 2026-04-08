@@ -1,315 +1,375 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { api } from "../../../services/api";
+import { Loader2, ChevronDown, Trophy } from "lucide-react";
 
-// Mock data para demonstração
-const mockCompetitions = [
-  {
-    id: 1,
-    type: "NACIONAL",
-    name: "Brasileirão Série A",
-    expanded: true,
-    standings: [
-      { pos: 1,  name: "Palmeiras",     pts: 7, j: 3, v: 2, e: 1, d: 0, gp: 10, gc: 4, sg: 6,  pct: 77, form: ["W","W","D"], isMain: false },
-      { pos: 2,  name: "São Paulo",      pts: 7, j: 3, v: 2, e: 1, d: 0, gp: 5,  gc: 2, sg: 3,  pct: 77, form: ["W","D","W"], isMain: false },
-      { pos: 3,  name: "Fluminense",     pts: 7, j: 3, v: 2, e: 1, d: 0, gp: 4,  gc: 2, sg: 2,  pct: 77, form: ["W","W","D"], isMain: false },
-      { pos: 4,  name: "Bahia",          pts: 7, j: 3, v: 2, e: 1, d: 0, gp: 4,  gc: 2, sg: 2,  pct: 77, form: ["W","D","W"], isMain: false },
-      { pos: 5,  name: "Corinthians",    pts: 6, j: 3, v: 2, e: 0, d: 1, gp: 4,  gc: 2, sg: 2,  pct: 66, form: ["W","W","L"], isMain: false },
-      { pos: 6,  name: "Athletico-PR",   pts: 6, j: 3, v: 2, e: 0, d: 1, gp: 3,  gc: 2, sg: 1,  pct: 66, form: ["L","W","W"], isMain: false },
-      { pos: 7,  name: "Bragantino",     pts: 6, j: 3, v: 2, e: 0, d: 1, gp: 2,  gc: 2, sg: 0,  pct: 66, form: ["W","W","L"], isMain: false },
-      { pos: 8,  name: "Chapecoense",    pts: 5, j: 3, v: 1, e: 2, d: 0, gp: 8,  gc: 6, sg: 2,  pct: 55, form: ["D","W","D"], isMain: false },
-      { pos: 9,  name: "Mirassol",       pts: 5, j: 3, v: 1, e: 2, d: 0, gp: 6,  gc: 5, sg: 1,  pct: 55, form: ["D","D","W"], isMain: false },
-      { pos: 10, name: "Vasco da Gama",  pts: 4, j: 3, v: 1, e: 1, d: 1, gp: 5,  gc: 5, sg: 0,  pct: 44, form: ["W","L","D"], isMain: false },
-      { pos: 11, name: "Flamengo",       pts: 4, j: 3, v: 1, e: 1, d: 1, gp: 4,  gc: 4, sg: 0,  pct: 44, form: ["D","W","L"], isMain: false },
-      { pos: 12, name: "Grêmio",         pts: 3, j: 3, v: 1, e: 0, d: 2, gp: 3,  gc: 5, sg: -2, pct: 33, form: ["W","L","L"], isMain: true  },
-      { pos: 13, name: "Internacional",  pts: 3, j: 3, v: 1, e: 0, d: 2, gp: 2,  gc: 4, sg: -2, pct: 33, form: ["L","W","L"], isMain: false },
-      { pos: 14, name: "Santos",         pts: 2, j: 3, v: 0, e: 2, d: 1, gp: 2,  gc: 3, sg: -1, pct: 22, form: ["D","L","D"], isMain: false },
-      { pos: 15, name: "Botafogo",       pts: 2, j: 3, v: 0, e: 2, d: 1, gp: 1,  gc: 2, sg: -1, pct: 22, form: ["D","D","L"], isMain: false },
-      { pos: 16, name: "Cruzeiro",       pts: 1, j: 3, v: 0, e: 1, d: 2, gp: 1,  gc: 4, sg: -3, pct: 11, form: ["L","D","L"], isMain: false },
-      { pos: 17, name: "Atlético-MG",    pts: 1, j: 3, v: 0, e: 1, d: 2, gp: 1,  gc: 5, sg: -4, pct: 11, form: ["L","L","D"], isMain: false },
-      { pos: 18, name: "Fortaleza",      pts: 0, j: 3, v: 0, e: 0, d: 3, gp: 0,  gc: 6, sg: -6, pct: 0,  form: ["L","L","L"], isMain: false },
-      { pos: 19, name: "Juventude",      pts: 0, j: 3, v: 0, e: 0, d: 3, gp: 0,  gc: 7, sg: -7, pct: 0,  form: ["L","L","L"], isMain: false },
-      { pos: 20, name: "Sport",          pts: 0, j: 3, v: 0, e: 0, d: 3, gp: 0,  gc: 8, sg: -8, pct: 0,  form: ["L","L","L"], isMain: false },
-    ],
-    stats: [
-      { item: "Chutes (total, mandante/casa e visitante/fora)", avg: "4.2" },
-      { item: "Chutes a gol (total, mandante/casa e visitante/fora)", avg: "1.8" },
-      { item: "Posse de bola (total, mandante/casa e visitante/fora)", avg: "48%" },
-      { item: "Jogos sem sofrer gols", avg: "0" },
-      { item: "Escanteios (total, mandante/casa e visitante/fora)", avg: "5.1" },
-      { item: "Vencendo no intervalo", avg: "1" },
-    ],
-    discipline: [
-      { item: "Faltas", avg: "12.4" },
-      { item: "Cartões amarelos", avg: "1.8" },
-      { item: "Cartões vermelhos", avg: "0.2" },
-    ],
-    financial: [
-      { item: "Público (total)", avg: "42.000" },
-      { item: "Público (média)", avg: "14.000" },
-      { item: "Receita (total)", avg: "R$ 1.2M" },
-      { item: "Receita (média)", avg: "R$ 400K" },
-      { item: "Tíquete médio", avg: "R$ 85" },
-      { item: "Ocupação média", avg: "72%" },
-    ],
-  },
-  { id: 2, type: "NACIONAL", name: "Copa do Brasil", expanded: false, standings: [], stats: [], discipline: [], financial: [] },
-  { id: 3, type: "NACIONAL", name: "Recopa", expanded: false, standings: [], stats: [], discipline: [], financial: [] },
-  { id: 4, type: "ESTADUAL", name: "Campeonato Gaúcho", expanded: false, standings: [], stats: [], discipline: [], financial: [] },
-  { id: 5, type: "CONTINENTAL", name: "Libertadores", expanded: false, standings: [], stats: [], discipline: [], financial: [] },
-  { id: 6, type: "CONTINENTAL", name: "Sudamericana", expanded: false, standings: [], stats: [], discipline: [], financial: [] },
-  { id: 7, type: "INTERCONTINENTAL", name: "Mundial de Clubes FIFA", expanded: false, standings: [], stats: [], discipline: [], financial: [] },
-];
+/* ── helpers ── */
+const fmt  = (v, d = 1) => v != null ? Number(v).toFixed(d) : "—";
+const fmtI = v => v != null ? Number(v) : "—";
+const fmtPct = v => v != null ? `${Number(v).toFixed(0)}%` : "—";
+const fmtDate = d => d ? new Date(d).toLocaleDateString("pt-BR",{timeZone:"UTC",day:"2-digit",month:"2-digit"}) : "—";
 
-const FormBadge = ({ result }) => {
-  const colors = {
-    W: "bg-emerald-500 text-white",
-    D: "bg-gray-400 text-white",
-    L: "bg-red-500 text-white",
-  };
+/* ── sub-components ── */
+
+function BigNum({ value, label, highlight }) {
   return (
-    <span className={`w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center ${colors[result]}`}>
-      {result === "W" ? "V" : result === "D" ? "E" : "D"}
-    </span>
+    <div className={`flex flex-col items-center justify-center rounded-2xl p-4 border ${highlight ? "bg-violet-600 border-violet-600 text-white" : "bg-white border-gray-100"}`}>
+      <span className={`text-2xl font-extrabold leading-none ${highlight ? "text-white" : "text-gray-900"}`}>{value ?? "—"}</span>
+      <span className={`text-[10px] font-semibold uppercase tracking-wide mt-1 text-center leading-tight ${highlight ? "text-violet-200" : "text-gray-400"}`}>{label}</span>
+    </div>
   );
-};
+}
 
+function SubTabs({ value, onChange }) {
+  return (
+    <div className="flex gap-1 mb-4">
+      {["total","home","away"].map((k, i) => (
+        <button key={k} onClick={() => onChange(k)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${value===k ? "bg-violet-600 border-violet-600 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-violet-300"}`}>
+          {["Total","Casa","Fora"][i]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StandingsTable({ rows, clubId }) {
+  const visible = rows;
+
+  return (
+    <div className="rounded-xl border border-gray-100 overflow-x-auto">
+      <table className="w-full text-xs min-w-[520px]">
+        <thead>
+          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
+            {["#","Clube","P","J","V","E","D","GP","GC","SG","%"].map(h=>(
+              <th key={h} className={`py-2.5 px-2 font-semibold ${h==="Clube"?"text-left":""}`}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {visible.map((t, i) => (
+            <tr key={t.id ?? i} className={`border-t border-gray-50 ${t.isMain ? "bg-violet-50 font-bold" : "hover:bg-gray-50/60"}`}>
+              <td className={`px-2 py-2.5 text-center font-bold ${t.isMain?"text-violet-600":"text-gray-400"}`}>{t.pos??i+1}</td>
+              <td className={`px-2 py-2.5 flex items-center gap-2 ${t.isMain?"text-violet-700":"text-gray-700"}`}>
+                {t.crest ? <img src={t.crest} alt="" className="w-4 h-4 object-contain"/> : <div className="w-4 h-4"/>}
+                {t.name}
+                {t.isMain && <span className="ml-1 text-[9px] bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full font-bold">você</span>}
+              </td>
+              <td className={`px-2 py-2.5 text-center font-bold ${t.isMain?"text-violet-700":"text-gray-800"}`}>{t.pts}</td>
+              <td className="px-2 py-2.5 text-center text-gray-600">{t.j}</td>
+              <td className="px-2 py-2.5 text-center text-gray-600">{t.v}</td>
+              <td className="px-2 py-2.5 text-center text-gray-600">{t.e}</td>
+              <td className="px-2 py-2.5 text-center text-gray-600">{t.d}</td>
+              <td className="px-2 py-2.5 text-center text-gray-600">{t.gp}</td>
+              <td className="px-2 py-2.5 text-center text-gray-600">{t.gc}</td>
+              <td className={`px-2 py-2.5 text-center font-semibold ${t.sg>0?"text-emerald-600":t.sg<0?"text-red-500":"text-gray-400"}`}>{t.sg>0?`+${t.sg}`:t.sg}</td>
+              <td className="px-2 py-2.5 text-center text-gray-500">{t.pct}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function StatRow({ label, value, sub }) {
+  return (
+    <tr className="border-t border-gray-50 hover:bg-gray-50/60">
+      <td className="px-4 py-2.5 text-xs text-gray-600">{label}</td>
+      <td className="px-4 py-2.5 text-right text-xs font-bold text-violet-700">{value ?? "—"}</td>
+      {sub !== undefined && <td className="px-4 py-2.5 text-right text-xs text-gray-400">{sub}</td>}
+    </tr>
+  );
+}
+
+function MatchRow({ m, clubId }) {
+  const isHome = m.home.id === clubId;
+  const finished = m.home_goals != null && m.away_goals != null;
+  const result = finished
+    ? (isHome ? (m.home_goals > m.away_goals ? "V" : m.home_goals < m.away_goals ? "D" : "E")
+              : (m.away_goals > m.home_goals ? "V" : m.away_goals < m.home_goals ? "D" : "E"))
+    : null;
+  const rc = { V:"bg-emerald-500",E:"bg-gray-400",D:"bg-red-500" };
+
+  return (
+    <Link to={`/dashboard/matches/${m.id}`} className="flex items-center gap-3 py-2.5 px-4 hover:bg-gray-50 transition-colors group">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {m.home.crest && <img src={m.home.crest} alt="" className="w-5 h-5 object-contain shrink-0"/>}
+        <span className={`text-xs font-semibold truncate ${m.home.id===clubId?"text-violet-700":"text-gray-700"}`}>{m.home.name}</span>
+      </div>
+      <div className="flex flex-col items-center shrink-0 min-w-[52px]">
+        {finished
+          ? <span className="text-sm font-extrabold text-gray-900">{m.home_goals} – {m.away_goals}</span>
+          : <span className="text-xs font-semibold text-gray-400">{fmtDate(m.date)}</span>
+        }
+        {finished && m.home_goals_ht != null && (
+          <span className="text-[9px] text-gray-400">({m.home_goals_ht}–{m.away_goals_ht})</span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+        <span className={`text-xs font-semibold truncate ${m.away.id===clubId?"text-violet-700":"text-gray-700"}`}>{m.away.name}</span>
+        {m.away.crest && <img src={m.away.crest} alt="" className="w-5 h-5 object-contain shrink-0"/>}
+      </div>
+      {result && (
+        <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-white shrink-0 ${rc[result]}`}>{result}</span>
+      )}
+    </Link>
+  );
+}
+
+/* ── Main component ── */
 export default function CompetitionsClubs() {
-  const [competitions, setCompetitions] = useState(mockCompetitions);
-  const [season, setSeason] = useState("2025");
+  const { id } = useParams();
+  const clubId = Number(id);
+  const [season, setSeason] = useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState({});
+  const [mainTab, setMainTab] = useState({});     // compId → tab
+  const [splitTab, setSplitTab] = useState({});   // compId → split
 
-  const toggle = (id) =>
-    setCompetitions((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, expanded: !c.expanded } : c))
-    );
+  useEffect(() => { load(); }, [id, season]);
 
-  const mainClubIndex = competitions[0].standings.findIndex((s) => s.isMain);
+  async function load() {
+    setLoading(true);
+    try {
+      const params = season ? `?season=${season}` : "";
+      const { data: res } = await api.get(`/dashboard/clubs/${id}/sports/competitions${params}`);
+      setData(res);
+      if (!season && res.season) setSeason(res.season);
+      // auto-expand first
+      const exp = {};
+      res.competitions.forEach((c, i) => { exp[c.id] = i === 0; });
+      setExpanded(exp);
+      const mt = {}, st = {};
+      res.competitions.forEach(c => { mt[c.id] = "classificacao"; st[c.id] = "total"; });
+      setMainTab(mt);
+      setSplitTab(st);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }
 
-  // Rows a mostrar: 3 acima, o clube, 3 abaixo (janela deslizante)
-  const getVisibleRows = (standings) => {
-    const idx = standings.findIndex((s) => s.isMain);
-    if (idx === -1) return standings.slice(0, 9);
-    const start = Math.max(0, idx - 3);
-    const end = Math.min(standings.length, idx + 4);
-    return standings.slice(start, end);
-  };
+  const toggle = id => setExpanded(p => ({ ...p, [id]: !p[id] }));
+  const setMT  = (id, v) => setMainTab(p => ({ ...p, [id]: v }));
+  const setST  = (id, v) => setSplitTab(p => ({ ...p, [id]: v }));
 
-  const typeColor = {
-    NACIONAL: "text-violet-500",
-    ESTADUAL: "text-blue-500",
-    CONTINENTAL: "text-amber-500",
-    INTERCONTINENTAL: "text-rose-500",
-  };
+  const MAIN_TABS = [
+    { key:"classificacao", label:"Classificação" },
+    { key:"esportivo",     label:"Esportivo" },
+    { key:"intervalo",     label:"Intervalo" },
+    { key:"disciplinar",   label:"Disciplinar" },
+    { key:"partidas",      label:"Partidas" },
+  ];
 
   return (
     <div className="w-full space-y-4 pb-10">
+
       {/* Season selector */}
-      <div className="flex items-center gap-3 mb-6">
-        <span className="text-sm font-medium text-gray-500">Selecione a temporada</span>
-        <select
-          value={season}
-          onChange={(e) => setSeason(e.target.value)}
-          className="border border-gray-200 rounded-full px-4 py-1.5 text-sm font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
-        >
-          {["2025", "2024", "2023", "2022"].map((y) => (
-            <option key={y}>{y}</option>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm font-medium text-gray-500">Temporada</span>
+        <div className="flex gap-1 flex-wrap">
+          {(data?.availableSeasons ?? [2025,2024,2023,2022,2021]).map(y => (
+            <button key={y} onClick={() => setSeason(y)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${season===y?"bg-violet-600 border-violet-600 text-white":"bg-white border-gray-200 text-gray-600 hover:border-violet-300"}`}>
+              {y}
+            </button>
           ))}
-        </select>
-        <button className="bg-gray-900 text-white text-sm px-5 py-1.5 rounded-full font-medium hover:bg-gray-700 transition-colors">
-          Filtrar →
-        </button>
+        </div>
       </div>
 
-      <h2 className="text-xl font-bold text-gray-900">Campeonatos</h2>
-
-      {competitions.map((comp) => (
-        <div key={comp.id} className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-          {/* Accordion header */}
-          <button
-            onClick={() => toggle(comp.id)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span className={`text-xs font-bold uppercase tracking-widest ${typeColor[comp.type] || "text-gray-400"}`}>
-                {comp.type}
-              </span>
-              <span className="text-gray-300">|</span>
-              <span className="text-sm font-semibold text-gray-800">{comp.name}</span>
-            </div>
-            <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${comp.expanded ? "rotate-180" : ""}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* Expanded content */}
-          {comp.expanded && comp.standings.length > 0 && (
-            <div className="px-5 pb-6 space-y-6 border-t border-gray-100">
-              
-              {/* Classificação */}
-              <div className="pt-4">
-                <h3 className="text-sm font-bold text-gray-800 mb-3">Classificação</h3>
-                <div className="rounded-xl border border-gray-100 overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
-                        <th className="text-left px-3 py-2.5 font-semibold w-6">#</th>
-                        <th className="text-left px-3 py-2.5 font-semibold">Clube</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">P</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">J</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">V</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">E</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">D</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">GP</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">GC</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">SG</th>
-                        <th className="px-2 py-2.5 font-semibold text-center">%</th>
-                        <th className="px-3 py-2.5 font-semibold text-center">Ult. jogos</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getVisibleRows(comp.standings).map((team, i, arr) => {
-                        const isMain = team.isMain;
-                        const prevTeam = arr[i - 1];
-                        const nextTeam = arr[i + 1];
-                        const showTopGap = i > 0 && prevTeam && !prevTeam.isMain && team.pos - prevTeam.pos > 1;
-                        const isAboveMain = nextTeam?.isMain;
-                        const isBelowMain = prevTeam?.isMain;
-
-                        return (
-                          <>
-                            {showTopGap && (
-                              <tr key={`gap-${team.pos}`}>
-                                <td colSpan={12} className="py-1 px-3">
-                                  <div className="border-t border-dashed border-gray-200" />
-                                </td>
-                              </tr>
-                            )}
-                            <tr
-                              key={team.pos}
-                              className={`border-b border-gray-50 transition-colors ${
-                                isMain
-                                  ? "bg-violet-50 border-l-4 border-l-violet-500 font-bold"
-                                  : "hover:bg-gray-50/60"
-                              }`}
-                            >
-                              <td className={`px-3 py-2.5 font-bold ${isMain ? "text-violet-600" : "text-gray-400"}`}>
-                                {team.pos}
-                              </td>
-                              <td className={`px-3 py-2.5 font-semibold ${isMain ? "text-violet-700" : "text-gray-700"}`}>
-                                {team.name}
-                                {isMain && (
-                                  <span className="ml-2 text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full font-bold">
-                                    você
-                                  </span>
-                                )}
-                              </td>
-                              <td className={`px-2 py-2.5 text-center font-bold ${isMain ? "text-violet-700" : "text-gray-800"}`}>{team.pts}</td>
-                              <td className="px-2 py-2.5 text-center text-gray-600">{team.j}</td>
-                              <td className="px-2 py-2.5 text-center text-gray-600">{team.v}</td>
-                              <td className="px-2 py-2.5 text-center text-gray-600">{team.e}</td>
-                              <td className="px-2 py-2.5 text-center text-gray-600">{team.d}</td>
-                              <td className="px-2 py-2.5 text-center text-gray-600">{team.gp}</td>
-                              <td className="px-2 py-2.5 text-center text-gray-600">{team.gc}</td>
-                              <td className={`px-2 py-2.5 text-center font-semibold ${team.sg > 0 ? "text-emerald-600" : team.sg < 0 ? "text-red-500" : "text-gray-400"}`}>
-                                {team.sg > 0 ? `+${team.sg}` : team.sg}
-                              </td>
-                              <td className="px-2 py-2.5 text-center text-gray-500">{team.pct}</td>
-                              <td className="px-3 py-2.5">
-                                <div className="flex gap-1 justify-center">
-                                  {team.form.map((r, fi) => <FormBadge key={fi} result={r} />)}
-                                </div>
-                              </td>
-                            </tr>
-                          </>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="text-xs text-gray-400 mt-2 text-right">
-                  Exibindo posições ao redor do seu clube · {comp.standings.length} times no total
-                </p>
-              </div>
-
-              {/* Estatísticas no campeonato */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-800 mb-3">Estatísticas no campeonato</h3>
-                <div className="rounded-xl border border-gray-100 overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 text-gray-500 uppercase tracking-wider">
-                        <th className="text-left px-4 py-2.5 font-semibold">Item</th>
-                        <th className="text-right px-4 py-2.5 font-semibold">Média por partida</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comp.stats.map((s, i) => (
-                        <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/60">
-                          <td className="px-4 py-2.5 text-gray-600">{s.item}</td>
-                          <td className="px-4 py-2.5 text-right font-semibold text-violet-600">{s.avg}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Estatísticas disciplinares */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-800 mb-3">Estatísticas disciplinares</h3>
-                <div className="rounded-xl border border-gray-100 overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 text-gray-500 uppercase tracking-wider">
-                        <th className="text-left px-4 py-2.5 font-semibold">Item</th>
-                        <th className="text-right px-4 py-2.5 font-semibold">Média por partida</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comp.discipline.map((s, i) => (
-                        <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/60">
-                          <td className="px-4 py-2.5 text-gray-600">{s.item}</td>
-                          <td className="px-4 py-2.5 text-right font-semibold text-violet-600">{s.avg}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Estatísticas financeiras */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-800 mb-3">Financeiro</h3>
-                <div className="rounded-xl border border-gray-100 overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-gray-50 text-gray-500 uppercase tracking-wider">
-                        <th className="text-left px-4 py-2.5 font-semibold">Financeiro</th>
-                        <th className="text-right px-4 py-2.5 font-semibold">Geral</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comp.financial.map((s, i) => (
-                        <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/60">
-                          <td className="px-4 py-2.5 text-gray-600">{s.item}</td>
-                          <td className="px-4 py-2.5 text-right font-semibold text-violet-600">{s.avg}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {comp.expanded && comp.standings.length === 0 && (
-            <div className="px-5 py-10 text-center text-gray-400 text-sm border-t border-gray-100">
-              Nenhum dado disponível para esta competição nesta temporada.
-            </div>
-          )}
+      {loading && (
+        <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
+          <Loader2 className="animate-spin w-5 h-5"/>
+          <span className="text-sm">Carregando...</span>
         </div>
-      ))}
+      )}
+
+      {!loading && (!data?.competitions?.length) && (
+        <div className="py-16 text-center text-gray-400 text-sm">Nenhum dado para a temporada {season}.</div>
+      )}
+
+      {!loading && data?.competitions?.map(comp => {
+        const isOpen = expanded[comp.id];
+        const mt = mainTab[comp.id] ?? "classificacao";
+        const st = splitTab[comp.id] ?? "total";
+        const sp = comp.esportivo?.[st] ?? {};
+        const ht = comp.halfTime?.[st] ?? {};
+        const di = comp.discipline?.[st] ?? {};
+        const s  = comp.summary ?? {};
+        const mp = sp.matches || s.matches || 1;
+
+        return (
+          <div key={comp.id} className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+
+            {/* Accordion header */}
+            <button onClick={() => toggle(comp.id)}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center gap-3">
+                {comp.logo_url
+                  ? <img src={comp.logo_url} alt="" className="w-7 h-7 object-contain"/>
+                  : <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center"><Trophy size={14} className="text-gray-400"/></div>
+                }
+                <span className="text-sm font-bold text-gray-900">{comp.name}</span>
+                {s.pos && <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{s.pos}º lugar</span>}
+              </div>
+              <ChevronDown size={18} className={`text-gray-400 transition-transform ${isOpen?"rotate-180":""}`}/>
+            </button>
+
+            {isOpen && (
+              <div className="border-t border-gray-100">
+
+                {/* Big numbers summary */}
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 px-5 py-4 border-b border-gray-100">
+                  <BigNum value={s.pos} label="Posição" highlight />
+                  <BigNum value={s.pts} label="Pontos" />
+                  <BigNum value={s.wins} label="Vitórias" />
+                  <BigNum value={s.draws} label="Empates" />
+                  <BigNum value={s.losses} label="Derrotas" />
+                  <BigNum value={s.gp} label="Gols pró" />
+                  <BigNum value={s.gc} label="Gols contra" />
+                </div>
+
+                {/* Main tabs */}
+                <div className="flex gap-1 px-5 pt-4 pb-1 overflow-x-auto">
+                  {MAIN_TABS.map(t => (
+                    <button key={t.key} onClick={() => setMT(comp.id, t.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap transition-all ${mt===t.key?"bg-violet-600 border-violet-600 text-white":"bg-white border-gray-200 text-gray-500 hover:border-violet-300"}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="px-5 pb-6 pt-3 space-y-4">
+
+                  {/* ── CLASSIFICAÇÃO ── */}
+                  {mt === "classificacao" && (
+                    <>
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      <StandingsTable rows={comp.standings?.[st] ?? []} clubId={clubId} />
+                      <p className="text-xs text-gray-400 text-right">{comp.standings?.total?.length ?? 0} clubes · exibindo posições ao redor do seu clube</p>
+                    </>
+                  )}
+
+                  {/* ── ESPORTIVO ── */}
+                  {mt === "esportivo" && (
+                    <>
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                        <BigNum value={fmtI(sp.gp)} label="Gols marcados"/>
+                        <BigNum value={fmtI(sp.gc)} label="Gols sofridos"/>
+                        <BigNum value={fmtI(sp.shots)} label="Chutes"/>
+                        <BigNum value={fmtPct(sp.possession)} label="Posse média"/>
+                      </div>
+                      <div className="rounded-xl border border-gray-100 overflow-hidden">
+                        <table className="w-full text-xs">
+                          <thead><tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
+                            <th className="text-left px-4 py-2.5 font-semibold">Estatística</th>
+                            <th className="text-right px-4 py-2.5 font-semibold">Valor</th>
+                          </tr></thead>
+                          <tbody>
+                            <StatRow label="Chutes" value={fmtI(sp.shots)}/>
+                            <StatRow label="Chutes a gol" value={fmtI(sp.shots_ot)}/>
+                            <StatRow label="Posse de bola" value={fmtPct(sp.possession)}/>
+                            <StatRow label="Clean sheets" value={fmtI(sp.clean_sheets)}/>
+                            <StatRow label="Escanteios" value={fmtI(sp.corners)}/>
+                            <StatRow label="Gols marcados por jogo" value={fmt(comp.esportivo?.total?.gp/mp,2)}/>
+                            <StatRow label="Gols sofridos por jogo" value={fmt(comp.esportivo?.total?.gc/mp,2)}/>
+                            <StatRow label="xG médio (pró)" value={fmt(comp.esportivo?.total?.xg_for,2)}/>
+                            <StatRow label="xG médio (contra)" value={fmt(comp.esportivo?.total?.xg_against,2)}/>
+                            <StatRow label="Ambos marcam %" value={fmtPct(comp.esportivo?.total?.btts_pct)}/>
+                            <StatRow label="Acima de 2.5 gols %" value={fmtPct(comp.esportivo?.total?.over25_pct)}/>
+                            <StatRow label="Clean sheet %" value={fmtPct(comp.esportivo?.total?.cs_pct)}/>
+                            <StatRow label="Pontos por jogo" value={fmt(comp.esportivo?.total?.ppg,2)}/>
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── INTERVALO ── */}
+                  {mt === "intervalo" && (
+                    <>
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      {ht.winning == null
+                        ? <p className="text-sm text-gray-400 text-center py-8">Dados de intervalo não disponíveis para esta temporada.</p>
+                        : (
+                          <>
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                              <BigNum value={fmtI(ht.winning)} label="Vencendo no intervalo"/>
+                              <BigNum value={fmtI(ht.drawing)} label="Empatando"/>
+                              <BigNum value={fmtI(ht.losing)} label="Perdendo"/>
+                            </div>
+                            <div className="rounded-xl border border-gray-100 overflow-hidden">
+                              <table className="w-full text-xs">
+                                <thead><tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
+                                  <th className="text-left px-4 py-2.5 font-semibold">Item</th>
+                                  <th className="text-right px-4 py-2.5 font-semibold">Valor</th>
+                                </tr></thead>
+                                <tbody>
+                                  <StatRow label="Vencendo no intervalo" value={fmtI(ht.winning)}/>
+                                  <StatRow label="Empatando no intervalo" value={fmtI(ht.drawing)}/>
+                                  <StatRow label="Perdendo no intervalo" value={fmtI(ht.losing)}/>
+                                  <StatRow label="Gols marcados (1º tempo)" value={fmtI(ht.gs)}/>
+                                  <StatRow label="Gols sofridos (1º tempo)" value={fmtI(ht.gc)}/>
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
+                        )
+                      }
+                    </>
+                  )}
+
+                  {/* ── DISCIPLINAR ── */}
+                  {mt === "disciplinar" && (
+                    <>
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        <BigNum value={fmtI(di.yellow)} label="Cartões amarelos"/>
+                        <BigNum value={fmtI(di.red)} label="Cartões vermelhos"/>
+                        <BigNum value={fmtI(di.fouls)} label="Faltas"/>
+                      </div>
+                      <div className="rounded-xl border border-gray-100 overflow-hidden">
+                        <table className="w-full text-xs">
+                          <thead><tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
+                            <th className="text-left px-4 py-2.5 font-semibold">Item</th>
+                            <th className="text-right px-4 py-2.5 font-semibold">Valor</th>
+                          </tr></thead>
+                          <tbody>
+                            <StatRow label="Faltas cometidas" value={fmtI(di.fouls)}/>
+                            <StatRow label="Faltas por jogo" value={fmt(di.fouls/mp)}/>
+                            <StatRow label="Cartões amarelos" value={fmtI(di.yellow)}/>
+                            <StatRow label="Cartões vermelhos" value={fmtI(di.red)}/>
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── PARTIDAS ── */}
+                  {mt === "partidas" && (
+                    <>
+                      {!comp.matches?.length
+                        ? <p className="text-sm text-gray-400 text-center py-8">Nenhuma partida registrada.</p>
+                        : comp.matches.map(({ week, games }) => (
+                          <div key={week} className="rounded-xl border border-gray-100 overflow-hidden">
+                            <div className="bg-gray-50 px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                              {week > 0 ? `Rodada ${week}` : "Sem rodada definida"}
+                            </div>
+                            <div className="divide-y divide-gray-50">
+                              {games.map(m => <MatchRow key={m.id} m={m} clubId={clubId}/>)}
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

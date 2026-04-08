@@ -26,7 +26,7 @@ const ITEMS_PER_PAGE = 8;
 const EMPTY_CLUB = {
     id_country: "", name: "", description: "", crest_url: "",
     founded_at: "", stadium_name: "", ownership_model: "",
-    primary_color: "#000000", secondary_color: "#ffffff", location: "",
+    primary_color: "#000000", secondary_color: "#ffffff", tertiary_color: "#ffffff", location: "",
 };
 
 
@@ -183,8 +183,8 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                {[["primary_color", "Cor 1"], ["secondary_color", "Cor 2"]].map(([field, label]) => (
+                            <div className="grid grid-cols-3 gap-4">
+                                {[["primary_color", "Cor 1"], ["secondary_color", "Cor 2"], ["tertiary_color", "Cor 3"]].map(([field, label]) => (
                                     <div key={field}>
                                         <label className={labelClass}>{label}</label>
                                         <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1">

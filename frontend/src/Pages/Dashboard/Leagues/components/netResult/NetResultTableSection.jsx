@@ -3,10 +3,13 @@ import { X } from "lucide-react";
 import NetResultTable from "./NetResultTable";
 import NetResultLine from "./NetResultLine";
 import ChartFilter from "../filter/ChartFilter";
+import { useMemo, useEffect, useState } from "react";
 
 export default function NetResultTableSection({
   data,
   leagueMap,
+  currency,
+  setCurrency,
   setLeagueMap,
   mainLeagueId,
   selectedLeagues,
@@ -41,6 +44,35 @@ export default function NetResultTableSection({
     );
   }
 
+
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((clubData) => {
+      clubData.forEach((item) => {
+        years.add(item.year);
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+
+    if (!startYear) {
+      setStartYear(availableYears[0]);
+    }
+
+    if (!endYear) {
+      setEndYear(availableYears[availableYears.length - 1]);
+    }
+
+  }, [availableYears]);
+
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
@@ -49,7 +81,15 @@ export default function NetResultTableSection({
 
       <ChartFilter
         ligasSelecionadas={selectedLeagues}
+        currency={currency}
+        onChangeCurrency={setCurrency}
         onAddLeague={handleAddLeague}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        availableYears={availableYears}
+        yearSelectionMode="multiple"
       />
 
       <NetResultLine
@@ -58,6 +98,8 @@ export default function NetResultTableSection({
         leagueMap={leagueMap}
         mainLeagueId={mainLeagueId}
         leagueColor={leagueColor}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       <div className="my-10"></div>
@@ -68,6 +110,8 @@ export default function NetResultTableSection({
         leagueMap={leagueMap}
         mainLeagueId={mainLeagueId}
         leagueColor={leagueColor}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       {selectedLeagues.length > 0 && (

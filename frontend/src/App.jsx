@@ -53,8 +53,15 @@ import GestaoPlanos from "./Pages/Admin/Planos/GestaoPlanos";
 import NovoPlano from "./Pages/Admin/Planos/NovoPlano";
 import EditarPlano from "./Pages/Admin/Planos/EditarPlano";
 
-// ADMIN - Insights 
+// ADMIN - Insights
 import InsightUsuarios from "./Pages/Admin/Insights/Users/Index"
+import InsightClubes from "./Pages/Admin/Insights/Clubes/Index"
+import InsightLigas from "./Pages/Admin/Insights/Ligas/Index"
+import InsightFinanceiro from "./Pages/Admin/Insights/Financeiro/Index"
+import InsightPlanos from "./Pages/Admin/Insights/Planos/Index"
+import InsightImportacoes from "./Pages/Admin/Insights/Importacoes/Index"
+import InsightUso from "./Pages/Admin/Insights/Uso/Index"
+import InsightPerformance from "./Pages/Admin/Insights/Performance/Index"
 
 // ADMIN - Notificações 
 import Notifications from "./Pages/Admin/Notificacoes/Notifications";
@@ -84,6 +91,9 @@ import ScrollToTop from "./components/uxui/ScrollTop";
 
 // Páginas do dashboard 
 import PrePageClubs from "./Pages/Dashboard/Clubs/PrePageClubs";
+import DashCountries from "./Pages/Dashboard/Countries/Index";
+import CountryDetail from "./Pages/Dashboard/Countries/CountryDetail";
+import PlayersList from "./Pages/Dashboard/Players/PlayersList";
 import DashClubs from "./Pages/Dashboard/Clubs/Index";
 import DashClubUniques from "./Pages/Dashboard/Clubs/DashClubUniques";
 import DashLeagues from "./Pages/Dashboard/Leagues/Index";
@@ -91,6 +101,7 @@ import DashLeagueUniques from "./Pages/Dashboard/Leagues/DashLeagueUniques";
 import CompetitionsClubs from "./Pages/Dashboard/Clubs/CompetitionsClubs";
 import ClubPlayers from "./Pages/Dashboard/Clubs/ClubPlayers";
 import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
+import MatchDetail from "./Pages/Dashboard/Matches/MatchDetail";
 
 
 export default function App() {
@@ -131,17 +142,6 @@ export default function App() {
               <Route path="me/plans" element={<PlansFinancial/>} />
               <Route path="me/subscription" element={<SubscriptionPlan />} />
 
-              {/* Dados - páginas de gráficos de clubes */}
-              <Route path="/dashboard/clubs" element={<DashClubs />} />
-              <Route path="/dashboard/clubs/:id" element={<PrePageClubs />} />
-              <Route path="/dashboard/clubs/finance/:id" element={<DashClubUniques />} />
-              <Route path="/dashboard/clubs/competitions/:id" element={<CompetitionsClubs />} />
-              <Route path="/dashboard/clubs/club-players/:id" element={<ClubPlayers />} />
-              <Route path="/dashboard/players/:id" element={<Players />} />
-              
-              {/* Dados - páginas de gráficos de ligas */}
-              <Route path="/dashboard/leagues" element={<DashLeagues />} />
-              <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
 
               {/* Favoritos */}
               <Route path="/dashboard/clubs/favorites" element={<ClubsFavorites />} />
@@ -157,9 +157,31 @@ export default function App() {
           </Route>
         </Route>
 
-        {/*--- Dashboard publico ---*/}
+        {/*--- Dashboard público + clubes e ligas (acessíveis sem login) ---*/}
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard-public" element={<Dashboard />} />
+
+          {/* Clubes */}
+          <Route path="/dashboard/clubs" element={<DashClubs />} />
+          <Route path="/dashboard/clubs/:id" element={<PrePageClubs />} />
+          <Route path="/dashboard/clubs/finance/:id" element={<DashClubUniques />} />
+          <Route path="/dashboard/clubs/competitions/:id" element={<CompetitionsClubs />} />
+          <Route path="/dashboard/clubs/club-players/:id" element={<ClubPlayers />} />
+
+          {/* Países */}
+          <Route path="/dashboard/countries" element={<DashCountries />} />
+          <Route path="/dashboard/countries/:id" element={<CountryDetail />} />
+
+          {/* Ligas */}
+          <Route path="/dashboard/leagues" element={<DashLeagues />} />
+          <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
+
+          {/* Jogadores */}
+          <Route path="/dashboard/players" element={<PlayersList />} />
+          <Route path="/dashboard/players/:id" element={<Players />} />
+
+          {/* Partidas */}
+          <Route path="/dashboard/matches/:id" element={<MatchDetail />} />
         </Route>
 
         {/* ---- Adm - páginas do admin comum e do admin master ---- */}
@@ -186,8 +208,15 @@ export default function App() {
               <Route path="/admin/gestao-planos/novo" element={<NovoPlano />} />
               <Route path="/admin/gestao-planos/:id" element={<EditarPlano />} />
 
-              {/* Insights - Usuários */}
+              {/* Insights */}
               <Route path="/admin/insights/usuarios" element={<InsightUsuarios />} />
+              <Route path="/admin/insights/clubes" element={<InsightClubes />} />
+              <Route path="/admin/insights/ligas" element={<InsightLigas />} />
+              <Route path="/admin/insights/financeiro" element={<InsightFinanceiro />} />
+              <Route path="/admin/insights/planos" element={<InsightPlanos />} />
+              <Route path="/admin/insights/importacoes" element={<InsightImportacoes />} />
+              <Route path="/admin/insights/uso" element={<InsightUso />} />
+              <Route path="/admin/insights/performance" element={<InsightPerformance />} />
 
               {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
               <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />

@@ -2,14 +2,22 @@
 import { X } from "lucide-react";
 import CostsPieChart from "./CostsPieChart";
 import ChartFilter from "../filter/ChartFilter";
+import { useState, useMemo, useEffect } from "react";
+
 
 export default function CostsSection({
   data,
+  currency,
+  setCurrency,
   leagueMap,
   setLeagueMap,
   mainLeagueId,
   selectedLeagues,
-  setSelectedLeagues
+  setSelectedLeagues,
+  leagueColorMap,
+  setLeagueColorMap,
+  leagueColor,
+  yearSelectionMode
 }) {
   function handleAddLeague(liga) {
     setSelectedLeagues((prev) =>
@@ -30,6 +38,31 @@ export default function CostsSection({
     );
   }
 
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+  const [selectedYears, setSelectedYears] = useState([]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((leagueData) => {
+      leagueData.forEach((item) => {
+        years.add(item.year);
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+
+    const lastYear = availableYears[availableYears.length - 1];
+    setStartYear(lastYear);
+    setEndYear(lastYear);
+    setSelectedYears([lastYear]);
+  }, [availableYears]);
+
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
@@ -38,7 +71,19 @@ export default function CostsSection({
 
       <ChartFilter
         ligasSelecionadas={selectedLeagues}
+        currency={currency}
+        onChangeCurrency={setCurrency}
         onAddLeague={handleAddLeague}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        availableYears={availableYears}
+        yearSelectionMode="single"
+
+        // 👇 FALTANDO ISSO AQUI
+        selectedYears={selectedYears}
+        onChangeSelectedYears={setSelectedYears}
       />
 
       <CostsPieChart
@@ -46,6 +91,9 @@ export default function CostsSection({
         ligasSelecionadas={selectedLeagues}
         leagueMap={leagueMap}
         mainLeagueId={mainLeagueId}
+        leagueColor={leagueColor}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       {selectedLeagues.length > 0 && (

@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
+import LeagueSportsSection from "./LeagueSportsSection";
 
 import RevenueSection from "./components/revenue/RevenueSection";
 import RevenueBreakdownSection from "./components/revenueBreak/RevenueBreakdownSection";
@@ -25,15 +26,19 @@ export default function DashLeagueUniques() {
   const chartPermissions = {
     revenue: [1, 2, 3],
     payroll: [2, 3],
-    costs: [3],
+    costs: [1, 2, 3],
     netResult: [2, 3],
     netEvolution: [2, 3],
     debts: [1, 2, 3],
     revenueBreakdown: [1, 2, 3],
   };
 
-  const hasAccess = (chartKey, planID) =>
-    chartPermissions[chartKey]?.includes(planID);
+
+  // Não-logados veem tudo. Logados: verificar plano.
+  const hasAccess = (chartKey, planID) => {
+    if (!user) return true;
+    return chartPermissions[chartKey]?.includes(planID);
+  };
 
   const [loading, setLoading] = useState(true);
   const [theLeague, setTheLeague] = useState(null);
@@ -43,14 +48,15 @@ export default function DashLeagueUniques() {
   const [leagueColor, setLeagueColor] = useState({});
 
   // Moeda por gráfico
+  const defaultCurrency = user?.currency_code ?? "BRL";
   const [chartCurrencies, setChartCurrencies] = useState({
-    revenue: user.currency_code,
-    payroll: user.currency_code,
-    costs: user.currency_code,
-    netResult: user.currency_code,
-    netEvolution: user.currency_code,
-    debts: user.currency_code,
-    revenueBreakdown: user.currency_code,
+    revenue: defaultCurrency,
+    payroll: defaultCurrency,
+    costs: defaultCurrency,
+    netResult: defaultCurrency,
+    netEvolution: defaultCurrency,
+    debts: defaultCurrency,
+    revenueBreakdown: defaultCurrency,
   });
 
   // Ligas selecionadas POR GRÁFICO
@@ -90,7 +96,7 @@ export default function DashLeagueUniques() {
         setLoading(true);
 
         const [leagueRes] = await Promise.all([
-          api.get(`/admin/leagues/${id}`),
+          api.get(`/dashboard/leagues/${id}/info`),
         ]);
 
         setTheLeague(leagueRes.data);
@@ -152,7 +158,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "revenue",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/revenues?to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
       true
     );
   }, [chartComparisons.revenue, mainLeagueId, chartCurrencies.revenue]);
@@ -162,7 +168,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "payroll",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/costs/payroll?from=RUB&to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/costs/payroll?to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
       true
     );
   }, [chartComparisons.payroll, mainLeagueId, chartCurrencies.payroll]);
@@ -172,7 +178,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "costs",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/costs/breakdown?from=RUB&to=${chartCurrencies.costs}`,
+        `/dashboard/leagues/${leagueId}/financials/costs/breakdown?to=${chartCurrencies.costs}`,
       true
     );
   }, [chartComparisons.costs, mainLeagueId, chartCurrencies.costs]);
@@ -182,7 +188,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "netResult",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/net-result?from=RUB&to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/net-result?to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
       true
     );
   }, [chartComparisons.netResult, mainLeagueId, chartCurrencies.netResult]);
@@ -192,7 +198,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "netEvolution",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/net-result/evolution?from=RUB&to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/net-result/evolution?to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
       true
     );
   }, [chartComparisons.netEvolution, mainLeagueId, chartCurrencies.netEvolution]);
@@ -202,7 +208,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "debts",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/debts/breakdown?from=RUB&to=${chartCurrencies.debts}`,
+        `/dashboard/leagues/${leagueId}/financials/debts/breakdown?to=${chartCurrencies.debts}`,
       true
     );
   }, [chartComparisons.debts, mainLeagueId, chartCurrencies.debts]);
@@ -212,10 +218,12 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "revenueBreakdown",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
+        `/dashboard/leagues/${leagueId}/financials/revenues/breakdown?to=${chartCurrencies.revenueBreakdown}`,
       true
     );
   }, [chartComparisons.revenueBreakdown, mainLeagueId, chartCurrencies.revenueBreakdown]);
+
+  const [pageTab, setPageTab] = useState("esportivo");
 
   if (loading || !theLeague) {
     return <p className="text-sm text-gray-500">Carregando dashboard…</p>;
@@ -225,28 +233,41 @@ export default function DashLeagueUniques() {
     <div className="space-y-6">
 
       {/* HEADER */}
-      <div className="w-full bg-white border rounded-2xl p-6 lg:p-10 flex items-center">
-        <img
-          src={theLeague.league.logo_url}
-          className="w-20"
-          alt={theLeague.league.name}
-        />
-        <div className="ml-6">
-          <h3 className="text-2xl lg:text-3xl font-light flex items-center gap-2">
+      <div className="w-full bg-white border rounded-2xl p-6 lg:p-8 flex items-center gap-5">
+        {theLeague.league.logo_url && (
+          <img src={theLeague.league.logo_url} className="w-16 h-16 object-contain shrink-0" alt={theLeague.league.name}/>
+        )}
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
             {theLeague.league.name}
-            <span className="text-gray-400">—</span>
-            {theLeague.league.country_name}
-            <img className="w-6" src={theLeague.league.flag_url} />
+            {theLeague.league.flag_url && <img className="w-6 h-4 object-cover rounded-sm" src={theLeague.league.flag_url} alt=""/>}
           </h3>
-          {theLeague.league.description && (
-            <p className="text-sm text-gray-500 mt-2 max-w-3xl">
-              {theLeague.league.description}
-            </p>
-          )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+            <span className="text-sm text-gray-500">{theLeague.league.country_name}</span>
+            {theLeague.league.description && (
+              <p className="text-sm text-gray-400 max-w-2xl">{theLeague.league.description}</p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* GRÁFICOS */}
+      {/* PAGE TABS: Esportivo | Financeiro */}
+      <div className="flex gap-1">
+        {[{key:"esportivo",label:"Esportivo"},{key:"financeiro",label:"Financeiro"}].map(t=>(
+          <button key={t.key} onClick={()=>setPageTab(t.key)}
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${pageTab===t.key?"bg-violet-600 border-violet-600 text-white shadow-sm":"bg-white border-gray-200 text-gray-600 hover:border-violet-200"}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ESPORTIVO TAB */}
+      {pageTab === "esportivo" && (
+        <LeagueSportsSection leagueId={mainLeagueId}/>
+      )}
+
+      {/* FINANCEIRO TAB */}
+      {pageTab === "financeiro" && (
       <div className="max-w-full w-full overflow-hidden relative">
 
         <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
@@ -447,6 +468,7 @@ export default function DashLeagueUniques() {
         </div>
 
       </div>
+      )} {/* end financeiro tab */}
     </div>
   );
 }

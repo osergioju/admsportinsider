@@ -2,6 +2,7 @@ import axios from "axios";
 import db from  "../config/db.js";
 import { findUserByEmail } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
+import { addContactToBrevo } from "../utils/mailer.js";
 
 const prod_url = process.env.PROD_URL;
 // ==============================================
@@ -104,6 +105,16 @@ export const googleAuthCallback = async (req, res) => {
       );
 
       user = insert.rows[0];
+
+      // Adiciona o novo usuário Google na lista do Brevo
+      try {
+        const planRes = await db.query(`SELECT name FROM plans WHERE id = 1`);
+        const planName = planRes.rows[0]?.name || "Gratuito";
+        await addContactToBrevo({ email: user.email, name: user.name, planName });
+        console.log(`[Brevo] Contato Google adicionado: ${user.email} | Plano: ${planName}`);
+      } catch (brevoErr) {
+        console.error("[Brevo] Falha ao adicionar contato Google:", brevoErr.message);
+      }
     }
 
     // ---------------------------

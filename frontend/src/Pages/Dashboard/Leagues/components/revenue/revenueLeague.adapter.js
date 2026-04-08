@@ -35,7 +35,7 @@ export function adaptRevenueLineData(
     });
   });
 
-  const years = Array.from(yearsSet).sort();
+  const years = Array.from(yearsSet).sort((a, b) => a - b);
 
   // Séries APENAS das ligas do gráfico
   const DEFAULT_COLOR = "#999999";
@@ -45,7 +45,7 @@ export function adaptRevenueLineData(
 
     (dataByLeague[leagueId] || []).forEach((item) => {
       if (item.code === "recurring_revenue") {
-        revenueByYear[item.year] = item.value;
+        revenueByYear[item.year] = item.converted_value;
       }
     });
 

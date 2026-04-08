@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueBreakdown } from "./revenueBreakdownLeague.adapter";
 
@@ -6,15 +7,40 @@ export default function RevenueBreakdownBarChart({
   ligasSelecionadas,
   leagueMap,
   mainLeagueId,
-  leagueColor
+  leagueColor,
+  startYear,
+  endYear
 }) {
-  const adapted = adaptRevenueBreakdown(
-    data,
-    ligasSelecionadas,
-    mainLeagueId,
-    leagueMap,
-    leagueColor
-  );
+  const adapted = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    const safeLeagues = Array.isArray(ligasSelecionadas)
+      ? ligasSelecionadas
+      : [];
+
+    const hasYearFilter = startYear || endYear;
+
+    const filteredData = hasYearFilter
+      ? Object.fromEntries(
+        Object.entries(data).map(([leagueId, items]) => [
+          leagueId,
+          items.filter((item) => {
+            if (startYear && item.year < startYear) return false;
+            if (endYear && item.year > endYear) return false;
+            return true;
+          })
+        ])
+      )
+      : data;
+
+    return adaptRevenueBreakdown(
+      filteredData,
+      safeLeagues,
+      mainLeagueId,
+      leagueMap,
+      leagueColor
+    );
+  }, [data, ligasSelecionadas, mainLeagueId, leagueMap, leagueColor, startYear, endYear]);
 
   if (!adapted) {
     return <p className="text-sm text-gray-400">Sem dados de receita</p>;
@@ -40,7 +66,7 @@ export default function RevenueBreakdownBarChart({
         return params
           .map(
             (p) =>
-              `<b>${p.axisValue}</b>: R$ ${Number(p.value).toLocaleString("pt-BR")}`
+              `<b>${p.axisValue}</b>: ${Number(p.value).toLocaleString("pt-BR")}`
           )
           .join("<br/>");
       }
@@ -55,7 +81,7 @@ export default function RevenueBreakdownBarChart({
     yAxis: {
       type: "value",
       axisLabel: {
-        formatter: (value) => `R$ ${(value / 1e6).toFixed(0)}M`
+        formatter: (value) => `${(value / 1e6).toFixed(0)}M`
       }
     },
     xAxis: {
@@ -64,36 +90,33 @@ export default function RevenueBreakdownBarChart({
       axisLabel: {
         interval: 0,
         rotate: 0,
-        width: 80,          
+        width: 80,
         overflow: "break",
         lineHeight: 16
       }
     },
     series: adapted.series
   };
-  
 
-    
-  
+
   const lenghtData = option.series[0].data.length;
-      
+  console.log(option);
   return (
-      <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
-        {
-          lenghtData === 0 ? (
-            <div className="flex items-center justify-center pt-20">
-              <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
-            </div>
-          ) : (
-            <ReactECharts
-              option={option}
-              style={{ height: "100%", width: "100%" }}
-              notMerge
-              lazyUpdate
-            />
-          )
-        }
-      </div>
-    );
+    <div className="w-full max-w-full h-[250px] lg:h-[480px] overflow-hidden">
+      {
+        lenghtData === 0 ? (
+          <div className="flex items-center justify-center pt-20">
+            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+          </div>
+        ) : (
+          <ReactECharts
+            option={option}
+            style={{ height: "100%", width: "100%" }}
+            notMerge
+            lazyUpdate
+          />
+        )
+      }
+    </div>
+  );
 }
-  

@@ -341,8 +341,8 @@ export default function SearchBar() {
       try {
         // Busca paralela: clubes + ligas
         const [clubsRes, leaguesRes] = await Promise.allSettled([
-          api.post("/admin/clubs/search?page=1&limit=10", { name: query }),
-          api.post("/admin/leagues/search?page=1&limit=5", { name: query }),
+          api.post("/dashboard/clubs/search?page=1&limit=10", { name: query }),
+          api.post("/dashboard/leagues/search?page=1&limit=5", { name: query }),
         ]);
 
         const clubes =

@@ -5,6 +5,8 @@ import ChartFilter from "../filter/ChartFilter";
 
 export default function DebtsSection({
   data,
+  currency,
+  setCurrency,
   leagueMap,
   setLeagueMap,
   mainLeagueId,
@@ -39,6 +41,8 @@ export default function DebtsSection({
       <ChartFilter
         ligasSelecionadas={selectedLeagues}
         onAddLeague={handleAddLeague}
+        currency={currency}
+        onChangeCurrency={setCurrency}
       />
 
       <DebtsBreakdownBarChart

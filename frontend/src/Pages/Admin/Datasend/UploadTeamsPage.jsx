@@ -1,146 +1,267 @@
 import { useState } from "react";
 import { api } from "../../../services/api";
-import { 
-  Loader2, 
-  UploadCloud, 
-  Shield, 
-  ArrowRight, 
-  CheckCircle2, 
-  Info,
-  FileSpreadsheet 
+import {
+  Loader2, UploadCloud, Shield, ArrowRight, CheckCircle2,
+  AlertTriangle, ChevronRight, MapPin, XCircle,
 } from "lucide-react";
 
+const selectClass =
+  "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7F33D9] transition-all font-light";
+const labelClass =
+  "block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1";
+const btnPrimary =
+  "flex items-center justify-center gap-2 px-8 py-3.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
+
 export default function UploadTeamsPage() {
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [file, setFile]             = useState(null);
+  const [step, setStep]             = useState("upload"); // "upload" | "mapping" | "done"
+  const [analyzing, setAnalyzing]   = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [preview, setPreview]       = useState(null);
+  // { csvCountry, csvSeason, leagues, foundTeams, notFoundTeams, allClubs }
 
-  const handleSubmit = async () => {
-    if (!file) {
-      alert("Selecione um arquivo XLSX.");
-      return;
+  const [league, setLeague]           = useState("");
+  const [clubMappings, setClubMappings] = useState({}); // { "csvName": clubId }
+  const [importResult, setImportResult] = useState(null);
+
+  function handleFileChange(e) {
+    setFile(e.target.files[0] || null);
+    setStep("upload");
+    setPreview(null);
+    setImportResult(null);
+    setLeague("");
+    setClubMappings({});
+  }
+
+  async function handleAnalyze() {
+    if (!file) return;
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      setAnalyzing(true);
+      const { data } = await api.post("/upload/import/teams/preview", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setPreview(data);
+      if (data.leagues.length === 1) setLeague(String(data.leagues[0].id_league));
+      const init = {};
+      for (const name of data.notFoundTeams) init[name] = "";
+      setClubMappings(init);
+      setStep("mapping");
+    } catch (err) {
+      alert(err?.response?.data?.error || "Erro ao analisar arquivo.");
+    } finally {
+      setAnalyzing(false);
     }
+  }
 
-    if (!file.name.endsWith(".xlsx")) {
-      alert("O arquivo deve estar no formato .xlsx");
-      return;
-    }
+  function setClubMap(csvName, clubId) {
+    setClubMappings(prev => ({ ...prev, [csvName]: clubId }));
+  }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
+  async function handleImport() {
+    if (!league) return alert("Selecione uma liga.");
+    const activeMappings = Object.fromEntries(
+      Object.entries(clubMappings).filter(([, v]) => v !== "")
+    );
+    const form = new FormData();
+    form.append("file", file);
+    form.append("league", league);
+    form.append("season", preview.csvSeason);
+    if (Object.keys(activeMappings).length > 0)
+      form.append("clubMappings", JSON.stringify(activeMappings));
     try {
       setLoading(true);
-      setSuccess(false);
-
-      const { data } = await api.post(
-        "/upload/clubs/import-balance",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      setSuccess(true);
-      alert("Dados dos clubes importados com sucesso!");
-
-      setFile(null);
-
+      const { data } = await api.post("/upload/import/teams", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImportResult(data);
+      setStep("done");
     } catch (err) {
-      console.error(err);
-      alert(
-        err?.response?.data?.message ||
-        "Erro ao importar balanço dos clubes."
-      );
+      alert(err?.response?.data?.error || "Erro ao importar times.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  // --- ESTILOS PADRÃO ---
-  const btnPrimary = "flex items-center justify-center gap-2 px-8 py-3.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto";
+  const unmappedCount = preview
+    ? preview.notFoundTeams.filter(n => !clubMappings[n]).length
+    : 0;
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      {/* Header Centralizado */}
+    <div className="w-full max-w-2xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center mb-10">
         <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-100 shadow-sm">
-            <Shield className="text-[#7F33D9] w-8 h-8" />
+          <Shield className="text-[#7F33D9] w-8 h-8" />
         </div>
-        <h1 className="text-2xl font-bold text-[#111] tracking-tight">
-            Upload Financeiro de Times
-        </h1>
+        <h1 className="text-2xl font-bold text-[#111] tracking-tight">Upload de Estatísticas de Times</h1>
         <p className="text-gray-500 text-sm mt-2 max-w-md mx-auto font-light">
-            Carregue as informações de balanço financeiro para atualizar o status econômico dos clubes.
+          O sistema detecta o país e verifica os clubes. Times não encontrados podem ser mapeados antes de importar.
         </p>
       </div>
 
-      {/* Card de Upload Principal */}
-      <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-8 animate-in zoom-in-95 duration-300">
-        
-        {/* Dropzone Area */}
-        <div className="relative group cursor-pointer border-2 border-dashed border-gray-300 rounded-2xl p-10 hover:border-[#7F33D9] hover:bg-purple-50/30 transition-all duration-300">
-          <input
-              type="file"
-              accept=".xlsx"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-              onChange={(e) => {
-                setFile(e.target.files[0]);
-                setSuccess(false);
-              }}
-          />
-          <div className="flex flex-col items-center gap-4 pointer-events-none">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${file ? 'bg-green-50 text-green-500' : 'bg-gray-100 text-gray-400 group-hover:bg-white group-hover:shadow-md group-hover:text-[#7F33D9]'}`}>
-                  {success ? <CheckCircle2 className="w-7 h-7" /> : <UploadCloud className="w-7 h-7" />}
-              </div>
-              <div className="text-center">
-                  <span className={`text-lg font-bold block ${file ? 'text-green-600' : 'text-gray-700 group-hover:text-[#7F33D9]'}`}>
-                      {file ? file.name : "Clique para selecionar a planilha"}
-                  </span>
-                  <p className="text-sm text-gray-400 mt-1 italic">
-                    Somente arquivos .xlsx são permitidos
-                  </p>
-              </div>
-          </div>
-        </div>
-
-        {/* Box Informativo */}
-        <div className="mt-6 flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-700">
-          <Info size={20} className="shrink-0 mt-0.5" />
-          <p className="text-xs leading-relaxed font-medium">
-            <strong>Dica de Estrutura:</strong> Para uma importação sem erros, verifique se a planilha contém a coluna <strong>slug do clube</strong> exatamente como cadastrada no painel administrativo.
-          </p>
-        </div>
-
-        {/* Botão de Enviar */}
-        <div className="mt-8 flex justify-center">
-          <button
-              onClick={handleSubmit}
-              disabled={loading || !file}
-              className={btnPrimary}
-          >
-              {loading ? (
-              <>
-                  <Loader2 className="animate-spin w-5 h-5" />
-                  Processando...
-              </>
-              ) : (
-              <>
-                  Enviar Balanço <ArrowRight size={18} />
-              </>
-              )}
-          </button>
-        </div>
-
+      {/* Progress */}
+      <div className="flex items-center gap-2 mb-8 justify-center text-xs font-bold text-gray-400">
+        <span className={step !== "upload" ? "text-[#7F33D9]" : ""}>1. Arquivo</span>
+        <ChevronRight size={14} />
+        <span className={step === "mapping" ? "text-[#7F33D9]" : step === "done" ? "text-green-500" : ""}>2. Mapeamento</span>
+        <ChevronRight size={14} />
+        <span className={step === "done" ? "text-green-500" : ""}>3. Resultado</span>
       </div>
 
-      {/* Mensagem de Sucesso */}
-      {success && (
-        <div className="mt-6 text-center animate-in fade-in slide-in-from-top-2">
-            <p className="text-green-600 font-bold flex items-center justify-center gap-2">
-                <CheckCircle2 size={16} /> Importação dos times finalizada com sucesso!
-            </p>
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-8 space-y-6 animate-in zoom-in-95 duration-300">
+
+        {/* Step 1 */}
+        <div>
+          <label className={labelClass}>Arquivo CSV / XLSX</label>
+          <div className="relative group cursor-pointer border-2 border-dashed border-gray-300 rounded-2xl p-8 hover:border-[#7F33D9] hover:bg-purple-50/30 transition-all duration-300">
+            <input type="file" accept=".csv,.xlsx" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onChange={handleFileChange} />
+            <div className="flex flex-col items-center gap-3 pointer-events-none">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${file ? "bg-green-50 text-green-500" : "bg-gray-100 text-gray-400 group-hover:text-[#7F33D9]"}`}>
+                {file ? <CheckCircle2 className="w-6 h-6" /> : <UploadCloud className="w-6 h-6" />}
+              </div>
+              <span className={`text-sm font-semibold ${file ? "text-green-600" : "text-gray-600 group-hover:text-[#7F33D9]"}`}>
+                {file ? file.name : "Selecionar arquivo de times"}
+              </span>
+            </div>
+          </div>
+          {file && step === "upload" && (
+            <div className="mt-4 flex justify-center">
+              <button onClick={handleAnalyze} disabled={analyzing} className={btnPrimary}>
+                {analyzing ? <><Loader2 className="animate-spin w-4 h-4" /> Analisando...</> : <>Analisar Arquivo <ArrowRight size={16} /></>}
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Step 2 */}
+        {step !== "upload" && preview && (
+          <div className="space-y-5 border-t border-gray-100 pt-6 animate-in fade-in">
+            {/* Info detectada */}
+            <div className="flex gap-3">
+              <div className="flex-1 p-3 bg-purple-50 rounded-2xl border border-purple-100">
+                <p className="text-[10px] uppercase font-black text-purple-400 mb-1">País detectado</p>
+                <p className="text-sm font-bold text-purple-700 flex items-center gap-1"><MapPin size={13} />{preview.csvCountry || "—"}</p>
+              </div>
+              <div className="flex-1 p-3 bg-purple-50 rounded-2xl border border-purple-100">
+                <p className="text-[10px] uppercase font-black text-purple-400 mb-1">Temporada</p>
+                <p className="text-sm font-bold text-purple-700">{preview.csvSeason || "—"}</p>
+              </div>
+            </div>
+
+            {/* Liga */}
+            <div>
+              <label className={labelClass}>
+                Liga
+                {preview.leagues.length === 1 && <span className="text-green-500 normal-case font-normal ml-1">— pré-selecionada</span>}
+              </label>
+              {preview.leagues.length === 0 ? (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-sm text-amber-700">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                  Nenhuma liga encontrada para "{preview.csvCountry}". Cadastre uma liga primeiro.
+                </div>
+              ) : (
+                <select value={league} onChange={e => setLeague(e.target.value)} className={selectClass}>
+                  <option value="">Selecione a liga</option>
+                  {preview.leagues.map(l => (
+                    <option key={l.id_league} value={l.id_league}>
+                      {l.name}{l.country_name !== preview.csvCountry ? ` (${l.country_name})` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Clubes */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-green-50 border border-green-100 rounded-2xl">
+                <p className="text-[10px] uppercase font-black text-green-400 mb-1">Encontrados</p>
+                <p className="text-xl font-bold text-green-600">{preview.foundTeams.length}</p>
+                <p className="text-[10px] text-green-500 mt-0.5">times reconhecidos</p>
+              </div>
+              <div className={`p-3 rounded-2xl border ${preview.notFoundTeams.length > 0 ? "bg-amber-50 border-amber-100" : "bg-green-50 border-green-100"}`}>
+                <p className={`text-[10px] uppercase font-black mb-1 ${preview.notFoundTeams.length > 0 ? "text-amber-400" : "text-green-400"}`}>Não encontrados</p>
+                <p className={`text-xl font-bold ${preview.notFoundTeams.length > 0 ? "text-amber-600" : "text-green-600"}`}>{preview.notFoundTeams.length}</p>
+                <p className={`text-[10px] mt-0.5 ${preview.notFoundTeams.length > 0 ? "text-amber-500" : "text-green-500"}`}>
+                  {preview.notFoundTeams.length > 0 ? "requerem mapeamento" : "todos reconhecidos!"}
+                </p>
+              </div>
+            </div>
+
+            {/* Mapeamento de times */}
+            {preview.notFoundTeams.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Mapear Times Não Encontrados</p>
+                <p className="text-xs text-gray-400">
+                  Para cada time do CSV não reconhecido, selecione o clube correspondente no banco. Times sem mapeamento serão ignorados.
+                </p>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {preview.notFoundTeams.map(csvName => (
+                    <div key={csvName} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        {clubMappings[csvName] ? <CheckCircle2 size={14} className="text-green-500 shrink-0" /> : <XCircle size={14} className="text-amber-400 shrink-0" />}
+                        <span className="text-xs font-mono text-gray-600 truncate">{csvName}</span>
+                      </div>
+                      <ArrowRight size={12} className="text-gray-300 shrink-0" />
+                      <select
+                        value={clubMappings[csvName] || ""}
+                        onChange={e => setClubMap(csvName, e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#7F33D9]"
+                      >
+                        <option value="">— ignorar —</option>
+                        {preview.allClubs.map(c => (
+                          <option key={c.id_club} value={c.id_club}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+                {unmappedCount > 0 && (
+                  <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-2xl text-xs text-amber-600">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    {unmappedCount} time(s) sem mapeamento — serão ignorados na importação.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step !== "done" && (
+              <div className="flex justify-center">
+                <button onClick={handleImport} disabled={loading || !league} className={btnPrimary}>
+                  {loading ? <><Loader2 className="animate-spin w-4 h-4" /> Importando...</> : <>Importar Times <ArrowRight size={16} /></>}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3 */}
+        {step === "done" && importResult && (
+          <div className="border-t border-gray-100 pt-6 space-y-4 animate-in fade-in">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="text-center">
+                <p className="text-[10px] uppercase font-black text-green-400">Inseridos</p>
+                <p className="text-2xl font-bold text-green-600">{importResult.inserted ?? 0}</p>
+              </div>
+              <div className="text-center border-l border-gray-200">
+                <p className="text-[10px] uppercase font-black text-orange-400">Ignorados</p>
+                <p className="text-2xl font-bold text-orange-600">{importResult.skipped ?? 0}</p>
+              </div>
+            </div>
+            {importResult.skippedTeams?.length > 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                <div className="flex items-center gap-2 mb-2"><AlertTriangle size={14} className="text-amber-500" /><p className="text-xs font-bold text-amber-700">Times ainda ignorados</p></div>
+                <ul className="space-y-1">{importResult.skippedTeams.map((n, i) => <li key={i} className="text-[11px] text-amber-600 font-mono">{n}</li>)}</ul>
+              </div>
+            )}
+            <div className="flex justify-center">
+              <button onClick={() => { setStep("upload"); setFile(null); setPreview(null); setImportResult(null); setLeague(""); setClubMappings({}); }} className="text-sm text-[#7F33D9] font-bold hover:underline">
+                Fazer novo upload
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

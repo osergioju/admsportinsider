@@ -1,18 +1,19 @@
 // components/revenue/RevenueSection.jsx (LEAGUE)
 import { X } from "lucide-react";
-
 import RevenueLineChart from "./RevenueLineChart";
 import RevenueTableChart from "./RevenueTableChart";
 import ChartFilter from "../filter/ChartFilter";
+import { useMemo, useEffect, useState } from "react";
 
 export default function RevenueSection({
   data,
+  currency,
+  setCurrency,
   leagueMap,
   setLeagueMap,
   mainLeagueId,
   leagueColor,
   setLeagueColor,
-  // ⬇️ AGORA VEM DO PAI
   selectedLeagues,
   setSelectedLeagues
 }) {
@@ -44,6 +45,35 @@ export default function RevenueSection({
     );
   }
 
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((clubData) => {
+      clubData.forEach((item) => {
+        if (item.code === "recurring_revenue") {
+          years.add(item.year);
+        }
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+
+    if (!startYear) {
+      setStartYear(availableYears[0]);
+    }
+
+    if (!endYear) {
+      setEndYear(availableYears[availableYears.length - 1]);
+    }
+
+  }, [availableYears]);
 
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
@@ -54,6 +84,14 @@ export default function RevenueSection({
       <ChartFilter
         ligasSelecionadas={selectedLeagues}
         onAddLeague={handleAddLeague}
+        currency={currency}
+        onChangeCurrency={setCurrency}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        availableYears={availableYears}
+        yearSelectionMode="multiple"
       />
 
       <RevenueLineChart
@@ -62,6 +100,8 @@ export default function RevenueSection({
         leagueMap={leagueMap}
         mainLeagueId={mainLeagueId}
         leagueColor={leagueColor}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       <div className="h-6"></div>
@@ -72,6 +112,8 @@ export default function RevenueSection({
         leagueMap={leagueMap}
         mainLeagueId={mainLeagueId}
         leagueColor={leagueColor}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       {selectedLeagues.length > 0 && (

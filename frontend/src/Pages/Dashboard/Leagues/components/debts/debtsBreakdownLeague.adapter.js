@@ -34,7 +34,7 @@ export function adaptDebtsBreakdown(
         ? apiData.find((item) => item.name_pt === category)
         : null;
 
-      return found ? Number(found.value) : 0;
+      return found ? Number(found.converted_value) : 0;
     });
 
     return {

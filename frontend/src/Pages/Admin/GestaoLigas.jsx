@@ -8,7 +8,7 @@ export default function GestaoLigas() {
     const [modal, setModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
-    const [newLeague, setNewLeague] = useState({ id_country: "", name: "", description: "", logo_url: "" });
+    const [newLeague, setNewLeague] = useState({ id_country: "", name: "", description: "", logo_url: "", format: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     
@@ -37,7 +37,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", name: "", description: "", logo_url: "" });
+        setNewLeague({ id_country: "", name: "", description: "", logo_url: "", format: "" });
         setIsEditing(false); setModal(true);
     };
 
@@ -154,6 +154,15 @@ export default function GestaoLigas() {
                             <div>
                                 <label className={labelClass}>Logo URL</label>
                                 <input type="text" className={inputClass} value={newLeague.logo_url} onChange={(e) => setNewLeague({ ...newLeague, logo_url: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Formato</label>
+                                <select className={inputClass} value={newLeague.format} onChange={(e) => setNewLeague({ ...newLeague, format: e.target.value })}>
+                                    <option value="">Não definido</option>
+                                    <option value="pontos_corridos">Pontos Corridos</option>
+                                    <option value="mata_mata">Mata-Mata</option>
+                                    <option value="grupos">Grupos + Mata-Mata</option>
+                                </select>
                             </div>
                             <div className="pt-4 flex items-center justify-between gap-4">
                                 {isEditing && <button onClick={() => disableLeague(currentLeague.id_league)} className="text-red-500 text-xs font-bold uppercase tracking-wide hover:bg-red-50 px-3 py-2 rounded-lg"><Trash2 size={14} className="inline mr-1" /> Desativar</button>}

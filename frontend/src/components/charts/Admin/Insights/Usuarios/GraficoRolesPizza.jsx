@@ -12,7 +12,7 @@ export default function GraficoRolesPizza({ data }) {
   }
 
   const pieData = data.map((item, index) => ({
-    id: item.role || `R${index}`,
+    id: item.role || `${index}`,
     value: Number(item.total),
     label: item.role
   }));

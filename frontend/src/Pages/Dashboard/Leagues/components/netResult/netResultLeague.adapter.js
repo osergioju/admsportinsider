@@ -46,10 +46,10 @@ export function adaptNetResultTable(
       if (Array.isArray(apiData)) {
         apiData.forEach((item) => {
           if (item.year !== year) return;
-          if (item.code === "revenue") map.revenue = item.value;
-          if (item.code === "costs") map.costs = item.value;
-          if (item.code === "net_income") map.net = item.value;
-          if (item.code === "ebitda") map.ebitda = item.value;
+          if (item.code === "revenue") map.revenue = item.converted_value;
+          if (item.code === "costs") map.costs = item.converted_value;
+          if (item.code === "net_income") map.net = item.converted_value;
+          if (item.code === "ebitda") map.ebitda = item.converted_value;
         });
       }
 

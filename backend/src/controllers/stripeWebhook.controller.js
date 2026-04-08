@@ -1,5 +1,12 @@
 import Stripe from "stripe";
-import db from  "../config/db.js";
+import db from "../config/db.js";
+import {
+  sendPlanActivatedEmail,
+  sendSubscriptionCanceledEmail,
+  sendSubscriptionEndedEmail,
+  sendPaymentFailedEmail,
+  updateContactPlanInBrevo,
+} from "../utils/mailer.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -30,7 +37,7 @@ export const stripeWebhookHandler = async (req, res) => {
     // ========================================
     case "checkout.session.completed": {
       console.log("\n💰 === CHECKOUT SESSION COMPLETED ===");
-      
+
       const userId = data.metadata?.userId;
       const plan_id = Number(data.metadata?.plan_id);
 
@@ -58,7 +65,7 @@ export const stripeWebhookHandler = async (req, res) => {
 
       const subscription = session.subscription;
       const priceId = session.line_items.data[0].price.id;
-      
+
       const periodEnd = subscription.items?.data?.[0]?.current_period_end || subscription.current_period_end;
 
       console.log("\n📊 DADOS DA SUBSCRIPTION:");
@@ -102,6 +109,30 @@ export const stripeWebhookHandler = async (req, res) => {
       console.log("✅ UPDATE executado! Linhas afetadas:", result.rowCount);
       console.log("📄 Dados atualizados:", result.rows[0]);
 
+      // ── E-mail: plano ativado ──
+      console.log("\n📧 Tentando enviar e-mail de ativação de plano...");
+      try {
+        const userRes = await db.query(
+          `SELECT u.name, u.email, p.name AS plan_name
+           FROM users u
+           JOIN plans p ON p.id = u.plan_id
+           WHERE u.id = $1`,
+          [userId]
+        );
+        if (userRes.rows[0]) {
+          const { name, email, plan_name } = userRes.rows[0];
+          console.log(`  → Destinatário: ${email} (${name}) | Plano: ${plan_name}`);
+          await sendPlanActivatedEmail(email, { name, planName: plan_name, periodEnd });
+          console.log("  ✅ E-mail de ativação enviado com sucesso.");
+          await updateContactPlanInBrevo({ email, planName: plan_name });
+          console.log("  ✅ Brevo atualizado com novo plano:", plan_name);
+        } else {
+          console.log("  ⚠️ Usuário não encontrado no banco para userId:", userId);
+        }
+      } catch (emailErr) {
+        console.error("  ❌ Falha ao enviar e-mail de ativação:", emailErr.message);
+      }
+
       break;
     }
 
@@ -110,7 +141,7 @@ export const stripeWebhookHandler = async (req, res) => {
     // ========================================
     case "customer.subscription.created": {
       console.log("\n🆕 === SUBSCRIPTION CREATED ===");
-      
+
       const { id, customer, status, items, cancel_at_period_end } = data;
 
       const priceId = items.data[0].price.id;
@@ -155,7 +186,7 @@ export const stripeWebhookHandler = async (req, res) => {
     // ========================================
     case "customer.subscription.updated": {
       console.log("\n🔄 === SUBSCRIPTION UPDATED ===");
-      
+
       const {
         id,
         customer,
@@ -169,7 +200,7 @@ export const stripeWebhookHandler = async (req, res) => {
       // 🔥 BUSCA A SUBSCRIPTION COMPLETA DIRETO DO STRIPE PRA GARANTIR
       console.log("🔍 Buscando subscription completa do Stripe...");
       const fullSubscription = await stripe.subscriptions.retrieve(id);
-      
+
       // 🔥 VERIFICA TANTO cancel_at_period_end QUANTO cancel_at
       const cancel_at_period_end = fullSubscription.cancel_at_period_end || !!fullSubscription.cancel_at;
 
@@ -182,6 +213,13 @@ export const stripeWebhookHandler = async (req, res) => {
       console.log("  - cancel_at_period_end (calculado): 🔥", cancel_at_period_end);
       console.log("  - current_period_end (do items):", current_period_end);
       console.log("  - priceId:", priceId);
+
+      // Detecta transição pelo previous_attributes do próprio evento Stripe
+      const previousAttributes = event.data.previous_attributes || {};
+      const justCanceled = cancel_at_period_end === true && (
+        previousAttributes.cancel_at_period_end === false ||  // via boolean
+        previousAttributes.cancel_at === null                  // via timestamp (cancel_at: null → timestamp)
+      );
 
       console.log("\n💾 EXECUTANDO UPDATE NO BANCO:");
       console.log("  [1] subscription_status:", status);
@@ -204,6 +242,33 @@ export const stripeWebhookHandler = async (req, res) => {
       console.log("✅ UPDATE executado! Linhas afetadas:", result.rowCount);
       console.log("📄 Dados atualizados:", result.rows[0]);
 
+      // ── E-mail: cancelamento agendado (só na transição false → true) ──
+      console.log(`\n📧 cancel_at_period_end: ${cancel_at_period_end} | prev.cancel_at_period_end: ${previousAttributes.cancel_at_period_end} | prev.cancel_at: ${previousAttributes.cancel_at} | justCanceled: ${justCanceled}`);
+      if (justCanceled) {
+        console.log("  → Transição detectada via previous_attributes: enviando e-mail de cancelamento agendado...");
+        try {
+          const userRes = await db.query(
+            `SELECT u.name, u.email, p.name AS plan_name
+             FROM users u
+             JOIN plans p ON p.id = u.plan_id
+             WHERE u.stripe_customer_id = $1`,
+            [customer]
+          );
+          if (userRes.rows[0]) {
+            const { name, email, plan_name } = userRes.rows[0];
+            console.log(`  → Destinatário: ${email} (${name}) | Plano: ${plan_name}`);
+            await sendSubscriptionCanceledEmail(email, { name, planName: plan_name, periodEnd: current_period_end });
+            console.log("  ✅ E-mail de cancelamento enviado com sucesso.");
+          } else {
+            console.log("  ⚠️ Usuário não encontrado no banco para customer:", customer);
+          }
+        } catch (emailErr) {
+          console.error("  ❌ Falha ao enviar e-mail de cancelamento:", emailErr.message);
+        }
+      } else {
+        console.log("  → Sem transição de cancelamento neste evento — e-mail não enviado.");
+      }
+
       break;
     }
 
@@ -213,7 +278,7 @@ export const stripeWebhookHandler = async (req, res) => {
     case "invoice.payment_succeeded":
     case "invoice.paid": {
       console.log("\n🧾 === INVOICE PAID ===");
-      
+
       const invoiceId = data.id;
 
       console.log("📄 Invoice ID:", invoiceId);
@@ -266,11 +331,17 @@ export const stripeWebhookHandler = async (req, res) => {
     // ========================================
     case "customer.subscription.deleted": {
       console.log("\n❌ === SUBSCRIPTION DELETED ===");
-      
+
       const { customer } = data;
 
       console.log("👤 Customer ID:", customer);
       console.log("🔄 Resetando plano para FREE (plan_id = 1)");
+
+      // Busca user antes de resetar para ter nome e e-mail
+      const deletedUserRes = await db.query(
+        `SELECT name, email FROM users WHERE stripe_customer_id = $1`,
+        [customer]
+      );
 
       const result = await db.query(
         `UPDATE users SET
@@ -287,6 +358,55 @@ export const stripeWebhookHandler = async (req, res) => {
 
       console.log("✅ UPDATE executado! Linhas afetadas:", result.rowCount);
       console.log("📄 Dados atualizados:", result.rows[0]);
+
+      // ── E-mail: assinatura encerrada ──
+      console.log("\n📧 Tentando enviar e-mail de encerramento de assinatura...");
+      if (deletedUserRes.rows[0]) {
+        try {
+          const { name, email } = deletedUserRes.rows[0];
+          console.log(`  → Destinatário: ${email} (${name})`);
+          await sendSubscriptionEndedEmail(email, { name });
+          console.log("  ✅ E-mail de encerramento enviado com sucesso.");
+          const freePlanRes = await db.query(`SELECT name FROM plans WHERE id = 1`);
+          const freePlanName = freePlanRes.rows[0]?.name || "Gratuito";
+          await updateContactPlanInBrevo({ email, planName: freePlanName });
+          console.log("  ✅ Brevo atualizado para plano:", freePlanName);
+        } catch (emailErr) {
+          console.error("  ❌ Falha ao enviar e-mail de encerramento:", emailErr.message);
+        }
+      } else {
+        console.log("  ⚠️ Usuário não encontrado para customer:", customer);
+      }
+
+      break;
+    }
+
+    // ========================================
+    // ✔ PAGAMENTO FALHOU
+    // ========================================
+    case "invoice.payment_failed": {
+      console.log("\n💳 === INVOICE PAYMENT FAILED ===");
+
+      const failedCustomer = data.customer;
+      console.log("👤 Customer ID:", failedCustomer);
+
+      console.log("\n📧 Tentando enviar e-mail de falha de pagamento...");
+      try {
+        const userRes = await db.query(
+          `SELECT name, email FROM users WHERE stripe_customer_id = $1`,
+          [failedCustomer]
+        );
+        if (userRes.rows[0]) {
+          const { name, email } = userRes.rows[0];
+          console.log(`  → Destinatário: ${email} (${name})`);
+          await sendPaymentFailedEmail(email, { name });
+          console.log("  ✅ E-mail de falha de pagamento enviado com sucesso.");
+        } else {
+          console.log("  ⚠️ Usuário não encontrado para customer:", failedCustomer);
+        }
+      } catch (emailErr) {
+        console.error("  ❌ Falha ao enviar e-mail de pagamento falhou:", emailErr.message);
+      }
 
       break;
     }

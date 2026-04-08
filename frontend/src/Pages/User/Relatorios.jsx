@@ -19,7 +19,7 @@ const RelatorioCard = ({ relatorio }) => {
 
   return (
     <article className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
-      
+
       {/* Capa */}
       <div className="relative aspect-[6/4] bg-gray-100 overflow-hidden">
         {cover ? (
@@ -37,16 +37,16 @@ const RelatorioCard = ({ relatorio }) => {
 
       {/* Conteúdo */}
       <div className="p-5 flex flex-col flex-1">
-        
 
-        <h3 className="text-sm font-semibold text-gray-900 leading-snug mb-3">
-          {title}
+
+        <h3 className="text-sm font-normal text-gray-900 leading-snug mb-3">
+          <div dangerouslySetInnerHTML={{ __html: title }} />
         </h3>
 
         <div className="mt-auto">
           {uri ? (
             <a
-              href={`https://sportinsider.com.br/` + uri}
+              href={`https://index.sportinsider.com.br/` + uri}
               target="_blank"
               rel="noopener noreferrer"
               className="block text-center w-full py-2.5 rounded-lg bg-black text-white text-sm font-medium hover:bg-gray-800 transition"
@@ -125,7 +125,7 @@ export default function Relatorios() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 md:px-10 py-10">
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-8 gap-4">
         <div>

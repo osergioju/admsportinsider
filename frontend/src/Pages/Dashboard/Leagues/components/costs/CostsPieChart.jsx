@@ -5,16 +5,72 @@ export default function CostsPieChart({
   data,
   ligasSelecionadas,
   leagueMap,
-  mainLeagueId
+  mainLeagueId,
+  leagueColor,
+  startYear,
+  endYear
 }) {
-  const adapted = adaptCostsBreakdown(
-    data,
-    ligasSelecionadas,
-    mainLeagueId,
-    leagueMap
-  );
+  const adapted = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
 
-  const sliceColors = ["#161616", "#6C6969", "#B2B1B1", "#D9D9D9"];
+    const safeLeagues = Array.isArray(ligasSelecionadas)
+      ? ligasSelecionadas
+      : [];
+
+    const hasYearFilter = startYear || endYear;
+
+    const filteredData = hasYearFilter
+      ? Object.fromEntries(
+        Object.entries(data).map(([leagueId, items]) => [
+          leagueId,
+          items.filter((item) => {
+            if (startYear && item.year < startYear) return false;
+            if (endYear && item.year > endYear) return false;
+            return true;
+          })
+        ])
+      )
+      : data;
+
+    return adaptCostsBreakdown(
+      filteredData,
+      safeLeagues,
+      mainLeagueId,
+      leagueMap,
+      leagueColor,
+    );
+  }, [data, ligasSelecionadas, mainLeagueId, leagueMap, leagueColor, startYear, endYear, leagueColorMap]);
+
+  function adjustColor(hex, percent) {
+    const num = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+
+    const r = (num >> 16) + amt;
+    const g = ((num >> 8) & 0x00ff) + amt;
+    const b = (num & 0x0000ff) + amt;
+
+    return (
+      "#" +
+      (
+        0x1000000 +
+        (Math.max(0, Math.min(255, r)) << 16) +
+        (Math.max(0, Math.min(255, g)) << 8) +
+        Math.max(0, Math.min(255, b))
+      )
+        .toString(16)
+        .slice(1)
+    );
+  }
+
+  const baseColor = leagueColor[mainLeagueId]?.color_one || "#161616";
+
+  const sliceColors = [
+    adjustColor(baseColor, -30),
+    adjustColor(baseColor, -15),
+    baseColor,
+    adjustColor(baseColor, 15),
+    adjustColor(baseColor, 30),
+  ];
 
   if (!adapted) {
     return <p className="text-sm text-gray-400">Dados indisponíveis</p>;
@@ -34,9 +90,7 @@ export default function CostsPieChart({
     tooltip: {
       trigger: "item",
       formatter: ({ seriesName, name, value, percent }) =>
-        `${seriesName}<br/>${name}<br/>R$ ${Number(value).toLocaleString(
-          "pt-BR"
-        )} (${percent}%)`
+        `${seriesName}<br/>${name}<br/> ${value} (${percent}%)`
     },
 
     legend: {
@@ -115,24 +169,23 @@ export default function CostsPieChart({
 
 
   const lenghtData = option.series[0].data.length;
-      
+
   return (
-      <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
-        {
-          lenghtData === 0 ? (
-            <div className="flex items-center justify-center pt-20">
-              <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
-            </div>
-          ) : (
-            <ReactECharts
-              option={option}
-              style={{ height: "100%", width: "100%" }}
-              notMerge
-              lazyUpdate
-            />
-          )
-        }
-      </div>
-    );
+    <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
+      {
+        lenghtData === 0 ? (
+          <div className="flex items-center justify-center pt-20">
+            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+          </div>
+        ) : (
+          <ReactECharts
+            option={option}
+            style={{ height: "100%", width: "100%" }}
+            notMerge
+            lazyUpdate
+          />
+        )
+      }
+    </div>
+  );
 }
-  

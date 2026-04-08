@@ -32,7 +32,7 @@ export default function DashClubs() {
     async function getCountries() {
         try {
             setLoadingCountries(true);
-            const { data } = await api.get("/admin/countries");
+            const { data } = await api.get("/dashboard/countries");
             setListCountries(data.countries);
         } catch (error) {
             console.error(error);
@@ -46,7 +46,7 @@ export default function DashClubs() {
             setLoadingClubs(true);
             setSubmitted(true);
             const { data } = await api.post(
-                `/admin/clubs/search?page=${page}`,
+                `/dashboard/clubs/search?page=${page}`,
                 { name: search || null, country: country || null }
             );
             setClubs(data.clubs);
@@ -60,7 +60,7 @@ export default function DashClubs() {
 
     async function fetchGroupedClubs() {
         try {
-            const { data } = await api.get("/admin/clubs-grouped-by-country");
+            const { data } = await api.get("/dashboard/clubs");
             setGroupedClubs(data);
         } catch (error) {
             console.error(error);
@@ -111,7 +111,7 @@ export default function DashClubs() {
                         >
                             <option value="">Todos os países</option>
                             {!loadingCountries && listCountries.map((c) => (
-                                <option key={c.id_country} value={c.id_country}>{c.name}</option>
+                                <option key={c.id ?? c.id_country} value={c.id ?? c.id_country}>{c.name}</option>
                             ))}
                         </select>
                     </div>

@@ -2,16 +2,20 @@
 import { X } from "lucide-react";
 import RevenueBreakdownBarChart from "./RevenueBreakdownBarChart";
 import ChartFilter from "../filter/ChartFilter";
+import { useState, useMemo, useEffect } from "react";
 
 export default function RevenueBreakdownSection({
   data,
+  currency,
+  setCurrency,
   leagueMap,
   setLeagueMap,
   mainLeagueId,
   selectedLeagues,
   setSelectedLeagues,
   leagueColor,
-  setLeagueColor
+  setLeagueColor,
+  yearSelectionMode
 }) {
   function handleAddLeague(liga) {
     setSelectedLeagues((prev) =>
@@ -41,15 +45,63 @@ export default function RevenueBreakdownSection({
     );
   }
 
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+  const [selectedYears, setSelectedYears] = useState([]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set();
+
+    Object.values(data || {}).forEach((leagueData) => {
+      leagueData.forEach((item) => {
+        years.add(item.year);
+      });
+    });
+
+    return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+  useEffect(() => {
+    if (!availableYears || availableYears.length === 0) return;
+
+    // já tem seleção? não mexe
+    if (selectedYears.length > 0) return;
+
+    const lastYear = availableYears[availableYears.length - 1];
+
+    setStartYear(lastYear);
+    setEndYear(lastYear);
+
+    if (yearSelectionMode === "single") {
+      setSelectedYears([lastYear]);
+    } else {
+      setStartYear(availableYears[0]);
+      setEndYear(lastYear);
+      setSelectedYears(availableYears);
+    }
+  }, [availableYears, yearSelectionMode]);
+
+
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas
+        Receitas <small className="text-xs">(por ano)</small>
       </h2>
+
 
       <ChartFilter
         ligasSelecionadas={selectedLeagues}
         onAddLeague={handleAddLeague}
+        currency={currency}
+        onChangeCurrency={setCurrency}
+        startYear={startYear}
+        endYear={endYear}
+        onChangeStartYear={setStartYear}
+        onChangeEndYear={setEndYear}
+        availableYears={availableYears}
+        selectedYears={selectedYears}
+        onChangeSelectedYears={setSelectedYears}
+        yearSelectionMode="single"
       />
 
       <RevenueBreakdownBarChart
@@ -58,6 +110,8 @@ export default function RevenueBreakdownSection({
         leagueMap={leagueMap}
         mainLeagueId={mainLeagueId}
         leagueColor={leagueColor}
+        startYear={startYear}
+        endYear={endYear}
       />
 
       {selectedLeagues.length > 0 && (

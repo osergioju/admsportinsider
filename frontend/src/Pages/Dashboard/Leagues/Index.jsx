@@ -47,7 +47,7 @@ export default function DashLeagues() {
     async function getCountries() {
         try {
             setLoadingCountries(true);
-            const { data } = await api.get("/admin/countries");
+            const { data } = await api.get("/dashboard/countries");
             setListCountries(data.countries);
         } catch (error) {
             console.error(error);
@@ -59,7 +59,7 @@ export default function DashLeagues() {
     async function fetchInitialLeagues() {
         try {
             setLoadingLeagues(true);
-            const { data } = await api.post("/admin/leagues/search", { name: null, country: null });
+            const { data } = await api.post("/dashboard/leagues/search", { name: null, country: null });
             setGroupedLeagues(groupLeaguesByCountry(data.leagues));
         } catch (error) {
             console.error(error);
@@ -81,7 +81,7 @@ export default function DashLeagues() {
         try {
             setLoadingLeagues(true);
             setSubmitted(true);
-            const { data } = await api.post("/admin/leagues/search", { name: search || null, country: country || null });
+            const { data } = await api.post("/dashboard/leagues/search", { name: search || null, country: country || null });
             setLeagues(groupLeaguesByCountry(data.leagues));
         } catch (error) {
             console.error(error);
@@ -121,7 +121,7 @@ export default function DashLeagues() {
                         >
                             <option value="">Todos os países</option>
                             {!loadingCountries && listCountries.map((c) => (
-                                <option key={c.id_country} value={c.id_country}>{c.name}</option>
+                                <option key={c.id ?? c.id_country} value={c.id ?? c.id_country}>{c.name}</option>
                             ))}
                         </select>
                     </div>

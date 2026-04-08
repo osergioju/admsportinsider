@@ -57,6 +57,10 @@ export async function createBanner(req, res) {
   }
 
   try {
+    // sort_order = max atual + 1 para novos banners irem ao final
+    const maxRes = await db.query(`SELECT COALESCE(MAX(sort_order), 0) AS max FROM banners`);
+    const nextOrder = maxRes.rows[0].max + 1;
+
     await db.query(`
       INSERT INTO banners (
         title,
@@ -65,8 +69,9 @@ export async function createBanner(req, res) {
         link_url,
         start_at,
         end_at,
-        status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7)
+        status,
+        sort_order
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
     `, [
       title,
       image_desktop_url,
@@ -74,7 +79,8 @@ export async function createBanner(req, res) {
       link_url || null,
       start_at || null,
       end_at || null,
-      status || "draft"
+      status || "draft",
+      nextOrder
     ]);
 
     return res.status(201).json({
@@ -95,8 +101,8 @@ export async function getAllBanners(req, res) {
     const result = await db.query(`
       SELECT *
       FROM banners
-      where status != 'draft'
-      ORDER BY created_at DESC
+      WHERE status != 'draft'
+      ORDER BY sort_order ASC, created_at DESC
     `);
 
     return res.json({
@@ -183,6 +189,27 @@ export async function updateBanner(req, res) {
     return res.status(500).json({
       message: "Erro ao atualizar banner"
     });
+  }
+}
+
+export async function reorderBanners(req, res) {
+  // body: [{ id: 1, sort_order: 1 }, { id: 2, sort_order: 2 }, ...]
+  const { order } = req.body;
+
+  if (!Array.isArray(order) || order.length === 0) {
+    return res.status(400).json({ message: "Lista de ordenação inválida." });
+  }
+
+  try {
+    await Promise.all(
+      order.map(({ id, sort_order }) =>
+        db.query(`UPDATE banners SET sort_order = $1 WHERE id_banner = $2`, [sort_order, id])
+      )
+    );
+    return res.json({ message: "Ordem atualizada com sucesso!" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Erro ao reordenar banners." });
   }
 }
 

@@ -1,11 +1,10 @@
 // components/revenue/RevenueSection.jsx
 import { X } from "lucide-react";
-import { useState } from "react";
+import { } from "react";
 import RevenueLineChart from "./RevenueLineChart";
 import RevenueTableChart from "./RevenueTableChart";
 import ChartFilter from "../filter/ChartFilter";
-import { useMemo } from "react";
-import { useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 export default function RevenueSection({
   data,
@@ -19,8 +18,6 @@ export default function RevenueSection({
   currency,
   setCurrency
 }) {
-  const [startYear, setStartYear] = useState(null);
-  const [endYear, setEndYear] = useState(null);
 
 
 
@@ -52,6 +49,10 @@ export default function RevenueSection({
     );
   }
 
+
+  const [startYear, setStartYear] = useState(null);
+  const [endYear, setEndYear] = useState(null);
+
   const availableYears = useMemo(() => {
     const years = new Set();
 
@@ -65,7 +66,6 @@ export default function RevenueSection({
 
     return Array.from(years).sort((a, b) => a - b);
   }, [data]);
-
 
   useEffect(() => {
     if (!availableYears || availableYears.length === 0) return;

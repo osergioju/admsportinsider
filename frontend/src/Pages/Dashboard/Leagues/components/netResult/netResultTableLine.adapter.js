@@ -54,7 +54,7 @@ export function adaptNetResultEvolutionByLeague(
       smooth: true,
       symbol: "circle",
       symbolSize: 8,
-      showSymbol: true, 
+      showSymbol: true,
       lineStyle: {
         width: 33,
         color

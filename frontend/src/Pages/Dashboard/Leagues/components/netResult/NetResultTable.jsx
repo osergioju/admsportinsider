@@ -1,9 +1,10 @@
 import { adaptNetResultTable } from "./netResultLeague.adapter";
+import { useMemo } from "react";
 import React from "react";
 
 function formatMoney(value) {
   if (value === null || value === undefined) return "—";
-  return `R$ ${Number(value).toLocaleString("pt-BR")}`;
+  return `${Number(value).toLocaleString("pt-BR")}`;
 }
 
 export default function NetResultTable({
@@ -11,14 +12,35 @@ export default function NetResultTable({
   ligasSelecionadas,
   leagueMap,
   mainLeagueId,
-  leagueColor
+  leagueColor,
+  startYear,
+  endYear
 }) {
-  const table = adaptNetResultTable(
-    data,
-    ligasSelecionadas,
-    mainLeagueId,
-    leagueMap
-  );
+  const table = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    let filteredData = data;
+
+    if (startYear || endYear) {
+      filteredData = {};
+
+      Object.keys(data).forEach((leagueId) => {
+        filteredData[leagueId] = data[leagueId].filter((item) => {
+          if (startYear && item.year < startYear) return false;
+          if (endYear && item.year > endYear) return false;
+          return true;
+        });
+      });
+    }
+
+    return adaptNetResultTable(
+      filteredData,
+      ligasSelecionadas,
+      mainLeagueId,
+      leagueMap
+    );
+
+  }, [data, mainLeagueId, ligasSelecionadas, leagueMap, startYear, endYear]);
 
   if (!table || table.rows.length === 0) {
     return (
@@ -81,11 +103,10 @@ export default function NetResultTable({
                 return (
                   <td
                     key={`${leagueId}-${row.year}`}
-                    className={`text-xs pr-4 py-2 text-right font-medium ${
-                      cell.ebitda >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
+                    className={`text-xs pr-4 py-2 text-right font-medium ${cell.ebitda >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                      }`}
                   >
                     {formatMoney(cell.ebitda)}
                   </td>

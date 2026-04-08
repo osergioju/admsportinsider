@@ -23,6 +23,7 @@ export default function Register() {
     const [isRegistering, setIsRegistering] = useState(false);
     const [strength, setStrength] = useState(0);
     const [registerOk, setRegisterOk] = useState(false);
+    const [newsletter, setNewsletter] = useState(false);
 
     function checkPasswordStrength(password) {
         let score = 0;
@@ -51,7 +52,7 @@ export default function Register() {
         setIsRegistering(true);
 
         try {
-            await api.post("/auth/register", { nome, email, senha });
+            await api.post("/auth/register", { nome, email, senha, newsletter });
 
             setIsRegistering(false);
             // alert("Cadastro realizado com sucesso! Faça login para continuar.");
@@ -234,6 +235,32 @@ export default function Register() {
                                         variant="dark"
                                         onChange={(e) => setConfirmarSenha(e.target.value)}
                                     />
+
+                                    {/* Newsletter opt-in */}
+                                    <label className="flex items-start gap-3 cursor-pointer group">
+                                        <div className="relative mt-0.5 shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                checked={newsletter}
+                                                onChange={(e) => setNewsletter(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                                                newsletter
+                                                    ? "bg-[#7F33D9] border-[#7F33D9]"
+                                                    : "bg-transparent border-[#FFFFFF33] group-hover:border-[#7F33D9]/60"
+                                            }`}>
+                                                {newsletter && (
+                                                    <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                                                        <path d="M1 4L4 7L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="text-xs text-[#FFFFFF80] leading-relaxed group-hover:text-[#FFFFFF99] transition-colors">
+                                            Quero receber novidades, análises e conteúdos exclusivos do Sport Insider por e-mail.
+                                        </span>
+                                    </label>
 
                                     {/* Botão Submit Gradiente */}
                                     <SubmitButton {...{disabled: isRegistering}} text={ isRegistering ? "Cadastrando..." : "Cadastrar"} />

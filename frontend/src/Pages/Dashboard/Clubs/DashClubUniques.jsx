@@ -22,7 +22,7 @@ export default function DashClubUniques() {
   // Usuário & plano
   const { user } = useContext(AuthContext);
   const planID = user?.plan_id;
-  console.log(user);
+
   // Cria vários níveis de acesso de acordo com o gráfico
   const chartPermissions = {
     revenue: [1, 2, 3],
@@ -34,7 +34,9 @@ export default function DashClubUniques() {
     revenueBreakdown: [1, 2, 3]
   };
 
+  // Não-logados veem tudo. Logados: verificar plano.
   const hasAccess = (chartKey, planID) => {
+    if (!user) return true;
     return chartPermissions[chartKey]?.includes(planID);
   };
 
@@ -47,14 +49,15 @@ export default function DashClubUniques() {
   const [clubMap, setClubMap] = useState({});
   const [clubColorMap, setClubColorMap] = useState({});
 
+  const defaultCurrency = user?.currency_code ?? "BRL";
   const [chartCurrencies, setChartCurrencies] = useState({
-    revenue: user.currency_code,
-    payroll: user.currency_code,
-    costs: user.currency_code,
-    netResult: user.currency_code,
-    netEvolution: user.currency_code,
-    debts: user.currency_code,
-    revenueBreakdown: user.currency_code,
+    revenue: defaultCurrency,
+    payroll: defaultCurrency,
+    costs: defaultCurrency,
+    netResult: defaultCurrency,
+    netEvolution: defaultCurrency,
+    debts: defaultCurrency,
+    revenueBreakdown: defaultCurrency,
   });
 
   /**
@@ -128,7 +131,7 @@ export default function DashClubUniques() {
           indicatorsRes,
           yearsRes
         ] = await Promise.all([
-          api.get(`/admin/clubs/${id}`),
+          api.get(`/dashboard/clubs/${id}/info`),
           api.get(`/dashboard/clubs/${id}/financials/revenues/breakdown`),
           api.get(`/dashboard/clubs/${id}/financials/costs/payroll`),
           api.get(`/dashboard/clubs/${id}/financials/costs/breakdown`),
@@ -218,7 +221,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "revenue",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues?from=RUB&to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
+        `/dashboard/clubs/${clubId}/financials/revenues?to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
       true
     );
   }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);

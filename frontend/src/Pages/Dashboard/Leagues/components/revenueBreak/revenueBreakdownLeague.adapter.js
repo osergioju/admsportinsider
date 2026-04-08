@@ -17,12 +17,13 @@ export function adaptRevenueBreakdown(
   const categorySet = new Set();
 
   leagueIds.forEach((leagueId) => {
-    const apiData = dataByLeague[leagueId];
+    const entry = dataByLeague[leagueId];
+    const apiData = entry?.data || entry; // extrai o array de dentro da resposta
     if (!Array.isArray(apiData)) return;
 
     apiData.forEach((item) => {
-      if (item.name_pt) {
-        categorySet.add(item.name_pt);
+      if (item.name) {
+        categorySet.add(item.name); // API retorna `name` já traduzido
       }
     });
   });
@@ -30,18 +31,18 @@ export function adaptRevenueBreakdown(
   const categories = Array.from(categorySet);
 
   const series = leagueIds.map((leagueId) => {
-    const apiData = dataByLeague[leagueId];
+    const entry = dataByLeague[leagueId];
+    const apiData = entry?.data || entry; // extrai o array de dentro da resposta
 
     const values = categories.map((category) => {
       const found = Array.isArray(apiData)
-        ? apiData.find((item) => item.name_pt === category)
+        ? apiData.find((item) => item.name === category)
         : null;
 
-      return found ? Number(found.value) : 0;
+      return found ? Number(found.converted_value) : 0;
     });
 
     const DEFAULT_COLOR = "#999999";
-
     const leagueColorReal =
       leagueColor?.[String(leagueId)]?.color_one || DEFAULT_COLOR;
 
@@ -57,22 +58,19 @@ export function adaptRevenueBreakdown(
           value: v,
           itemStyle: {
             borderRadius: isNegative
-              ? [0, 0, 6, 6]   // negativo: arredonda embaixo
-              : [6, 6, 0, 0],  // positivo: arredonda em cima
+              ? [0, 0, 6, 6]  // negativo: arredonda embaixo
+              : [6, 6, 0, 0], // positivo: arredonda em cima
             color: new echarts.graphic.LinearGradient(
-              0,
-              0,
-              0,
-              1,
+              0, 0, 0, 1,
               isNegative
                 ? [
-                    { offset: 0, color: "#ffffff" },
-                    { offset: 1, color: leagueColorReal }
-                  ]
+                  { offset: 0, color: "#ffffff" },
+                  { offset: 1, color: leagueColorReal }
+                ]
                 : [
-                    { offset: 0, color: leagueColorReal },
-                    { offset: 1, color: "#ffffff" }
-                  ]
+                  { offset: 0, color: leagueColorReal },
+                  { offset: 1, color: "#ffffff" }
+                ]
             )
           }
         };

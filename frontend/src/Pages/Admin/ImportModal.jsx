@@ -166,7 +166,7 @@ function CountrySelect({ value, onChange, dbCountries, status, borderClass }) {
 
       <optgroup label="✅ Cadastrados no sistema">
         {dbCountries.map((c) => (
-          <option key={c.id_country} value={c.id_country}>
+          <option key={c.id_country} value={String(c.id_country)}>
             {c.name}
           </option>
         ))}
@@ -213,6 +213,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
       const fd = new FormData();
       fd.append("file", importFile);
       const res = await api.post("/admin/preview-import", fd);
+      console.log(res.data.countries); // 👈 AQUI
       setSheets(res.data.sheets);
       setStep("selectSheet");
     } catch {
@@ -232,11 +233,16 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
       fd.append("sheetName", selectedSheet);
       const res = await api.post("/admin/preview-import", fd);
 
+      // ← ATUALIZA a lista de países do banco
+      if (res.data.dbCountries?.length) {
+        setDbCountries(res.data.dbCountries);
+      }
+
       setPreviewData(
         (res.data.countries ?? []).map((c) => ({
           ...c,
-          // Pré-seleciona automaticamente se o backend resolveu
-          selected: c.resolved?.id_country ?? "",
+          // Força string para casar com o value do <option>
+          selected: c.resolved?.id_country ? String(c.resolved.id_country) : "",
         }))
       );
       setStep("mapping");
@@ -408,13 +414,12 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
                 {previewData.map((item, i) => (
                   <div
                     key={i}
-                    className={`rounded-xl border p-3 transition-colors ${
-                      item.selected
-                        ? "border-gray-100 bg-white"
-                        : item.status === "unknown"
+                    className={`rounded-xl border p-3 transition-colors ${item.selected
+                      ? "border-gray-100 bg-white"
+                      : item.status === "unknown"
                         ? "border-red-200 bg-red-50/40"
                         : "border-amber-200 bg-amber-50/40"
-                    }`}
+                      }`}
                   >
                     {/* Nome do arquivo + badge */}
                     <div className="flex items-center justify-between mb-2">
@@ -477,8 +482,8 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
                 {loading
                   ? <Loader2 size={18} className="animate-spin" />
                   : missingCount > 0
-                  ? `${missingCount} país${missingCount > 1 ? "es" : ""} pendente${missingCount > 1 ? "s" : ""}`
-                  : "Importar"}
+                    ? `${missingCount} país${missingCount > 1 ? "es" : ""} pendente${missingCount > 1 ? "s" : ""}`
+                    : "Importar"}
               </button>
             </div>
           )}

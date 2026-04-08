@@ -18,6 +18,7 @@ import favoritesRoutes from "./src/routes/favorites.routes.js";
 
 import { multerErrorHandler } from "./src/middlewares/multerErrorHandler.js";
 import { startNotificationCron } from "./src/jobs/notificationCron.js";
+import { startSubscriptionExpiringCron } from "./src/jobs/subscriptionExpiringCron.js";
  
 // Swagger
 import swaggerJsdoc from "swagger-jsdoc";
@@ -38,6 +39,7 @@ const swaggerSpec = swaggerJsdoc(options);
 
 dotenv.config();
 startNotificationCron();
+startSubscriptionExpiringCron();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

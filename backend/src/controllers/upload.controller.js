@@ -287,47 +287,49 @@ export async function importLeagueCountry(req, res) {
     const indicatorIdByCode = {};
 
     // ======================================================
-    // 1️⃣ INDICADORES DA LIGA
+    // 1️⃣ BULK UPSERT — INDICADORES DA LIGA
     // ======================================================
+    const leagueIndicatorRows = [];
+
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
-
       const name_pt = row[0];
       const code = row[1];
       const level = row[3];
       const plans = parsePlans(row[2]);
 
-      if (
-        !code ||
-        typeof code !== "string" ||
-        !name_pt ||
-        level == null
-      ) continue;
-
+      if (!code || typeof code !== "string" || !name_pt || level == null) continue;
       if (indicatorIdByCode[code]) continue;
 
+      leagueIndicatorRows.push([code, name_pt, level, plans]);
+    }
+
+    if (leagueIndicatorRows.length > 0) {
+      const values = leagueIndicatorRows
+        .map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`)
+        .join(",");
+
       const result = await client.query(
-        `
-        INSERT INTO financial_indicators
-          (code, name_pt, level, plans)
-        VALUES
-          ($1, $2, $3, $4)
-        ON CONFLICT (code)
-        DO UPDATE SET
-          name_pt = EXCLUDED.name_pt,
-          level = EXCLUDED.level,
-          plans = EXCLUDED.plans
-        RETURNING id
-        `,
-        [code, name_pt, level, plans]
+        `INSERT INTO financial_indicators (code, name_pt, level, plans)
+         VALUES ${values}
+         ON CONFLICT (code) DO UPDATE SET
+           name_pt = EXCLUDED.name_pt,
+           level   = EXCLUDED.level,
+           plans   = EXCLUDED.plans
+         RETURNING id, code`,
+        leagueIndicatorRows.flat()
       );
 
-      indicatorIdByCode[code] = result.rows[0].id;
+      for (const r of result.rows) {
+        indicatorIdByCode[r.code] = r.id;
+      }
     }
 
     // ======================================================
-    // 2️⃣ LEAGUE_FINANCIALS
+    // 2️⃣ BULK INSERT — LEAGUE_FINANCIALS
     // ======================================================
+    const leagueFinancialRows = [];
+
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
       const code = row[1];
@@ -341,58 +343,48 @@ export async function importLeagueCountry(req, res) {
         const value = row[5 + idx];
         if (typeof value !== "number") continue;
 
-        await client.query(
-          `
-          INSERT INTO league_financials
-            (id_league, id_indicator, year, value)
-          VALUES
-            ($1, $2, $3, $4)
-          ON CONFLICT (id_league, id_indicator, year)
-          DO UPDATE SET value = EXCLUDED.value
-          `,
-          [leagueId, id_indicator, year, value]
-        );
+        leagueFinancialRows.push([leagueId, id_indicator, year, value]);
       }
     }
 
+    if (leagueFinancialRows.length > 0) {
+      const values = leagueFinancialRows
+        .map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`)
+        .join(",");
+
+      await client.query(
+        `INSERT INTO league_financials (id_league, id_indicator, year, value)
+         VALUES ${values}
+         ON CONFLICT (id_league, id_indicator, year) DO UPDATE SET value = EXCLUDED.value`,
+        leagueFinancialRows.flat()
+      );
+    }
+
     // ======================================================
-    // FUNÇÃO AUXILIAR — INDICADOR DOS CLUBES
+    // HELPER — upsert indicador de clube (usa cache compartilhado)
     // ======================================================
-    async function getOrCreateIndicatorFromClubRow(row) {
+    async function resolveClubIndicator(dbClient, row, cache) {
       const name_pt = row[0];
       const code = row[1];
       const level = row[2] ?? 1;
       const plan = row[3];
 
       if (!code || typeof code !== "string") return null;
+      if (cache[code]) return cache[code];
 
-      if (indicatorIdByCode[code]) {
-        return indicatorIdByCode[code];
-      }
-
-      const result = await client.query(
-        `
-        INSERT INTO financial_indicators
-          (code, name_pt, level, plans)
-        VALUES
-          ($1, $2, $3, $4)
-        ON CONFLICT (code)
-        DO UPDATE SET
-          name_pt = EXCLUDED.name_pt,
-          level = EXCLUDED.level,
-          plans = EXCLUDED.plans
-        RETURNING id
-        `,
-        [
-          code,
-          name_pt || code,
-          level,
-          plan ? [plan] : []
-        ]
+      const result = await dbClient.query(
+        `INSERT INTO financial_indicators (code, name_pt, level, plans)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (code) DO UPDATE SET
+           name_pt = EXCLUDED.name_pt,
+           level   = EXCLUDED.level,
+           plans   = EXCLUDED.plans
+         RETURNING id`,
+        [code, name_pt || code, level, plan ? [plan] : []]
       );
 
-      indicatorIdByCode[code] = result.rows[0].id;
-      return indicatorIdByCode[code];
+      cache[code] = result.rows[0].id;
+      return cache[code];
     }
 
     // ======================================================
@@ -405,15 +397,11 @@ export async function importLeagueCountry(req, res) {
       const sheet = workbook.Sheets[String(year)];
       if (!sheet) continue;
 
-      const rows = xlsx.utils.sheet_to_json(sheet, {
-        header: 1,
-        defval: null
-      });
+      const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: null });
 
-      const clubSlugs = rows[1]
-        .slice(CLUBS_START_COL)
-        .filter(Boolean);
+      const clubSlugs = rows[1].slice(CLUBS_START_COL).filter(Boolean);
 
+      // --- Bulk resolve clubs ---
       const existingClubs = await client.query(
         `SELECT id_club, slug FROM clubs WHERE slug = ANY($1)`,
         [clubSlugs]
@@ -424,49 +412,51 @@ export async function importLeagueCountry(req, res) {
         clubIdBySlug[r.slug] = r.id_club;
       }
 
-      for (const slug of clubSlugs) {
-        if (clubIdBySlug[slug]) continue;
+      const newSlugs = clubSlugs.filter(s => !clubIdBySlug[s]);
 
+      for (const slug of newSlugs) {
         const result = await client.query(
-          `
-          INSERT INTO clubs (slug, name, active, id_country, created_at)
-          SELECT $1, $2, true, l.id_country, NOW()
-          FROM leagues l WHERE l.id_league = $3
-          RETURNING id_club
-          `,
+          `INSERT INTO clubs (slug, name, active, id_country, created_at)
+           SELECT $1, $2, true, l.id_country, NOW()
+           FROM leagues l WHERE l.id_league = $3
+           RETURNING id_club`,
           [slug, humanizeSlug(slug), leagueId]
         );
-
         clubIdBySlug[slug] = result.rows[0].id_club;
       }
 
-      // CLUB_SEASONS
+      // --- Bulk upsert club_seasons ---
       const divisionRow = rows[3];
+      const clubSeasonRows = [];
 
       for (let col = CLUBS_START_COL; col < divisionRow.length; col++) {
         const slug = clubSlugs[col - CLUBS_START_COL];
         const division = divisionRow[col];
         const id_club = clubIdBySlug[slug];
         if (!id_club || !division) continue;
+        clubSeasonRows.push([id_club, leagueId, year, String(division)]);
+      }
+
+      if (clubSeasonRows.length > 0) {
+        const values = clubSeasonRows
+          .map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`)
+          .join(",");
 
         await client.query(
-          `
-          INSERT INTO club_seasons
-            (id_club, id_league, year, division)
-          VALUES
-            ($1, $2, $3, $4)
-          ON CONFLICT (id_club, id_league, year)
-          DO UPDATE SET division = EXCLUDED.division
-          `,
-          [id_club, leagueId, year, String(division)]
+          `INSERT INTO club_seasons (id_club, id_league, year, division)
+           VALUES ${values}
+           ON CONFLICT (id_club, id_league, year) DO UPDATE SET division = EXCLUDED.division`,
+          clubSeasonRows.flat()
         );
       }
 
-      // CLUB_FINANCIALS
+      // --- Bulk upsert club_financials ---
+      const clubFinancialRows = [];
+
       for (let i = DATA_START_ROW; i < rows.length; i++) {
         const row = rows[i];
 
-        const id_indicator = await getOrCreateIndicatorFromClubRow(row);
+        const id_indicator = await resolveClubIndicator(client, row, indicatorIdByCode);
         if (!id_indicator) continue;
 
         for (let col = CLUBS_START_COL; col < row.length; col++) {
@@ -485,16 +475,24 @@ export async function importLeagueCountry(req, res) {
 
           if (value === null || Number.isNaN(value)) continue;
 
+          clubFinancialRows.push([id_club, id_indicator, year, value]);
+        }
+      }
+
+      if (clubFinancialRows.length > 0) {
+        // chunk to avoid parameter limit (~65535 params)
+        const CHUNK_SIZE = 500;
+        for (let s = 0; s < clubFinancialRows.length; s += CHUNK_SIZE) {
+          const batch = clubFinancialRows.slice(s, s + CHUNK_SIZE);
+          const values = batch
+            .map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`)
+            .join(",");
+
           await client.query(
-            `
-            INSERT INTO club_financials
-              (id_club, id_indicator, year, value)
-            VALUES
-              ($1, $2, $3, $4)
-            ON CONFLICT (id_club, id_indicator, year)
-            DO UPDATE SET value = EXCLUDED.value
-            `,
-            [id_club, id_indicator, year, value]
+            `INSERT INTO club_financials (id_club, id_indicator, year, value)
+             VALUES ${values}
+             ON CONFLICT (id_club, id_indicator, year) DO UPDATE SET value = EXCLUDED.value`,
+            batch.flat()
           );
         }
       }

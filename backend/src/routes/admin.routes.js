@@ -1487,26 +1487,29 @@
  *         description: Erro interno do servidor
  */
 import { Router } from "express";
-import {previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder} from "../controllers/admin.controller.js";
-import { getUsersInsights } from "../controllers/insights.controller.js";
+import {previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder} from "../controllers/admin.controller.js";
+import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
 import { uploadImage } from "../middlewares/uploadImage.js";
 import { uploadClubLogo } from "../controllers/upload.controller.js";
 import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
-import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage } from "../controllers/banner.controller.js";
+import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage, reorderBanners } from "../controllers/banner.controller.js";
 import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations, getCommonTermsByRegion, saveCommonTermsTranslations } from "../controllers/adminRegionsController.js";
 
-import { authGuard } from "../middlewares/auth.middleware.js";
+import { adminGuard } from "../middlewares/auth.middleware.js";
 const router = Router();
+
+router.use(adminGuard);
 
 // GET /admin/dashboard
 router.get("/dashboard", getAdminDashboard);
 
 // PAÍSES - GESTÃO CRUD
-router.get("/countries", authGuard, getAllCountries);
+router.get("/countries", getAllCountries);
 router.get("/countries/:id", getAllCountriesById);
 router.post("/send-countries", createCountry);
+router.put("/countries/:id/update", updateCountry);
 router.delete("/disable-country/:id", disableCountry);
 
 // LIGAS - GESTÃO CRUD
@@ -1536,9 +1539,16 @@ router.post("/users/:id", getUserById);
 router.post("/users/:id/disable", disableUser);
 router.post("/users/:id/enable", enableUser);
 router.post("/users/:id/change-plan", changeUserPlan);
-router.put("/users/:id/update", authGuard, updateUser);
+router.put("/users/:id/update", updateUser);
 router.post("/users/:id/resend-confirmation", resendConfirmationEmail);
 router.get("/insights/users", getUsersInsights);
+router.get("/insights/clubes", getClubsInsights);
+router.get("/insights/ligas", getLeaguesInsights);
+router.get("/insights/financeiro", getFinanceiroInsights);
+router.get("/insights/planos", getPlanosInsights);
+router.get("/insights/importacoes", getImportacoesInsights);
+router.get("/insights/uso", getUsoInsights);
+router.get("/insights/performance", getPerformanceInsights);
 router.put("/users/:id/update-password", updateUserPassword);
 router.post("/create-user", createUser); // Criar usuaário 
 
@@ -1559,14 +1569,14 @@ router.put("/notifications/:id", updateNotification);
 router.delete("/notifications/:id", deleteNotification);
 
 
-// Banners 
-// BANNERS
+// Banners
 router.get("/banners", getAllBanners);
-router.get("/banners/:id", getBannerById);
 router.post("/banners", createBanner);
+router.put("/banners/reorder", reorderBanners);
+router.post("/banners/upload-image", uploadImage, uploadBannerImage);
+router.get("/banners/:id", getBannerById);
 router.put("/banners/:id", updateBanner);
 router.delete("/banners/:id", deleteBanner);
-router.post("/banners/upload-image", uploadImage, uploadBannerImage);
 
 // Regiões e idiomas
 router.get("/regions", getAllRegions);
