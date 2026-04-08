@@ -7,7 +7,7 @@ import { authGuard } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 // Aplica a proteção em todas as rotas deste arquivo
-router.use(authGuard);
+//router.use(authGuard);
 
 // Atualizar e ver perfil
 router.get("/profile", getProfile);

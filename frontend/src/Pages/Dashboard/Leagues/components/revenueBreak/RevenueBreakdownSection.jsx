@@ -85,7 +85,7 @@ export default function RevenueBreakdownSection({
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas <small className="text-xs">(por ano)</small>
+        Receitas <small className="text-xs">(por origem)</small>
       </h2>
 
 

@@ -4,7 +4,7 @@ import Tela from "../assets/img/tela.png";
 import Icone from "../assets/img/icone.png";
 import Icone2 from "../assets/img/icone2.png";
 import Icone3 from "../assets/img/iconeMaior.png";
-import SportinsiderIcon from "../assets/img/sportinsider-logo.png";
+import SportinsiderIcon from "../assets/svg/brand-white.svg"
 import banner1 from "../assets/img/banner1.png";
 import banner2 from "../assets/img/banner2.png";
 import banner3 from "../assets/img/banner3.png";
@@ -15,6 +15,7 @@ import Time2 from "../assets/img/slide/time2.png";
 import Time3 from "../assets/img/slide/time3.png";
 import Time4 from "../assets/img/slide/time4.png";
 import Time5 from "../assets/img/slide/time5.png";
+import videoTeste from "../assets/video/vd-x.mp4"
 
 // Importa o redirect 
 import { useRedirectIfAuthenticated } from "../services/checkUser";
@@ -65,16 +66,16 @@ export default function FrontPage() {
                         <img
                             src={SportinsiderIcon}
                             alt="Logo Sportinsider"
-                            className="w-36 h-auto"
+                            className="w-36 lg:w-44 xl:w-50 h-auto"
                         />
                     </div>
                     <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
-                        <Link to="/dados"><div className="cursor-pointer hover:text-white transition-colors">Dados</div></Link>
-                        <Link to="/pricing"><div className="cursor-pointer hover:text-white transition-colors">Planos</div></Link>
-                        <Link to="/ajuda"><div className="cursor-pointer hover:text-white transition-colors">Ajuda</div></Link>
+                        <Link className="hidden" to="/dados"><div className="cursor-pointer hover:text-white transition-colors">Dados</div></Link>
+                        <Link className="hidden" to="/pricing"><div className="cursor-pointer hover:text-white transition-colors">Planos</div></Link>
+                        <Link className="hidden" to="/ajuda"><div className="cursor-pointer hover:text-white transition-colors">Ajuda</div></Link>
                     </div>
                     <div className="flex items-center">
-                        <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 py-3 text-sm sm:px-5 sm:py-3 sm:text-sm sm:mr-0 flex items-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/login">
+                        <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 py-3 text-sm sm:px-5 sm:py-3 sm:text-sm sm:mr-0 flex items-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all lg:text-lg" to="/login">
                             Acessar <ArrowUpRight className="ml-2 w-3 h-3 sm:w-4 sm:h-4"></ArrowUpRight>
                         </Link>
                     </div>
@@ -92,14 +93,22 @@ export default function FrontPage() {
                     inteiro — organizados, comparáveis e prontos para decisão.
                 </p>
                 <div className="flex mt-4 gap-2 lg:gap-5 lg:mt-8 items-center justify-center">
-                    <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">Teste gratuito <ArrowUpRight className="w-3"></ArrowUpRight></Link>
-                    <Link className="px-6 flex items-center gap-4 py-3 border border-[#A572E1] text-[#A572E1] rounded-full" to="/register">Cadastre-se <ArrowUpRight className="w-3"></ArrowUpRight></Link>
+                    <Link className="lg:text-lg lg:font-light xl:text-xl bg-gradient-to-r from-[#904EDE] to-[#4E2A78] gap-4 mr-0 px-5 flex items-center py-3 border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all" to="/dashboard-public">Teste gratuito <ArrowUpRight className="w-3 lg:w-5 xl:w-6"></ArrowUpRight></Link>
+                    <Link className="lg:text-lg lg:font-light xl:text-xl px-6 flex items-center gap-4 py-3 border border-[#A572E1] text-[#A572E1] rounded-full" to="/register">Cadastre-se <ArrowUpRight className="w-3 lg:w-5 xl:w-6"></ArrowUpRight></Link>
                 </div>
             </div>
 
             <div className="w-full bg-white bg-gradient-home relative mt-20">
-                <img className="mx-auto w-full max-w-[600px]" src={Blackout} alt="Blackout"></img>
-                <img className="mx-auto w-full max-w-[1200px] -mt-26" src={Tela} alt="Tela"></img>
+                <img className="hidden mx-auto w-full max-w-[600px] lg:max-w-[800px] lg:-mt-20" src={Blackout} alt="Blackout"></img>
+                <img className="hidden mx-auto w-full max-w-[1200px] -mt-26" src={Tela} alt="Tela"></img>
+                <video
+                    src={videoTeste}
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    className="mx-auto overflow-hidden rounded-xl max-w-[1200px]"
+                />
             </div>
 
             {/* --- SEÇÃO CINZA: DIAGRAMA + CARDS + COBERTURA GLOBAL --- */}
@@ -547,7 +556,7 @@ export default function FrontPage() {
 
                             <div className="text-left w-full sm:w-max lg:w-auto">
                                 <Link
-                                    className={`${primaryButtonClass} w-full sm:w-auto px-6 py-3 gap-4 text-sm sm:text-base`}
+                                    className={`${primaryButtonClass}  w-full sm:w-auto px-6 py-3 gap-4 text-sm sm:text-base`}
                                     to="/dashboard-public"
                                 >
                                     Teste gratuito <ArrowUpRight className="w-3 sm:w-4" />

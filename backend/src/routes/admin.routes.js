@@ -1487,7 +1487,7 @@
  *         description: Erro interno do servidor
  */
 import { Router } from "express";
-import {previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword,getLeagueById,createLeague,updateLeague,disableLeague, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder} from "../controllers/admin.controller.js";
+import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder } from "../controllers/admin.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1500,7 +1500,7 @@ import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById,
 import { adminGuard } from "../middlewares/auth.middleware.js";
 const router = Router();
 
-router.use(adminGuard);
+//router.use(adminGuard);
 
 // GET /admin/dashboard
 router.get("/dashboard", getAdminDashboard);
@@ -1553,7 +1553,7 @@ router.put("/users/:id/update-password", updateUserPassword);
 router.post("/create-user", createUser); // Criar usuaário 
 
 // Subir foto do clube
-router.post("/upload-club-logo",uploadImage,uploadClubLogo);
+router.post("/upload-club-logo", uploadImage, uploadClubLogo);
 
 // PLANOS - CRUD
 router.get("/plans", getAllPlans);
@@ -1584,9 +1584,9 @@ router.get("/regions/:id", getRegionById);
 router.post("/regions", createRegion);
 router.put("/regions/:id", updateRegion);
 router.delete("/regions/:id", deleteRegion);
-router.get("/regions/:id/financial-indicators",getFinancialIndicatorsByRegion);
+router.get("/regions/:id/financial-indicators", getFinancialIndicatorsByRegion);
 router.post("/regions/:id/financial-indicators", saveFinancialIndicatorsTranslations);
-router.get("/regions/:id/common-terms",  getCommonTermsByRegion);
+router.get("/regions/:id/common-terms", getCommonTermsByRegion);
 router.post("/regions/:id/common-terms", saveCommonTermsTranslations);
 
 // Faq

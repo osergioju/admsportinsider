@@ -74,7 +74,7 @@ export default function NetResultSection({
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
         Resultado líquido
       </h2>
-
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
       <ChartFilter
         clubesSelecionados={selectedClubs}
         onAddClub={handleAddClub}

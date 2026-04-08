@@ -29,6 +29,10 @@ export default function DashboardLayout() {
         location.pathname.startsWith("/dashboard/clubs") ||
         location.pathname.startsWith("/dashboard/leagues") ||
         location.pathname.startsWith("/dashboard/league/") ||
+        location.pathname.startsWith("/dashboard/players") ||
+        location.pathname.startsWith("/dashboard/players/") ||
+        location.pathname.startsWith("/dashboard/relatorios") ||
+        location.pathname.startsWith("/dashboard/relatorios/") ||
         location.pathname.startsWith("/dashboard/countries");
 
     useEffect(() => {

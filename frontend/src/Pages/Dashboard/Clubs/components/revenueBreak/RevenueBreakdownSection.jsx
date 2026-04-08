@@ -105,8 +105,8 @@ export default function RevenueBreakdownSection({
 
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
-      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas <small className="text-xs">(por ano)</small>
+      <h2 className="text-[#0A0A0A] font-[400] text-xl">
+        Receitas <small className="text-xs">(por origem)</small>
         {selectedClubs.length > 0 && (
           <button
             className="cursor-pointer border rounded-full w-10 h-10 flex items-center justify-center text-[#d9337e] hover:bg-[#d9337e] hover:text-white transition-all"
@@ -115,6 +115,7 @@ export default function RevenueBreakdownSection({
           </button>
         )}
       </h2>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
 
       <ChartFilter
         clubesSelecionados={selectedClubs}
