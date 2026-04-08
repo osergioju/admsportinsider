@@ -58,17 +58,17 @@ export default function DashboardLayout() {
     };
 
 
-    const menuItemStyle = "group w-full flex items-center justify-between px-5 py-3 rounded-full transition-all duration-300 ease-out border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-0.5 active:scale-95 cursor-pointer mb-1";
+    const menuItemStyle = "group w-full flex items-center justify-between px-3 py-3 rounded-full transition-all duration-300 ease-out border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-0.5 active:scale-95 cursor-pointer mb-1";
     const iconStyle = "text-gray-400 transition-all duration-300 ease-out group-hover:scale-110 group-hover:!text-[#7F33D9]";
     const textStyle = "text-sm font-medium text-[#4E4E4F] group-hover:text-[#0A0A0A] transition-colors";
 
 
     // --- CONTEÚDO DO MENU ---
     const UserMenuContent = () => (
-        <div className="w-full px-4 text-[#111] pb-20 lg:pb-0">
+        <div className="w-full px-2 text-[#111] pb-20 lg:pb-0">
 
             {/* Cabeçalho Perfil (Estilo Card) */}
-            <div className="mb-8 flex items-center gap-3 px-3 py-2 mt-4 bg-white/60 rounded-2xl border border-transparent hover:border-purple-100 hover:bg-white hover:shadow-sm transition-all duration-300 cursor-default group">
+            <div className="mb-5 flex items-center gap-3 px-3 py-2 mt-2 bg-white/60 rounded-2xl border border-transparent hover:border-purple-100 hover:bg-white hover:shadow-sm transition-all duration-300 cursor-default group">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-white border border-purple-200 flex items-center justify-center text-purple-600 font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     {user?.name ? user.name.charAt(0) : "C"}
                 </div>
@@ -95,7 +95,7 @@ export default function DashboardLayout() {
                                 onClick={() => setOpenMenu(false)}
                                 to={user ? "/dashboard" : "/dashboard-public"}
                                 className={menuItemStyle}
-                                icon={<Home strokeWidth={1.5} size={20} className={iconStyle} />}
+                                icon={<Home strokeWidth={1.5} size={18} className={iconStyle} />}
                                 label={<span className={textStyle}>{t("menu.home", "Página inicial")}</span>}
                             />
                         </div>
@@ -104,7 +104,7 @@ export default function DashboardLayout() {
                         <li>
                             <button onClick={() => setOpenLigas(!openLigas)} className={menuItemStyle}>
                                 <div className="flex items-center gap-3">
-                                    <Trophy strokeWidth={1.5} className={iconStyle} size={20} />
+                                    <Trophy strokeWidth={1.5} className={iconStyle} size={18} />
                                     <span className={textStyle}>{t("menu.leagues", "Ligas")}</span>
                                 </div>
                                 <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openLigas ? "rotate-180 text-purple-500" : ""}`} />
@@ -121,13 +121,13 @@ export default function DashboardLayout() {
                         <li>
                             <button onClick={() => setOpenClubes(!openClubes)} className={menuItemStyle}>
                                 <div className="flex items-center gap-3">
-                                    <Shield strokeWidth={1.5} className={iconStyle} size={20} />
+                                    <Shield strokeWidth={1.5} className={iconStyle} size={18} />
                                     <span className={textStyle}>{t("menu.clubs", "Clubes")}</span>
                                 </div>
                                 <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openClubes ? "rotate-180 text-purple-500" : ""}`} />
                             </button>
                             {openClubes && (
-                                <ul className="groupml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                     <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/clubs" label="Todos os clubes" />
                                     <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/clubs/favorites" label="Favoritos" />
                                 </ul>
@@ -136,13 +136,13 @@ export default function DashboardLayout() {
 
                         {/* Países */}
                         <div className="group">
-                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Países</span>} className={menuItemStyle} />
+                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.5} size={18} className={iconStyle} />} label={<span className={textStyle}>Países</span>} className={menuItemStyle} />
                         </div>
 
                         {/* Outros itens */}
-                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} /></div>
+                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} /></div>
                         <div className="group">
-                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={20} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} /></div>
+                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} /></div>
                     </ul>
                 </div>
 
@@ -157,7 +157,7 @@ export default function DashboardLayout() {
                                         to="/me/profile"
                                         onClick={() => setOpenMenu(false)}
                                         className={menuItemStyle}
-                                        icon={<User strokeWidth={1.5} size={20} className={iconStyle} />}
+                                        icon={<User strokeWidth={1.5} size={18} className={iconStyle} />}
                                         label={<span className={textStyle}>{t("menu.profile", "Perfil")}</span>}
                                     />
                                 </div>
@@ -166,7 +166,7 @@ export default function DashboardLayout() {
                                         to="/me/financial"
                                         onClick={() => setOpenMenu(false)}
                                         className={menuItemStyle}
-                                        icon={<Wallet strokeWidth={1.5} size={20} className={iconStyle} />}
+                                        icon={<Wallet strokeWidth={1.5} size={18} className={iconStyle} />}
                                         label={<span className={textStyle}>{t("menu.financial", "Financeiro")}</span>}
                                     />
                                 </div>
@@ -189,7 +189,7 @@ export default function DashboardLayout() {
                                     to="/faq"
                                     onClick={() => setOpenMenu(false)}
                                     className={menuItemStyle}
-                                    icon={<BadgeQuestionMark strokeWidth={1.5} size={20} className={iconStyle} />}
+                                    icon={<BadgeQuestionMark strokeWidth={1.5} size={18} className={iconStyle} />}
                                     label={<span className={textStyle}>{t("menu.faq", "Perguntas frequentes")}</span>}
                                 />
                             </div>
@@ -198,7 +198,7 @@ export default function DashboardLayout() {
                                     to="/fale-conosco"
                                     onClick={() => setOpenMenu(false)}
                                     className={menuItemStyle}
-                                    icon={<MessagesSquare strokeWidth={1.5} size={20} className={iconStyle} />}
+                                    icon={<MessagesSquare strokeWidth={1.5} size={18} className={iconStyle} />}
                                     label={<span className={textStyle}>{t("menu.contact", "Fale conosco")}</span>}
                                 />
                             </div>
@@ -213,7 +213,7 @@ export default function DashboardLayout() {
                 <div className="mt-8 pt-4 border-t border-gray-100">
                     <button onClick={logout} className={`${menuItemStyle} hover:!bg-red-50 hover:!border-red-100 hover:!shadow-red-500/5`}>
                         <div className="flex items-center gap-3">
-                            <LogOut strokeWidth={1.5} size={20} className="text-gray-400 group-hover:text-red-500 transition-all duration-300 group-hover:scale-110" />
+                            <LogOut strokeWidth={1.5} size={18} className="text-gray-400 group-hover:text-red-500 transition-all duration-300 group-hover:scale-110" />
                             <span className="text-sm font-medium text-[#4E4E4F] group-hover:text-red-600 transition-colors">{t("menu.logout", "Sair")}</span>
                         </div>
                     </button>
@@ -226,7 +226,7 @@ export default function DashboardLayout() {
         <div className="lg:flex overflow-y-scroll w-full h-screen bg-[#F6F5FA]">
 
             {/* --- SIDEBAR CONTAINER --- */}
-            <div className="lg:border-r lg:relative top-0 lg:w-[300px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
+            <div className="lg:border-r lg:relative top-0 lg:w-[260px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
 
                 {/* ── HEADER MOBILE ── */}
                 <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
@@ -281,14 +281,14 @@ export default function DashboardLayout() {
                         <div className="lg:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setOpenMenu(false)} />
                         <div
                             ref={menuRef}
-                            className="lg:w-[300px] lg:border-r fixed top-0 left-0 z-50 bg-[#F6F5FA] lg:bg-white h-screen w-3/4 flex flex-col gap-2 items-center justify-start transition-transform duration-300 overflow-y-scroll"
+                            className="lg:w-[260px] lg:border-r fixed top-0 left-0 z-50 bg-[#F6F5FA] lg:bg-white h-screen w-3/4 flex flex-col gap-2 items-center justify-start transition-transform duration-300 overflow-y-scroll"
                             style={{ transform: `translateX(${translateX}px)` }}
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
                         >
-                            <div className="w-full flex flex-col items-start p-3">
-                                <div className="hidden lg:flex w-full flex justify-between items-center mb-4">
+                            <div className="w-full flex flex-col items-start">
+                                <div className="hidden lg:flex lg:px-6 lg:pt-4 lg:pb-0 w-full flex justify-between items-center mb-4">
                                     <img src={brand} alt="Brand" className="w-full lg:max-w-[180px]" />
                                     <CircleX className="lg:hidden cursor-pointer" onClick={() => setOpenMenu(false)} strokeWidth={1} size={24} color="#BA7FFF" />
                                 </div>
@@ -310,7 +310,7 @@ export default function DashboardLayout() {
             </div>
 
             {/* --- CONTEÚDO PRINCIPAL (HEADER ORIGINAL) --- */}
-            <div className="lg:w-[calc(100%-300px)] bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:overflow-y-auto lg:px-10 w-full px-4">
+            <div className="lg:w-[calc(100%-260px)] bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:overflow-y-auto lg:px-10 w-full px-4">
 
                 <header className="hidden lg:flex items-center justify-between mb-10 sticky top-0 bg-[#F6F5FA] z-30 py-4">
 
@@ -334,7 +334,7 @@ export default function DashboardLayout() {
                                             <img src={user.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                                                <User size={20} className="text-gray-500" />
+                                                <User size={18} className="text-gray-500" />
                                             </div>
                                         )}
                                     </div>
@@ -390,6 +390,6 @@ export default function DashboardLayout() {
                 {/* Menu Fixo Mobile */}
                 <FixedMenu />
             </div>
-        </div>
+        </div >
     );
 }

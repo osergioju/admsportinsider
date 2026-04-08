@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useContext } from "react";
-import { Home, Shield, Trophy, User } from "lucide-react";
+import { Home, Shield, Trophy, PersonStanding, Globe } from "lucide-react";
 import { AuthContext } from "../../context/AuthContext";
 
 export default function FixedMenu() {
@@ -29,11 +29,17 @@ export default function FixedMenu() {
       active: isActive("/dashboard/leagues") || isActive("/dashboard/league/"),
     },
     {
-      to: user ? "/me/profile" : "/login",
-      icon: User,
-      label: user ? "Perfil" : "Entrar",
-      active: isActive("/me/profile") || location.pathname === "/login",
+      to: "/dashboard/players",
+      icon: PersonStanding,
+      label: "Jogadores",
+      active: isActive("/dashboard/players") || isActive("/dashboard/players/"),
     },
+    {
+      to: "/dashboard/countries",
+      icon: Globe,
+      label: "Países",
+      active: isActive("/dashboard/countries") || isActive("/dashboard/countries/"),
+    }
   ];
 
   return (
@@ -51,9 +57,8 @@ export default function FixedMenu() {
               className={active ? "text-[#7F33D9]" : "text-gray-400"}
             />
             <span
-              className={`text-[10px] font-semibold tracking-wide ${
-                active ? "text-[#7F33D9]" : "text-gray-400"
-              }`}
+              className={`text-[10px] font-semibold tracking-wide ${active ? "text-[#7F33D9]" : "text-gray-400"
+                }`}
             >
               {label}
             </span>
