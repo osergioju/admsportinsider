@@ -98,7 +98,7 @@ export default function FrontPage() {
                 </div>
             </div>
 
-            <div className="w-full bg-white bg-gradient-home relative mt-20">
+            <div className="w-full bg-white bg-gradient-home relative mt-10 lg:mt-20 px-4">
                 <img className="hidden mx-auto w-full max-w-[600px] lg:max-w-[800px] lg:-mt-20" src={Blackout} alt="Blackout"></img>
                 <img className="hidden mx-auto w-full max-w-[1200px] -mt-26" src={Tela} alt="Tela"></img>
                 <video
@@ -107,7 +107,7 @@ export default function FrontPage() {
                     autoPlay
                     loop
                     playsInline
-                    className="mx-auto overflow-hidden rounded-xl max-w-[1200px]"
+                    className="w-full mx-auto overflow-hidden rounded-xl max-w-[1200px]"
                 />
             </div>
 
