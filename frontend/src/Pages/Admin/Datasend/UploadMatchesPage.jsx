@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { api } from "../../../services/api";
 import {
   Loader2, UploadCloud, Trophy, ArrowRight, CheckCircle2,
   AlertTriangle, ChevronRight, XCircle,
 } from "lucide-react";
+import SearchableSelect from "../../../components/uxui/SearchableSelect";
 
 const selectClass =
   "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7F33D9] transition-all font-light";
@@ -90,6 +91,24 @@ export default function UploadMatchesPage() {
         .map(([id, name]) => ({ id, name }))
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
+
+  // Clubes agrupados por país para o SearchableSelect
+  const clubsGrouped = useMemo(() => {
+    if (!preview?.allClubs) return [];
+    const byCountry = new Map();
+    for (const c of preview.allClubs) {
+      const key = c.country_name ?? "—";
+      if (!byCountry.has(key)) byCountry.set(key, []);
+      byCountry.get(key).push({
+        value: String(c.id_club),
+        label: c.name,
+        image: c.crest_url || undefined,
+      });
+    }
+    return [...byCountry.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "pt"))
+      .map(([groupLabel, options]) => ({ groupLabel, options }));
+  }, [preview?.allClubs]);
 
   const filteredLeagues = preview
     ? (selectedCountry ? preview.leagues.filter(l => String(l.id_country) === selectedCountry) : preview.leagues)
@@ -208,20 +227,20 @@ export default function UploadMatchesPage() {
                 </p>
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {preview.notFoundTeams.map(csvName => (
-                    <div key={csvName} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        {clubMappings[csvName] ? <CheckCircle2 size={14} className="text-green-500 shrink-0" /> : <XCircle size={14} className="text-amber-400 shrink-0" />}
-                        <span className="text-xs font-mono text-gray-600 truncate">{csvName}</span>
+                    <div key={csvName} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        {clubMappings[csvName]
+                          ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+                          : <XCircle size={13} className="text-amber-400 shrink-0" />}
+                        <span className="text-xs font-mono font-semibold text-gray-700 truncate">{csvName}</span>
+                        <ArrowRight size={11} className="text-gray-300 shrink-0 ml-auto" />
                       </div>
-                      <ArrowRight size={12} className="text-gray-300 shrink-0" />
-                      <select
+                      <SearchableSelect
+                        grouped={clubsGrouped}
                         value={clubMappings[csvName] || ""}
-                        onChange={e => setClubMap(csvName, e.target.value)}
-                        className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#7F33D9]"
-                      >
-                        <option value="">— ignorar —</option>
-                        {preview.allClubs.map(c => <option key={c.id_club} value={c.id_club}>{c.name}</option>)}
-                      </select>
+                        onChange={val => setClubMap(csvName, val)}
+                        placeholder="Buscar clube... (deixar vazio = ignorar)"
+                      />
                     </div>
                   ))}
                 </div>

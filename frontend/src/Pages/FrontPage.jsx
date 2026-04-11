@@ -63,16 +63,19 @@ export default function FrontPage() {
             <div className="w-full flex justify-center pt-8 px-4 sm:px-6 lg:px-8 z-20">
                 <div className="relative w-full max-w-[1740px] h-[68px] rounded-full flex justify-between items-center pl-4 lg:pl-12 pr-2 backdrop-blur-md border border-white/10 bg-gradient-to-l from-[#1C142F] via-[#3D315D] to-[#c53ed40] to-transparent">
                     <div className="flex items-center gap-3">
-                        <img
-                            src={SportinsiderIcon}
-                            alt="Logo Sportinsider"
-                            className="w-36 lg:w-44 xl:w-50 h-auto"
-                        />
+                        <Link to="/">
+                            <img
+                                src={SportinsiderIcon}
+                                alt="Logo Sportinsider"
+                                className="w-36 lg:w-44 xl:w-50 h-auto"
+                            />
+                        </Link>
                     </div>
-                    <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
-                        <Link className="hidden" to="/dados"><div className="cursor-pointer hover:text-white transition-colors">Dados</div></Link>
-                        <Link className="hidden" to="/pricing"><div className="cursor-pointer hover:text-white transition-colors">Planos</div></Link>
-                        <Link className="hidden" to="/ajuda"><div className="cursor-pointer hover:text-white transition-colors">Ajuda</div></Link>
+                    <div className="lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
+                        <Link to="/dados"><div className="cursor-pointer hover:text-white transition-colors">METODOLOGIA</div></Link>
+                        <Link to="/pricing"><div className="cursor-pointer hover:text-white transition-colors">PLANOS</div></Link>
+                        <Link to="/dashboard-public"><div className="cursor-pointer hover:text-white transition-colors">TESTE GRÁTIS</div></Link>
+                        <Link to="/register"><div className="cursor-pointer hover:text-white transition-colors">COMEÇAR AGORA</div></Link>
                     </div>
                     <div className="flex items-center">
                         <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 py-3 text-sm sm:px-5 sm:py-3 sm:text-sm sm:mr-0 flex items-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all lg:text-lg" to="/login">

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../../../services/api";
+import { useTranslation } from "../../../context/TranslationContext";
 
 /* ───────────────── Card ───────────────── */
 
 const NotaCard = ({ nota }) => {
+  const { t } = useTranslation();
   const { title, slug, featuredImage } = nota;
   const cover = featuredImage?.node?.sourceUrl;
   const altText = featuredImage?.node?.altText;
@@ -20,7 +22,7 @@ const NotaCard = ({ nota }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs font-medium tracking-widest uppercase">
-            Nota
+            {t("notes.label", "Nota")}
           </div>
         )}
 
@@ -42,11 +44,11 @@ const NotaCard = ({ nota }) => {
             className="block text-center w-full py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs font-medium hover:bg-white hover:text-[#7f34d9] transition-all duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            Acessar nota
+            {t("notes.access", "Acessar nota")}
           </a>
         ) : (
           <div className="w-full py-2 rounded-full bg-white/10 text-white/40 text-xs text-center">
-            Indisponível
+            {t("ui.unavailable", "Indisponível")}
           </div>
         )}
       </div>
@@ -65,6 +67,7 @@ const SkeletonCard = () => (
 /* ───────────────── Seção ───────────────── */
 
 export default function NotasSection() {
+  const { t } = useTranslation();
   const [notas, setNotas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -110,10 +113,10 @@ export default function NotasSection() {
           <div className="w-1 h-6 rounded-full bg-[#7f34d9]" />
           <div>
             <h2 className="text-lg font-medium text-[#0A0A0A] leading-tight">
-              Notas
+              {t("notes.title", "Notas")}
             </h2>
             <p className="text-xs text-[#AFAFB2] mt-0.5">
-              Análises e conteúdos exclusivos
+              {t("notes.subtitle", "Análises e conteúdos exclusivos")}
             </p>
           </div>
         </div>
@@ -121,7 +124,7 @@ export default function NotasSection() {
         {!loading && !error && notas.length > 0 && (
           <span className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full text-xs font-medium text-gray-500">
             <span className="w-1.5 h-1.5 rounded-full bg-[#7f34d9]" />
-            {notas.length} {notas.length === 1 ? "nota" : "notas"}
+            {notas.length} {notas.length === 1 ? t("notes.singular", "nota") : t("notes.plural", "notas")}
           </span>
         )}
       </div>
@@ -135,14 +138,14 @@ export default function NotasSection() {
               onClick={handleRetry}
               className="px-5 py-2 rounded-full bg-[#7f34d9] text-white text-sm hover:bg-[#6b28bf] transition"
             >
-              Tentar novamente
+              {t("ui.try_again", "Tentar novamente")}
             </button>
           </div>
         ) : loading ? (
           Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
         ) : notas.length === 0 ? (
           <div className="col-span-full bg-white p-10 rounded-2xl border border-gray-100 text-center text-sm text-gray-400">
-            Nenhuma nota disponível no momento.
+            {t("notes.none_available", "Nenhuma nota disponível no momento.")}
           </div>
         ) : (
           notas.map((nota) => <NotaCard key={nota.id} nota={nota} />)
@@ -157,7 +160,7 @@ export default function NotasSection() {
             disabled={loadingMore}
             className="px-8 py-2.5 rounded-full border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:border-[#7f34d9] hover:text-[#7f34d9] transition-all disabled:opacity-50"
           >
-            {loadingMore ? "Carregando…" : "Ver mais notas"}
+            {loadingMore ? "Carregando…" : t("notes.see_more", "Ver mais notas")}
           </button>
         </div>
       )}

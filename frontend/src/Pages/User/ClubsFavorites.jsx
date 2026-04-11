@@ -26,10 +26,15 @@ export default function ClubsFavorites() {
 
       try {
         setLoading(true);
-        const responses = await Promise.all(
+        const responses = await Promise.allSettled(
           clubFavs.map((f) => api.get(`/admin/clubs/${f.entity_id}`))
         );
-        setClubs(responses.map((r) => r.data.club || r.data));
+
+        const validClubs = responses
+          .filter((r) => r.status === "fulfilled")
+          .map((r) => r.value.data.club || r.value.data);
+
+        setClubs(validClubs);
       } catch (err) {
         console.error("Erro ao buscar clubes favoritos:", err);
       } finally {

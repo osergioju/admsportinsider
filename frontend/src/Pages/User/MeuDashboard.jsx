@@ -1,7 +1,10 @@
+import { useTranslation } from "../../context/TranslationContext";
+
 export default function MeuDashboard() {
+    const { t } = useTranslation();
     return (
         <div>
-                Olá
+                {t("dashboard.greeting", "Olá")}
         </div>
     )
 }

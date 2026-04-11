@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { ChevronLeft, ChevronRight, Search, X, Heart } from "lucide-react";
 import { useFavorites } from "../../../hooks/useFavorites";
+import { useTranslation } from "../../../context/TranslationContext";
 
 const PAGE_SIZE = 24;
 
@@ -139,6 +140,7 @@ function ClubCard({ club, isFavorited, toggleFavorite }) {
 // ─── Card de país ─────────────────────────────────────────────────────────────
 
 function CountryCard({ country, count, onClick }) {
+  const { t } = useTranslation();
   return (
     <button onClick={onClick} className="group text-left w-full">
       <div className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-3 hover:border-[#7F33D9]/40 hover:shadow-sm transition-all duration-200">
@@ -151,7 +153,7 @@ function CountryCard({ country, count, onClick }) {
             {country.name}
           </p>
           <p className="text-[11px] text-gray-400 mt-0.5">
-            {Number(count).toLocaleString("pt-BR")} {count === 1 ? "clube" : "clubes"}
+            {Number(count).toLocaleString("pt-BR")} {count === 1 ? t("clubs.singular", "clube") : t("clubs.plural", "clubes")}
           </p>
         </div>
         <ChevronRight size={14} className="text-gray-300 group-hover:text-[#7F33D9] transition-colors flex-shrink-0" />
@@ -164,6 +166,7 @@ function CountryCard({ country, count, onClick }) {
 
 export default function DashClubs() {
   const { isFavorited, toggleFavorite } = useFavorites();
+  const { t } = useTranslation();
 
   const [countries, setCountries]             = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
@@ -261,7 +264,7 @@ export default function DashClubs() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Buscar clube…"
+              placeholder={t("clubs.search_placeholder", "Buscar clube…")}
               className="w-full pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-full bg-[#fafaf8] focus:outline-none focus:ring-2 focus:ring-[#7F33D9]/20 focus:border-[#7F33D9] transition"
             />
             {searchInput && (
@@ -281,7 +284,7 @@ export default function DashClubs() {
             }}
             className="sm:w-52 px-4 py-2.5 text-sm border border-gray-200 rounded-full bg-[#fafaf8] focus:outline-none focus:ring-2 focus:ring-[#7F33D9]/20 focus:border-[#7F33D9] transition"
           >
-            <option value="">Todos os países</option>
+            <option value="">{t("ui.all_countries", "Todos os países")}</option>
             {clubCountries.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -303,7 +306,7 @@ export default function DashClubs() {
               </span>
             )}
             <button onClick={handleClearAll} className="text-xs text-gray-400 hover:text-gray-600 ml-auto underline underline-offset-2">
-              Limpar tudo
+              {t("ui.clear_all", "Limpar tudo")}
             </button>
           </div>
         )}
@@ -313,7 +316,7 @@ export default function DashClubs() {
       {!inResultsView && (
         <div>
           <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
-            Explorar por país
+            {t("ui.explore_by_country", "Explorar por país")}
           </p>
 
           {countriesLoading ? (
@@ -348,7 +351,7 @@ export default function DashClubs() {
                 className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#7F33D9] transition font-medium"
               >
                 <ChevronLeft size={16} />
-                Voltar
+                {t("ui.back", "Voltar")}
               </button>
               <div className="w-px h-4 bg-gray-200" />
               {selectedCountry && (
@@ -361,7 +364,7 @@ export default function DashClubs() {
               )}
               {!loading && (
                 <span className="text-sm text-gray-400">
-                  {total.toLocaleString("pt-BR")} {total === 1 ? "clube" : "clubes"}
+                  {total.toLocaleString("pt-BR")} {total === 1 ? t("clubs.singular", "clube") : t("clubs.plural", "clubes")}
                 </span>
               )}
             </div>
@@ -375,13 +378,13 @@ export default function DashClubs() {
           ) : clubs.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
               <p className="text-2xl mb-3 opacity-30">🏟️</p>
-              <p className="text-gray-500 text-sm font-medium mb-1">Nenhum clube encontrado</p>
-              <p className="text-gray-400 text-xs mb-5">Tente outros termos ou limpe os filtros</p>
+              <p className="text-gray-500 text-sm font-medium mb-1">{t("clubs.not_found", "Nenhum clube encontrado")}</p>
+              <p className="text-gray-400 text-xs mb-5">{t("clubs.try_other_terms", "Tente outros termos ou limpe os filtros")}</p>
               <button
                 onClick={handleClearAll}
                 className="px-5 py-2 rounded-full border border-gray-200 text-sm text-gray-600 hover:border-[#7F33D9] hover:text-[#7F33D9] transition"
               >
-                Limpar filtros
+                {t("ui.clear_filters", "Limpar filtros")}
               </button>
             </div>
           ) : (

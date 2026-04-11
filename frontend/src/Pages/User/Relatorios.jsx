@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../../services/api";
+import { useTranslation } from "../../context/TranslationContext";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -14,6 +15,7 @@ const formatDate = (dateString) => {
 /* ───────────────── Card ───────────────── */
 
 const RelatorioCard = ({ relatorio }) => {
+  const { t } = useTranslation();
   const { id, title, uri, featuredImage } = relatorio;
   const cover = featuredImage?.node?.sourceUrl;
 
@@ -30,7 +32,7 @@ const RelatorioCard = ({ relatorio }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm font-medium">
-            PDF
+            {t("reports.pdf_label", "PDF")}
           </div>
         )}
       </div>
@@ -51,11 +53,11 @@ const RelatorioCard = ({ relatorio }) => {
               rel="noopener noreferrer"
               className="block text-center w-full py-2.5 rounded-lg bg-black text-white text-sm font-medium hover:bg-gray-800 transition"
             >
-              Baixar PDF
+              {t("reports.download_pdf", "Baixar PDF")}
             </a>
           ) : (
             <div className="w-full py-2.5 rounded-lg bg-gray-200 text-gray-500 text-sm text-center font-medium">
-              Indisponível
+              {t("ui.unavailable", "Indisponível")}
             </div>
           )}
         </div>
@@ -81,6 +83,7 @@ const SkeletonCard = () => (
 /* ───────────────── Página ───────────────── */
 
 export default function Relatorios() {
+  const { t } = useTranslation();
   const [relatorios, setRelatorios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -130,17 +133,17 @@ export default function Relatorios() {
       <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-8 gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900">
-            Relatórios
+            {t("reports.title", "Relatórios")}
           </h1>
           <p className="text-sm text-gray-500">
-            Análises e documentos exclusivos disponíveis para download
+            {t("reports.subtitle", "Análises e documentos exclusivos disponíveis para download")}
           </p>
         </div>
 
         {!loading && !error && relatorios.length > 0 && (
           <div className="inline-flex items-center gap-2 bg-gray-100 px-4 py-1.5 rounded-full text-xs font-medium text-gray-700">
             <span className="w-2 h-2 bg-black rounded-full" />
-            {relatorios.length} relatório{relatorios.length !== 1 && "s"}
+            {relatorios.length} {relatorios.length === 1 ? t("reports.singular", "relatório") : t("reports.singular", "relatório") + "s"}
           </div>
         )}
       </div>
@@ -154,14 +157,14 @@ export default function Relatorios() {
               onClick={handleRetry}
               className="px-5 py-2 rounded-lg bg-black text-white text-sm hover:bg-gray-800 transition"
             >
-              Tentar novamente
+              {t("ui.try_again", "Tentar novamente")}
             </button>
           </div>
         ) : loading ? (
           Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
         ) : relatorios.length === 0 ? (
           <div className="col-span-full bg-white p-10 rounded-2xl border text-center text-gray-500">
-            Nenhum relatório disponível no momento.
+            {t("reports.none_available", "Nenhum relatório disponível no momento.")}
           </div>
         ) : (
           relatorios.map((rel) => (
@@ -178,7 +181,7 @@ export default function Relatorios() {
             disabled={loadingMore}
             className="px-8 py-3 rounded-full border border-gray-300 bg-white text-sm font-medium hover:border-black hover:bg-black hover:text-white transition disabled:opacity-50"
           >
-            {loadingMore ? "Carregando..." : "Ver mais relatórios"}
+            {loadingMore ? "Carregando..." : t("reports.see_more", "Ver mais relatórios")}
           </button>
         </div>
       )}

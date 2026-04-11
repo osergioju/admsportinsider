@@ -1,4 +1,4 @@
-import db from  "../config/db.js";
+import db from "../config/db.js";
 import bcrypt from "bcryptjs";
 
 
@@ -307,20 +307,20 @@ export const updatePreferences = async (req, res) => {
       region_id: row.region_id,
       region: row.region_id
         ? {
-            id: row.region_id,
-            code: row.region_code,
-            name: row.region_name
-          }
+          id: row.region_id,
+          code: row.region_code,
+          name: row.region_name
+        }
         : null,
 
       currency_id: row.currency_id,
       currency: row.currency_id
         ? {
-            id: row.currency_id,
-            code: row.currency_code,
-            name: row.currency_name,
-            symbol: row.currency_symbol
-          }
+          id: row.currency_id,
+          code: row.currency_code,
+          name: row.currency_name,
+          symbol: row.currency_symbol
+        }
         : null
     };
 

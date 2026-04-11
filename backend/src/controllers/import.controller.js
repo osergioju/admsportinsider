@@ -185,7 +185,9 @@ export async function importMatches(req, res) {
     }
 
     /* ------------------------------------------------------------------
-       BULK INSERT matches + match_stats using a CTE
+       BULK INSERT matches + match_stats
+       — rows com game_week usam a constraint uq_match
+       — rows sem game_week (mata-mata, copa) usam o índice parcial por timestamp
     ------------------------------------------------------------------ */
 
     let inserted = 0;
@@ -193,35 +195,43 @@ export async function importMatches(req, res) {
     const MATCH_COLS = 13;
     const STATS_COLS = 18; // 14 base + 4 extended (xG pre, ht goals)
 
-    for (const chunkRows of chunk(matchRows, 100)) {
+    // Separa em dois grupos para usar o conflict target correto
+    const rowsWithGW    = matchRows.filter(r => r[10] != null); // game_week = col 10
+    const rowsWithoutGW = matchRows.filter(r => r[10] == null);
+
+    const MATCH_UPDATE = `
+      match_timestamp = EXCLUDED.match_timestamp,
+      match_date      = EXCLUDED.match_date,
+      home_goals      = EXCLUDED.home_goals,
+      away_goals      = EXCLUDED.away_goals,
+      status          = EXCLUDED.status,
+      attendance      = EXCLUDED.attendance,
+      referee         = EXCLUDED.referee,
+      stadium_name    = EXCLUDED.stadium_name
+    `;
+
+    const insertMatchChunk = async (chunkRows, conflictClause) => {
       const matchParams = chunkRows.map(r => r.slice(0, MATCH_COLS)).flat();
       const matchValues = buildValues(chunkRows.length, MATCH_COLS);
 
-      const matchInsertRes = await client.query(`
+      const res = await client.query(`
         INSERT INTO matches (
           id_league, id_season, home_club_id, away_club_id,
           match_timestamp, match_date, status, attendance,
           referee, stadium_name, game_week, home_goals, away_goals
         )
         VALUES ${matchValues}
-        ON CONFLICT (id_league, id_season, home_club_id, away_club_id, game_week)
-        DO UPDATE SET
-          match_timestamp = EXCLUDED.match_timestamp,
-          match_date      = EXCLUDED.match_date,
-          home_goals      = EXCLUDED.home_goals,
-          away_goals      = EXCLUDED.away_goals,
-          status          = EXCLUDED.status,
-          attendance      = EXCLUDED.attendance,
-          referee         = EXCLUDED.referee,
-          stadium_name    = EXCLUDED.stadium_name
+        ${conflictClause}
         RETURNING id_match
       `, matchParams);
 
-      const matchIds = matchInsertRes.rows.map(r => r.id_match);
+      return res.rows.map(r => r.id_match);
+    };
 
-      const statsRows = chunkRows.map((r, i) => [matchIds[i], ...r.slice(MATCH_COLS)]);
+    const insertStatsChunk = async (chunkRows, matchIds) => {
+      const statsRows   = chunkRows.map((r, i) => [matchIds[i], ...r.slice(MATCH_COLS)]);
       const statsParams = statsRows.flat();
-      const statsValues = buildValues(statsRows.length, STATS_COLS + 1); // +1 for id_match
+      const statsValues = buildValues(statsRows.length, STATS_COLS + 1);
 
       await client.query(`
         INSERT INTO match_stats (
@@ -257,8 +267,37 @@ export async function importMatches(req, res) {
           home_goals_ht          = EXCLUDED.home_goals_ht,
           away_goals_ht          = EXCLUDED.away_goals_ht
       `, statsParams);
+    };
 
+    // Grupo 1: com game_week → constraint uq_match
+    for (const chunkRows of chunk(rowsWithGW, 100)) {
+      const conflict = `ON CONFLICT (id_league, id_season, home_club_id, away_club_id, game_week) DO UPDATE SET ${MATCH_UPDATE}`;
+      const matchIds = await insertMatchChunk(chunkRows, conflict);
+      await insertStatsChunk(chunkRows, matchIds);
       inserted += chunkRows.length;
+    }
+
+    // Grupo 2: sem game_week (mata-mata/copa) → índice parcial por timestamp
+    for (const chunkRows of chunk(rowsWithoutGW, 100)) {
+      // Separa linhas com e sem timestamp (sem timestamp não tem como deduplicar → INSERT simples)
+      const withTs    = chunkRows.filter(r => r[4] != null); // match_timestamp = col 4
+      const withoutTs = chunkRows.filter(r => r[4] == null);
+
+      if (withTs.length) {
+        // Sem game_week: usa DO NOTHING para segurança.
+        // Para upsert completo em reimport, criar o índice em migration_match_timestamp_index.sql
+        const matchIds = await insertMatchChunk(withTs, `ON CONFLICT DO NOTHING`);
+        await insertStatsChunk(withTs, matchIds);
+        inserted += withTs.length;
+      }
+
+      if (withoutTs.length) {
+        // Nenhuma chave disponível — insere com ON CONFLICT DO NOTHING para evitar erro
+        const conflict = `ON CONFLICT DO NOTHING`;
+        const matchIds = await insertMatchChunk(withoutTs, conflict);
+        await insertStatsChunk(withoutTs, matchIds);
+        inserted += withoutTs.length;
+      }
     }
 
     await client.query("COMMIT");
@@ -283,16 +322,27 @@ export async function importMatches(req, res) {
 function normalizeDate(value) {
   if (!value || value === "N/A") return null;
 
-  // string: 19/04/2004
   if (typeof value === "string") {
-    const parts = value.split("/");
+    const trimmed = value.trim();
+
+    // ISO já pronto: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+
+    const parts = trimmed.split("/");
     if (parts.length === 3) {
-      const [d, m, y] = parts;
-      return `${y}-${m}-${d}`;
+      if (parts[0].length === 4) {
+        // YYYY/MM/DD  — formato do CSV 2024
+        const [y, m, d] = parts;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+      } else {
+        // DD/MM/YYYY  — formato do CSV 2025
+        const [d, m, y] = parts;
+        return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+      }
     }
   }
 
-  // número Excel
+  // número Excel (serial date)
   if (typeof value === "number") {
     const date = new Date((value - 25569) * 86400 * 1000);
     return date.toISOString().split("T")[0];
@@ -358,59 +408,71 @@ export async function importPlayers(req, res) {
       }
 
       /* ------------------------------------------------------------------
-         AUTO-LINK clubs que vieram via clubMappings mas não têm
-         club_league_seasons ainda (foram pulados no importTeams por slug).
-         Para cada mapped DB-name não encontrado no mapa, cria a entrada.
+         AUTO-LINK: para cada par (clube, temporada) do CSV que não tem
+         club_league_seasons, cria a entrada — tanto para clubes mapeados
+         (clubMappings) quanto para clubes com nome já correto no banco.
       ------------------------------------------------------------------ */
-      if (Object.keys(clubMappings).length > 0) {
-        // Descobre quais anos de temporada aparecem no CSV
-        const csvSeasons = [...new Set(rows.map(r => r.season).filter(Boolean))];
+      {
+        // Resolve todos os nomes de clube do CSV para nomes no banco
+        const csvPairs = [...new Set(
+          rows
+            .filter(r => r["Current Club"] && r.season)
+            .map(r => {
+              const raw     = r["Current Club"].trim();
+              const dbName  = clubMappings[raw] ?? raw;
+              return `${dbName}||${r.season}`;
+            })
+        )].map(k => { const [n, s] = k.split("||"); return { dbName: n, seasonYear: Number(s) }; });
 
-        // Coleta nomes de DB que estão no mapeamento
-        const mappedDbNames = [...new Set(Object.values(clubMappings))];
+        // Filtra só os que ainda não estão no mapa
+        const missing = csvPairs.filter(({ dbName, seasonYear }) => !clubSeasonMap.has(`${dbName}__${seasonYear}`));
 
-        if (mappedDbNames.length > 0 && csvSeasons.length > 0) {
+        if (missing.length > 0) {
+          const allDbNames    = [...new Set(missing.map(m => m.dbName))];
+          const allSeasonYears = [...new Set(missing.map(m => m.seasonYear))];
+
           // Busca id_club pelos nomes
           const clubLookup = await client.query(
             `SELECT id_club, name FROM clubs WHERE name = ANY($1)`,
-            [mappedDbNames]
+            [allDbNames]
           );
           const clubNameToId = new Map(clubLookup.rows.map(c => [c.name, c.id_club]));
 
-          for (const seasonYear of csvSeasons) {
-            // Garante seasons row
+          // Cache de id_season por ano
+          const seasonIdCache = new Map();
+          for (const seasonYear of allSeasonYears) {
             const sRes = await client.query(
               `INSERT INTO seasons (year) VALUES ($1) ON CONFLICT (year) DO UPDATE SET year = EXCLUDED.year RETURNING id_season`,
               [seasonYear]
             );
-            const idSeason = sRes.rows[0].id_season;
+            seasonIdCache.set(seasonYear, sRes.rows[0].id_season);
 
-            // Garante competition_seasons
             await client.query(
               `INSERT INTO competition_seasons (id_league, id_season) VALUES ($1, $2) ON CONFLICT (id_league, id_season) DO NOTHING`,
-              [idLeague, idSeason]
+              [idLeague, sRes.rows[0].id_season]
+            );
+          }
+
+          for (const { dbName, seasonYear } of missing) {
+            const mapKey  = `${dbName}__${seasonYear}`;
+            if (clubSeasonMap.has(mapKey)) continue;
+
+            const idClub  = clubNameToId.get(dbName);
+            const idSeason = seasonIdCache.get(seasonYear);
+            if (!idClub || !idSeason) continue;
+
+            await client.query(
+              `INSERT INTO club_seasons (id_club, id_league, year, division) VALUES ($1, $2, $3, $4) ON CONFLICT (id_club, id_league, year) DO NOTHING`,
+              [idClub, idLeague, seasonYear, "1"]
             );
 
-            for (const dbName of mappedDbNames) {
-              const mapKey = `${dbName}__${seasonYear}`;
-              if (clubSeasonMap.has(mapKey)) continue; // já existe
+            const clsRes = await client.query(
+              `INSERT INTO club_league_seasons (id_club, id_league, id_season) VALUES ($1, $2, $3) ON CONFLICT (id_club, id_league, id_season) DO UPDATE SET id_club = EXCLUDED.id_club RETURNING id_club_league_season`,
+              [idClub, idLeague, idSeason]
+            );
 
-              const idClub = clubNameToId.get(dbName);
-              if (!idClub) continue;
-
-              // Cria club_seasons e club_league_seasons
-              await client.query(
-                `INSERT INTO club_seasons (id_club, id_league, year, division) VALUES ($1, $2, $3, $4) ON CONFLICT (id_club, id_league, year) DO NOTHING`,
-                [idClub, idLeague, seasonYear, "1"]
-              );
-
-              const clsRes = await client.query(
-                `INSERT INTO club_league_seasons (id_club, id_league, id_season) VALUES ($1, $2, $3) ON CONFLICT (id_club, id_league, id_season) DO UPDATE SET id_club = EXCLUDED.id_club RETURNING id_club_league_season`,
-                [idClub, idLeague, idSeason]
-              );
-
-              clubSeasonMap.set(mapKey, clsRes.rows[0].id_club_league_season);
-            }
+            clubSeasonMap.set(mapKey, clsRes.rows[0].id_club_league_season);
+            console.log(`[importPlayers] auto-created CLS: ${mapKey}`);
           }
         }
       }
@@ -432,7 +494,7 @@ export async function importPlayers(req, res) {
     }
 
     /* ------------------------------------------------------------------
-       PREPARE PLAYERS — deduplicate by (full_name + birthday)
+       PREPARE PLAYERS — deduplicate by full_name (unique constraint)
     ------------------------------------------------------------------ */
 
     const playersData = [];
@@ -443,7 +505,7 @@ export async function importPlayers(req, res) {
 
       const birthday = normalizeDate(row.birthday_GMT);
 
-      const dedupKey = `${row.full_name}__${birthday ?? "null"}`;
+      const dedupKey = row.full_name;
       if (seenPlayers.has(dedupKey)) continue;
       seenPlayers.add(dedupKey);
 
@@ -470,7 +532,10 @@ export async function importPlayers(req, res) {
       await client.query(`
         INSERT INTO players (full_name, birthday, nationality, position)
         VALUES ${values}
-        ON CONFLICT (full_name, birthday) DO NOTHING
+        ON CONFLICT (full_name) DO UPDATE
+          SET birthday    = COALESCE(EXCLUDED.birthday,    players.birthday),
+              position    = COALESCE(EXCLUDED.position,    players.position),
+              nationality = COALESCE(EXCLUDED.nationality, players.nationality)
       `, params);
     }
 
@@ -479,8 +544,7 @@ export async function importPlayers(req, res) {
     `);
     const playersMap = new Map();
     for (const p of insertedPlayersRes.rows) {
-      const key = `${p.full_name}__${p.birthday ?? "null"}`;
-      playersMap.set(key, p.id_player);
+      playersMap.set(p.full_name, p.id_player);
     }
 
     /* ------------------------------------------------------------------
@@ -505,7 +569,7 @@ export async function importPlayers(req, res) {
       if (!row.full_name) continue;
 
       const birthday = normalizeDate(row.birthday_GMT);
-      const playerKey = `${row.full_name}__${birthday ?? "null"}`;
+      const playerKey = row.full_name;
       const idPlayer = playersMap.get(playerKey);
 
       // Resolve nome do clube: usa mapeamento do usuário se fornecido
@@ -800,22 +864,27 @@ export async function importTeams(req, res) {
     const statsRows = [];
     const skipped = [];
     const matchedClubIds = [];
+    const resolvedLog = []; // para debug
 
     for (const row of rows) {
       const csvKey = row["common_name"] || row["team_name"] || "";
       const slug = slugify(csvKey, { lower: true, strict: true });
       let idClub = clubsMap.get(slug);
+      let resolvedVia = "slug";
 
       // Fallback: mapeamento manual enviado pelo usuário
       if (!idClub && clubMappings[csvKey] != null) {
         idClub = Number(clubMappings[csvKey]);
+        resolvedVia = "manual_mapping";
       }
 
       if (!idClub) {
         skipped.push(row["team_name"]);
+        console.warn(`[importTeams] ⚠️  não encontrado: "${csvKey}" (slug: "${slug}")`);
         continue;
       }
 
+      resolvedLog.push({ csvKey, idClub, via: resolvedVia });
       matchedClubIds.push(idClub);
 
       statsRows.push([
@@ -933,6 +1002,47 @@ export async function importTeams(req, res) {
         VALUES ${clsValues}
         ON CONFLICT (id_club, id_league, id_season) DO NOTHING
       `, clsParams);
+    }
+
+    /* ------------------------------------------------------------------
+       LOG de resolução CSV → id_club
+    ------------------------------------------------------------------ */
+
+    console.log(`[importTeams] ✅ ${resolvedLog.length} clube(s) resolvido(s), ${skipped.length} ignorado(s):`);
+    for (const r of resolvedLog) {
+      console.log(`  ${r.via === "manual_mapping" ? "🔧" : "🔍"} "${r.csvKey}" → id_club=${r.idClub} (via ${r.via})`);
+    }
+
+    /* ------------------------------------------------------------------
+       DETECTA duplicatas antes do INSERT para logar claramente
+    ------------------------------------------------------------------ */
+
+    const seenKeys = new Map(); // "compSeason__idClub" → csvName
+    const dupsFound = [];
+
+    for (const row of statsRows) {
+      const key = `${row[0]}__${row[1]}`;
+      if (seenKeys.has(key)) {
+        dupsFound.push({ key, first: seenKeys.get(key), second: row[2] ?? "?" });
+      } else {
+        seenKeys.set(key, row[2] ?? "?");
+      }
+    }
+
+    if (dupsFound.length > 0) {
+      console.error(`[importTeams] ❌ ${dupsFound.length} linha(s) duplicada(s) detectada(s) antes do INSERT:`);
+      for (const d of dupsFound) {
+        console.error(`  → id_competition_season=${d.key.split("__")[0]} id_club=${d.key.split("__")[1]}`);
+      }
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        error: "Duplicatas detectadas no arquivo",
+        duplicates: dupsFound.map(d => ({
+          id_competition_season: d.key.split("__")[0],
+          id_club:               d.key.split("__")[1],
+        })),
+      });
     }
 
     /* ------------------------------------------------------------------
@@ -1099,37 +1209,74 @@ export async function previewTeams(req, res) {
       .map(r => r.common_name || r.team_name || "")
       .filter(Boolean);
 
+    // Busca todos os clubes (com país e escudo) para o mapeamento
     const allClubsRes = await db.query(`
-      SELECT c.id_club, c.name, c.slug
+      SELECT c.id_club, c.name, c.slug, c.crest_url, co.name AS country_name
       FROM clubs c
-      JOIN countries co ON co.id_country = c.id_country
-      WHERE LOWER(co.name) = LOWER($1) AND c.active = true
-      ORDER BY c.name ASC
-    `, [csvCountry || ""]);
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE c.active = true
+      ORDER BY co.name ASC, c.name ASC
+    `);
 
-    // Se não encontrou clubes do país, traz todos
-    const clubsForCheck = allClubsRes.rows.length > 0
-      ? allClubsRes.rows
-      : (await db.query(`SELECT id_club, name, slug FROM clubs WHERE active = true ORDER BY name ASC`)).rows;
+    const allClubs = allClubsRes.rows;
+
+    // Para verificar found/notFound: prioriza clubes do país do CSV se houver
+    const clubsForCheck = csvCountry
+      ? allClubs.filter(c => c.country_name?.toLowerCase() === csvCountry.toLowerCase())
+      : allClubs;
+    const checkPool = clubsForCheck.length > 0 ? clubsForCheck : allClubs;
 
     const slugToId = new Map();
-    for (const c of clubsForCheck) {
+    for (const c of checkPool) {
       if (c.slug) slugToId.set(c.slug, c.id_club);
       slugToId.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
     }
 
-    const foundTeams = [];
+    const foundTeams    = [];
     const notFoundTeams = [];
+    const nameToClubId  = new Map(); // csvName → id_club (para detectar conflitos)
+
     for (const name of teamNames) {
-      const slug = slugify(name, { lower: true, strict: true });
-      if (slugToId.has(slug)) foundTeams.push(name);
-      else notFoundTeams.push(name);
+      const slug   = slugify(name, { lower: true, strict: true });
+      const idClub = slugToId.get(slug);
+      if (idClub) {
+        foundTeams.push(name);
+        nameToClubId.set(name, idClub);
+      } else {
+        notFoundTeams.push(name);
+      }
+    }
+
+    // Detecta conflitos: múltiplos nomes CSV resolvendo para o mesmo id_club
+    const clubIdToNames = new Map();
+    for (const [name, idClub] of nameToClubId) {
+      if (!clubIdToNames.has(idClub)) clubIdToNames.set(idClub, []);
+      clubIdToNames.get(idClub).push(name);
+    }
+
+    const duplicateConflicts = [];
+    for (const [idClub, names] of clubIdToNames) {
+      if (names.length > 1) {
+        const club = allClubs.find(c => c.id_club === idClub);
+        duplicateConflicts.push({
+          id_club:   idClub,
+          club_name: club?.name ?? String(idClub),
+          crest_url: club?.crest_url ?? null,
+          csv_names: names,
+        });
+      }
     }
 
     res.json({
       csvCountry, csvSeason, leagues: leaguesRes.rows,
       foundTeams, notFoundTeams,
-      allClubs: clubsForCheck.map(c => ({ id_club: c.id_club, name: c.name })),
+      duplicateConflicts,
+      allClubs: allClubs.map(c => ({
+        id_club:      c.id_club,
+        name:         c.name,
+        crest_url:    c.crest_url,
+        country_name: c.country_name ?? "—",
+      })),
     });
   } catch (err) {
     console.error("[previewTeams]", err);
@@ -1173,9 +1320,13 @@ export async function previewMatches(req, res) {
       ...rows.map(r => r.away_team_name).filter(Boolean),
     ])];
 
-    const allClubsRes = await db.query(
-      `SELECT id_club, name, slug FROM clubs WHERE active = true ORDER BY name ASC`
-    );
+    const allClubsRes = await db.query(`
+      SELECT c.id_club, c.name, c.slug, c.crest_url, co.name AS country_name
+      FROM clubs c
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE c.active = true
+      ORDER BY co.name ASC, c.name ASC
+    `);
 
     const slugToId = new Map();
     for (const c of allClubsRes.rows) {
@@ -1194,7 +1345,12 @@ export async function previewMatches(req, res) {
     res.json({
       detectedYear, rowCount: rows.length, leagues: leaguesRes.rows,
       foundTeams, notFoundTeams,
-      allClubs: allClubsRes.rows.map(c => ({ id_club: c.id_club, name: c.name })),
+      allClubs: allClubsRes.rows.map(c => ({
+        id_club:      c.id_club,
+        name:         c.name,
+        crest_url:    c.crest_url,
+        country_name: c.country_name ?? "—",
+      })),
     });
   } catch (err) {
     console.error("[previewMatches]", err);

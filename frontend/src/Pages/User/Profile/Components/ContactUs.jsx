@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "../../../../context/TranslationContext";
 import { 
   Mail, Phone, MapPin, Send, MessageCircle, 
   Facebook, Instagram, Linkedin, Twitter, 
@@ -9,6 +10,7 @@ import { api } from "../../../../services/api"
 import { useNavigate } from "react-router-dom";
 
 export default function ContactUs() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -86,7 +88,7 @@ const navigate = useNavigate();
            <div className="w-full h-50 sm:h-70 lg:h-80 relative rounded-[2rem] overflow-hidden group shadow-md bg-black">
                 <img 
                     src={banner2} 
-                    alt="Nossa Cultura" 
+                    alt={t("contact.culture_title", "Nossa Cultura")}
                     className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105 block opacity-90"
                 />
 
@@ -94,16 +96,16 @@ const navigate = useNavigate();
                 <div className="absolute bottom-0 left-0 w-full p-6 sm:p-8 flex flex-col justify-end z-10 text-left">
                     
                     <span className="text-[#C084FC] font-bold tracking-widest text-xs uppercase mb-2 block">
-                        Nossa Cultura
+                        {t("contact.culture_title", "Nossa Cultura")}
                     </span>
                     <h2 className="text-lg sm:text-2xl text-white drop-shadow-md">
-                        Conectando apaixonados por esporte em todo o mundo.
+                        {t("contact.culture_subtitle", "Conectando apaixonados por esporte em todo o mundo.")}
                     </h2>
                 </div>
             </div>
             {/* Barra de Redes Sociais */}
             <div className="bg-white rounded-[2rem] border border-gray-200 p-5 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 fill-mode-backwards" style={{ animationFillMode: 'both' }}>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2">Siga-nos</span>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2">{t("contact.follow_us", "Siga-nos")}</span>
                 <div className="flex gap-2">
                     {socialLinks.map(({ icon: Icon, url }, i) => (
                         <a
@@ -121,20 +123,20 @@ const navigate = useNavigate();
 
             {/* Grid de Contatos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-                <ContactCard 
+                <ContactCard
                     icon={Phone}
-                    title="WhatsApp"
-                    desc="Seg-Sex das 9h às 18h"
-                    info="+55 (11) 96629-5142"
+                    title={t("contact.whatsapp", "WhatsApp")}
+                    desc={t("contact.whatsapp_hours", "Seg-Sex das 9h às 18h")}
+                    info={t("contact.whatsapp_number", "+55 (11) 96629-5142")}
                     link="https://wa.me/5511966295142"
                     target="_blank"
                     delay={300}
                 />
-                <ContactCard 
+                <ContactCard
                     icon={Mail}
-                    title="E-mail"
-                    desc="Resposta em até 24h"
-                    info="suporte@sportinsider.com"
+                    title={t("contact.email_label", "E-mail")}
+                    desc={t("contact.email_response", "Resposta em até 24h")}
+                    info={t("contact.email_address", "suporte@sportinsider.com")}
                     link="mailto:suporte@sportinsider.com"
                     delay={500}
                 />
@@ -151,24 +153,24 @@ const navigate = useNavigate();
                 {!submitted ? (
                     <div className="relative z-10">
                         <div className="mb-10">
-                            <h2 className="text-4xl font-bold text-[#111] mb-3 tracking-tight">Fale Conosco</h2>
-                            <p className="text-gray-500 text-lg">Preencha o formulário e entraremos em contato.</p>
+                            <h2 className="text-4xl font-bold text-[#111] mb-3 tracking-tight">{t("contact.title", "Fale Conosco")}</h2>
+                            <p className="text-gray-500 text-lg">{t("contact.subtitle", "Preencha o formulário e entraremos em contato.")}</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div className="group">
-                                    <label className={labelClass}>Nome</label>
-                                    <input 
-                                        type="text" name="firstName" placeholder="Seu nome" 
+                                    <label className={labelClass}>{t("contact.name", "Nome")}</label>
+                                    <input
+                                        type="text" name="firstName" placeholder={t("contact.name_placeholder", "Seu nome")}
                                         className={inputClass} required
                                         value={formData.firstName} onChange={handleChange}
                                     />
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Sobrenome</label>
-                                    <input 
-                                        type="text" name="lastName" placeholder="Sobrenome" 
+                                    <label className={labelClass}>{t("contact.last_name", "Sobrenome")}</label>
+                                    <input
+                                        type="text" name="lastName" placeholder={t("contact.last_name", "Sobrenome")}
                                         className={inputClass} required
                                         value={formData.lastName} onChange={handleChange}
                                     />
@@ -177,17 +179,17 @@ const navigate = useNavigate();
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div>
-                                    <label className={labelClass}>E-mail Corporativo</label>
-                                    <input 
-                                        type="email" name="email" placeholder="voce@empresa.com" 
+                                    <label className={labelClass}>{t("contact.corporate_email", "E-mail Corporativo")}</label>
+                                    <input
+                                        type="email" name="email" placeholder={t("contact.corporate_email_placeholder", "voce@empresa.com")}
                                         className={inputClass} required
                                         value={formData.email} onChange={handleChange}
                                     />
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Telefone</label>
-                                    <input 
-                                        type="tel" name="phone" placeholder="+55 (11) 99999-0000" 
+                                    <label className={labelClass}>{t("contact.phone", "Telefone")}</label>
+                                    <input
+                                        type="tel" name="phone" placeholder={t("contact.phone_placeholder", "+55 (11) 99999-0000")}
                                         className={inputClass}
                                         value={formData.phone} onChange={handleChange}
                                     />
@@ -195,9 +197,9 @@ const navigate = useNavigate();
                             </div>
 
                             <div>
-                                <label className={labelClass}>Como podemos ajudar?</label>
-                                <textarea 
-                                    name="message" rows="4" placeholder="Conte-nos sobre seu projeto ou dúvida..." 
+                                <label className={labelClass}>{t("contact.message", "Como podemos ajudar?")}</label>
+                                <textarea
+                                    name="message" rows="4" placeholder={t("contact.message_placeholder", "Conte-nos sobre seu projeto ou dúvida...")}
                                     className={`${inputClass} resize-none`} required
                                     value={formData.message} onChange={handleChange}
                                 ></textarea>
@@ -212,11 +214,11 @@ const navigate = useNavigate();
                                     {isSubmitting ? (
                                         <>
                                             <Loader2 className="animate-spin" size={20} />
-                                            <span>Enviando...</span>
+                                            <span>{t("contact.sending", "Enviando...")}</span>
                                         </>
                                     ) : (
                                         <>
-                                            <span>Enviar Mensagem</span>
+                                            <span>{t("contact.send", "Enviar Mensagem")}</span>
                                             <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
                                         </>
                                     )}
@@ -224,7 +226,7 @@ const navigate = useNavigate();
                             </div>
                             
                             <p className="text-center text-xs text-gray-400 mt-4">
-                                Ao enviar, você concorda com nossa <a href="#" className="underline hover:text-[#7F33D9]">Política de Privacidade</a>.
+                                Ao enviar, você concorda com nossa <a href="#" className="underline hover:text-[#7F33D9]">{t("contact.privacy", "Política de Privacidade")}</a>.
                             </p>
                         </form>
                     </div>
@@ -238,9 +240,9 @@ const navigate = useNavigate();
                             </div>
                         </div>
                         
-                        <h3 className="text-3xl font-bold text-gray-900 mb-2 animate-in slide-in-from-bottom-2 duration-500 delay-100">Mensagem Recebida!</h3>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-2 animate-in slide-in-from-bottom-2 duration-500 delay-100">{t("contact.success_title", "Mensagem Recebida!")}</h3>
                         <p className="text-gray-500 max-w-sm mx-auto mb-8 animate-in slide-in-from-bottom-2 duration-500 delay-200">
-                            Obrigado, <strong>{formData.firstName}</strong>. Nossa equipe comercial entrará em contato em breve.
+                            {t("contact.success_thanks", "Obrigado,")} <strong>{formData.firstName}</strong>. {t("contact.success_text", "Nossa equipe comercial entrará em contato em breve.")}
                         </p>
                         
                         <button 
@@ -248,7 +250,7 @@ const navigate = useNavigate();
                             className="text-[#7F33D9] font-bold text-sm hover:text-[#6025A8] flex items-center gap-2 group animate-in slide-in-from-bottom-2 duration-500 delay-300"
                         >
                             <ArrowRight size={16} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
-                            Enviar outra mensagem
+                            {t("contact.send_another", "Enviar outra mensagem")}
                         </button>
                     </div>
                 )}

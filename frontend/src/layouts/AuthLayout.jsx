@@ -2,17 +2,17 @@ import { Outlet } from "react-router-dom";
 import LogoWatermark from "../assets/img/footer-logo.png"
 
 export default function AuthLayout() {
-  return (
-    <div className="min-h-screen w-full bg-black relative overflow-hidden flex flex-col justify-center items-center">
-      <div className="xl:w-180 xl:h-180 xl:blur-4xl blur-3xl lg:w-120 lg:h-120 w-100 h-100 bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] rounded-full absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
-      <div className="xl:blur-4xl blur-3xl lg:w-120 lg:h-120 w-100 h-100 bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] rounded-full absolute top-0 right-0 translate-x-1/2 -translate-y-1/2"></div>
-      <Outlet />
+    return (
+        <div className="min-h-screen w-full bg-black relative overflow-hidden flex flex-col justify-center items-center">
+            <div className="xl:w-180 xl:h-180 xl:blur-4xl blur-3xl lg:w-120 lg:h-120 w-100 h-100 bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] rounded-full absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+            <div className="xl:blur-4xl blur-3xl lg:w-120 lg:h-120 w-100 h-100 bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] rounded-full absolute top-0 right-0 translate-x-1/2 -translate-y-1/2"></div>
+            <Outlet />
 
-      {/* Rodapé */}
-      <footer className="w-full relative overflow-hidden pt-20 pb-8 mt-auto z-10 bg-gradient-to-b from-[#0C0718] to-[#3F257E]">
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[120%] h-[500px] opacity-20 pointer-events-none blur-[120px] z-0"></div>
-          <div className="container mx-auto px-6 relative z-10">
-              
+            {/* Rodapé */}
+            <footer className="w-full relative overflow-hidden pt-20 pb-8 mt-auto z-10 bg-gradient-to-b from-[#0C0718] to-[#3F257E]">
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[120%] h-[500px] opacity-20 pointer-events-none blur-[120px] z-0"></div>
+                <div className="container mx-auto px-6 relative z-10">
+                    {/*
               <div className="w-full">
                   <img 
                       src={LogoWatermark} 
@@ -61,14 +61,15 @@ export default function AuthLayout() {
                       </div>
                   </div>
               </div>
+              */}
 
-              <div className="w-full bg-[#FFFFFF0D] border border-[#FFFFFF33] rounded-full px-8 py-3 flex items-center justify-between text-xs text-[#FFFFFF99] backdrop-blur-md">
-                  <span>Sportinsider todos os direitos reservados</span>
-                  <span>2025</span>
-              </div>
-          </div>
-      </footer>
+                    <div className="w-full bg-[#FFFFFF0D] border border-[#FFFFFF33] rounded-full px-8 py-3 flex items-center justify-between text-xs text-[#FFFFFF99] backdrop-blur-md">
+                        <span>Sportinsider todos os direitos reservados</span>
+                        <span>2025</span>
+                    </div>
+                </div>
+            </footer>
 
-    </div>
-  );
+        </div>
+    );
 }

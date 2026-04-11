@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../../../services/api";
+import { useTranslation } from "../../../../context/TranslationContext";
 import { 
   HelpCircle, 
   Plus, 
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 export default function Faq() {
+  const { t } = useTranslation();
   const [openIndices, setOpenIndices] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [faqData, setFaqData] = useState([]);
@@ -36,8 +38,8 @@ export default function Faq() {
     <div className="max-w-4xl mx-auto">
       
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111]">Perguntas Frequentes</h1>
-        <p className="text-gray-500 text-sm mt-1">Tire suas dúvidas sobre a plataforma e funcionalidades.</p>
+        <h1 className="text-2xl font-bold text-[#111]">{t("faq.title", "Perguntas Frequentes")}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t("faq.subtitle", "Tire suas dúvidas sobre a plataforma e funcionalidades.")}</p>
       </div>
 
       <div className="relative mb-8">
@@ -46,7 +48,7 @@ export default function Faq() {
         </div>
         <input
           type="text"
-          placeholder="Buscar uma dúvida..."
+          placeholder={t("faq.search_placeholder", "Buscar uma dúvida...")}
           className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm text-[#111] placeholder-gray-400"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -59,7 +61,7 @@ export default function Faq() {
           <div className="w-10 h-10 rounded-full bg-[#7F33D9]/10 flex items-center justify-center">
               <HelpCircle size={20} className="text-[#7F33D9]" />
           </div>
-          <h2 className="text-lg font-semibold text-[#111]">Dúvidas Gerais</h2>
+          <h2 className="text-lg font-semibold text-[#111]">{t("faq.general_doubts", "Dúvidas Gerais")}</h2>
         </div>
 
         <div className="divide-y divide-gray-100">
@@ -98,7 +100,7 @@ export default function Faq() {
             })
           ) : (
             <div className="p-8 text-center text-gray-500 text-sm">
-              Nenhuma dúvida encontrada para "{searchTerm}".
+              {t("faq.not_found", "Nenhuma dúvida encontrada para")} "{searchTerm}".
             </div>
           )}
         </div>
@@ -110,12 +112,12 @@ export default function Faq() {
             <MessageCircle size={20} />
           </div>
           <div>
-            <h3 className="text-[#111] font-semibold text-sm">Ainda precisa de ajuda?</h3>
-            <p className="text-gray-500 text-xs">Nossa equipe de suporte responde em até 24h.</p>
+            <h3 className="text-[#111] font-semibold text-sm">{t("faq.need_help", "Ainda precisa de ajuda?")}</h3>
+            <p className="text-gray-500 text-xs">{t("faq.support_text", "Nossa equipe de suporte responde em até 24h.")}</p>
           </div>
         </div>
         <button className={btnPurpleClass}>
-          Falar com suporte
+          {t("faq.contact_support", "Falar com suporte")}
         </button>
       </div>
 

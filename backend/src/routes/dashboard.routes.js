@@ -4,6 +4,8 @@ import {
    getClubes,
    getRevenueEvolutionByLeague,
    getCountries,
+   countriesSearch,
+   playersSearch,
    getCountryDetail,
 
    // CLUBS
@@ -34,7 +36,7 @@ import {
 import { authGuard, optionalAuth } from "../middlewares/auth.middleware.js";
 
 import { createFavorite, listFavorites } from "../controllers/dashboardFavorites.controller.js";
-import { getClubCompetitions, getClubPlayers, getPlayerDetail, searchPlayers, getLeagueSports, getMatchDetail } from "../controllers/sports.controller.js";
+import { getClubCompetitions, getClubPlayers, getPlayerDetail, searchPlayers, getPlayerCountries, getLeagueSports, getMatchDetail } from "../controllers/sports.controller.js";
 import { financialContext } from "../middlewares/financialContext.middleware.js";
 import { clubsGroupedByCountry, clubsSearch, getClubById, getLeagueById, leaguesSearch } from "../controllers/admin.controller.js";
 
@@ -49,6 +51,7 @@ router.get("/clubes", optionalAuth, getClubes);
 
 // GET /dashboard/countries
 router.get("/countries", optionalAuth, getCountries);
+router.post("/countries/search", optionalAuth, countriesSearch);
 router.get("/countries/:id", optionalAuth, getCountryDetail);
 
 // GET /dashboard/receita
@@ -56,6 +59,9 @@ router.get("/receita", optionalAuth, getReceita);
 
 // GET /dashboard/ligas/receita
 router.get("/ligas/receita", optionalAuth, getRevenueEvolutionByLeague);
+
+// POST /busca jogadores
+router.post("/players/search", optionalAuth, playersSearch);
 
 
 /* ===============================
@@ -130,6 +136,9 @@ router.get("/leagues/:id/financials/available-years", optionalAuth, financialCon
 
 // Listagem global de jogadores
 router.get("/players", optionalAuth, searchPlayers);
+
+// Países com jogadores (deve ficar antes de /players/:id)
+router.get("/players/countries", optionalAuth, getPlayerCountries);
 
 // Competições + tabela + stats do clube
 router.get("/clubs/:id/sports/competitions", optionalAuth, getClubCompetitions);

@@ -57,11 +57,13 @@ export async function getAllLeagues(req, res) {
     const offset = (page - 1) * limit;
 
     const leaguesQuery = await db.query(`
-    SELECT 
+    SELECT
       l.id_league,
       l.name,
       l.description,
       l.logo_url,
+      l.format,
+      l.structure_json,
       l.created_at,
       l.id_country,
       c.name AS country_name,
@@ -164,6 +166,31 @@ export async function updateLeague(req, res) {
   }
 }
 
+export async function saveLeagueStructure(req, res) {
+  const { id } = req.params;
+  const { structure } = req.body;
+
+  if (!structure || typeof structure !== "object") {
+    return res.status(400).json({ message: "Estrutura inválida." });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE leagues SET structure_json = $1 WHERE id_league = $2 RETURNING id_league`,
+      [JSON.stringify(structure), id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Liga não encontrada." });
+    }
+
+    return res.json({ message: "Estrutura salva com sucesso!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao salvar estrutura da liga" });
+  }
+}
+
 export async function disableLeague(req, res) {
   const { id } = req.params;
 
@@ -245,7 +272,7 @@ export async function clubsSearch(req, res) {
     let idx = 1;
 
     if (name) {
-      whereClause += ` AND c.name ILIKE $${idx}`;
+      whereClause += ` AND unaccent(c.name) ILIKE unaccent($${idx})`;
       values.push(`%${name}%`);
       idx++;
     }
@@ -370,7 +397,7 @@ export async function leaguesSearch(req, res) {
     let idx = 1;
 
     if (name) {
-      whereClause += ` AND l.name ILIKE $${idx}`;
+      whereClause += ` AND unaccent(l.name) ILIKE unaccent($${idx})`;
       values.push(`%${name}%`);
       idx++;
     }

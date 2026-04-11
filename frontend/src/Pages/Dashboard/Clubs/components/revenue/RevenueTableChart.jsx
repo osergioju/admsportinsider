@@ -54,7 +54,7 @@ export default function RevenueTableChart({
 
   function formatMoney(value) {
     if (value === null || value === undefined) return "—";
-    return `R$ ${Number(value).toLocaleString("pt-BR")}`;
+    return `${Number(value).toLocaleString("pt-BR")}`;
   }
 
   if (!adapted || adapted.series.length === 0) {

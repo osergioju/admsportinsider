@@ -26,10 +26,15 @@ export default function LeaguesFavorites() {
 
       try {
         setLoading(true);
-        const responses = await Promise.all(
+        const responses = await Promise.allSettled(
           leagueFavs.map((f) => api.get(`/admin/leagues/${f.entity_id}`))
         );
-        setLeagues(responses.map((r) => r.data.league || r.data));
+
+        const validLeagues = responses
+          .filter((r) => r.status === "fulfilled")
+          .map((r) => r.value.data.league || r.value.data);
+
+        setLeagues(validLeagues);
       } catch (err) {
         console.error("Erro ao buscar ligas favoritas:", err);
       } finally {

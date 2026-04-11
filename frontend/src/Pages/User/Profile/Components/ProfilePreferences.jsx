@@ -1,10 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../../../context/AuthContext";
+import { useTranslation } from "../../../../context/TranslationContext";
 import { api } from "../../../../services/api";
 import { Check, AlertCircle, Loader2 } from "lucide-react";
 
 export default function ProfilePreferences() {
   const { user, updateUser } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   const [regions, setRegions] = useState([]);
   const [currencies, setCurrencies] = useState([]);
@@ -44,9 +46,9 @@ export default function ProfilePreferences() {
 
         // Preferências DEVEM vir do AuthContext
         if (!user.preferences) {
-          setError("Preferências do usuário não encontradas.");
+          setError(t("preferences.not_found", "Preferências não encontradas."));
           return;
-        } 
+        }
 
         setForm({
           email_notifications: !!user.email_notifications,
@@ -176,9 +178,9 @@ export default function ProfilePreferences() {
   return (
     <div className="w-full">
       <div className="mb-6 text-center sm:text-left">
-        <h1 className="text-xl font-bold text-[#111]">Preferências</h1>
+        <h1 className="text-xl font-bold text-[#111]">{t("preferences.title", "Preferências")}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Personalize notificações, região e moeda.
+          {t("preferences.subtitle", "Personalize notificações, região e moeda.")}
         </p>
       </div>
 
@@ -192,7 +194,7 @@ export default function ProfilePreferences() {
       {success && (
         <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 flex items-center gap-3 text-green-700 text-sm">
           <Check size={18} />
-          Preferências atualizadas com sucesso!
+          {t("preferences.success", "Preferências atualizadas com sucesso!")}
         </div>
       )}
 
@@ -201,12 +203,12 @@ export default function ProfilePreferences() {
         {/* Notificações */}
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-            Notificações
+            {t("preferences.notifications", "Notificações")}
           </h3>
 
           {[
-            { key: "email_notifications", label: "Notificações por e-mail" },
-            { key: "product_updates", label: "Atualizações de Produto" }
+            { key: "email_notifications", label: t("preferences.email_notifications", "Notificações por e-mail") },
+            { key: "product_updates", label: t("preferences.product_updates", "Atualizações de Produto") }
           ].map(({ key, label }) => {
             const checked = !!form[key];
 
@@ -248,19 +250,19 @@ export default function ProfilePreferences() {
         {/* Região e moeda */}
         <div className="space-y-5">
           <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-            Região e moeda
+            {t("preferences.region_currency", "Região e moeda")}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium mb-1">Região</label>
+              <label className="block text-sm font-medium mb-1">{t("preferences.region", "Região")}</label>
               <select
                 name="region_id"
                 value={form.region_id}
                 onChange={handleChange}
                 className="w-full border rounded-lg p-2.5"
               >
-                <option value="">Selecione</option>
+                <option value="">{t("ui.select", "Selecione")}</option>
                 {regions.map(r => (
                   <option key={r.id} value={r.id}>
                     {r.name}
@@ -270,14 +272,14 @@ export default function ProfilePreferences() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Moeda</label>
+              <label className="block text-sm font-medium mb-1">{t("preferences.currency", "Moeda")}</label>
               <select
                 name="currency_id"
                 value={form.currency_id}
                 onChange={handleChange}
                 className="w-full border rounded-lg p-2.5"
               >
-                <option value="">Selecione</option>
+                <option value="">{t("ui.select", "Selecione")}</option>
                 {currencies.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.symbol})
@@ -296,7 +298,7 @@ export default function ProfilePreferences() {
             className="flex items-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-medium disabled:opacity-70"
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
-            {loading ? "Salvando..." : "Salvar preferências"}
+            {loading ? "Salvando..." : t("preferences.save", "Salvar preferências")}
           </button>
         </div>
 

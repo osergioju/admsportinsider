@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
+import { useTranslation } from "../../context/TranslationContext";
+
 
 // ─── Avatar Component ──────────────────────────────────────────────────────────
 function ClubAvatar({ name, crestUrl }) {
@@ -130,15 +132,92 @@ function LigaAvatar({ logoUrl, name }) {
   );
 }
 
+// ─── Player Avatar ─────────────────────────────────────────────────────────────
+function PlayerAvatar({ name, photoUrl }) {
+  const initials = name
+    ?.split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  // 📸 Se tiver foto do jogador
+  if (photoUrl) {
+    return (
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          overflow: "hidden",
+          flexShrink: 0,
+          background: "#f3f3f3",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <img
+          src={photoUrl}
+          alt={name}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 👤 Fallback com iniciais
+  return (
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, #e6f0ff, #b8d4f7)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        color: "#2D7DD2",
+        fontSize: 13,
+        fontWeight: 700,
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 // ─── Result Item ───────────────────────────────────────────────────────────────
 function ResultItem({ item, type, onSelect, isHighlighted }) {
-  const isClub = type === "clube";
+  // 🧠 Mapeamento de labels
+  const typeMap = {
+    clube: "Clube",
+    liga: "Liga",
+    pais: "País",
+    jogador: "Jogador",
+  };
 
-  // Normalize fields from real API response
-  const name = item.name;
+  const label = typeMap[type] || "";
+
+  // 🔄 Normalização dos dados
+  const name = item.name || item.full_name || "";
   const country = item.country_name || item.country || "";
   const crestUrl = item.crest_url || null;
+  const flagUrl = item.flag_url || null;
   const logoUrl = item.logo_url || null;
+
+  // 🧩 Avatar por tipo
+  const avatarMap = {
+    clube: <ClubAvatar name={name} crestUrl={crestUrl} />,
+    liga: <LigaAvatar name={name} logoUrl={logoUrl} />,
+    pais: <LigaAvatar name={name} logoUrl={flagUrl} />,
+    jogador: <PlayerAvatar name={name} />, // 👉 você precisa ter esse componente
+  };
 
   return (
     <button
@@ -149,7 +228,9 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
         alignItems: "center",
         gap: 12,
         padding: "8px 14px",
-        background: isHighlighted ? "rgba(127, 51, 217, 0.08)" : "transparent",
+        background: isHighlighted
+          ? "rgba(127, 51, 217, 0.08)"
+          : "transparent",
         border: "none",
         cursor: "pointer",
         borderRadius: 10,
@@ -165,12 +246,10 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
           : "transparent";
       }}
     >
-      {isClub ? (
-        <ClubAvatar name={name} crestUrl={crestUrl} />
-      ) : (
-        <LigaAvatar logoUrl={logoUrl} name={name} />
-      )}
+      {/* 🎯 Avatar */}
+      {avatarMap[type] || null}
 
+      {/* 📄 Conteúdo */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -185,41 +264,53 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
         >
           {name}
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: "#888",
-            fontFamily: "'DM Sans', sans-serif",
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            marginTop: 1,
-          }}
-        >
-          {item.flag_url && (
-            <img
-              src={item.flag_url}
-              alt={country}
-              style={{ width: 14, height: 10, objectFit: "cover", borderRadius: 2 }}
-            />
-          )}
-          {country}
-        </div>
+
+        {/* 🌍 País (se existir) */}
+        {country && (
+          <div
+            style={{
+              fontSize: 12,
+              color: "#888",
+              fontFamily: "'DM Sans', sans-serif",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              marginTop: 1,
+            }}
+          >
+            {flagUrl && (
+              <img
+                src={flagUrl}
+                alt={country}
+                style={{
+                  width: 14,
+                  height: 10,
+                  objectFit: "cover",
+                  borderRadius: 2,
+                }}
+              />
+            )}
+            {country}
+          </div>
+        )}
       </div>
 
+      {/* 🏷️ Label */}
       <span
         style={{
           fontSize: 11,
           fontWeight: 600,
-          color: isClub ? "#7F33D9" : "#2D7DD2",
-          background: isClub ? "rgba(127,51,217,0.08)" : "rgba(45,125,210,0.08)",
+          color: label ? "#7F33D9" : "#2D7DD2",
+          background: label
+            ? "rgba(127,51,217,0.08)"
+            : "rgba(45,125,210,0.08)",
           padding: "2px 8px",
           borderRadius: 20,
           fontFamily: "'DM Sans', sans-serif",
           whiteSpace: "nowrap",
         }}
       >
-        {isClub ? "Clube" : "Liga"}
+        {label}
       </span>
     </button>
   );
@@ -301,6 +392,7 @@ function ClearIcon() {
 
 // ─── Main SearchBar Component ──────────────────────────────────────────────────
 export default function SearchBar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
@@ -310,11 +402,11 @@ export default function SearchBar() {
   const containerRef = useRef(null);
   const debounceRef = useRef(null);
 
-  const isOpen = focused && query.trim().length > 0;
+  const isOpen = focused && (query || "").trim().length > 0;
   const hasResults =
-    results && (results.ligas.length > 0 || results.clubes.length > 0);
+    results && (results.ligas.length > 0 || results.clubes.length > 0 || results.paises.length > 0 || results.jogadores.length > 0);
   const isEmpty =
-    results && results.ligas.length === 0 && results.clubes.length === 0;
+    results && results.ligas.length === 0 && results.clubes.length === 0 && results.paises.length === 0 && results.jogadores.length === 0;
 
   // Fechar ao clicar fora
   useEffect(() => {
@@ -329,7 +421,7 @@ export default function SearchBar() {
 
   // Debounce + busca
   useEffect(() => {
-    if (!query.trim()) {
+    if (!query || !query.trim()) {
       setResults(null);
       setLoading(false);
       return;
@@ -340,9 +432,11 @@ export default function SearchBar() {
     debounceRef.current = setTimeout(async () => {
       try {
         // Busca paralela: clubes + ligas
-        const [clubsRes, leaguesRes] = await Promise.allSettled([
+        const [clubsRes, leaguesRes, countryRes, playersRes] = await Promise.allSettled([
           api.post("/dashboard/clubs/search?page=1&limit=10", { name: query }),
           api.post("/dashboard/leagues/search?page=1&limit=5", { name: query }),
+          api.post("/dashboard/countries/search?page=1&limit=5", { name: query }),
+          api.post("/dashboard/players/search?page=1&limit=5", { name: query }),
         ]);
 
         const clubes =
@@ -355,10 +449,20 @@ export default function SearchBar() {
             ? leaguesRes.value.data.leagues || []
             : [];
 
-        setResults({ ligas, clubes });
+        const paises =
+          countryRes.status === "fulfilled"
+            ? countryRes.value.data.countries || []
+            : [];
+
+        const jogadores =
+          playersRes.status === "fulfilled"
+            ? playersRes.value.data.players || []
+            : [];
+
+        setResults({ ligas, clubes, paises, jogadores });
       } catch (error) {
         console.error("Erro na busca:", error);
-        setResults({ ligas: [], clubes: [] });
+        setResults({ ligas: [], clubes: [], paises: [], jogadores: [] });
       } finally {
         setLoading(false);
       }
@@ -370,10 +474,15 @@ export default function SearchBar() {
   function handleSelect(item) {
     setQuery(item.name);
     setFocused(false);
+
     if (item.id_league !== undefined) {
       navigate(`/dashboard/league/${item.id_league}`);
-    } else {
+    } else if (item.id_club !== undefined) {
       navigate(`/dashboard/clubs/${item.id_club}`);
+    } else if (item.id_country !== undefined) {
+      navigate(`/dashboard/countries/${item.id_country}`);
+    } else if (item.id_player !== undefined) {
+      navigate(`/dashboard/players/${item.id_player}`);
     }
   }
 
@@ -384,7 +493,7 @@ export default function SearchBar() {
   }
 
   const totalResults = results
-    ? results.ligas.length + results.clubes.length
+    ? results.ligas.length + results.clubes.length + results.paises.length + results.jogadores.length
     : 0;
 
   return (
@@ -419,10 +528,10 @@ export default function SearchBar() {
 
           <input
             ref={inputRef}
-            value={query}
+            value={query || ""}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
-            placeholder="Buscar clubes e ligas…"
+            placeholder={t("ui.search_placeholder", "Buscar clubes, ligas, jogadores, países...")}
             style={{
               flex: 1,
               border: "none",
@@ -617,6 +726,62 @@ export default function SearchBar() {
                 ))}
               </>
             )}
+
+            {/* Divider */}
+            {results?.clubes.length > 0 && results?.clubes.length > 0 && (
+              <div
+                style={{
+                  height: 1,
+                  background: "#f5f5f5",
+                  margin: "4px 14px",
+                }}
+              />
+            )}
+
+            {/* Países */}
+            {results?.paises.length > 0 && (
+              <>
+                <CategoryLabel count={results.paises.length}>Países</CategoryLabel>
+                {results.paises.map((pais) => (
+                  <ResultItem
+                    key={`country-${pais.id_country}`}
+                    item={pais}
+                    type="pais"
+                    onSelect={handleSelect}
+                    isHighlighted={false}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Divider */}
+            {results?.paises.length > 0 && results?.paises.length > 0 && (
+              <div
+                style={{
+                  height: 1,
+                  background: "#f5f5f5",
+                  margin: "4px 14px",
+                }}
+              />
+            )}
+
+            {/* Jogadores */}
+            {results?.jogadores.length > 0 && (
+              <>
+                <CategoryLabel count={results.jogadores.length}>Jogadores</CategoryLabel>
+                {results.jogadores.map((jogador) => (
+                  <ResultItem
+                    key={`jogador-${jogador.id_player}`}
+                    item={jogador}
+                    type="jogador"
+                    onSelect={handleSelect}
+                    isHighlighted={false}
+                  />
+                ))}
+              </>
+            )}
+
+
 
             {/* Footer */}
             <div

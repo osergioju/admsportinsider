@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../../../context/AuthContext";
+import { useTranslation } from "../../../../context/TranslationContext";
 import { api } from "../../../../services/api";
 import { 
   Loader2, 
@@ -13,6 +14,7 @@ import {
 
 export default function PersonalData() {
   const { user, updateUser } = useContext(AuthContext);
+  const { t } = useTranslation();
   const isGoogleUser = user?.provider === "google";
   
   const [form, setForm] = useState({
@@ -60,13 +62,13 @@ export default function PersonalData() {
     setSuccessPass(false);
 
     if (!form_pass.current_password || !form_pass.new_password) {
-      setErrorPass("Por favor, preencha a senha atual e a nova senha.");
+      setErrorPass(t("validation.fill_password_fields", "Por favor, preencha a senha atual e a nova senha."));
       setLoadingPass(false);
       return;
     }
 
     if (form_pass.new_password.length < 8) {
-      setErrorPass("A nova senha deve ter pelo menos 8 caracteres.");
+      setErrorPass(t("validation.password_min_length", "A nova senha deve ter pelo menos 8 caracteres."));
       setLoadingPass(false);
       return;
     }
@@ -82,7 +84,7 @@ export default function PersonalData() {
       const serverMessage = err.response?.data?.message || err.response?.data?.error;
       
       if (err.response?.status === 401) {
-        setErrorPass("A senha atual está incorreta.");
+        setErrorPass(t("validation.current_password_wrong", "A senha atual está incorreta."));
       } else if (serverMessage) {
         setErrorPass(serverMessage);
       } else {
@@ -131,25 +133,25 @@ export default function PersonalData() {
     const isEmailEmpty = !isGoogleUser && !email;
 
     if (isNameEmpty && isEmailEmpty) {
-      setErrorProfile("Por favor, preencha o nome e o e-mail.");
+      setErrorProfile(t("validation.fill_name_email", "Por favor, preencha o nome e o e-mail."));
       setLoadingProfile(false);
       return;
     }
 
     if (isNameEmpty) {
-      setErrorProfile("O nome é obrigatório.");
+      setErrorProfile(t("validation.name_required", "O nome é obrigatório."));
       setLoadingProfile(false);
       return;
     }
 
     if (isNameShort) {
-      setErrorProfile("O nome deve ter pelo menos 3 caracteres.");
+      setErrorProfile(t("validation.name_min", "O nome deve ter pelo menos 3 caracteres."));
       setLoadingProfile(false);
       return;
     }
 
     if (isEmailEmpty) {
-      setErrorProfile("O e-mail é obrigatório.");
+      setErrorProfile(t("validation.email_required", "O e-mail é obrigatório."));
       setLoadingProfile(false);
       return;
     }
@@ -200,8 +202,8 @@ export default function PersonalData() {
     <div className="w-full">
       
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-[#111]">Dados Pessoais</h1>
-        <p className="text-sm text-gray-500 mt-1">Mantenha suas informações atualizadas.</p>
+        <h1 className="text-xl font-bold text-[#111]">{t("profile.personal_data_title", "Dados Pessoais")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t("profile.personal_data_subtitle", "Mantenha suas informações atualizadas.")}</p>
       </div>
 
       {/* --- FORMULÁRIO DE PERFIL --- */}
@@ -221,17 +223,17 @@ export default function PersonalData() {
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-[#111]">Foto de perfil</h3>
-            <p className="text-xs text-gray-500 mb-2">Recomendado: PNG ou JPG.</p>
+            <h3 className="text-sm font-semibold text-[#111]">{t("profile.photo", "Foto de perfil")}</h3>
+            <p className="text-xs text-gray-500 mb-2">{t("profile.photo_recommendation", "Recomendado: PNG ou JPG.")}</p>
             <button type="button" className="text-sm text-[#7F33D9] font-medium hover:text-[#6025A8] transition-colors underline decoration-transparent hover:decoration-[#6025A8]">
-              Alterar foto
+              {t("profile.change_photo", "Alterar foto")}
             </button>
           </div>
         </div>
 
         <div className="space-y-5">
             <div>
-              <label className={labelClass}>Nome completo</label>
+              <label className={labelClass}>{t("profile.full_name", "Nome completo")}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                   <UserIcon size={18} />
@@ -242,13 +244,13 @@ export default function PersonalData() {
                   value={form.name}
                   onChange={handleChange}
                   className={inputClass}
-                  placeholder="Seu nome"
+                  placeholder={t("profile.name_placeholder", "Seu nome")}
                 />
               </div>
             </div>
 
             <div>
-              <label className={labelClass}>E-mail</label>
+              <label className={labelClass}>{t("profile.email", "E-mail")}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                   <Mail size={18} />
@@ -260,7 +262,7 @@ export default function PersonalData() {
                   value={form.email}
                   onChange={handleChange}
                   className={inputClass}
-                  placeholder="seu@email.com"
+                  placeholder={t("profile.email_placeholder", "seu@email.com")}
                 />
               </div>
               
@@ -268,13 +270,13 @@ export default function PersonalData() {
                 isGoogleUser ?(
                   <div className="mt-3 flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
                     <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                    <p>Sua conta está conectada com o Google. O e-mail não pode ser alterado por aqui.</p>
+                    <p>{t("profile.google_email_note", "Sua conta está conectada com o Google. O e-mail não pode ser alterado por aqui.")}</p>
                   </div>
                 ) : (
                   <div>
                     <div className="mt-3 flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
                       <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                      <p>Entre em contato com o suporte para alterar seu e-mail</p>
+                      <p>{t("profile.google_email_support", "Entre em contato com o suporte para alterar seu e-mail")}</p>
                     </div>
                   </div>
                 )
@@ -294,7 +296,7 @@ export default function PersonalData() {
         {successProfile && (
            <div className="p-4 rounded-lg bg-green-50 border border-green-200 flex items-center gap-3 text-green-700 text-sm animate-fade-in">
              <Check size={18} className="shrink-0" />
-             <span>Perfil atualizado com sucesso!</span>
+             <span>{t("profile.success", "Perfil atualizado com sucesso!")}</span>
            </div>
         )}
 
@@ -308,24 +310,24 @@ export default function PersonalData() {
               <>
                 <Loader2 size={16} className="animate-spin" /> Salvando...
               </>
-            ) : "Salvar alterações"}
+            ) : t("ui.save_changes", "Salvar alterações")}
           </button>
         </div>
       </form>
 
       {/* --- SEÇÃO DE SENHA --- */}
       <div className="mt-10 pt-8 border-t border-gray-100">
-        <h2 className="text-lg font-bold text-[#111] mb-1">Segurança</h2>
-        <p className="text-sm text-gray-500 mb-6">Atualize sua senha de acesso.</p>
+        <h2 className="text-lg font-bold text-[#111] mb-1">{t("profile.security_title", "Segurança")}</h2>
+        <p className="text-sm text-gray-500 mb-6">{t("profile.security_subtitle", "Atualize sua senha de acesso.")}</p>
 
         {isGoogleUser ? (
           <div className="flex flex-col items-center justify-center p-8 bg-gray-50 border border-gray-200 rounded-xl text-center">
              <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-3 text-gray-400 shadow-sm">
                 <Lock size={20} />
              </div>
-             <h3 className="text-sm font-semibold text-gray-900">Gerenciado pelo Google</h3>
+             <h3 className="text-sm font-semibold text-gray-900">{t("profile.google_managed", "Gerenciado pelo Google")}</h3>
              <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
-               Como você fez login via Google, a alteração de senha deve ser feita diretamente na sua conta Google.
+               {t("profile.google_password_note", "Como você fez login via Google, a alteração de senha deve ser feita diretamente na sua conta Google.")}
              </p>
           </div>
         ) : (
@@ -333,7 +335,7 @@ export default function PersonalData() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className={labelClass}>Senha atual</label>
+                  <label className={labelClass}>{t("profile.current_password", "Senha atual")}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                         <Lock size={18} />
@@ -350,7 +352,7 @@ export default function PersonalData() {
                 </div>
 
                 <div>
-                  <label className={labelClass}>Nova senha</label>
+                  <label className={labelClass}>{t("profile.new_password", "Nova senha")}</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                         <Lock size={18} />
@@ -364,7 +366,7 @@ export default function PersonalData() {
                         className={inputClass}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1.5 ml-1">Mínimo de 8 caracteres.</p>
+                  <p className="text-xs text-gray-400 mt-1.5 ml-1">{t("profile.password_min", "Mínimo de 8 caracteres.")}</p>
                 </div>
             </div>
 
@@ -379,7 +381,7 @@ export default function PersonalData() {
             {successPass && (
               <div className="p-4 rounded-lg bg-green-50 border border-green-200 flex items-center gap-3 text-green-700 text-sm animate-fade-in">
                 <Check size={18} className="shrink-0" />
-                <span>Senha atualizada com sucesso!</span>
+                <span>{t("profile.password_success", "Senha atualizada com sucesso!")}</span>
               </div>
             )}
 
@@ -393,7 +395,7 @@ export default function PersonalData() {
                   <>
                     <Loader2 size={16} className="animate-spin" /> Atualizando...
                   </>
-                ) : "Alterar senha"}
+                ) : t("profile.change_password", "Alterar senha")}
               </button>
             </div>
           </form>

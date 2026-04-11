@@ -100,7 +100,7 @@ export default function RevenueBreakdownBarChart({
 
 
   const lenghtData = option.series[0].data.length;
-  console.log(option);
+
   return (
     <div className="w-full max-w-full h-[250px] lg:h-[480px] overflow-hidden">
       {

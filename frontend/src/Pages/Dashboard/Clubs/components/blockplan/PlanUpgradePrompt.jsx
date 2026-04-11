@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import IconInsider from "../../../../../assets/svg/brand-icon.svg";
+import { useTranslation } from "../../../../../context/TranslationContext";
 
 export default function PlanUpgradePrompt({
   title = "Visualize dados financeiros em tempo real",
@@ -9,6 +10,7 @@ export default function PlanUpgradePrompt({
   redirectTo = "/me/plans",
 }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="p-10 overflow-hidden relative flex items-center justify-center h-full px-4 bg-white rounded-xl">
@@ -67,7 +69,7 @@ export default function PlanUpgradePrompt({
 
         {badge && (
           <span className="px-3 py-1 rounded-full bg-[#F5F3FF] text-[#7F33D9] text-[10px] font-bold mb-6 tracking-wide uppercase">
-            {badge}
+            {badge === "Disponível nos planos Pro e Premium" ? t("plan.available_pro_premium", "Disponível nos planos Pro e Premium") : badge}
           </span>
         )}
 

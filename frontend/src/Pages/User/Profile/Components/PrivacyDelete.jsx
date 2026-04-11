@@ -1,10 +1,12 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../../../../context/AuthContext";
+import { useTranslation } from "../../../../context/TranslationContext";
 import { api } from "../../../../services/api";
 import { AlertTriangle, Trash2, Loader2, AlertCircle } from "lucide-react";
 
 export default function PrivacyDelete() {
   const { logout, user } = useContext(AuthContext); // Importar logout para sair após deletar
+  const { t } = useTranslation();
   
   const [confirmText, setConfirmText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,9 +44,9 @@ export default function PrivacyDelete() {
   return (
     <div className="w-full">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-[#111]">Você tem certeza disso?</h1>
+        <h1 className="text-xl font-bold text-[#111]">{t("privacy.confirm_title", "Você tem certeza disso?")}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          As ações realizadas aqui são irreversíveis.
+          {t("privacy.irreversible", "As ações realizadas aqui são irreversíveis.")}
         </p>
       </div>
 
@@ -55,16 +57,16 @@ export default function PrivacyDelete() {
                 <AlertTriangle size={24} />
             </div>
             <div>
-                <h2 className="text-lg font-bold text-red-700 mb-1">Deletar conta permanentemente</h2>
+                <h2 className="text-lg font-bold text-red-700 mb-1">{t("privacy.delete_title", "Deletar conta permanentemente")}</h2>
                 <p className="text-sm text-red-600/80 leading-relaxed mb-4">
-                    Ao deletar sua conta, todos os seus dados, histórico de assinaturas e preferências serão removidos permanentemente dos nossos servidores. 
-                    <strong className="block mt-1">Essa ação não pode ser desfeita.</strong>
+                    {t("privacy.delete_description", "Ao deletar sua conta, todos os seus dados, histórico de assinaturas e preferências serão removidos permanentemente dos nossos servidores.")}
+                    <strong className="block mt-1">{t("privacy.cannot_undo", "Essa ação não pode ser desfeita.")}</strong>
                 </p>
 
                 {/* Input de Confirmação */}
                 <div className="mt-6 p-4 bg-white rounded-lg border border-red-100 shadow-sm">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Para confirmar, digite <span className="font-bold text-red-600 select-all">"{KEYWORD}"</span> abaixo:
+                        {t("privacy.type_to_confirm", "Para confirmar, digite")} <span className="font-bold text-red-600 select-all">"{KEYWORD}"</span> {t("privacy.below", "abaixo:")}
                     </label>
                     <input 
                         type="text" 
@@ -96,7 +98,7 @@ export default function PrivacyDelete() {
                             </>
                         ) : (
                             <>
-                                <Trash2 size={16} /> Deletar minha conta
+                                <Trash2 size={16} /> {t("privacy.delete_button", "Deletar minha conta")}
                             </>
                         )}
                     </button>

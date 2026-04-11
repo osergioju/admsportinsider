@@ -1,8 +1,19 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import { Trash2, Loader2, Check, Plus, Search, X, Globe, Pencil } from "lucide-react";
-import paises from "world-countries";
-import Select from "../../components/uxui/Select";
+import _paises from "world-countries";
+
+// Nações do Reino Unido que competem separadamente no futebol mas não
+// existem como países soberanos no world-countries
+const UK_NATIONS = [
+  { cca2: "gb-eng", name: { common: "Inglaterra" } },
+  { cca2: "gb-sct", name: { common: "Escócia" } },
+  { cca2: "gb-wls", name: { common: "País de Gales" } },
+  { cca2: "gb-nir", name: { common: "Irlanda do Norte" } },
+];
+
+const paises = [..._paises, ...UK_NATIONS];
+import CountryCombobox from "../../components/uxui/CountryCombobox";
 
 export default function GestaoPaises() {
     const [countries, setCountries] = useState([]);
@@ -51,13 +62,8 @@ export default function GestaoPaises() {
 
     const closeModal = () => { setModalMode(null); setSuccess(false); setLoading(false); };
 
-    const handleSelectCountry = (e) => {
-        const option = e.target.selectedOptions[0];
-        setPaisSelecionado({
-            codigo: option.value,
-            flag: option.dataset.flag,
-            value : option.dataset.name
-        });
+    const handleSelectCountry = (country) => {
+        setPaisSelecionado(country);
     };
 
     const sendCountry = async () => {
@@ -161,7 +167,12 @@ export default function GestaoPaises() {
                                 <div className="space-y-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-gray-700 ml-1">Selecione na lista global</label>
-                                        <Select onChange={handleSelectCountry} label="Buscar país..." labelColor="text-gray-400" variant="light" options={paises} />
+                                        <CountryCombobox
+                                            options={paises}
+                                            value={paisSelecionado}
+                                            onChange={handleSelectCountry}
+                                            placeholder="Buscar país..."
+                                        />
                                     </div>
                                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 min-h-[120px] flex flex-col items-center justify-center text-center">
                                         {paisSelecionado ? (

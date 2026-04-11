@@ -1,4 +1,4 @@
-import db from  "../config/db.js";
+import db from "../config/db.js";
 
 /**
  * LISTAR NOTIFICAÇÕES COM PAGINAÇÃO
@@ -10,7 +10,6 @@ export const getNotifications = async (req, res) => {
 
   try {
     const userId = req.user.id;
-
     const { rows } = await db.query(
       `
       SELECT

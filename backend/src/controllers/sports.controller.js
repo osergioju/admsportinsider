@@ -227,6 +227,30 @@ export async function getClubCompetitions(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /dashboard/players/countries
+// Países com contagem de jogadores (para a tela de navegação por país)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPlayerCountries(req, res) {
+  try {
+    const result = await db.query(`
+      SELECT
+        co.id_country AS id,
+        co.name,
+        co.flag_url,
+        COUNT(DISTINCT p.id_player) AS players_count
+      FROM countries co
+      JOIN players p ON p.nationality = co.id_country
+      GROUP BY co.id_country, co.name, co.flag_url
+      ORDER BY COUNT(DISTINCT p.id_player) DESC, co.name ASC
+    `);
+    return res.json({ countries: result.rows });
+  } catch (err) {
+    console.error("[getPlayerCountries]", err);
+    return res.status(500).json({ error: "Erro ao buscar países de jogadores" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /dashboard/players?search=&position=&nationality=&page=1
 // Listagem global de jogadores com busca, filtros e paginação
 // ─────────────────────────────────────────────────────────────────────────────
@@ -571,6 +595,7 @@ export async function getLeagueSports(req, res) {
   try {
     const leagueRes = await db.query(`
       SELECT l.id_league, l.name, l.format, l.organizer, l.logo_url,
+             l.structure_json,
              c.name AS country_name, c.flag_url
       FROM leagues l
       JOIN countries c ON c.id_country = l.id_country

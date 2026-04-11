@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { Loader2, ChevronDown, Trophy } from "lucide-react";
+import { useTranslation } from "../../../context/TranslationContext";
 
 /* ── helpers ── */
 const fmt  = (v, d = 1) => v != null ? Number(v).toFixed(d) : "—";
@@ -20,13 +21,13 @@ function BigNum({ value, label, highlight }) {
   );
 }
 
-function SubTabs({ value, onChange }) {
+function SubTabs({ value, onChange, t }) {
   return (
     <div className="flex gap-1 mb-4">
       {["total","home","away"].map((k, i) => (
         <button key={k} onClick={() => onChange(k)}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${value===k ? "bg-violet-600 border-violet-600 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-violet-300"}`}>
-          {["Total","Casa","Fora"][i]}
+          {[t("sports.total","Total"),t("sports.home","Casa"),t("sports.away","Fora")][i]}
         </button>
       ))}
     </div>
@@ -119,6 +120,7 @@ function MatchRow({ m, clubId }) {
 
 /* ── Main component ── */
 export default function CompetitionsClubs() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const clubId = Number(id);
   const [season, setSeason] = useState(null);
@@ -154,11 +156,11 @@ export default function CompetitionsClubs() {
   const setST  = (id, v) => setSplitTab(p => ({ ...p, [id]: v }));
 
   const MAIN_TABS = [
-    { key:"classificacao", label:"Classificação" },
-    { key:"esportivo",     label:"Esportivo" },
-    { key:"intervalo",     label:"Intervalo" },
-    { key:"disciplinar",   label:"Disciplinar" },
-    { key:"partidas",      label:"Partidas" },
+    { key:"classificacao", label:t("sports.classification","Classificação") },
+    { key:"esportivo",     label:t("sports.tab","Esportivo") },
+    { key:"intervalo",     label:t("sports.interval_tab","Intervalo") },
+    { key:"disciplinar",   label:t("player.tab.disciplinary","Disciplinar") },
+    { key:"partidas",      label:t("sports.matches","Partidas") },
   ];
 
   return (
@@ -166,7 +168,7 @@ export default function CompetitionsClubs() {
 
       {/* Season selector */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium text-gray-500">Temporada</span>
+        <span className="text-sm font-medium text-gray-500">{t("sports.season","Temporada")}</span>
         <div className="flex gap-1 flex-wrap">
           {(data?.availableSeasons ?? [2025,2024,2023,2022,2021]).map(y => (
             <button key={y} onClick={() => setSeason(y)}
@@ -180,12 +182,12 @@ export default function CompetitionsClubs() {
       {loading && (
         <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
           <Loader2 className="animate-spin w-5 h-5"/>
-          <span className="text-sm">Carregando...</span>
+          <span className="text-sm">{t("ui.loading","Carregando...")}</span>
         </div>
       )}
 
       {!loading && (!data?.competitions?.length) && (
-        <div className="py-16 text-center text-gray-400 text-sm">Nenhum dado para a temporada {season}.</div>
+        <div className="py-16 text-center text-gray-400 text-sm">{t("sports.no_data_season","Nenhum dado para a temporada")} {season}.</div>
       )}
 
       {!loading && data?.competitions?.map(comp => {
@@ -210,7 +212,7 @@ export default function CompetitionsClubs() {
                   : <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center"><Trophy size={14} className="text-gray-400"/></div>
                 }
                 <span className="text-sm font-bold text-gray-900">{comp.name}</span>
-                {s.pos && <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{s.pos}º lugar</span>}
+                {s.pos && <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{s.pos}{t("sports.place_suffix","º lugar")}</span>}
               </div>
               <ChevronDown size={18} className={`text-gray-400 transition-transform ${isOpen?"rotate-180":""}`}/>
             </button>
@@ -220,13 +222,13 @@ export default function CompetitionsClubs() {
 
                 {/* Big numbers summary */}
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 px-5 py-4 border-b border-gray-100">
-                  <BigNum value={s.pos} label="Posição" highlight />
-                  <BigNum value={s.pts} label="Pontos" />
-                  <BigNum value={s.wins} label="Vitórias" />
-                  <BigNum value={s.draws} label="Empates" />
-                  <BigNum value={s.losses} label="Derrotas" />
-                  <BigNum value={s.gp} label="Gols pró" />
-                  <BigNum value={s.gc} label="Gols contra" />
+                  <BigNum value={s.pos} label={t("sports.position","Posição")} highlight />
+                  <BigNum value={s.pts} label={t("sports.points","Pontos")} />
+                  <BigNum value={s.wins} label={t("sports.wins","Vitórias")} />
+                  <BigNum value={s.draws} label={t("sports.draws","Empates")} />
+                  <BigNum value={s.losses} label={t("sports.losses","Derrotas")} />
+                  <BigNum value={s.gp} label={t("sports.goals_for","Gols pró")} />
+                  <BigNum value={s.gc} label={t("sports.goals_against","Gols contra")} />
                 </div>
 
                 {/* Main tabs */}
@@ -244,42 +246,42 @@ export default function CompetitionsClubs() {
                   {/* ── CLASSIFICAÇÃO ── */}
                   {mt === "classificacao" && (
                     <>
-                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} t={t} />
                       <StandingsTable rows={comp.standings?.[st] ?? []} clubId={clubId} />
-                      <p className="text-xs text-gray-400 text-right">{comp.standings?.total?.length ?? 0} clubes · exibindo posições ao redor do seu clube</p>
+                      <p className="text-xs text-gray-400 text-right">{comp.standings?.total?.length ?? 0} {t("sports.clubs_around","clubes · exibindo posições ao redor do seu clube")}</p>
                     </>
                   )}
 
                   {/* ── ESPORTIVO ── */}
                   {mt === "esportivo" && (
                     <>
-                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} t={t} />
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                        <BigNum value={fmtI(sp.gp)} label="Gols marcados"/>
-                        <BigNum value={fmtI(sp.gc)} label="Gols sofridos"/>
-                        <BigNum value={fmtI(sp.shots)} label="Chutes"/>
-                        <BigNum value={fmtPct(sp.possession)} label="Posse média"/>
+                        <BigNum value={fmtI(sp.gp)} label={t("sports.goals_scored","Gols marcados")}/>
+                        <BigNum value={fmtI(sp.gc)} label={t("sports.goals_conceded","Gols sofridos")}/>
+                        <BigNum value={fmtI(sp.shots)} label={t("sports.shots","Chutes")}/>
+                        <BigNum value={fmtPct(sp.possession)} label={t("sports.avg_possession","Posse média")}/>
                       </div>
                       <div className="rounded-xl border border-gray-100 overflow-hidden">
                         <table className="w-full text-xs">
                           <thead><tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
-                            <th className="text-left px-4 py-2.5 font-semibold">Estatística</th>
-                            <th className="text-right px-4 py-2.5 font-semibold">Valor</th>
+                            <th className="text-left px-4 py-2.5 font-semibold">{t("sports.stat_label","Estatística")}</th>
+                            <th className="text-right px-4 py-2.5 font-semibold">{t("ui.value","Valor")}</th>
                           </tr></thead>
                           <tbody>
-                            <StatRow label="Chutes" value={fmtI(sp.shots)}/>
-                            <StatRow label="Chutes a gol" value={fmtI(sp.shots_ot)}/>
-                            <StatRow label="Posse de bola" value={fmtPct(sp.possession)}/>
-                            <StatRow label="Clean sheets" value={fmtI(sp.clean_sheets)}/>
-                            <StatRow label="Escanteios" value={fmtI(sp.corners)}/>
-                            <StatRow label="Gols marcados por jogo" value={fmt(comp.esportivo?.total?.gp/mp,2)}/>
-                            <StatRow label="Gols sofridos por jogo" value={fmt(comp.esportivo?.total?.gc/mp,2)}/>
-                            <StatRow label="xG médio (pró)" value={fmt(comp.esportivo?.total?.xg_for,2)}/>
-                            <StatRow label="xG médio (contra)" value={fmt(comp.esportivo?.total?.xg_against,2)}/>
-                            <StatRow label="Ambos marcam %" value={fmtPct(comp.esportivo?.total?.btts_pct)}/>
-                            <StatRow label="Acima de 2.5 gols %" value={fmtPct(comp.esportivo?.total?.over25_pct)}/>
-                            <StatRow label="Clean sheet %" value={fmtPct(comp.esportivo?.total?.cs_pct)}/>
-                            <StatRow label="Pontos por jogo" value={fmt(comp.esportivo?.total?.ppg,2)}/>
+                            <StatRow label={t("sports.shots","Chutes")} value={fmtI(sp.shots)}/>
+                            <StatRow label={t("sports.shots_on_target","Chutes a gol")} value={fmtI(sp.shots_ot)}/>
+                            <StatRow label={t("sports.possession","Posse de bola")} value={fmtPct(sp.possession)}/>
+                            <StatRow label={t("sports.clean_sheets","Clean sheets")} value={fmtI(sp.clean_sheets)}/>
+                            <StatRow label={t("sports.corners","Escanteios")} value={fmtI(sp.corners)}/>
+                            <StatRow label={t("sports.goals_per_game","Gols marcados por jogo")} value={fmt(comp.esportivo?.total?.gp/mp,2)}/>
+                            <StatRow label={t("sports.goals_conceded_pg","Gols sofridos por jogo")} value={fmt(comp.esportivo?.total?.gc/mp,2)}/>
+                            <StatRow label={t("sports.xg_avg_pro","xG médio (pró)")} value={fmt(comp.esportivo?.total?.xg_for,2)}/>
+                            <StatRow label={t("sports.xg_avg_against","xG médio (contra)")} value={fmt(comp.esportivo?.total?.xg_against,2)}/>
+                            <StatRow label={t("sports.btts_pct","Ambos marcam %")} value={fmtPct(comp.esportivo?.total?.btts_pct)}/>
+                            <StatRow label={t("sports.over25_pct","Acima de 2.5 gols %")} value={fmtPct(comp.esportivo?.total?.over25_pct)}/>
+                            <StatRow label={t("sports.clean_sheet_pct","Clean sheet %")} value={fmtPct(comp.esportivo?.total?.cs_pct)}/>
+                            <StatRow label={t("sports.points_per_game","Pontos por jogo")} value={fmt(comp.esportivo?.total?.ppg,2)}/>
                           </tbody>
                         </table>
                       </div>
@@ -289,28 +291,28 @@ export default function CompetitionsClubs() {
                   {/* ── INTERVALO ── */}
                   {mt === "intervalo" && (
                     <>
-                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} t={t} />
                       {ht.winning == null
                         ? <p className="text-sm text-gray-400 text-center py-8">Dados de intervalo não disponíveis para esta temporada.</p>
                         : (
                           <>
                             <div className="grid grid-cols-3 gap-2 mb-4">
-                              <BigNum value={fmtI(ht.winning)} label="Vencendo no intervalo"/>
-                              <BigNum value={fmtI(ht.drawing)} label="Empatando"/>
-                              <BigNum value={fmtI(ht.losing)} label="Perdendo"/>
+                              <BigNum value={fmtI(ht.winning)} label={t("sports.winning_ht","Vencendo no intervalo")}/>
+                              <BigNum value={fmtI(ht.drawing)} label={t("sports.drawing_ht","Empatando")}/>
+                              <BigNum value={fmtI(ht.losing)} label={t("sports.losing_ht","Perdendo")}/>
                             </div>
                             <div className="rounded-xl border border-gray-100 overflow-hidden">
                               <table className="w-full text-xs">
                                 <thead><tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
-                                  <th className="text-left px-4 py-2.5 font-semibold">Item</th>
-                                  <th className="text-right px-4 py-2.5 font-semibold">Valor</th>
+                                  <th className="text-left px-4 py-2.5 font-semibold">{t("ui.item","Item")}</th>
+                                  <th className="text-right px-4 py-2.5 font-semibold">{t("ui.value","Valor")}</th>
                                 </tr></thead>
                                 <tbody>
-                                  <StatRow label="Vencendo no intervalo" value={fmtI(ht.winning)}/>
-                                  <StatRow label="Empatando no intervalo" value={fmtI(ht.drawing)}/>
-                                  <StatRow label="Perdendo no intervalo" value={fmtI(ht.losing)}/>
-                                  <StatRow label="Gols marcados (1º tempo)" value={fmtI(ht.gs)}/>
-                                  <StatRow label="Gols sofridos (1º tempo)" value={fmtI(ht.gc)}/>
+                                  <StatRow label={t("sports.winning_ht","Vencendo no intervalo")} value={fmtI(ht.winning)}/>
+                                  <StatRow label={t("sports.drawing_interval","Empatando no intervalo")} value={fmtI(ht.drawing)}/>
+                                  <StatRow label={t("sports.losing_interval","Perdendo no intervalo")} value={fmtI(ht.losing)}/>
+                                  <StatRow label={t("sports.goals_scored_1h","Gols marcados (1º tempo)")} value={fmtI(ht.gs)}/>
+                                  <StatRow label={t("sports.goals_conceded_1h","Gols sofridos (1º tempo)")} value={fmtI(ht.gc)}/>
                                 </tbody>
                               </table>
                             </div>
@@ -323,23 +325,23 @@ export default function CompetitionsClubs() {
                   {/* ── DISCIPLINAR ── */}
                   {mt === "disciplinar" && (
                     <>
-                      <SubTabs value={st} onChange={v => setST(comp.id, v)} />
+                      <SubTabs value={st} onChange={v => setST(comp.id, v)} t={t} />
                       <div className="grid grid-cols-3 gap-2 mb-4">
-                        <BigNum value={fmtI(di.yellow)} label="Cartões amarelos"/>
-                        <BigNum value={fmtI(di.red)} label="Cartões vermelhos"/>
-                        <BigNum value={fmtI(di.fouls)} label="Faltas"/>
+                        <BigNum value={fmtI(di.yellow)} label={t("sports.yellow_cards","Cartões amarelos")}/>
+                        <BigNum value={fmtI(di.red)} label={t("sports.red_cards","Cartões vermelhos")}/>
+                        <BigNum value={fmtI(di.fouls)} label={t("sports.fouls","Faltas")}/>
                       </div>
                       <div className="rounded-xl border border-gray-100 overflow-hidden">
                         <table className="w-full text-xs">
                           <thead><tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
-                            <th className="text-left px-4 py-2.5 font-semibold">Item</th>
-                            <th className="text-right px-4 py-2.5 font-semibold">Valor</th>
+                            <th className="text-left px-4 py-2.5 font-semibold">{t("ui.item","Item")}</th>
+                            <th className="text-right px-4 py-2.5 font-semibold">{t("ui.value","Valor")}</th>
                           </tr></thead>
                           <tbody>
-                            <StatRow label="Faltas cometidas" value={fmtI(di.fouls)}/>
-                            <StatRow label="Faltas por jogo" value={fmt(di.fouls/mp)}/>
-                            <StatRow label="Cartões amarelos" value={fmtI(di.yellow)}/>
-                            <StatRow label="Cartões vermelhos" value={fmtI(di.red)}/>
+                            <StatRow label={t("sports.fouls_committed","Faltas cometidas")} value={fmtI(di.fouls)}/>
+                            <StatRow label={t("sports.fouls_per_game","Faltas por jogo")} value={fmt(di.fouls/mp)}/>
+                            <StatRow label={t("sports.yellow_cards","Cartões amarelos")} value={fmtI(di.yellow)}/>
+                            <StatRow label={t("sports.red_cards","Cartões vermelhos")} value={fmtI(di.red)}/>
                           </tbody>
                         </table>
                       </div>
@@ -350,11 +352,11 @@ export default function CompetitionsClubs() {
                   {mt === "partidas" && (
                     <>
                       {!comp.matches?.length
-                        ? <p className="text-sm text-gray-400 text-center py-8">Nenhuma partida registrada.</p>
+                        ? <p className="text-sm text-gray-400 text-center py-8">{t("sports.no_matches","Nenhuma partida registrada.")}</p>
                         : comp.matches.map(({ week, games }) => (
                           <div key={week} className="rounded-xl border border-gray-100 overflow-hidden">
                             <div className="bg-gray-50 px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                              {week > 0 ? `Rodada ${week}` : "Sem rodada definida"}
+                              {week > 0 ? `${t("sports.round","Rodada")} ${week}` : t("sports.no_round_defined","Sem rodada definida")}
                             </div>
                             <div className="divide-y divide-gray-50">
                               {games.map(m => <MatchRow key={m.id} m={m} clubId={clubId}/>)}

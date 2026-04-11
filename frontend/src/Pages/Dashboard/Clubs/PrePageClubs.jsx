@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
+import { useTranslation } from "../../../context/TranslationContext";
 
 export default function PrePageClubs() {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -40,17 +42,17 @@ export default function PrePageClubs() {
 
     const cards = [
         {
-            title: "Finanças",
+            title: t("clubs.finances", "Finanças"),
             desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             route: `/dashboard/clubs/finance/${id}`,
         },
         {
-            title: "Resultados esportivos",
+            title: t("clubs.sports_results", "Resultados esportivos"),
             desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             route: `/dashboard/clubs/competitions/${id}`,
         },
         {
-            title: "Elenco principal",
+            title: t("clubs.main_squad", "Elenco principal"),
             desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             route: `/dashboard/clubs/club-players/${id}`,
         },
@@ -105,9 +107,9 @@ export default function PrePageClubs() {
                     </h1>
                     <div className="flex flex-wrap gap-2">
                         {[
-                            { icon: "", label: "Fundação", value: formatDateBR(theClub?.club.founded_at) },
-                            { icon: "", label: "Estadio", value: theClub?.club.stadium_name },
-                            { icon: "", label: "Estrutura empresarial", value: theClub?.club.ownership_model },
+                            { icon: "", label: t("clubs.foundation", "Fundação"), value: formatDateBR(theClub?.club.founded_at) },
+                            { icon: "", label: t("clubs.stadium", "Estádio"), value: theClub?.club.stadium_name },
+                            { icon: "", label: t("clubs.corporate_structure", "Estrutura empresarial"), value: theClub?.club.ownership_model },
                         ].map((badge) => (
                             <span
                                 key={badge.label}
@@ -150,7 +152,7 @@ export default function PrePageClubs() {
                             onClick={() => navigate(card.route)}
                             className="cursor-pointer mt-6 self-start bg-black/70 hover:bg-black text-white text-sm px-5 py-2.5 rounded-full flex items-center gap-1 transition-colors"
                         >
-                            Ver mais
+                            {t("ui.see_more", "Ver mais")}
                         </button>
                     </div>
                 ))}

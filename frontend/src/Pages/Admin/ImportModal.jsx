@@ -4,6 +4,7 @@ import {
   FileSpreadsheet, UploadCloud, X, Loader2,
   CheckCircle2, AlertTriangle, HelpCircle, Plus, Globe
 } from "lucide-react";
+import SearchableSelect from "../../components/uxui/SearchableSelect";
 
 const btnPrimary =
   "flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
@@ -153,25 +154,20 @@ function StatusBadge({ status }) {
 }
 
 // ---------------------------------------------------------------------------
-// Select de país com agrupamento: cadastrados × não cadastrados
+// Select de país com busca — cadastrados no sistema
 // ---------------------------------------------------------------------------
-function CountrySelect({ value, onChange, dbCountries, status, borderClass }) {
+function CountrySelect({ value, onChange, dbCountries }) {
   return (
-    <select
+    <SearchableSelect
+      options={dbCountries.map((c) => ({
+        value: String(c.id_country),
+        label: c.name,
+        image: c.flag_url,
+      }))}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={`${inputClass} ${borderClass}`}
-    >
-      <option value="">Selecione um país...</option>
-
-      <optgroup label="✅ Cadastrados no sistema">
-        {dbCountries.map((c) => (
-          <option key={c.id_country} value={String(c.id_country)}>
-            {c.name}
-          </option>
-        ))}
-      </optgroup>
-    </select>
+      onChange={onChange}
+      placeholder="Selecione um país..."
+    />
   );
 }
 
@@ -213,7 +209,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
       const fd = new FormData();
       fd.append("file", importFile);
       const res = await api.post("/admin/preview-import", fd);
-      console.log(res.data.countries); // 👈 AQUI
+
       setSheets(res.data.sheets);
       setStep("selectSheet");
     } catch {

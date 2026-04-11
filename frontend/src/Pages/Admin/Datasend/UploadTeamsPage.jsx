@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { api } from "../../../services/api";
 import {
   Loader2, UploadCloud, Shield, ArrowRight, CheckCircle2,
   AlertTriangle, ChevronRight, MapPin, XCircle,
 } from "lucide-react";
+import SearchableSelect from "../../../components/uxui/SearchableSelect";
 
 const selectClass =
   "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7F33D9] transition-all font-light";
@@ -46,6 +47,12 @@ export default function UploadTeamsPage() {
       if (data.leagues.length === 1) setLeague(String(data.leagues[0].id_league));
       const init = {};
       for (const name of data.notFoundTeams) init[name] = "";
+      // Pré-popula conflitos para o usuário ver e resolver
+      for (const conflict of (data.duplicateConflicts ?? [])) {
+        for (const name of conflict.csv_names) {
+          init[name] = String(conflict.id_club);
+        }
+      }
       setClubMappings(init);
       setStep("mapping");
     } catch (err) {
@@ -87,6 +94,35 @@ export default function UploadTeamsPage() {
   const unmappedCount = preview
     ? preview.notFoundTeams.filter(n => !clubMappings[n]).length
     : 0;
+
+  // Conflito = dois nomes do CSV ainda mapeados para o mesmo id_club
+  const unresolvedConflicts = preview?.duplicateConflicts?.filter(conflict => {
+    const activeNames = conflict.csv_names.filter(
+      n => clubMappings[n] && clubMappings[n] !== ""
+    );
+    // Ainda há conflito se mais de um nome aponta pro mesmo clube
+    const stillSameClub = activeNames.filter(
+      n => clubMappings[n] === String(conflict.id_club)
+    );
+    return stillSameClub.length > 1;
+  }) ?? [];
+
+  const clubsGrouped = useMemo(() => {
+    if (!preview?.allClubs) return [];
+    const byCountry = new Map();
+    for (const c of preview.allClubs) {
+      const key = c.country_name ?? "—";
+      if (!byCountry.has(key)) byCountry.set(key, []);
+      byCountry.get(key).push({
+        value: String(c.id_club),
+        label: c.name,
+        image: c.crest_url || undefined,
+      });
+    }
+    return [...byCountry.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "pt"))
+      .map(([groupLabel, options]) => ({ groupLabel, options }));
+  }, [preview?.allClubs]);
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -188,7 +224,57 @@ export default function UploadTeamsPage() {
               </div>
             </div>
 
-            {/* Mapeamento de times */}
+            {/* Conflitos de duplicidade */}
+            {preview.duplicateConflicts?.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  <span>
+                    <strong>{preview.duplicateConflicts.length} conflito{preview.duplicateConflicts.length > 1 ? "s" : ""} detectado{preview.duplicateConflicts.length > 1 ? "s" : ""}:</strong>{" "}
+                    nomes diferentes no CSV estão resolvendo para o mesmo clube. Mantenha apenas um ou remapeie.
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {preview.duplicateConflicts.map(conflict => (
+                    <div key={conflict.id_club} className="border border-red-200 rounded-2xl p-3 bg-red-50/40 space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-red-700 font-bold mb-1">
+                        {conflict.crest_url && (
+                          <img src={conflict.crest_url} className="w-5 h-5 object-contain rounded" alt="" />
+                        )}
+                        Conflito → <span className="text-gray-900">{conflict.club_name}</span>
+                      </div>
+                      {conflict.csv_names.map(csvName => (
+                        <div key={csvName} className="space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            {clubMappings[csvName] && clubMappings[csvName] !== ""
+                              ? <CheckCircle2 size={12} className="text-green-500 shrink-0" />
+                              : <XCircle size={12} className="text-gray-400 shrink-0" />}
+                            <span className="text-xs font-mono font-semibold text-gray-700">{csvName}</span>
+                            {clubMappings[csvName] === "" && (
+                              <span className="text-[10px] text-gray-400 ml-1">— será ignorado</span>
+                            )}
+                          </div>
+                          <SearchableSelect
+                            grouped={clubsGrouped}
+                            value={clubMappings[csvName] ?? String(conflict.id_club)}
+                            onChange={val => setClubMap(csvName, val)}
+                            placeholder="Remapear ou deixar vazio para ignorar"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                {unresolvedConflicts.length > 0 && (
+                  <div className="flex items-center gap-2 p-3 bg-red-100 border border-red-300 rounded-2xl text-xs text-red-700 font-semibold">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    Resolva os conflitos antes de importar: para cada conflito, mantenha apenas um nome mapeado para o clube (os outros devem ser remapeados ou limpos).
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mapeamento de times não encontrados */}
             {preview.notFoundTeams.length > 0 && (
               <div className="space-y-3">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Mapear Times Não Encontrados</p>
@@ -197,22 +283,20 @@ export default function UploadTeamsPage() {
                 </p>
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {preview.notFoundTeams.map(csvName => (
-                    <div key={csvName} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        {clubMappings[csvName] ? <CheckCircle2 size={14} className="text-green-500 shrink-0" /> : <XCircle size={14} className="text-amber-400 shrink-0" />}
-                        <span className="text-xs font-mono text-gray-600 truncate">{csvName}</span>
+                    <div key={csvName} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        {clubMappings[csvName]
+                          ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+                          : <XCircle size={13} className="text-amber-400 shrink-0" />}
+                        <span className="text-xs font-mono font-semibold text-gray-700 truncate">{csvName}</span>
+                        <ArrowRight size={11} className="text-gray-300 shrink-0 ml-auto" />
                       </div>
-                      <ArrowRight size={12} className="text-gray-300 shrink-0" />
-                      <select
+                      <SearchableSelect
+                        grouped={clubsGrouped}
                         value={clubMappings[csvName] || ""}
-                        onChange={e => setClubMap(csvName, e.target.value)}
-                        className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#7F33D9]"
-                      >
-                        <option value="">— ignorar —</option>
-                        {preview.allClubs.map(c => (
-                          <option key={c.id_club} value={c.id_club}>{c.name}</option>
-                        ))}
-                      </select>
+                        onChange={val => setClubMap(csvName, val)}
+                        placeholder="Buscar clube... (deixar vazio = ignorar)"
+                      />
                     </div>
                   ))}
                 </div>
@@ -227,8 +311,16 @@ export default function UploadTeamsPage() {
 
             {step !== "done" && (
               <div className="flex justify-center">
-                <button onClick={handleImport} disabled={loading || !league} className={btnPrimary}>
-                  {loading ? <><Loader2 className="animate-spin w-4 h-4" /> Importando...</> : <>Importar Times <ArrowRight size={16} /></>}
+                <button
+                  onClick={handleImport}
+                  disabled={loading || !league || unresolvedConflicts.length > 0}
+                  className={btnPrimary}
+                >
+                  {loading
+                    ? <><Loader2 className="animate-spin w-4 h-4" /> Importando...</>
+                    : unresolvedConflicts.length > 0
+                    ? <><AlertTriangle size={16} /> {unresolvedConflicts.length} conflito{unresolvedConflicts.length > 1 ? "s" : ""} pendente{unresolvedConflicts.length > 1 ? "s" : ""}</>
+                    : <>Importar Times <ArrowRight size={16} /></>}
                 </button>
               </div>
             )}

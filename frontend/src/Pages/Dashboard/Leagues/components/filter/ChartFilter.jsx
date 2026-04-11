@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../../../../../services/api";
+import { useTranslation } from "../../../../../context/TranslationContext";
 
 // ─── Constantes ────────────────────────────────────────────────────────────
 
@@ -29,6 +30,7 @@ export default function ChartFilter({
   onChangeSelectedYears,
   yearSelectionMode = "multiple",
 }) {
+  const { t } = useTranslation();
   const [busca, setBusca] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -127,7 +129,7 @@ export default function ChartFilter({
               disabled={atLimite}
               onChange={(e) => { setBusca(e.target.value); setIsOpen(true); }}
               onFocus={() => setIsOpen(true)}
-              placeholder={atLimite ? "Limite atingido" : "Comparar liga…"}
+              placeholder={atLimite ? t("leagues.limit_reached", "Limite atingido") : t("leagues.compare_placeholder", "Comparar liga…")}
               style={{
                 fontFamily: "inherit",
                 fontSize: 13,
@@ -184,7 +186,7 @@ export default function ChartFilter({
                         animation: "spin 0.6s linear infinite",
                       }}
                     />
-                    Buscando ligas...
+                    {t("leagues.searching", "Buscando ligas...")}
                   </div>
                 ) : ligasFiltradas.length > 0 ? (
                   <ul style={{ maxHeight: 192, overflowY: "auto", listStyle: "none" }}>
@@ -207,7 +209,7 @@ export default function ChartFilter({
                   </ul>
                 ) : (
                   <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa" }}>
-                    Nenhuma liga encontrada
+                    {t("leagues.not_found", "Nenhuma liga encontrada")}
                   </div>
                 )}
               </div>

@@ -5,6 +5,7 @@ import {
     X, Shield, UploadCloud, FileSpreadsheet
 } from "lucide-react";
 import ImportModal from "./ImportModal";
+import SearchableSelect from "../../components/uxui/SearchableSelect";
 
 // ---------------------------------------------------------------------------
 // Estilos reutilizáveis
@@ -117,12 +118,16 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                             </div>
                             <div>
                                 <label className={labelClass}>País</label>
-                                <select className={inputClass} value={newClub.id_country} onChange={set("id_country")}>
-                                    <option value="">Selecione...</option>
-                                    {countries.map((c) => (
-                                        <option key={c.id_country} value={c.id_country}>{c.name}</option>
-                                    ))}
-                                </select>
+                                <SearchableSelect
+                                    options={countries.map((c) => ({
+                                        value: c.id_country,
+                                        label: c.name,
+                                        image: c.flag_url,
+                                    }))}
+                                    value={newClub.id_country}
+                                    onChange={(val) => set("id_country")({ target: { value: val } })}
+                                    placeholder="Buscar país..."
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

@@ -1487,7 +1487,7 @@
  *         description: Erro interno do servidor
  */
 import { Router } from "express";
-import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder } from "../controllers/admin.controller.js";
+import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder } from "../controllers/admin.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1517,6 +1517,7 @@ router.get("/leagues", getAllLeagues);
 router.get("/leagues/:id", getLeagueById);
 router.post("/send-league", createLeague);
 router.put("/leagues/:id/update", updateLeague);
+router.put("/leagues/:id/structure", saveLeagueStructure);
 router.delete("/disable-league/:id", disableLeague);
 router.post("/leagues/search", leaguesSearch);
 

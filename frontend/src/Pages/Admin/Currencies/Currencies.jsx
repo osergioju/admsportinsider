@@ -4,6 +4,7 @@ import {
   ArrowLeft, Loader2, X, Calendar, AlertTriangle
 } from "lucide-react";
 import { api } from "../../../services/api";
+import SearchableSelect from "../../../components/uxui/SearchableSelect";
 
 // ---------------------------------------------------------------------------
 // Estilos
@@ -370,18 +371,16 @@ function CurrencyPairsView({ currency, onBack }) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className={labelClass}>Moeda destino</label>
-                <select
-                  className={inputClass}
+                <SearchableSelect
+                  options={otherCurrencies.map((c) => ({
+                    value: c.code,
+                    label: `${c.code} — ${c.name} (${c.country_name})`,
+                    image: c.flag_url,
+                  }))}
                   value={newPairCode}
-                  onChange={(e) => setNewPairCode(e.target.value)}
-                >
-                  <option value="">Selecione...</option>
-                  {otherCurrencies.map((c) => (
-                    <option key={c.id} value={c.code}>
-                      {c.code} — {c.name} ({c.country_name})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setNewPairCode(val)}
+                  placeholder="Selecione a moeda..."
+                />
               </div>
               <div>
                 <label className={labelClass}>Ano inicial</label>
@@ -691,16 +690,17 @@ export default function Currencies() {
             <div className="space-y-4">
               <div>
                 <label className={labelClass}>País</label>
-                <select
-                  className={inputClass}
+                <SearchableSelect
+                  options={availableCountries.map((c) => ({
+                    value: c.id_country,
+                    label: c.name,
+                    image: c.flag_url,
+                  }))}
                   value={formData.id_country}
-                  onChange={(e) => setFormData((p) => ({ ...p, id_country: e.target.value }))}
-                >
-                  <option value="">Selecione um país...</option>
-                  {availableCountries.map((c) => (
-                    <option key={c.id_country} value={c.id_country}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setFormData((p) => ({ ...p, id_country: val }))}
+                  placeholder="Buscar país..."
+                  disabled={availableCountries.length === 0}
+                />
                 {availableCountries.length === 0 && (
                   <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
                     <AlertTriangle size={11} /> Todos os países já têm moeda cadastrada.

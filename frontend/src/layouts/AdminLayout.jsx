@@ -71,7 +71,7 @@ export default function AdminLayout() {
     };
 
     // --- ESTILOS REUTILIZADOS DO USER LAYOUT ---
-    const menuItemStyle = "group w-full flex items-center justify-between px-5 py-3 rounded-full transition-all duration-300 ease-out border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-0.5 active:scale-95 cursor-pointer mb-1";
+    const menuItemStyle = "group w-full flex items-center justify-between px-3 py-3 rounded-full transition-all duration-300 ease-out border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-0.5 active:scale-95 cursor-pointer mb-1";
     const iconStyle = "text-gray-400 transition-all duration-300 ease-out group-hover:scale-110 group-hover:!text-[#7F33D9]";
     const textStyle = "text-sm font-medium text-[#4E4E4F] group-hover:text-[#0A0A0A] transition-colors";
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
+import { useTranslation } from "../../../context/TranslationContext";
 import LeagueSportsSection from "./LeagueSportsSection";
 
 import RevenueSection from "./components/revenue/RevenueSection";
@@ -15,6 +16,7 @@ import { AuthContext } from "../../../context/AuthContext";
 import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
 
 export default function DashLeagueUniques() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const mainLeagueId = Number(id);
 
@@ -226,7 +228,7 @@ export default function DashLeagueUniques() {
   const [pageTab, setPageTab] = useState("esportivo");
 
   if (loading || !theLeague) {
-    return <p className="text-sm text-gray-500">Carregando dashboard…</p>;
+    return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;
   }
 
   return (
@@ -253,10 +255,10 @@ export default function DashLeagueUniques() {
 
       {/* PAGE TABS: Esportivo | Financeiro */}
       <div className="flex gap-1">
-        {[{key:"esportivo",label:"Esportivo"},{key:"financeiro",label:"Financeiro"}].map(t=>(
-          <button key={t.key} onClick={()=>setPageTab(t.key)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${pageTab===t.key?"bg-violet-600 border-violet-600 text-white shadow-sm":"bg-white border-gray-200 text-gray-600 hover:border-violet-200"}`}>
-            {t.label}
+        {[{key:"esportivo",label:t("sports.tab","Esportivo")},{key:"financeiro",label:t("menu.financial","Financeiro")}].map(tab=>(
+          <button key={tab.key} onClick={()=>setPageTab(tab.key)}
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${pageTab===tab.key?"bg-violet-600 border-violet-600 text-white shadow-sm":"bg-white border-gray-200 text-gray-600 hover:border-violet-200"}`}>
+            {tab.label}
           </button>
         ))}
       </div>

@@ -6,8 +6,10 @@ import { authGuard } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
+router.get("/notas", getNotas);
+
 // Aplica a proteção em todas as rotas deste arquivo
-//router.use(authGuard);
+router.use(authGuard);
 
 // Atualizar e ver perfil
 router.get("/profile", getProfile);
@@ -102,7 +104,6 @@ router.get("/translations", getCommonTranslations);
 
 // GET /user/relatorios?first=12&after=cursor
 router.get("/relatorios", getRelatorios);
-router.get("/notas", getNotas);
 
 // GET /user/relatorios/:id
 router.get("/relatorios/:id", getRelatorioById);

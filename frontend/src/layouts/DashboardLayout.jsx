@@ -10,7 +10,7 @@ import FixedMenu from "../components/uxui/FixedMenu";
 import LinkButton from "../components/uxui/LinkButton";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
 // Ícones do Usuário
-import { Home, PersonStanding, Trophy, Shield, Globe, Heart, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare, ChevronDown, LogOut, CircleX } from "lucide-react";
+import { Home, PersonStanding, Trophy, Shield, Globe, ShieldUser, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare, ChevronDown, LogOut, CircleX } from "lucide-react";
 
 export default function DashboardLayout() {
     const [openMenu, setOpenMenu] = useState(false);
@@ -90,10 +90,25 @@ export default function DashboardLayout() {
 
                 {/* SEÇÃO: MENU */}
                 <div>
-                    <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("section.menu_principal", "Menu Principal")}</span>
+                    <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.main_menu", "Menu Principal")}</span>
                     <ul className="space-y-1">
 
                         {/* Página Inicial */}
+                        {
+                            user?.role == 'admin_master' && (
+                                <div className="group">
+                                    <MenuItem
+                                        onClick={() => setOpenMenu(false)}
+                                        to={user ? "/admin" : "/admin"}
+                                        className={menuItemStyle}
+                                        icon={<ShieldUser strokeWidth={1.5} size={18} className={iconStyle} />}
+                                        label={<span className={textStyle}>Admin</span>}
+                                    />
+                                </div>
+                            )
+                        }
+
+
                         <div className="group">
                             <MenuItem
                                 onClick={() => setOpenMenu(false)}
@@ -115,8 +130,14 @@ export default function DashboardLayout() {
                             </button>
                             {openLigas && (
                                 <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/leagues" label="Todas as ligas" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/leagues/favorites" label="Favoritos" />
+                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/leagues" label={t("menu.leagues_all", "Todas as ligas")} />
+                                    {user && (
+                                        <SubItem
+                                            onClick={() => setOpenMenu(false)}
+                                            to="/dashboard/leagues/favorites"
+                                            label={t("menu.favorites", "Favoritos")}
+                                        />
+                                    )}
                                 </ul>
                             )}
                         </li>
@@ -132,21 +153,35 @@ export default function DashboardLayout() {
                             </button>
                             {openClubes && (
                                 <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/clubs" label="Todos os clubes" />
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/clubs/favorites" label="Favoritos" />
+                                    <SubItem
+                                        onClick={() => setOpenMenu(false)}
+                                        to="/dashboard/clubs"
+                                        label={t("menu.clubs_all", "Todos os clubes")}
+                                    />
+
+                                    {user && (
+                                        <SubItem
+                                            onClick={() => setOpenMenu(false)}
+                                            to="/dashboard/clubs/favorites"
+                                            label={t("menu.favorites", "Favoritos")}
+                                        />
+                                    )}
                                 </ul>
                             )}
                         </li>
 
                         {/* Países */}
                         <div className="group">
-                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.5} size={18} className={iconStyle} />} label={<span className={textStyle}>Países</span>} className={menuItemStyle} />
+                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.5} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.countries", "Países")}</span>} className={menuItemStyle} />
                         </div>
 
                         {/* Outros itens */}
-                        <div className="group"><MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} /></div>
                         <div className="group">
-                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} /></div>
+                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} />
+                        </div>
+                        <div className="group">
+                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} />
+                        </div>
                     </ul>
                 </div>
 
@@ -154,7 +189,7 @@ export default function DashboardLayout() {
                 {
                     user ? (
                         <div>
-                            <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("section.minha_conta", "Minha conta")}</span>
+                            <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.my_account", "Minha conta")}</span>
                             <ul className="space-y-1">
                                 <div className="group">
                                     <MenuItem
@@ -186,7 +221,7 @@ export default function DashboardLayout() {
                 {/* SEÇÃO: SUPORTE */}
                 {user ? (
                     <div>
-                        <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("section.suporte", "Suporte")}</span>
+                        <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.support", "Suporte")}</span>
                         <ul className="space-y-1">
                             <div className="group">
                                 <MenuItem

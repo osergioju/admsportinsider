@@ -1,0 +1,11 @@
+"id";"code";"name_pt";"category"
+1;menu.home;Página inicial;Menu Principal
+2;menu.leagues;Ligas;Menu Principal
+3;menu.clubs;Clubes;Menu Principal
+4;menu.players;Jogadores;Menu Principal
+5;menu.reports;Relatórios;Menu Principal
+6;menu.profile;Perfil;Minha Conta
+7;menu.financial;Financeiro;Minha Conta
+8;menu.faq;Perguntas frequentes;Suporte
+9;menu.contact;Fale conosco;Suporte
+10;menu.logout;Sair;Geral

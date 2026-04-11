@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { api } from "../../services/api"; 
-import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy } from "lucide-react";
+import { api } from "../../services/api";
+import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2 } from "lucide-react";
+import SearchableSelect from "../../components/uxui/SearchableSelect";
+import CompetitionSetupModal from "./CompetitionSetupModal";
 
 export default function GestaoLigas() {
     const [leagues, setLeagues] = useState([]);
@@ -11,7 +13,8 @@ export default function GestaoLigas() {
     const [newLeague, setNewLeague] = useState({ id_country: "", name: "", description: "", logo_url: "", format: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
-    
+    const [setupLeague, setSetupLeague] = useState(null); // liga sendo configurada
+
     // --- BUSCA ---
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -22,7 +25,7 @@ export default function GestaoLigas() {
             setLeagues(respLeagues.data.leagues);
 
             const respCountries = await api.get(`/admin/countries?onlyActive=true`);
-            const countryOptions = respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name }));
+            const countryOptions = respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name, image: c.flag_url }));
             setCountries(countryOptions);
         } catch (err) { console.error("Erro dados:", err); }
     }
@@ -30,8 +33,8 @@ export default function GestaoLigas() {
     useEffect(() => { loadData(); }, []);
 
     // FILTRO NO FRONT
-    const filteredLeagues = leagues.filter(league => 
-        league.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredLeagues = leagues.filter(league =>
+        league.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (league.country_name && league.country_name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
@@ -67,7 +70,7 @@ export default function GestaoLigas() {
             await api.put(`/admin/leagues/${currentLeague.id_league}/update`, newLeague);
             setSuccess(true);
             setTimeout(() => { setModal(false); setSuccess(false); setLoading(false); loadData(); }, 700);
-        } catch (err) { alert("Erro ao atualizar"); setLoading(false); } 
+        } catch (err) { alert("Erro ao atualizar"); setLoading(false); }
     };
 
     const disableLeague = async (id) => {
@@ -105,15 +108,30 @@ export default function GestaoLigas() {
                 {filteredLeagues.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {filteredLeagues.map((league) => (
-                            <div key={league.id_league} onClick={() => openEditModal(league.id_league)} className="group relative bg-white border border-gray-100 rounded-2xl p-6 hover:border-[#7F33D9]/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center gap-4 cursor-pointer">
-                                <div className="relative w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center p-3 border border-gray-100 group-hover:bg-white transition-colors">
+                            <div key={league.id_league} className="group relative bg-white border border-gray-100 rounded-2xl p-6 hover:border-[#7F33D9]/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center gap-4">
+                                <div
+                                    className="relative w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center p-3 border border-gray-100 group-hover:bg-white transition-colors cursor-pointer"
+                                    onClick={() => openEditModal(league.id_league)}
+                                >
                                     {league.logo_url ? <img src={league.logo_url} className="w-full h-full object-contain drop-shadow-sm" alt={league.name} /> : <Trophy size={32} className="text-gray-300" />}
                                 </div>
-                                <div className="flex flex-col gap-1 w-full">
+                                <div className="flex flex-col gap-1 w-full cursor-pointer" onClick={() => openEditModal(league.id_league)}>
                                     <span className="font-bold text-gray-900 text-base group-hover:text-[#7F33D9] transition-colors truncate w-full">{league.name}</span>
                                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{league.country_name || "Internacional"}</span>
                                 </div>
-                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"><div className="w-7 h-7 rounded-full bg-purple-50 flex items-center justify-center text-[#7F33D9]"><Search size={12} /></div></div>
+                                {/* Botão configurar estrutura */}
+                                <button
+                                    onClick={() => setSetupLeague(league)}
+                                    title="Configurar estrutura da competição"
+                                    className="absolute bottom-3 right-3 w-7 h-7 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-[#7F33D9]/10 hover:text-[#7F33D9] hover:border-[#7F33D9]/30 transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                    <Settings2 size={13} />
+                                </button>
+                                {/* Indicador de estrutura configurada */}
+                                {league.structure_json && Object.keys(league.structure_json).length > 0 && (
+                                    <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-emerald-400"
+                                         title={`Estrutura configurada (${Object.keys(league.structure_json).sort((a,b)=>b-a).join(", ")})`} />
+                                )}
                             </div>
                         ))}
                     </div>
@@ -125,6 +143,15 @@ export default function GestaoLigas() {
                     </div>
                 )}
             </div>
+
+            {/* Modal - Configurar Estrutura */}
+            {setupLeague && (
+                <CompetitionSetupModal
+                    league={setupLeague}
+                    onClose={() => setSetupLeague(null)}
+                    onSaved={() => { setSetupLeague(null); loadData(); }}
+                />
+            )}
 
             {/* Modal - Renderização */}
             {modal && (
@@ -138,10 +165,12 @@ export default function GestaoLigas() {
                         <div className="p-8 space-y-5">
                             <div>
                                 <label className={labelClass}>País</label>
-                                <select value={newLeague.id_country} onChange={(e) => setNewLeague({ ...newLeague, id_country: e.target.value })} className={inputClass}>
-                                    <option value="">Selecione...</option>
-                                    {countries.map((c) => (<option key={c.value} value={c.value}>{c.label}</option>))}
-                                </select>
+                                <SearchableSelect
+                                    options={countries}
+                                    value={newLeague.id_country}
+                                    onChange={(val) => setNewLeague({ ...newLeague, id_country: val })}
+                                    placeholder="Buscar país..."
+                                />
                             </div>
                             <div>
                                 <label className={labelClass}>Nome</label>
@@ -167,6 +196,14 @@ export default function GestaoLigas() {
                             <div className="pt-4 flex items-center justify-between gap-4">
                                 {isEditing && <button onClick={() => disableLeague(currentLeague.id_league)} className="text-red-500 text-xs font-bold uppercase tracking-wide hover:bg-red-50 px-3 py-2 rounded-lg"><Trash2 size={14} className="inline mr-1" /> Desativar</button>}
                                 <div className="flex gap-3 ml-auto">
+                                    {isEditing && (
+                                        <button
+                                            onClick={() => { setModal(false); setSetupLeague(currentLeague); }}
+                                            className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
+                                        >
+                                            <Settings2 size={15} /> Estrutura
+                                        </button>
+                                    )}
                                     <button onClick={() => setModal(false)} className={btnSecondary}>Cancelar</button>
                                     <button onClick={isEditing ? updateLeague : sendLeague} disabled={loading || success} className={btnPrimary}>{loading ? <Loader2 size={18} className="animate-spin" /> : success ? <Check size={18} /> : "Salvar"}</button>
                                 </div>

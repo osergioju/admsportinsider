@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 import { CalendarDays, Castle, Handshake } from "lucide-react";
+import { useTranslation } from "../../../context/TranslationContext";
 
 // Sections
 import RevenueSection from "./components/revenue/RevenueSection";
@@ -16,27 +17,27 @@ import { AuthContext } from "../../../context/AuthContext"
 import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
 
 export default function DashClubUniques() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const mainClubId = Number(id);
 
   // Usuário & plano
   const { user } = useContext(AuthContext);
-  const planID = user?.plan_id;
+  const planID = user?.plan_id ?? 1;
 
   // Cria vários níveis de acesso de acordo com o gráfico
   const chartPermissions = {
     revenue: [1, 2, 3],
     payroll: [1, 2, 3],
-    costs: [1, 2, 3],
+    costs: [2, 3],
     netResult: [1, 2, 3],
     netEvolution: [1, 2, 3],
-    debts: [1, 2, 3],
-    revenueBreakdown: [1, 2, 3]
+    debts: [2, 3],
+    revenueBreakdown: [2, 3]
   };
 
   // Não-logados veem tudo. Logados: verificar plano.
   const hasAccess = (chartKey, planID) => {
-    if (!user) return true;
     return chartPermissions[chartKey]?.includes(planID);
   };
 
@@ -287,7 +288,7 @@ export default function DashClubUniques() {
   }, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);
 
   if (loading || !theClub) {
-    return <p className="text-sm text-gray-500">Carregando dashboard…</p>;
+    return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;
   }
 
   const foundedAt = theClub?.club?.founded_at
@@ -363,7 +364,7 @@ export default function DashClubUniques() {
         <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
           {!hasAccess("revenue", planID) ? (
             <PlanUpgradePrompt
-              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+              title="Gráfico de receitas por ano disponível apenas para os planos Pro e Premium"
             ></PlanUpgradePrompt>
           ) : (
             <RevenueSection
@@ -397,7 +398,7 @@ export default function DashClubUniques() {
 
           {!hasAccess("revenueBreakdown", planID) ? (
             <PlanUpgradePrompt
-              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+              title="Gráfico de receitas por origem disponível apenas para os planos Pro e Premium"
             ></PlanUpgradePrompt>
           ) : (
             <RevenueBreakdownSection
@@ -434,7 +435,7 @@ export default function DashClubUniques() {
         <div className="w-full grid lg:grid-cols-1 gap-4 mb-4">
           {!hasAccess("payroll", planID) ? (
             <PlanUpgradePrompt
-              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+              title="Gráfico de folha salarial disponível apenas para os planos Pro e Premium"
             ></PlanUpgradePrompt>
           ) : (
             <PayrollSection
@@ -471,7 +472,7 @@ export default function DashClubUniques() {
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
           {!hasAccess("costs", planID) ? (
             <PlanUpgradePrompt
-              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+              title="Gráfico de custos disponível apenas para os planos Pro e Premium"
             ></PlanUpgradePrompt>
           ) : (
             <CostsSection
@@ -505,7 +506,7 @@ export default function DashClubUniques() {
 
           {!hasAccess("netResult", planID) ? (
             <PlanUpgradePrompt
-              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+              title="Gráfico de resultado líquido disponível apenas para os planos Pro e Premium"
             ></PlanUpgradePrompt>
           ) : (
             <NetResultSection
@@ -542,7 +543,7 @@ export default function DashClubUniques() {
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
           {!hasAccess("debts", planID) ? (
             <PlanUpgradePrompt
-              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+              title="Gráfico de dívidas disponível apenas para os planos Pro e Premium"
             ></PlanUpgradePrompt>
           ) : (
             <DebtsSection
@@ -574,7 +575,7 @@ export default function DashClubUniques() {
 
           {!hasAccess("netResult", planID) ? (
             <PlanUpgradePrompt
-              title="Gráfico de receitas disponíveil apenas para os planos Pro e Premium"
+              title="Gráfico de resultado financeiro disponível apenas para os planos Pro e Premium"
             ></PlanUpgradePrompt>
           ) : (
             <NetResultTableSection

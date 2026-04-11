@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { Search, Globe, X } from "lucide-react";
+import { useTranslation } from "../../../context/TranslationContext";
 
 function SkeletonCard() {
   return (
@@ -17,6 +18,7 @@ function SkeletonCard() {
 
 export default function DashCountries() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [countries, setCountries] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,9 +44,9 @@ export default function DashCountries() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Países</h1>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t("countries.title", "Países")}</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {loading ? "Carregando..." : `${countries.length} países com ligas ou clubes cadastrados`}
+          {loading ? t("ui.loading", "Carregando...") : `${countries.length} ${t("countries.subtitle", "países com ligas ou clubes cadastrados")}`}
         </p>
       </div>
 
@@ -55,7 +57,7 @@ export default function DashCountries() {
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar país..."
+          placeholder={t("countries.search_placeholder", "Buscar país...")}
           className="w-full pl-10 pr-9 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 shadow-sm placeholder:text-gray-400 transition-all"
         />
         {search && (
@@ -75,11 +77,11 @@ export default function DashCountries() {
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
             <Globe size={28} className="text-gray-400" />
           </div>
-          <h3 className="text-base font-bold text-gray-900 mb-1">Nenhum país encontrado</h3>
-          <p className="text-sm text-gray-500">Tente ajustar a busca.</p>
+          <h3 className="text-base font-bold text-gray-900 mb-1">{t("countries.not_found", "Nenhum país encontrado")}</h3>
+          <p className="text-sm text-gray-500">{t("countries.try_search", "Tente ajustar a busca.")}</p>
           {search && (
             <button onClick={() => setSearch("")} className="mt-4 text-sm text-violet-600 font-medium hover:underline">
-              Limpar busca
+              {t("ui.clear_search", "Limpar busca")}
             </button>
           )}
         </div>
@@ -106,11 +108,11 @@ export default function DashCountries() {
                 </p>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-[11px] text-gray-400">
-                    <span className="font-semibold text-gray-600">{country.leagues_count}</span> liga{country.leagues_count !== 1 ? "s" : ""}
+                    <span className="font-semibold text-gray-600">{country.leagues_count}</span> {country.leagues_count !== 1 ? t("leagues.plural", "ligas") : t("leagues.singular", "liga")}
                   </span>
                   <span className="text-gray-200">·</span>
                   <span className="text-[11px] text-gray-400">
-                    <span className="font-semibold text-gray-600">{country.clubs_count}</span> clube{country.clubs_count !== 1 ? "s" : ""}
+                    <span className="font-semibold text-gray-600">{country.clubs_count}</span> {country.clubs_count !== 1 ? t("clubs.plural", "clubes") : t("clubs.singular", "clube")}
                   </span>
                 </div>
               </div>

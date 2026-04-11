@@ -2,19 +2,21 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "../../../context/TranslationContext";
 
 const positionOrder = ["Goleiro", "Lateral", "Zagueiro", "Meio-campista", "Atacante"];
 
 const positionMeta = {
-  "Goleiro":       { label: "Goleiros",       accent: "from-amber-400 to-orange-500",   badge: "bg-amber-100 text-amber-700",    dot: "bg-amber-400" },
-  "Lateral":       { label: "Laterais",        accent: "from-sky-400 to-blue-600",       badge: "bg-sky-100 text-sky-700",        dot: "bg-sky-400" },
-  "Zagueiro":      { label: "Zagueiros",       accent: "from-emerald-400 to-teal-600",   badge: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-400" },
-  "Meio-campista": { label: "Meio campistas",  accent: "from-violet-400 to-purple-600",  badge: "bg-violet-100 text-violet-700",  dot: "bg-violet-400" },
-  "Atacante":      { label: "Atacantes",        accent: "from-rose-400 to-red-600",       badge: "bg-rose-100 text-rose-700",      dot: "bg-rose-400" },
+  "Goleiro":       { labelKey: "players.position.goalkeepers", labelFallback: "Goleiros",       accent: "from-amber-400 to-orange-500",   badge: "bg-amber-100 text-amber-700",    dot: "bg-amber-400" },
+  "Lateral":       { labelKey: "players.position.fullbacks",   labelFallback: "Laterais",        accent: "from-sky-400 to-blue-600",       badge: "bg-sky-100 text-sky-700",        dot: "bg-sky-400" },
+  "Zagueiro":      { labelKey: "players.position.defenders",   labelFallback: "Zagueiros",       accent: "from-emerald-400 to-teal-600",   badge: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-400" },
+  "Meio-campista": { labelKey: "players.position.midfielders", labelFallback: "Meio campistas",  accent: "from-violet-400 to-purple-600",  badge: "bg-violet-100 text-violet-700",  dot: "bg-violet-400" },
+  "Atacante":      { labelKey: "players.position.forwards",    labelFallback: "Atacantes",        accent: "from-rose-400 to-red-600",       badge: "bg-rose-100 text-rose-700",      dot: "bg-rose-400" },
 };
 
 function PlayerCard({ player }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const meta = positionMeta[player.position] || positionMeta["Meio-campista"];
 
@@ -60,10 +62,10 @@ function PlayerCard({ player }) {
           <p className="text-gray-900 text-xs font-bold truncate">{player.name}</p>
           <div className="flex items-center justify-between mt-1">
             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${meta.badge}`}>
-              {player.position}
+              {t(`players.position.${player.position === "Goleiro" ? "goalkeeper" : player.position === "Lateral" ? "fullback" : player.position === "Zagueiro" ? "defender" : player.position === "Meio-campista" ? "midfielder" : "forward"}`, player.position)}
             </span>
             {player.age && (
-              <span className="text-[10px] text-gray-400 font-medium">{player.age} anos</span>
+              <span className="text-[10px] text-gray-400 font-medium">{player.age} {t("players.age_suffix", "anos")}</span>
             )}
           </div>
         </div>
@@ -74,6 +76,7 @@ function PlayerCard({ player }) {
 
 export default function ClubPlayers() {
   const { id }     = useParams();
+  const { t } = useTranslation();
   const [season, setSeason]                 = useState("2025");
   const [players, setPlayers]               = useState([]);
   const [availableSeasons, setAvailableSeasons] = useState(["2025"]);
@@ -112,7 +115,7 @@ export default function ClubPlayers() {
     <div className="w-full pb-12">
       {/* Season selector */}
       <div className="flex items-center gap-3 mb-8">
-        <span className="text-sm font-medium text-gray-500">Selecione a temporada</span>
+        <span className="text-sm font-medium text-gray-500">{t("players.select_season", "Selecione a temporada")}</span>
         <select
           value={season}
           onChange={e => setSeason(e.target.value)}
@@ -125,13 +128,13 @@ export default function ClubPlayers() {
       {loading && (
         <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
           <Loader2 className="animate-spin w-5 h-5" />
-          <span className="text-sm">Carregando elenco...</span>
+          <span className="text-sm">{t("players.loading_squad", "Carregando elenco...")}</span>
         </div>
       )}
 
       {!loading && players.length === 0 && (
         <div className="py-16 text-center text-gray-400 text-sm">
-          Nenhum jogador encontrado para a temporada {season}.
+          {t("players.none_in_season", "Nenhum jogador encontrado para a temporada")} {season}.
         </div>
       )}
 
@@ -143,7 +146,7 @@ export default function ClubPlayers() {
               <div key={pos}>
                 <div className="flex items-center gap-3 mb-4">
                   <span className={`w-2.5 h-2.5 rounded-full ${meta.dot}`} />
-                  <h2 className="text-lg font-bold text-gray-900">{meta.label}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">{t(meta.labelKey, meta.labelFallback)}</h2>
                   <span className="text-sm text-gray-400 font-medium">{list.length}</span>
                   <div className="flex-1 h-px bg-gray-100 ml-1" />
                 </div>

@@ -5,7 +5,7 @@ import { authGuard } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 //
-router.get("/all",    authGuard,    getFavorites);
+router.get("/all", authGuard, getFavorites);
 router.post("/toggle", authGuard, toggleFavorite);
 
 export default router;

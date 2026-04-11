@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { ChevronLeft, Globe, Trophy, Users } from "lucide-react";
+import { useTranslation } from "../../../context/TranslationContext";
 
 const FORMAT_LABEL = {
   pontos_corridos: "Pontos Corridos",
@@ -28,6 +29,7 @@ function SkeletonBlock({ lines = 3 }) {
 export default function CountryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("leagues"); // "leagues" | "clubs"
@@ -54,7 +56,7 @@ export default function CountryDetail() {
         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-violet-600 transition-colors font-medium"
       >
         <ChevronLeft size={16} />
-        Todos os países
+        {t("ui.all_countries", "Todos os países")}
       </button>
 
       {/* Hero */}
@@ -72,11 +74,11 @@ export default function CountryDetail() {
             <h1 className="text-2xl font-bold text-gray-900">{data.country.name}</h1>
             <div className="flex items-center gap-4 mt-1">
               <span className="text-sm text-gray-500">
-                <span className="font-semibold text-gray-700">{data.leagues.length}</span> liga{data.leagues.length !== 1 ? "s" : ""}
+                <span className="font-semibold text-gray-700">{data.leagues.length}</span> {data.leagues.length !== 1 ? t("leagues.plural", "ligas") : t("leagues.singular", "liga")}
               </span>
               <span className="text-gray-200">·</span>
               <span className="text-sm text-gray-500">
-                <span className="font-semibold text-gray-700">{data.clubs.length}</span> clube{data.clubs.length !== 1 ? "s" : ""}
+                <span className="font-semibold text-gray-700">{data.clubs.length}</span> {data.clubs.length !== 1 ? t("clubs.plural", "clubes") : t("clubs.singular", "clube")}
               </span>
             </div>
           </div>
@@ -86,8 +88,8 @@ export default function CountryDetail() {
       {/* Tabs */}
       <div className="flex gap-2">
         {[
-          { key: "leagues", label: "Ligas", icon: Trophy },
-          { key: "clubs",   label: "Clubes", icon: Users },
+          { key: "leagues", label: t("menu.leagues", "Ligas"), icon: Trophy },
+          { key: "clubs",   label: t("menu.clubs", "Clubes"), icon: Users },
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -116,7 +118,7 @@ export default function CountryDetail() {
 
         /* ── LIGAS ── */
         data.leagues.length === 0 ? (
-          <div className="py-16 text-center text-gray-400 text-sm">Nenhuma liga cadastrada para este país.</div>
+          <div className="py-16 text-center text-gray-400 text-sm">{t("leagues.none_registered", "Nenhuma liga cadastrada para este país.")}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {data.leagues.map(league => (
@@ -143,7 +145,7 @@ export default function CountryDetail() {
                     )}
                     {league.clubs_count > 0 && (
                       <span className="text-[11px] text-gray-400">
-                        {league.clubs_count} clube{league.clubs_count !== 1 ? "s" : ""}
+                        {league.clubs_count} {league.clubs_count !== 1 ? t("clubs.plural", "clubes") : t("clubs.singular", "clube")}
                       </span>
                     )}
                   </div>
@@ -166,14 +168,14 @@ export default function CountryDetail() {
                 type="text"
                 value={clubSearch}
                 onChange={e => setClubSearch(e.target.value)}
-                placeholder="Filtrar clube..."
+                placeholder={t("countries.filter_club", "Filtrar clube...")}
                 className="w-full pl-4 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 shadow-sm placeholder:text-gray-400 transition-all"
               />
             </div>
           )}
 
           {filteredClubs.length === 0 ? (
-            <div className="py-16 text-center text-gray-400 text-sm">Nenhum clube encontrado.</div>
+            <div className="py-16 text-center text-gray-400 text-sm">{t("clubs.not_found_period", "Nenhum clube encontrado.")}</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredClubs.map(club => (

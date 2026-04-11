@@ -5,20 +5,20 @@ import { useNavigate, Link } from "react-router-dom";
 import { api } from "../../services/api";
 import GoogleButton from "../../components/uxui/GoogleButton";
 import SubmitButton from "../../components/uxui/SubmitButton";
-import SportinsiderIcon from "../../assets/img/sportinsider-logo.png";
+import SportinsiderIcon from "../../assets/svg/brand-white.svg"
 import { useRedirectIfAuthenticated } from "../../services/checkUser";
 
 export default function Register() {
     useTitle("Crie sua conta");
 
     const { loadingAuth, user } = useRedirectIfAuthenticated();
-        
+
     const navigate = useNavigate();
 
     const [nome, setNome] = useState("");
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
-    const [confirmarSenha, setConfirmarSenha] = useState(""); 
+    const [confirmarSenha, setConfirmarSenha] = useState("");
     const [error, setError] = useState("");
     const [isRegistering, setIsRegistering] = useState(false);
     const [strength, setStrength] = useState(0);
@@ -38,10 +38,10 @@ export default function Register() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError("");
-        
+
         if (senha !== confirmarSenha) {
             setError("As senhas não coincidem. Por favor, verifique.");
-            return; 
+            return;
         }
 
         if (strength < 3) {
@@ -78,16 +78,24 @@ export default function Register() {
     return (
         <div className="w-full min-h-screen flex flex-col top-0 left-0 bg-[#0C0718] text-white overflow-x-hidden">
 
-             { 
+            {
                 !registerOk && (
                     <div className="w-full flex justify-center pt-8 px-4 sm:px-6 lg:px-8 z-20">
                         <div className="w-full max-w-[1740px] h-[68px] rounded-full flex justify-between items-center px-4 lg:px-12 backdrop-blur-md border border-white/10 bg-gradient-to-l from-[#1C142F] via-[#3D315D] to-[#c53ed40] to-transparent">
                             <div className="flex items-center gap-3">
-                                <img 
-                                    src={SportinsiderIcon} 
-                                    alt="Logo Sportinsider" 
-                                    className="w-36 h-auto" 
-                                />
+                                <Link to="/">
+                                    <img
+                                        src={SportinsiderIcon}
+                                        alt="Logo Sportinsider"
+                                        className="w-36 lg:w-44 xl:w-50 h-auto"
+                                    />
+                                </Link>
+                            </div>
+                            <div className="lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
+                                <Link to="/dados"><div className="cursor-pointer hover:text-white transition-colors">METODOLOGIA</div></Link>
+                                <Link to="/pricing"><div className="cursor-pointer hover:text-white transition-colors">PLANOS</div></Link>
+                                <Link to="/dashboard-public"><div className="cursor-pointer hover:text-white transition-colors">TESTE GRÁTIS</div></Link>
+                                <Link to="/register"><div className="cursor-pointer hover:text-white transition-colors">COMEÇAR AGORA</div></Link>
                             </div>
                             <div className="flex items-center text-sm text-gray-300 bg-[#0C0718] px-8 py-3 rounded-full border border-white/10 shadow-lg">
                                 <span className="mr-1 hidden sm:inline font-light">Já tem uma conta?</span>
@@ -99,46 +107,46 @@ export default function Register() {
                     </div>
                 )
 
-             }   
-            
+            }
+
 
             {/* Conteúdo Principal Centralizado */}
             {
                 registerOk ? (
                     <div className="w-full h-screen flex flex-col items-center justify-center text-center px-4 animate-fade-in">
-                            
-                            <div className="w-24 h-24 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-8 shadow-[0_0_30px_-10px_rgba(34,197,94,0.3)]">
-                                <svg 
-                                    width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                                    className="text-green-400"
-                                >
-                                    <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            </div>
 
-                            
-                            <h2 className="mb-4 text-3xl lg:text-4xl font-bold bg-[linear-gradient(90deg,#FFFFFF_0%,#E2D6FF_100%)] bg-clip-text text-transparent">
-                                Cadastro realizado!
-                            </h2>
-
-                            
-                            <p className="text-[#FFFFFF99] text-lg mb-2 max-w-md leading-relaxed">
-                                Sua conta foi criada com sucesso.
-                            </p>
-                            <p className="text-[#FFFFFF99] text-base mb-10 max-w-md leading-relaxed">
-                                Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada (e o spam).
-                            </p>
-
-                            
-                            <div className="bg-[#FFFFFF05] border border-[#FFFFFF10] rounded-2xl p-6 w-full max-w-sm backdrop-blur-sm">
-                                <span className="text-sm text-[#FFFFFF99] block mb-2">
-                                    Já confirmou seu e-mail?
-                                </span>
-                                <Link to="/login" className="text-[#9F50FF] hover:text-[#B475FF] font-medium transition-colors underline decoration-[#9F50FF] underline-offset-4 hover:decoration-[#B475FF]">
-                                    Login aqui
-                                </Link>
-                            </div>
+                        <div className="w-24 h-24 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-8 shadow-[0_0_30px_-10px_rgba(34,197,94,0.3)]">
+                            <svg
+                                width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                                className="text-green-400"
+                            >
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                         </div>
+
+
+                        <h2 className="mb-4 text-3xl lg:text-4xl font-bold bg-[linear-gradient(90deg,#FFFFFF_0%,#E2D6FF_100%)] bg-clip-text text-transparent">
+                            Cadastro realizado!
+                        </h2>
+
+
+                        <p className="text-[#FFFFFF99] text-lg mb-2 max-w-md leading-relaxed">
+                            Sua conta foi criada com sucesso.
+                        </p>
+                        <p className="text-[#FFFFFF99] text-base mb-10 max-w-md leading-relaxed">
+                            Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada (e o spam).
+                        </p>
+
+
+                        <div className="bg-[#FFFFFF05] border border-[#FFFFFF10] rounded-2xl p-6 w-full max-w-sm backdrop-blur-sm">
+                            <span className="text-sm text-[#FFFFFF99] block mb-2">
+                                Já confirmou seu e-mail?
+                            </span>
+                            <Link to="/login" className="text-[#9F50FF] hover:text-[#B475FF] font-medium transition-colors underline decoration-[#9F50FF] underline-offset-4 hover:decoration-[#B475FF]">
+                                Login aqui
+                            </Link>
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex-grow flex flex-col items-center justify-center w-full py-12 lg:py-24 relative z-10">
                         <div className="w-full max-w-[500px] px-6 flex flex-col gap-10">
@@ -148,14 +156,14 @@ export default function Register() {
                                 {/* do meio paradinho */}
 
                                 {/* sobe */}
-                                <div style={{ "--recoil-distance": "50px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#7E34D9] animate-recoil-left-1"/>
-                                <div style={{ "--recoil-distance": "150px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#ffffff00] animate-recoil-left-2"/>
-                                <div style={{ "--recoil-distance": "300px" }}  className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7E34D9] to-[#ffffff00] animate-recoil-left-3"/>
+                                <div style={{ "--recoil-distance": "50px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#7E34D9] animate-recoil-left-1" />
+                                <div style={{ "--recoil-distance": "150px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7e34d98a] to-[#ffffff00] animate-recoil-left-2" />
+                                <div style={{ "--recoil-distance": "300px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-t from-[#7E34D9] to-[#ffffff00] animate-recoil-left-3" />
 
                                 {/* desce */}
-                                <div style={{ "--recoil-distance": "-50px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-1"/>
-                                <div style={{ "--recoil-distance": "-150px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-2"/>
-                                <div style={{ "--recoil-distance": "-300px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-3"/>
+                                <div style={{ "--recoil-distance": "-50px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-1" />
+                                <div style={{ "--recoil-distance": "-150px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-2" />
+                                <div style={{ "--recoil-distance": "-300px" }} className="absolute lg:w-[480px] lg:h-[480px] w-[260px] h-[260px] rounded-full bg-linear-to-b from-[#7e34d98a] to-[#ffffff00] animate-recoil-right-3" />
 
                             </div>
                             <div className="w-full z-40">
@@ -198,33 +206,31 @@ export default function Register() {
                                             setStrength(checkPasswordStrength(e.target.value));
                                         }}
                                     />
-                                    
+
                                     {senha.length > 0 && (
-                                            <div className="flex items-center justify-between px-1 mb-3">
-                                                <div className="flex gap-1 h-1 flex-grow mr-4">
-                                                    {[1, 2, 3, 4, 5].map((level) => (
-                                                        <div 
-                                                            key={level} 
-                                                            className={`h-full flex-grow rounded-full transition-all duration-300 ${
-                                                                strength >= level 
-                                                                    ? (strength < 3 ? 'bg-red-500' : strength < 4 ? 'bg-yellow-400' : 'bg-green-400') 
-                                                                    : 'bg-[#FFFFFF1A]'
+                                        <div className="flex items-center justify-between px-1 mb-3">
+                                            <div className="flex gap-1 h-1 flex-grow mr-4">
+                                                {[1, 2, 3, 4, 5].map((level) => (
+                                                    <div
+                                                        key={level}
+                                                        className={`h-full flex-grow rounded-full transition-all duration-300 ${strength >= level
+                                                            ? (strength < 3 ? 'bg-red-500' : strength < 4 ? 'bg-yellow-400' : 'bg-green-400')
+                                                            : 'bg-[#FFFFFF1A]'
                                                             }`}
-                                                        />
-                                                    ))}
-                                                </div>
-                                                <span className={`text-xs font-medium ${
-                                                    strength < 3 ? 'text-red-400' : strength < 4 ? 'text-yellow-400' : 'text-green-400'
-                                                }`}>
-                                                    {strength === 0 && "Muito fraca"}
-                                                    {strength === 1 && "Fraca"}
-                                                    {strength === 2 && "Média"}
-                                                    {strength === 3 && "Boa"}
-                                                    {strength === 4 && "Forte"}
-                                                    {strength === 5 && "Muito forte!"}
-                                                </span>
+                                                    />
+                                                ))}
                                             </div>
-                                        )}
+                                            <span className={`text-xs font-medium ${strength < 3 ? 'text-red-400' : strength < 4 ? 'text-yellow-400' : 'text-green-400'
+                                                }`}>
+                                                {strength === 0 && "Muito fraca"}
+                                                {strength === 1 && "Fraca"}
+                                                {strength === 2 && "Média"}
+                                                {strength === 3 && "Boa"}
+                                                {strength === 4 && "Forte"}
+                                                {strength === 5 && "Muito forte!"}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     <Input
                                         label="Confirme a Senha"
@@ -245,14 +251,13 @@ export default function Register() {
                                                 onChange={(e) => setNewsletter(e.target.checked)}
                                                 className="sr-only"
                                             />
-                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
-                                                newsletter
-                                                    ? "bg-[#7F33D9] border-[#7F33D9]"
-                                                    : "bg-transparent border-[#FFFFFF33] group-hover:border-[#7F33D9]/60"
-                                            }`}>
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${newsletter
+                                                ? "bg-[#7F33D9] border-[#7F33D9]"
+                                                : "bg-transparent border-[#FFFFFF33] group-hover:border-[#7F33D9]/60"
+                                                }`}>
                                                 {newsletter && (
                                                     <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
-                                                        <path d="M1 4L4 7L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <path d="M1 4L4 7L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                 )}
                                             </div>
@@ -263,7 +268,7 @@ export default function Register() {
                                     </label>
 
                                     {/* Botão Submit Gradiente */}
-                                    <SubmitButton {...{disabled: isRegistering}} text={ isRegistering ? "Cadastrando..." : "Cadastrar"} />
+                                    <SubmitButton {...{ disabled: isRegistering }} text={isRegistering ? "Cadastrando..." : "Cadastrar"} />
 
                                     {error && (
                                         <p className="text-[#F44336] text-sm text-center mt-1 bg-[#F44336]/10 py-2 rounded-md border border-[#F44336]/20">
@@ -285,9 +290,9 @@ export default function Register() {
                     </div>
                 )
             }
-            
 
-            
+
+
         </div>
     );
 }

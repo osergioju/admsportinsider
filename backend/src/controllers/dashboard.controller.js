@@ -1618,6 +1618,140 @@ export async function getCountries(req, res) {
   }
 }
 
+export async function countriesSearch(req, res) {
+  try {
+    const { name } = req.body;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const values = [];
+    let whereClause = `WHERE co.active = TRUE`;
+    let idx = 1;
+
+    // 🔍 Filtro por nome (com unaccent igual fizemos antes)
+    if (name) {
+      whereClause += ` AND unaccent(co.name) ILIKE unaccent($${idx})`;
+      values.push(`%${name}%`);
+      idx++;
+    }
+
+    // 📦 Query principal
+    const countriesQuery = await db.query(
+      `
+      SELECT 
+        co.id_country,
+        co.name,
+        co.flag_url,
+        co.active
+
+      FROM countries co
+      ${whereClause}
+      ORDER BY co.name ASC
+      LIMIT $${idx} OFFSET $${idx + 1};
+      `,
+      [...values, limit, offset]
+    );
+
+    // 🔢 Contagem total
+    const countQuery = await db.query(
+      `
+      SELECT COUNT(*) 
+      FROM countries co
+      ${whereClause};
+      `,
+      values
+    );
+
+    const total = parseInt(countQuery.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      countries: countriesQuery.rows,
+      pagination: { total, page, totalPages }
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar países:", err);
+    return res.status(500).json({ message: "Erro ao buscar países" });
+  }
+}
+
+export async function playersSearch(req, res) {
+  try {
+    const { name, nationality } = req.body;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const values = [];
+    let whereClause = `WHERE 1=1`;
+    let idx = 1;
+
+    // 🔍 Filtro por nome (com unaccent)
+    if (name) {
+      whereClause += ` AND unaccent(p.full_name) ILIKE unaccent($${idx})`;
+      values.push(`%${name}%`);
+      idx++;
+    }
+
+    // 🌍 Filtro por nacionalidade
+    if (nationality) {
+      whereClause += ` AND p.nationality = $${idx}`;
+      values.push(nationality);
+      idx++;
+    }
+
+    // 📦 Query principal
+    const playersQuery = await db.query(
+      `
+      SELECT 
+        p.id_player,
+        p.full_name,
+        p.birthday,
+        p.position,
+        p.created_at,
+        p.nationality,
+        co.name AS country_name,
+        co.flag_url
+
+      FROM players p
+      LEFT JOIN countries co 
+        ON co.id_country = p.nationality
+
+      ${whereClause}
+      ORDER BY p.full_name ASC
+      LIMIT $${idx} OFFSET $${idx + 1};
+      `,
+      [...values, limit, offset]
+    );
+
+    // 🔢 Contagem total
+    const countQuery = await db.query(
+      `
+      SELECT COUNT(*) 
+      FROM players p
+      ${whereClause};
+      `,
+      values
+    );
+
+    const total = parseInt(countQuery.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      players: playersQuery.rows,
+      pagination: { total, page, totalPages }
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar jogadores:", err);
+    return res.status(500).json({ message: "Erro ao buscar jogadores" });
+  }
+}
+
 // ─────────────────────────────────────────────
 // COUNTRY DETAIL — ligas + clubes do país
 // ─────────────────────────────────────────────

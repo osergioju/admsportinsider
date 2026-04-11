@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../../../../context/TranslationContext";
 import {
   CheckCircle2, Clock, AlertCircle, Zap, Shield,
   MessageCircle, ArrowRight, X, AlertTriangle, Loader2,
@@ -10,6 +11,7 @@ import { api } from "../../../../services/api";
 
 export default function SubscriptionManagement() {
   const { user } = useContext(AuthContext);
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [plans, setPlans] = useState([]);
@@ -117,10 +119,10 @@ export default function SubscriptionManagement() {
       canceled: "bg-red-50 text-red-600 border-red-100",
     };
     const labels = {
-      active: "Ativo",
-      free: "Gratuito",
-      canceling: "Cancelamento agendado",
-      canceled: "Cancelado",
+      active: t("financial.status_active", "Ativo"),
+      free: t("financial.status_free", "Gratuito"),
+      canceling: t("financial.status_cancel_sched", "Cancelamento agendado"),
+      canceled: t("financial.status_cancelled", "Cancelado"),
     };
     const icons = {
       active: <CheckCircle2 size={12} />,
@@ -147,17 +149,17 @@ export default function SubscriptionManagement() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#111] tracking-tight">
-            Assinatura e Cobrança
+            {t("financial.title", "Assinatura e Cobrança")}
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Gerencie seu plano, métodos de pagamento e notas fiscais.
+            {t("financial.subtitle", "Gerencie seu plano, métodos de pagamento e notas fiscais.")}
           </p>
         </div>
 
         {!loadingPlans && upgradePlan && !isCanceling && (
           <UpgradeButton
             plan_id={isFreePlan ? upgradePlan.id : currentPlan?.id}
-            label={isFreePlan ? "Fazer Upgrade" : "Mudar Plano"}
+            label={isFreePlan ? t("financial.upgrade", "Fazer Upgrade") : t("financial.change_plan", "Mudar Plano")}
           />
         )}
 
@@ -172,7 +174,7 @@ export default function SubscriptionManagement() {
               ? <Loader2 size={16} className="animate-spin" />
               : <Zap size={16} />
             }
-            {portalLoading ? "Aguarde..." : "Reativar assinatura"}
+            {portalLoading ? "Aguarde..." : t("financial.reactivate", "Reativar assinatura")}
           </button>
         )}
       </div>
@@ -218,7 +220,7 @@ export default function SubscriptionManagement() {
             <div className="bg-white rounded-3xl border border-gray-200 p-8 shadow-sm flex items-center justify-center min-h-[220px]">
               <div className="flex flex-col items-center gap-3 text-gray-400">
                 <Loader2 size={28} className="animate-spin" />
-                <span className="text-sm">Carregando seu plano...</span>
+                <span className="text-sm">{t("financial.loading", "Carregando seu plano...")}</span>
               </div>
             </div>
           ) : (
@@ -233,14 +235,14 @@ export default function SubscriptionManagement() {
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h2 className="text-xl font-bold text-gray-900">
-                      {currentPlan?.name || "Plano Gratuito"}
+                      {currentPlan?.name || t("financial.free_plan", "Plano Gratuito")}
                     </h2>
                     <StatusBadge status={planStatus} />
                   </div>
 
                   <div className="flex items-baseline gap-1 mb-4">
                     {isFreePlan ? (
-                      <span className="text-3xl font-bold text-gray-700">Grátis</span>
+                      <span className="text-3xl font-bold text-gray-700">{t("financial.free", "Grátis")}</span>
                     ) : (
                       <>
                         <span className={`text-3xl font-bold ${isCanceling ? "text-amber-600" : "text-[#7F33D9]"}`}>
@@ -256,11 +258,11 @@ export default function SubscriptionManagement() {
 
                   <p className="text-gray-500 text-sm mb-2 flex items-center gap-2">
                     {isFreePlan ? (
-                      <><Star size={16} /> Faça upgrade para desbloquear recursos premium</>
+                      <><Star size={16} /> {t("financial.upgrade_premium", "Faça upgrade para desbloquear recursos premium")}</>
                     ) : isCanceling && expiresAt ? (
-                      <><CalendarX2 size={16} className="text-amber-500" /> Acesso garantido até <span className="font-semibold text-amber-700">{expiresAt}</span></>
+                      <><CalendarX2 size={16} className="text-amber-500" /> {t("financial.access_until", "Acesso garantido até")} <span className="font-semibold text-amber-700">{expiresAt}</span></>
                     ) : (
-                      <><Clock size={16} /> Assinatura ativa via <span className="font-semibold text-gray-700">Stripe</span></>
+                      <><Clock size={16} /> {t("financial.subscription_via", "Assinatura ativa via")} <span className="font-semibold text-gray-700">Stripe</span></>
                     )}
                   </p>
                 </div>
@@ -293,7 +295,7 @@ export default function SubscriptionManagement() {
                     className="text-sm font-semibold text-[#7F33D9] hover:text-[#6025A8] transition-colors disabled:opacity-50 flex items-center gap-1.5"
                   >
                     {checkoutLoading === upgradePlan?.id && <Loader2 size={14} className="animate-spin" />}
-                    Ver planos disponíveis
+                    {t("financial.see_plans", "Ver planos disponíveis")}
                   </button>
                 ) : isCanceling ? (
                   // Se está cancelando, só oferece reativação
@@ -303,7 +305,7 @@ export default function SubscriptionManagement() {
                     className="text-sm font-semibold text-amber-600 hover:text-amber-800 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                   >
                     {portalLoading && <Loader2 size={14} className="animate-spin" />}
-                    Reativar assinatura
+                    {t("financial.reactivate", "Reativar assinatura")}
                   </button>
                 ) : (
                   <>
@@ -313,7 +315,7 @@ export default function SubscriptionManagement() {
                       className="text-sm font-semibold text-[#7F33D9] hover:text-[#6025A8] transition-colors disabled:opacity-50 flex items-center gap-1.5"
                     >
                       {checkoutLoading === currentPlan?.id && <Loader2 size={14} className="animate-spin" />}
-                      Alterar Plano
+                      {t("financial.alter_plan", "Alterar Plano")}
                     </button>
                     <span className="text-gray-300">|</span>
                     <button
@@ -321,7 +323,7 @@ export default function SubscriptionManagement() {
                       disabled={portalLoading || !!checkoutLoading}
                       className="text-sm font-semibold text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50"
                     >
-                      Cancelar Assinatura
+                      {t("financial.cancel", "Cancelar Assinatura")}
                     </button>
                   </>
                 )}
@@ -343,12 +345,12 @@ export default function SubscriptionManagement() {
                 <MessageCircle size={24} className="text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-sm text-white mb-0.5">Suporte Financeiro</h3>
+                <h3 className="font-bold text-sm text-white mb-0.5">{t("financial.support_title", "Suporte Financeiro")}</h3>
                 <p className="text-purple-100 text-[11px] mb-1.5 leading-tight opacity-90">
-                  Dúvidas sobre faturas ou mudança de plano?
+                  {t("financial.support_subtitle", "Dúvidas sobre faturas ou mudança de plano?")}
                 </p>
                 <div className="flex items-center gap-1 text-xs font-bold text-white group-hover:gap-2 transition-all">
-                  Falar com suporte <ArrowRight size={12} />
+                  {t("financial.contact_support", "Falar com suporte")} <ArrowRight size={12} />
                 </div>
               </div>
             </div>
@@ -357,15 +359,15 @@ export default function SubscriptionManagement() {
           {!loadingPlans && !isFreePlan && currentPlan && (
             <div className={`bg-white rounded-3xl border p-6 shadow-sm ${isCanceling ? "border-amber-200" : "border-gray-200"}`}>
               <h3 className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2">
-                <Package size={16} className="text-gray-400" /> Seu Plano
+                <Package size={16} className="text-gray-400" /> {t("financial.my_plan", "Seu Plano")}
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Plano</span>
+                  <span className="text-gray-500">{t("ui.plan", "Plano")}</span>
                   <span className="font-bold text-gray-900">{currentPlan.name}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Valor</span>
+                  <span className="text-gray-500">{t("ui.value", "Valor")}</span>
                   <span className={`font-bold ${isCanceling ? "text-amber-600" : "text-[#7F33D9]"}`}>
                     {Number(currentPlan.price).toLocaleString("pt-BR", {
                       style: "currency",
@@ -375,12 +377,12 @@ export default function SubscriptionManagement() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Status</span>
+                  <span className="text-gray-500">{t("ui.status", "Status")}</span>
                   <StatusBadge status={planStatus} />
                 </div>
                 {isCanceling && expiresAt && (
                   <div className="flex justify-between items-center text-sm pt-1 border-t border-amber-100">
-                    <span className="text-gray-500">Expira em</span>
+                    <span className="text-gray-500">{t("financial.expires_on", "Expira em")}</span>
                     <span className="font-bold text-amber-700">{expiresAt}</span>
                   </div>
                 )}
@@ -393,9 +395,9 @@ export default function SubscriptionManagement() {
               <div className="w-12 h-12 rounded-2xl bg-[#7F33D9]/10 flex items-center justify-center mx-auto mb-4">
                 <Star size={22} className="text-[#7F33D9]" />
               </div>
-              <h3 className="font-bold text-gray-900 text-sm mb-1">Desbloqueie o Premium</h3>
+              <h3 className="font-bold text-gray-900 text-sm mb-1">{t("financial.unlock_premium", "Desbloqueie o Premium")}</h3>
               <p className="text-gray-500 text-xs mb-4 leading-relaxed">
-                Acesse recursos avançados e suporte prioritário.
+                {t("financial.premium_subtitle", "Acesse recursos avançados e suporte prioritário.")}
               </p>
               <UpgradeButton plan_id={upgradePlan.id} label="Ver Planos" size="sm" />
             </div>
@@ -418,19 +420,19 @@ export default function SubscriptionManagement() {
               </div>
 
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Cancelar Assinatura?
+                {t("financial.cancel_title", "Cancelar Assinatura?")}
               </h3>
               <p className="text-gray-500 text-sm mb-2 leading-relaxed">
-                Tem certeza que deseja cancelar o <strong>{currentPlan?.name}</strong>?
+                {t("financial.cancel_text", "Tem certeza que deseja cancelar o")} <strong>{currentPlan?.name}</strong>?
               </p>
               <p className="text-gray-400 text-xs mb-2 leading-relaxed">
-                Você perderá acesso a todos os recursos premium ao final do ciclo atual.
+                {t("financial.cancel_lose_access", "Você perderá acesso a todos os recursos premium ao final do ciclo atual.")}
               </p>
 
               <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-xl mb-8 text-left">
                 <ExternalLink size={14} className="text-gray-400 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-gray-400 leading-relaxed">
-                  Você será redirecionado para o portal seguro do Stripe para confirmar o cancelamento.
+                  {t("financial.cancel_stripe_note", "Você será redirecionado para o portal seguro do Stripe para confirmar o cancelamento.")}
                 </p>
               </div>
 
@@ -440,7 +442,7 @@ export default function SubscriptionManagement() {
                   disabled={portalLoading}
                   className="w-full py-3.5 rounded-xl bg-[#111] text-white font-bold text-sm hover:bg-[#333] transition-all disabled:opacity-50"
                 >
-                  Não, manter meu plano
+                  {t("financial.keep_plan", "Não, manter meu plano")}
                 </button>
                 <button
                   onClick={handleOpenBillingPortal}
@@ -450,7 +452,7 @@ export default function SubscriptionManagement() {
                   {portalLoading ? (
                     <><Loader2 size={16} className="animate-spin" /> Abrindo portal...</>
                   ) : (
-                    <><ExternalLink size={15} /> Ir para o portal de cancelamento</>
+                    <><ExternalLink size={15} /> {t("financial.go_to_cancel", "Ir para o portal de cancelamento")}</>
                   )}
                 </button>
               </div>
