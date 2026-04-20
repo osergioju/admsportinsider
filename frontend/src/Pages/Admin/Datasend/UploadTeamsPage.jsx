@@ -14,15 +14,16 @@ const btnPrimary =
   "flex items-center justify-center gap-2 px-8 py-3.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
 
 export default function UploadTeamsPage() {
-  const [file, setFile]             = useState(null);
-  const [step, setStep]             = useState("upload"); // "upload" | "mapping" | "done"
-  const [analyzing, setAnalyzing]   = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [preview, setPreview]       = useState(null);
+  const [file, setFile] = useState(null);
+  const [step, setStep] = useState("upload"); // "upload" | "mapping" | "done"
+  const [analyzing, setAnalyzing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
   // { csvCountry, csvSeason, leagues, foundTeams, notFoundTeams, allClubs }
 
-  const [league, setLeague]           = useState("");
+  const [league, setLeague] = useState("");
   const [clubMappings, setClubMappings] = useState({}); // { "csvName": clubId }
+  const [showAllLeagues, setShowAllLeagues] = useState(false);
   const [importResult, setImportResult] = useState(null);
 
   function handleFileChange(e) {
@@ -32,6 +33,7 @@ export default function UploadTeamsPage() {
     setImportResult(null);
     setLeague("");
     setClubMappings({});
+    setShowAllLeagues(false);
   }
 
   async function handleAnalyze() {
@@ -109,6 +111,7 @@ export default function UploadTeamsPage() {
 
   const clubsGrouped = useMemo(() => {
     if (!preview?.allClubs) return [];
+    const detectedCountry = preview.csvCountry ?? null;
     const byCountry = new Map();
     for (const c of preview.allClubs) {
       const key = c.country_name ?? "—";
@@ -119,10 +122,13 @@ export default function UploadTeamsPage() {
         image: c.crest_url || undefined,
       });
     }
-    return [...byCountry.entries()]
-      .sort(([a], [b]) => a.localeCompare(b, "pt"))
-      .map(([groupLabel, options]) => ({ groupLabel, options }));
-  }, [preview?.allClubs]);
+    const sorted = [...byCountry.entries()].sort(([a], [b]) => a.localeCompare(b, "pt"));
+    return sorted.map(([groupLabel, options]) => ({
+      groupLabel: groupLabel === detectedCountry ? `${groupLabel} ✓` : groupLabel,
+      options,
+      _isDetected: groupLabel === detectedCountry,
+    })).sort((a, b) => (b._isDetected ? 1 : 0) - (a._isDetected ? 1 : 0));
+  }, [preview?.allClubs, preview?.csvCountry]);
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -182,6 +188,9 @@ export default function UploadTeamsPage() {
               <div className="flex-1 p-3 bg-purple-50 rounded-2xl border border-purple-100">
                 <p className="text-[10px] uppercase font-black text-purple-400 mb-1">Temporada</p>
                 <p className="text-sm font-bold text-purple-700">{preview.csvSeason || "—"}</p>
+                {preview.csvSeasonYear && String(preview.csvSeasonYear) !== preview.csvSeason && (
+                  <p className="text-[10px] text-purple-400 mt-0.5">→ gravado como {preview.csvSeasonYear}</p>
+                )}
               </div>
             </div>
 
@@ -191,20 +200,43 @@ export default function UploadTeamsPage() {
                 Liga
                 {preview.leagues.length === 1 && <span className="text-green-500 normal-case font-normal ml-1">— pré-selecionada</span>}
               </label>
-              {preview.leagues.length === 0 ? (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-sm text-amber-700">
-                  <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                  Nenhuma liga encontrada para "{preview.csvCountry}". Cadastre uma liga primeiro.
+              {preview.leagues.length === 0 && !showAllLeagues ? (
+                <div className="space-y-2">
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-sm text-amber-700">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                    Nenhuma liga encontrada para "{preview.csvCountry}". Cadastre uma liga ou{" "}
+                    <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">
+                      ver todas as ligas
+                    </button>.
+                  </div>
                 </div>
               ) : (
-                <select value={league} onChange={e => setLeague(e.target.value)} className={selectClass}>
-                  <option value="">Selecione a liga</option>
-                  {preview.leagues.map(l => (
-                    <option key={l.id_league} value={l.id_league}>
-                      {l.name}{l.country_name !== preview.csvCountry ? ` (${l.country_name})` : ""}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-1.5">
+                  <select value={league} onChange={e => setLeague(e.target.value)} className={selectClass}>
+                    <option value="">Selecione a liga</option>
+                    {(showAllLeagues ? preview.allLeagues ?? preview.leagues : preview.leagues).map(l => (
+                      <option key={l.id_league} value={l.id_league}>
+                        {l.name}{l.country_name !== preview.csvCountry ? ` (${l.country_name})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {!showAllLeagues && preview.leagues.length > 0 && (
+                    <button
+                      onClick={() => setShowAllLeagues(true)}
+                      className="text-[11px] text-gray-400 hover:text-[#7F33D9] font-medium ml-1 underline underline-offset-2 transition-colors"
+                    >
+                      Ver todas as ligas
+                    </button>
+                  )}
+                  {showAllLeagues && (
+                    <button
+                      onClick={() => { setShowAllLeagues(false); setLeague(""); }}
+                      className="text-[11px] text-gray-400 hover:text-[#7F33D9] font-medium ml-1 underline underline-offset-2 transition-colors"
+                    >
+                      Mostrar apenas ligas de "{preview.csvCountry}"
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -319,8 +351,8 @@ export default function UploadTeamsPage() {
                   {loading
                     ? <><Loader2 className="animate-spin w-4 h-4" /> Importando...</>
                     : unresolvedConflicts.length > 0
-                    ? <><AlertTriangle size={16} /> {unresolvedConflicts.length} conflito{unresolvedConflicts.length > 1 ? "s" : ""} pendente{unresolvedConflicts.length > 1 ? "s" : ""}</>
-                    : <>Importar Times <ArrowRight size={16} /></>}
+                      ? <><AlertTriangle size={16} /> {unresolvedConflicts.length} conflito{unresolvedConflicts.length > 1 ? "s" : ""} pendente{unresolvedConflicts.length > 1 ? "s" : ""}</>
+                      : <>Importar Times <ArrowRight size={16} /></>}
                 </button>
               </div>
             )}

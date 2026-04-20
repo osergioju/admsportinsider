@@ -14,13 +14,13 @@ function Pagination({ page, totalPages, total, onChange }) {
 
   const buildPages = () => {
     const delta = 2;
-    const left  = Math.max(2, page - delta);
+    const left = Math.max(2, page - delta);
     const right = Math.min(totalPages - 1, page + delta);
     const pages = [1];
-    if (left > 2)            pages.push("…");
+    if (left > 2) pages.push("…");
     for (let i = left; i <= right; i++) pages.push(i);
     if (right < totalPages - 1) pages.push("…");
-    if (totalPages > 1)      pages.push(totalPages);
+    if (totalPages > 1) pages.push(totalPages);
     return pages;
   };
 
@@ -48,11 +48,10 @@ function Pagination({ page, totalPages, total, onChange }) {
             <button
               key={p}
               onClick={() => onChange(p)}
-              className={`w-9 h-9 rounded-full text-sm font-medium transition ${
-                p === page
+              className={`w-9 h-9 rounded-full text-sm font-medium transition ${p === page
                   ? "bg-[#7F33D9] text-white"
                   : "border border-gray-200 text-gray-600 hover:border-[#7F33D9] hover:text-[#7F33D9]"
-              }`}
+                }`}
             >
               {p}
             </button>
@@ -101,7 +100,7 @@ function ClubCard({ club, isFavorited, toggleFavorite }) {
         >
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(club.id_club, "club"); }}
-            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-sm transition"
+            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40  transition"
             aria-label="Favoritar"
           >
             <Heart
@@ -112,7 +111,7 @@ function ClubCard({ club, isFavorited, toggleFavorite }) {
             />
           </button>
 
-          <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
+          <div className="w-20 h-20 bg-white/10  rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
             {club.crest_url
               ? <img src={club.crest_url} alt={club.name} className="w-14 h-14 object-contain drop-shadow-lg" />
               : <span className="text-white font-black text-xl italic">{initials}</span>
@@ -168,16 +167,16 @@ export default function DashClubs() {
   const { isFavorited, toggleFavorite } = useFavorites();
   const { t } = useTranslation();
 
-  const [countries, setCountries]             = useState([]);
+  const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
 
-  const [clubs, setClubs]           = useState([]);
-  const [total, setTotal]           = useState(0);
+  const [clubs, setClubs] = useState([]);
+  const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage]             = useState(1);
-  const [loading, setLoading]       = useState(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
 
-  const [searchInput, setSearchInput]       = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCountry, setSelectedCountry] = useState(null);
 

@@ -126,7 +126,7 @@ export default function FrontPage() {
 
                     {/*TEXTO E DIAGRAMA DE FLUXO */}
                     <div className="text-left flex flex-col items-start lg:max-w-4xl mb-16 mx-auto lg:mx-0">
-                        <div className="lg:mb-6 mb-4 flex items-center gap-2 lg:gap-3 lg:px-5 py-2 px-3 border border-purple-200 bg-white/80 backdrop-blur-sm rounded-full shadow-sm">
+                        <div className="lg:mb-6 mb-4 flex items-center gap-2 lg:gap-3 lg:px-5 py-2 px-3 border border-purple-200 bg-white/80  rounded-full shadow-sm">
                             <img src={Icone} className="h-5" alt="Icone" />
                             <span className="text-[#8033D9] font-medium text-sm lg:text-base">Informação existe. Inteligência, não.</span>
                         </div>

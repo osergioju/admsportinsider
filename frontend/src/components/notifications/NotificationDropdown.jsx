@@ -51,7 +51,7 @@ export default function NotificationDropdown() {
     // --- CONTEÚDO DA LISTA (Reutilizável para Mobile e Desktop) ---
     const NotificationListContent = () => (
         <>
-            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80 backdrop-blur-sm flex justify-between items-center sticky top-0 z-10">
+            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80  flex justify-between items-center sticky top-0 z-10">
                 <div className="flex items-center gap-2">
                     <h3 className="font-bold text-[#111] text-base">Notificações</h3>
                     {unreadCount > 0 && (
@@ -147,7 +147,7 @@ export default function NotificationDropdown() {
             Isso joga o menu para fora do header/sidebar, permitindo que ocupe a tela toda e centralize corretamente.
         */}
             {open && createPortal(
-                <div className="fixed inset-0 z-[9990] lg:hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[9990] lg:hidden flex items-center justify-center p-4 bg-black/60  animate-in fade-in duration-200">
                     <div
                         className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
                         onClick={(e) => e.stopPropagation()} // Impede fechar ao clicar dentro

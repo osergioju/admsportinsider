@@ -1779,9 +1779,10 @@ export async function getCountryDetail(req, res) {
 
       db.query(`
         SELECT
-          c.id_club     AS id,
-          c.name        AS name,
-          c.crest_url   AS crest_url
+          c.id_club       AS id,
+          c.name          AS name,
+          c.crest_url     AS crest_url,
+          c.primary_color AS primary_color
         FROM clubs c
         WHERE c.id_country = $1 AND c.active = TRUE
         ORDER BY c.name ASC

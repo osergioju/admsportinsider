@@ -1,66 +1,68 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
-import { Loader2, Trophy, ChevronsDown, Crown } from "lucide-react";
+import { Loader2, Trophy, ChevronsDown } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmtDate = d => d
   ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" })
   : "—";
 
-// ─── Sub-tabs ────────────────────────────────────────────────────────────────
+// ─── Disciplinary table ───────────────────────────────────────────────────────
 
-function SubTabs({ value, onChange, options }) {
-  return (
-    <div className="flex gap-1 mb-4">
-      {options.map(({ key, label }) => (
-        <button key={key} onClick={() => onChange(key)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
-            ${value === key ? "bg-violet-600 border-violet-600 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-violet-300"}`}>
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ─── Standings table ─────────────────────────────────────────────────────────
-
-function StandingsTable({ rows, t }) {
+function DisciplinaryTable({ rows, t }) {
   if (!rows?.length) return (
-    <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_classification", "Sem dados de classificação.")}</p>
+    <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_discipline", "Sem dados disciplinares.")}</p>
   );
   return (
-    <div className="rounded-xl border border-gray-100 overflow-x-auto">
-      <table className="w-full text-xs min-w-[540px]">
+    <div className="rounded-xl border border-gray-100 overflow-x-auto bg-white shadow-sm">
+      <table className="w-full text-sm min-w-[480px]">
         <thead>
-          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider">
-            {["#", "Clube", "P", "J", "V", "E", "D", "GP", "GC", "SG", "%"].map(h => (
-              <th key={h} className={`py-2.5 px-2 font-semibold ${h === "Clube" ? "text-left" : ""}`}>{h}</th>
-            ))}
+          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b border-gray-100">
+            <th className="py-3 px-3 text-left font-semibold w-10">#</th>
+            <th className="py-3 px-3 text-left font-semibold">Clube</th>
+            <th className="py-3 px-3 text-center font-semibold">J</th>
+            <th className="py-3 px-3 text-center font-semibold">Faltas</th>
+            <th className="py-3 px-3 text-center font-semibold">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-amber-400 shrink-0" />
+                Amarelos
+              </span>
+            </th>
+            <th className="py-3 px-3 text-center font-semibold">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-red-500 shrink-0" />
+                Vermelhos
+              </span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
             <tr key={row.id ?? i} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
-              <td className="px-2 py-2.5 text-center font-bold text-gray-400">{row.pos ?? i + 1}</td>
-              <td className="px-2 py-2.5">
-                <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-2 hover:text-violet-700 transition-colors font-semibold text-gray-700">
-                  {row.crest ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" /> : <div className="w-4 h-4" />}
+              <td className="px-3 py-3 text-center font-semibold text-gray-400">{i + 1}</td>
+              <td className="px-3 py-3">
+                <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700">
+                  {row.crest ? <img src={row.crest} alt="" className="w-5 h-5 object-contain shrink-0" /> : <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />}
                   {row.name}
                 </Link>
               </td>
-              <td className="px-2 py-2.5 text-center font-bold text-gray-800">{row.pts}</td>
-              <td className="px-2 py-2.5 text-center text-gray-600">{row.j}</td>
-              <td className="px-2 py-2.5 text-center text-gray-600">{row.v}</td>
-              <td className="px-2 py-2.5 text-center text-gray-600">{row.e}</td>
-              <td className="px-2 py-2.5 text-center text-gray-600">{row.d}</td>
-              <td className="px-2 py-2.5 text-center text-gray-600">{row.gp}</td>
-              <td className="px-2 py-2.5 text-center text-gray-600">{row.gc}</td>
-              <td className={`px-2 py-2.5 text-center font-semibold ${row.sg > 0 ? "text-emerald-600" : row.sg < 0 ? "text-red-500" : "text-gray-400"}`}>
-                {row.sg > 0 ? `+${row.sg}` : row.sg}
+              <td className="px-3 py-3 text-center text-gray-500">{row.matches}</td>
+              <td className="px-3 py-3 text-center text-gray-600 font-medium">{row.fouls}</td>
+              <td className="px-3 py-3 text-center">
+                <span className="inline-flex items-center gap-1.5 font-bold text-amber-600">
+                  <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-amber-400 shrink-0" />
+                  {row.yellow}
+                </span>
               </td>
-              <td className="px-2 py-2.5 text-center text-gray-500">{row.pct}%</td>
+              <td className="px-3 py-3 text-center">
+                <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
+                  <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-red-500 shrink-0" />
+                  {row.red}
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -69,37 +71,236 @@ function StandingsTable({ rows, t }) {
   );
 }
 
-// ─── Match row (inside confronto) ────────────────────────────────────────────
+// ─── Sub-tabs ─────────────────────────────────────────────────────────────────
 
-// ─── Confronto card (compacto, sem collapse) ─────────────────────────────────
+function SubTabs({ value, onChange, options }) {
+  return (
+    <div className="flex bg-gray-100 rounded-lg p-0.5 self-start w-fit shrink-0">
+      {options.map(({ key, label }) => (
+        <button key={key} onClick={() => onChange(key)}
+          className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all
+            ${value === key
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"}`}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
+// ─── Standings table ──────────────────────────────────────────────────────────
+
+function StandingsTable({ rows, t, seasonConfig }) {
+  if (!rows?.length) return (
+    <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_classification", "Sem dados de classificação.")}</p>
+  );
+
+  const n = rows.length;
+
+  // Use per-season config when available; fall back to heuristics
+  const continentalSpots = seasonConfig?.continental_spots ?? (n >= 8 ? Math.ceil(n * 0.25) : 0);
+  const relegationSpots = seasonConfig?.relegation_spots ?? Math.max(2, Math.ceil(n * 0.15));
+
+  const zoneOf = (pos) => {
+    if (pos === 1) return "champion";
+    if (continentalSpots > 0 && pos > 1 && pos <= continentalSpots) return "continental";
+    if (relegationSpots > 0 && pos > n - relegationSpots) return "relegation";
+    return null;
+  };
+
+  const zoneBar = (pos) => {
+    const z = zoneOf(pos);
+    if (z === "champion") return "border-l-2 border-gray-900";
+    if (z === "continental") return "border-l-2 border-emerald-400";
+    if (z === "relegation") return "border-l-2 border-red-400";
+    return "border-l-2 border-transparent";
+  };
+
+  return (
+    <div className="mb-10 rounded-xl border border-gray-100 overflow-x-auto bg-white shadow-sm">
+      <table className="w-full text-sm min-w-[540px]">
+        <thead>
+          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b border-gray-100">
+            <th className="py-3 px-3 text-center font-semibold w-10">#</th>
+            <th className="py-3 px-3 text-left font-semibold">Clube</th>
+            <th className="py-3 px-2 text-center font-semibold text-violet-500">P</th>
+            <th className="py-3 px-2 text-center font-semibold">J</th>
+            <th className="py-3 px-2 text-center font-semibold text-emerald-500">V</th>
+            <th className="py-3 px-2 text-center font-semibold">E</th>
+            <th className="py-3 px-2 text-center font-semibold text-red-400">D</th>
+            <th className="py-3 px-2 text-center font-semibold">GP</th>
+            <th className="py-3 px-2 text-center font-semibold">GC</th>
+            <th className="py-3 px-2 text-center font-semibold">SG</th>
+            <th className="py-3 px-2 text-center font-semibold">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => {
+            const pos = row.pos ?? i + 1;
+            return (
+              <tr key={row.id ?? i} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
+                <td className={`px-3 py-3 ${zoneBar(pos)}`}>
+                  <span className={`text-sm font-bold block text-center tabular-nums ${pos === 1 ? "text-gray-900" : "text-gray-400"}`}>
+                    {pos}
+                  </span>
+                </td>
+                <td className="px-3 py-3">
+                  <Link to={`/dashboard/clubs/${row.id}`}
+                    className={`flex items-center gap-2.5 hover:text-violet-700 transition-colors ${pos === 1 ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}>
+                    {row.crest
+                      ? <img src={row.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+                      : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />
+                    }
+                    <span className="truncate">{row.name}</span>
+                  </Link>
+                </td>
+                <td className={`px-2 py-3 text-center font-bold tabular-nums text-base ${pos === 1 ? "text-gray-900" : "text-gray-700"}`}>{row.pts}</td>
+                <td className="px-2 py-3 text-center text-gray-500 tabular-nums">{row.j}</td>
+                <td className="px-2 py-3 text-center font-semibold text-emerald-600 tabular-nums">{row.v}</td>
+                <td className="px-2 py-3 text-center text-gray-500 tabular-nums">{row.e}</td>
+                <td className="px-2 py-3 text-center text-red-400 tabular-nums">{row.d}</td>
+                <td className="px-2 py-3 text-center text-gray-600 tabular-nums">{row.gp}</td>
+                <td className="px-2 py-3 text-center text-gray-600 tabular-nums">{row.gc}</td>
+                <td className={`px-2 py-3 text-center font-semibold tabular-nums ${row.sg > 0 ? "text-emerald-600" : row.sg < 0 ? "text-red-500" : "text-gray-400"}`}>
+                  {row.sg > 0 ? `+${row.sg}` : row.sg}
+                </td>
+                <td className="px-2 py-3 text-center text-gray-500 tabular-nums">{row.pct}%</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {n >= 6 && (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2.5 border-t border-gray-100 bg-gray-50/50">
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-gray-900 shrink-0" />Líder
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />Zona continental
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />Rebaixamento
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Confronto card ───────────────────────────────────────────────────────────
+
+// Returns the score of `teamId` in a given leg (handles home/away swap)
+function legScoreFor(leg, teamId) {
+  if (leg.home_goals == null) return null;
+  if (leg.home?.id === teamId) return leg.home_goals;
+  if (leg.away?.id === teamId) return leg.away_goals;
+  return null;
+}
 
 function ConfrontoCard({ confronto }) {
   const { team1, team2, legs, agg } = confronto;
+  const isDoubleLegged = legs.length === 2;
 
-  const allFinished = legs.every(l => l.home_goals != null);
   const agg1 = agg[team1.id] ?? null;
   const agg2 = agg[team2.id] ?? null;
+  const allFinished = legs.every(l => l.home_goals != null);
   const aggDone = allFinished && agg1 !== null && agg2 !== null;
-
   let winner = null;
   if (aggDone && agg1 !== agg2) winner = agg1 > agg2 ? team1.id : team2.id;
 
-  const TeamRow = ({ team, score, isWinner, isLoser }) => (
-    <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-40" : ""}`}>
+  // ── Double-legged (Ida / Volta / Agr) ──────────────────────────────────────
+  if (isDoubleLegged) {
+    const [leg1, leg2] = legs;
+
+    const ScoreBox = ({ score, href, dim }) => {
+      const box = (
+        <div className={`w-9 h-7 flex items-center justify-center rounded text-xs font-bold tabular-nums
+          ${score == null
+            ? "bg-gray-50 text-gray-200"
+            : dim
+              ? "bg-gray-50 text-gray-400"
+              : "bg-gray-100 text-gray-700"}`}>
+          {score ?? "–"}
+        </div>
+      );
+      return href
+        ? <Link to={href} className="hover:opacity-70 transition-opacity shrink-0">{box}</Link>
+        : <div className="shrink-0">{box}</div>;
+    };
+
+    const AggBox = ({ score, isWinner }) => (
+      <div className={`w-9 h-7 flex items-center justify-center rounded text-sm font-extrabold tabular-nums shrink-0
+        ${score == null
+          ? "bg-gray-50 text-gray-200"
+          : isWinner
+            ? "bg-gray-900 text-white"
+            : "bg-gray-100 text-gray-400"}`}>
+        {score ?? "–"}
+      </div>
+    );
+
+    const TeamRow = ({ team, isWinner, isLoser }) => {
+      const s1 = legScoreFor(leg1, team.id);
+      const s2 = legScoreFor(leg2, team.id);
+      const aggScore = agg[team.id] ?? null;
+      return (
+        <div className={`flex items-center gap-1.5 px-3 py-2.5 ${isLoser ? "opacity-100" : ""}`}>
+          {team.crest
+            ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+            : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
+          <Link to={`/dashboard/clubs/${team.id}`}
+            className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
+              ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
+            {team.name}
+          </Link>
+          <ScoreBox score={s1} href={`/dashboard/matches/${leg1.id}`} dim={!isWinner} />
+          <ScoreBox score={s2} href={`/dashboard/matches/${leg2.id}`} dim={!isWinner} />
+          <AggBox score={aggScore} isWinner={isWinner} />
+        </div>
+      );
+    };
+
+    return (
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:border-gray-200 transition-colors">
+        {/* Column headers */}
+        <div className="flex items-center justify-end gap-1.5 px-3 pt-1.5 pb-1 border-b border-gray-50">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 w-9 text-center">Ida</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 w-9 text-center">Volta</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 w-9 text-center">Agr</span>
+        </div>
+        <div className="py-0.5">
+          <TeamRow team={team1} isWinner={winner === team1.id} isLoser={winner === team2.id} />
+          <div className="mx-3 border-t border-gray-50" />
+          <TeamRow team={team2} isWinner={winner === team2.id} isLoser={winner === team1.id} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Single-legged ──────────────────────────────────────────────────────────
+  const leg = legs[0];
+  const s1 = leg ? legScoreFor(leg, team1.id) : null;
+  const s2 = leg ? legScoreFor(leg, team2.id) : null;
+  const finished = s1 !== null && s2 !== null;
+  let singleWinner = null;
+  if (finished && s1 !== s2) singleWinner = s1 > s2 ? team1.id : team2.id;
+
+  const SingleRow = ({ team, score, isWinner, isLoser }) => (
+    <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-35" : ""}`}>
       {team.crest
-        ? <img src={team.crest} alt="" className="w-6 h-6 object-contain shrink-0" />
-        : <div className="w-6 h-6 rounded-full bg-gray-100 shrink-0" />
-      }
-      <Link
-        to={`/dashboard/clubs/${team.id}`}
-        className={`flex-1 text-xs truncate hover:underline
-          ${isWinner ? "text-violet-700 font-bold" : "text-gray-700 font-semibold"}`}
-      >
+        ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+        : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
+      <Link to={`/dashboard/clubs/${team.id}`}
+        className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
+          ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
         {team.name}
       </Link>
       {score !== null && (
-        <span className={`text-sm tabular-nums font-extrabold shrink-0
-          ${isWinner ? "text-violet-700" : "text-gray-400"}`}>
+        <span className={`text-base tabular-nums font-extrabold shrink-0
+          ${isWinner ? "text-gray-900" : "text-gray-400"}`}>
           {score}
         </span>
       )}
@@ -107,62 +308,37 @@ function ConfrontoCard({ confronto }) {
   );
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:border-violet-200 transition-colors">
-      {/* Legs mini-links */}
-      {legs.length > 0 && (
-        <div className="px-4 pt-2.5 pb-0 flex gap-3">
-          {legs.map((leg, i) => {
-            const fin = leg.home_goals != null;
-            const label = legs.length === 2 ? (i === 0 ? "Ida" : "Volta") : `Jogo ${i + 1}`;
-            return (
-              <Link key={leg.id} to={`/dashboard/matches/${leg.id}`}
-                className={`text-[9px] font-bold uppercase tracking-wider hover:text-violet-400 transition-colors
-                  ${fin ? "text-gray-400" : "text-gray-200"}`}>
-                {label}{fin ? ` ${leg.home_goals}–${leg.away_goals}` : ` ${fmtDate(leg.date)}`}
-              </Link>
-            );
-          })}
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:border-gray-200 transition-colors">
+      {leg && (
+        <div className="px-4 pt-2 pb-1.5 border-b border-gray-50">
+          <Link to={`/dashboard/matches/${leg.id}`}
+            className="text-xs font-semibold text-gray-400 hover:text-violet-600 transition-colors">
+            {fmtDate(leg.date)}
+          </Link>
         </div>
       )}
-
-      <div className="pt-1.5">
-        <TeamRow
-          team={team1}
-          score={agg1}
-          isWinner={winner === team1.id}
-          isLoser={winner === team2.id}
-        />
-        <div className="mx-4 border-t border-dashed border-gray-100" />
-        <TeamRow
-          team={team2}
-          score={agg2}
-          isWinner={winner === team2.id}
-          isLoser={winner === team1.id}
-        />
+      <div className="py-1">
+        <SingleRow team={team1} score={s1} isWinner={singleWinner === team1.id} isLoser={singleWinner === team2.id} />
+        <div className="mx-4 border-t border-gray-50" />
+        <SingleRow team={team2} score={s2} isWinner={singleWinner === team2.id} isLoser={singleWinner === team1.id} />
       </div>
-      <div className="pb-1" />
     </div>
   );
 }
 
 // ─── Bracket helpers ──────────────────────────────────────────────────────────
 
-/** Group flat matches into confrontos (pair of clubs) */
 function buildConfrontos(flatMatches) {
   const map = new Map();
   for (const m of flatMatches) {
     const key = [m.home.id, m.away.id].sort((a, b) => a - b).join("_");
-    if (!map.has(key)) {
-      map.set(key, { team1: m.home, team2: m.away, legs: [] });
-    }
+    if (!map.has(key)) map.set(key, { team1: m.home, team2: m.away, legs: [] });
     map.get(key).legs.push(m);
   }
   return [...map.values()].map(({ team1, team2, legs }) => {
     legs.sort((a, b) => new Date(a.date ?? 0) - new Date(b.date ?? 0));
-    // Use club from first leg as canonical display order
     const t1 = legs[0]?.home ?? team1;
     const t2 = legs[0]?.away ?? team2;
-    // Aggregate goals keyed by club id
     const agg = {};
     for (const leg of legs) {
       if (leg.home_goals == null) continue;
@@ -173,48 +349,89 @@ function buildConfrontos(flatMatches) {
   });
 }
 
-/**
- * Assign confrontos to phases.
- * If structure_json has fases for this season: use their names + standard knockout counts.
- * Otherwise: auto-detect from total confronto count (powers of 2).
- */
+// Group confrontos into temporal windows — gap > gapDays between consecutive firstDates = new phase
+function temporalCluster(sorted, gapDays = 14) {
+  if (!sorted.length) return [];
+  const GAP_MS = gapDays * 24 * 3600 * 1000;
+  const clusters = [[sorted[0]]];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1].firstDate ?? 0).getTime();
+    const curr = new Date(sorted[i].firstDate ?? 0).getTime();
+    if (curr - prev > GAP_MS) clusters.push([]);
+    clusters[clusters.length - 1].push(sorted[i]);
+  }
+  return clusters;
+}
+
+// Within a temporal cluster, a team appearing more than once means there are sub-phases.
+// Greedily partition into rounds where each team plays at most once.
+function splitIntoRounds(cluster) {
+  let remaining = [...cluster];
+  const rounds = [];
+  while (remaining.length > 0) {
+    const round = [];
+    const used = new Set();
+    const next = [];
+    for (const c of remaining) {
+      const id1 = c.team1?.id;
+      const id2 = c.team2?.id;
+      if (id1 != null && id2 != null && !used.has(id1) && !used.has(id2)) {
+        round.push(c);
+        used.add(id1);
+        used.add(id2);
+      } else {
+        next.push(c);
+      }
+    }
+    if (round.length === 0) { rounds.push(remaining); break; } // safety: no progress
+    rounds.push(round);
+    remaining = next;
+  }
+  return rounds;
+}
+
 function assignPhases(confrontos, structure_json, season) {
   if (!confrontos.length) return [];
 
-  const sorted = [...confrontos].sort((a, b) => new Date(a.firstDate ?? 0) - new Date(b.firstDate ?? 0));
-  const total  = sorted.length;
+  const sorted = [...confrontos].sort(
+    (a, b) => new Date(a.firstDate ?? 0) - new Date(b.firstDate ?? 0)
+  );
 
-  // --- Phase names from structure_json ---
   const yearData = structure_json?.[String(season)];
-  const fases    = yearData?.fases ?? [];
+  const fases = yearData?.fases ?? [];
 
-  if (fases.length > 0) {
-    // Standard knockout bracket: last phase = 1, each previous = 2×
-    // e.g. 4 phases → counts [8, 4, 2, 1]
-    const n = fases.length;
-    const counts = fases.map((_, i) => Math.pow(2, n - 1 - i));
+  // 1. Broad temporal separation (months apart = different phase blocks)
+  const clusters = temporalCluster(sorted, 14);
 
-    let idx = 0;
-    const phases = fases.map((fase, i) => ({
-      nome: fase.nome ?? `Fase ${i + 1}`,
-      confrontos: sorted.slice(idx, idx += counts[i]),
-    })).filter(p => p.confrontos.length > 0);
-
-    // If there are leftover confrontos not covered (CSV has more rounds), add them as first phase
-    if (idx < total) {
-      phases.unshift({
-        nome: "Fases anteriores",
-        confrontos: sorted.slice(0, total - idx < 0 ? 0 : 0).concat(
-          sorted.slice(idx)
-        ),
-      });
-    }
-    return phases;
+  // 2. Within each cluster, split into rounds where no team plays twice.
+  //    This handles: multiple early rounds in the same month, and Semis+Final
+  //    in the same December window (finalists appear in both rounds).
+  const expanded = [];
+  for (const cl of clusters) {
+    for (const round of splitIntoRounds(cl)) expanded.push(round);
   }
 
-  // --- Auto-detect from total confronto count ---
-  // Find the smallest bracket that fits: 1, 3, 7, 15, 31, 63...
-  const BRACKET_PHASES = [
+  if (fases.length > 0) {
+    const N = fases.length;
+    const result = new Array(N).fill(null).map(() => []);
+    const offset = N - expanded.length;
+
+    if (offset >= 0) {
+      // Fewer rounds than phases: early phases have no data (hidden by filter below)
+      expanded.forEach((grp, i) => { result[offset + i] = grp; });
+    } else {
+      // More rounds than phases: collapse surplus early rounds into phase 0
+      result[0] = expanded.slice(0, 1 - offset).flat();
+      expanded.slice(1 - offset).forEach((grp, i) => { result[1 + i] = grp; });
+    }
+
+    return fases
+      .map((f, i) => ({ nome: f.nome ?? `Fase ${i + 1}`, confrontos: result[i] }))
+      .filter(p => p.confrontos.length > 0);
+  }
+
+  // ── Fallback: no structure configured ────────────────────────────────────────
+  const BRACKET_NAMES = [
     ["Final"],
     ["Semifinal", "Final"],
     ["Quartas de Final", "Semifinal", "Final"],
@@ -223,112 +440,69 @@ function assignPhases(confrontos, structure_json, season) {
     ["32 avos de Final", "16 avos de Final", "Oitavas de Final", "Quartas de Final", "Semifinal", "Final"],
   ];
 
-  // Total confrontos per bracket size: 1, 3, 7, 15, 31, 63
-  const bracketTotals = BRACKET_PHASES.map(p => Math.pow(2, p.length) - 1);
-  const fit = bracketTotals.findIndex(bt => bt >= total);
+  const n = Math.min(expanded.length, BRACKET_NAMES.length);
+  const names = BRACKET_NAMES[n - 1] ?? ["Confrontos"];
+  const off = names.length - expanded.length;
 
-  if (fit >= 0) {
-    const names  = BRACKET_PHASES[fit];
-    const n      = names.length;
-    const counts = names.map((_, i) => Math.pow(2, n - 1 - i));
-    // If total < bracketTotal, the earliest phases may have fewer confrontos
-    // Just assign starting from the end (final = last confronto)
-    const reversed = [...sorted].reverse();
-    let idx = 0;
-    const phases = [...names].reverse().map((nome, i) => ({
-      nome,
-      confrontos: reversed.slice(idx, idx += counts[n - 1 - i]).reverse(),
-    })).reverse().filter(p => p.confrontos.length > 0);
-    return phases;
-  }
-
-  // Fallback: one big phase
-  return [{ nome: "Confrontos", confrontos: sorted }];
+  return names
+    .map((nome, i) => ({ nome, confrontos: expanded[i - off] ?? [] }))
+    .filter(p => p.confrontos.length > 0);
 }
 
-// ─── Bracket view ─────────────────────────────────────────────────────────────
-
-// Columns per phase: 1→1, 2→2, 4→2 or 4, 8→4, 16→4 or 8
 const phaseColumns = (n) => {
   if (n === 1) return "grid-cols-1";
   if (n === 2) return "grid-cols-2";
-  if (n <= 4)  return "grid-cols-2 sm:grid-cols-4";
   return "grid-cols-2 sm:grid-cols-4";
 };
 
 const phaseMaxWidth = (n) => {
-  if (n === 1) return "max-w-[220px]";
-  if (n === 2) return "max-w-[460px]";
-  if (n <= 4)  return "max-w-[700px]";
+  if (n === 1) return "max-w-[280px]";
+  if (n === 2) return "max-w-[560px]";
+  if (n <= 4) return "max-w-[80%]";
   return "max-w-full";
 };
 
-// Phase accent colours (last = final, second-to-last = semi, ...)
-const phaseAccent = (idx, total) => {
-  const rev = total - 1 - idx;
-  if (rev === 0) return { dot: "bg-amber-400", label: "text-amber-600", bar: "from-amber-100" };
-  if (rev === 1) return { dot: "bg-violet-500", label: "text-violet-600", bar: "from-violet-50" };
-  return { dot: "bg-gray-300", label: "text-gray-500", bar: "from-gray-50" };
-};
-
 function BracketView({ matches, structure_json, season, t }) {
-  const confrontos = useMemo(
-    () => buildConfrontos(matches.flatMap(w => w.games)),
-    [matches]
-  );
-  const phases = useMemo(
-    () => assignPhases(confrontos, structure_json, season),
-    [confrontos, structure_json, season]
-  );
+  const confrontos = useMemo(() => buildConfrontos(matches.flatMap(w => w.games)), [matches]);
+  const phases = useMemo(() => assignPhases(confrontos, structure_json, season), [confrontos, structure_json, season]);
 
   if (!confrontos.length) return (
-    <p className="text-sm text-center text-gray-400 py-8">
-      {t("sports.no_matches", "Nenhuma partida registrada.")}
-    </p>
+    <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_matches", "Nenhuma partida registrada.")}</p>
   );
 
-  // Detect champion from the last phase (final)
-  const finalPhase  = phases[phases.length - 1];
-  const finalConf   = finalPhase?.confrontos[0];
-  const champion    = finalConf ? (() => {
+  const finalPhase = phases[phases.length - 1];
+  const finalConf = finalPhase?.confrontos[0];
+  const champion = finalConf ? (() => {
     const { team1, team2, agg } = finalConf;
     const a1 = agg[team1.id] ?? null;
     const a2 = agg[team2.id] ?? null;
     if (a1 === null || a2 === null) return null;
     if (a1 > a2) return team1;
     if (a2 > a1) return team2;
-    return null; // draw / not yet played
+    return null;
   })() : null;
 
   return (
     <div className="flex flex-col items-center gap-0 w-full">
       {phases.map((phase, pi) => {
-        const acc    = phaseAccent(pi, phases.length);
-        const cols   = phaseColumns(phase.confrontos.length);
-        const mw     = phaseMaxWidth(phase.confrontos.length);
         const isLast = pi === phases.length - 1;
+        const cols = phaseColumns(phase.confrontos.length);
+        const mw = phaseMaxWidth(phase.confrontos.length);
 
         return (
           <div key={phase.nome} className="w-full flex flex-col items-center">
-            {/* Phase header */}
-            <div className={`w-full bg-gradient-to-r ${acc.bar} to-transparent rounded-xl px-4 py-2.5 mb-4 flex items-center gap-2`}>
-              <div className={`w-2 h-2 rounded-full shrink-0 ${acc.dot}`} />
-              <span className={`text-xs font-extrabold uppercase tracking-widest ${acc.label}`}>
-                {phase.nome}
-              </span>
-              <span className="text-[10px] text-gray-400 ml-1">
-                {phase.confrontos.length} confronto{phase.confrontos.length !== 1 ? "s" : ""}
+            {/* Phase header — sober, no gradient */}
+            <div className="justify-center w-full flex items-center gap-2.5 mb-4 px-1">
+              <span className="text-sm lg:text-xl font-bold text-gray-900 uppercase tracking-wide">{phase.nome}</span>
+              <span className="text-xs lg:text-xl text-gray-400">
+                · {phase.confrontos.length} confronto{phase.confrontos.length !== 1 ? "s" : ""}
               </span>
             </div>
 
-            {/* Cards grid — centered and narrowing */}
             <div className={`w-full ${mw} grid ${cols} gap-3`}>
-              {phase.confrontos.map((c, i) => (
-                <ConfrontoCard key={i} confronto={c} />
-              ))}
+              {phase.confrontos.map((c, i) => <ConfrontoCard key={i} confronto={c} />)}
             </div>
 
-            {/* Connector arrow */}
             {!isLast && (
               <div className="flex flex-col items-center my-4 text-gray-200">
                 <div className="w-px h-5 bg-gray-200" />
@@ -339,25 +513,25 @@ function BracketView({ matches, structure_json, season, t }) {
         );
       })}
 
-      {/* Champion */}
+      {/* Champion — clean, no crown, no gradient */}
       {champion && (
-        <div className="flex flex-col items-center mt-5 gap-3">
-          <div className="flex flex-col items-center my-1 text-amber-300">
-            <div className="w-px h-5 bg-amber-200" />
+        <div className="flex flex-col items-center mt-5 gap-3 w-full max-w-[280px] mb-10">
+          <div className="flex flex-col items-center text-gray-200">
+            <div className="w-px h-5 bg-gray-200" />
             <ChevronsDown size={16} />
           </div>
-          <div className="flex flex-col items-center gap-2 bg-gradient-to-b from-amber-50 to-white border border-amber-200 rounded-2xl px-8 py-5 shadow-sm">
-            <Crown size={18} className="text-amber-400" />
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-500">Campeão</span>
+          <div className="w-full bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 shadow-sm">
+            <div className="w-1 self-stretch rounded-full bg-gray-900 shrink-0" />
             {champion.crest && (
-              <img src={champion.crest} alt="" className="w-12 h-12 object-contain" />
+              <img src={champion.crest} alt="" className="w-10 h-10 object-contain shrink-0" />
             )}
-            <Link
-              to={`/dashboard/clubs/${champion.id}`}
-              className="text-sm font-extrabold text-gray-800 hover:text-violet-700 transition-colors text-center"
-            >
-              {champion.name}
-            </Link>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Campeão</p>
+              <Link to={`/dashboard/clubs/${champion.id}`}
+                className="text-base font-bold text-gray-900 hover:text-violet-700 transition-colors truncate block">
+                {champion.name}
+              </Link>
+            </div>
           </div>
         </div>
       )}
@@ -365,29 +539,31 @@ function BracketView({ matches, structure_json, season, t }) {
   );
 }
 
-// ─── Round-robin matches ──────────────────────────────────────────────────────
+// ─── Match card ───────────────────────────────────────────────────────────────
 
 function MatchCard({ m }) {
   const finished = m.home_goals != null && m.away_goals != null;
   return (
     <Link to={`/dashboard/matches/${m.id}`}
-      className="flex items-center gap-2 py-2.5 px-4 hover:bg-gray-50 transition-colors group">
+      className="flex items-center gap-2 py-3 px-4 hover:bg-gray-50 transition-colors group">
       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-        <span className="text-xs font-semibold text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.home.name}</span>
+        <span className="text-sm font-medium text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.home.name}</span>
         {m.home.crest && <img src={m.home.crest} alt="" className="w-5 h-5 object-contain shrink-0" />}
       </div>
-      <div className="flex flex-col items-center shrink-0 min-w-[56px]">
+      <div className="flex flex-col items-center shrink-0 min-w-[64px]">
         {finished
-          ? <span className="text-sm font-extrabold text-gray-900">{m.home_goals} – {m.away_goals}</span>
-          : <span className="text-xs font-semibold text-violet-500">{fmtDate(m.date)}</span>
+          ? <span className="text-base font-extrabold text-gray-900 tabular-nums">{m.home_goals} – {m.away_goals}</span>
+          : <span className="text-sm font-semibold text-gray-400">{fmtDate(m.date)}</span>
         }
         {finished && m.home_goals_ht != null && (
-          <span className="text-[9px] text-gray-400">({m.home_goals_ht}–{m.away_goals_ht})</span>
+          <span className="text-xs text-gray-400 tabular-nums">
+            <span className="font-semibold text-gray-300 mr-0.5">1T</span>{m.home_goals_ht}–{m.away_goals_ht}
+          </span>
         )}
       </div>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {m.away.crest && <img src={m.away.crest} alt="" className="w-5 h-5 object-contain shrink-0" />}
-        <span className="text-xs font-semibold text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.away.name}</span>
+        <span className="text-sm font-medium text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.away.name}</span>
       </div>
     </Link>
   );
@@ -409,7 +585,7 @@ function RoundRobinMatches({ matches, t }) {
         <div key={week} className="rounded-xl border border-gray-100 overflow-hidden bg-white shadow-sm mb-2">
           <button onClick={() => toggle(week)}
             className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100 hover:bg-gray-100 transition-colors">
-            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
+            <span className="text-sm font-semibold text-gray-700">
               {week > 0 ? `${t("sports.round", "Rodada")} ${week}` : t("sports.no_round", "Sem rodada")}
             </span>
             <span className="text-xs text-gray-400">{games.length} {t("sports.games_suffix", "jogos")}</span>
@@ -425,27 +601,27 @@ function RoundRobinMatches({ matches, t }) {
   );
 }
 
-// ─── Format badge label ───────────────────────────────────────────────────────
+// ─── Format labels ────────────────────────────────────────────────────────────
 
 const FORMAT_LABELS = {
-  pontos_corridos:   "Pontos corridos",
-  mata_mata:         "Mata-mata",
-  grupos:            "Fase de grupos",
-  grupos_mata_mata:  "Grupos + Mata-mata",
-  misto:             "Misto",
+  pontos_corridos: "Pontos corridos",
+  mata_mata: "Mata-mata",
+  grupos: "Fase de grupos",
+  grupos_mata_mata: "Grupos + Mata-mata",
+  misto: "Misto",
   apertura_clausura: "Apertura/Clausura",
-  personalizado:     "Personalizado",
+  personalizado: "Personalizado",
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function LeagueSportsSection({ leagueId }) {
   const { t } = useTranslation();
-  const [data, setData]       = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [season, setSeason]   = useState(null);
+  const [season, setSeason] = useState(null);
   const [mainTab, setMainTab] = useState(null);
-  const [split, setSplit]     = useState("total");
+  const [split, setSplit] = useState("total");
 
   useEffect(() => { load(season); }, [leagueId, season]);
 
@@ -457,7 +633,10 @@ export default function LeagueSportsSection({ leagueId }) {
       setData(res);
       if (!season && res.season) setSeason(res.season);
       if (mainTab === null) {
-        const isKo = res.league?.format && res.league.format !== "pontos_corridos";
+        const resSeason = s ?? res.season;
+        const resCfg = res.league?.structure_json?.[String(resSeason)];
+        const resFmt = resCfg?.tipo || res.league?.format || "pontos_corridos";
+        const isKo = resFmt !== "pontos_corridos" && resFmt !== "pontos_corridos_turno_unico" && resFmt !== "grupos";
         setMainTab(isKo ? "chaveamento" : "classificacao");
       }
     } catch (e) { console.error(e); }
@@ -472,89 +651,114 @@ export default function LeagueSportsSection({ leagueId }) {
   );
   if (!data) return null;
 
-  const { league, seasons, standings, matches } = data;
-  const fmt        = league.format ?? "pontos_corridos";
-  const isKnockout = fmt !== "pontos_corridos" && fmt !== "grupos";
-  const totalMatches = matches?.reduce((s, w) => s + w.games.length, 0) ?? 0;
+  const { league, seasons, standings, matches, discipline } = data;
+  const seasonConfig = league.structure_json?.[String(season)] ?? null;
+  const fmt = seasonConfig?.tipo || league.format || "pontos_corridos";
+  const isKnockout = fmt !== "pontos_corridos" && fmt !== "pontos_corridos_turno_unico" && fmt !== "grupos" && fmt !== "apertura_clausura";
+  const isAperturaClausura = fmt === "apertura_clausura";
+  const totalRounds = matches?.length ?? 0;
+
+  // Para apertura_clausura, split controla "clausura" | "apertura"; senão "total" | "home" | "away"
+  const splitOptions = isAperturaClausura ? ["clausura", "apertura"] : ["total", "home", "away"];
+  const activeSplit = splitOptions.includes(split) ? split : splitOptions[0];
+
+  // Partidas filtradas pela fase ativa (apertura_clausura)
+  const matchesForPhase = isAperturaClausura
+    ? (matches ?? []).filter(w => w.games.some(g => g.phase === activeSplit))
+    : (matches ?? []);
+
+  // Líder da fase ativa
+  const activeStandings = standings?.[activeSplit] ?? [];
+  const leader = activeStandings[0] ?? null;
 
   const tabs = [];
   if (!isKnockout) tabs.push({ key: "classificacao", label: "Classificação" });
-  if (isKnockout)  tabs.push({ key: "chaveamento",   label: "Chaveamento" });
-  tabs.push({ key: "partidas", label: "Partidas", badge: totalMatches });
+  if (isKnockout) tabs.push({ key: "chaveamento", label: "Chaveamento" });
+  if (!isKnockout) tabs.push({ key: "partidas", label: "Rodadas", badge: totalRounds });
+  tabs.push({ key: "disciplinar", label: "Disciplinar" });
 
   const activeTab = mainTab ?? tabs[0]?.key;
 
   return (
-    <div className="space-y-5">
-      {/* League hero */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
-          {league.logo_url
-            ? <img src={league.logo_url} alt="" className="w-full h-full object-contain p-1" />
-            : <Trophy size={24} className="text-gray-300" />
-          }
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-bold text-gray-900 truncate">{league.name}</h2>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-            {league.country_name && (
-              <span className="flex items-center gap-1 text-xs text-gray-500">
-                {league.flag_url && <img src={league.flag_url} alt="" className="w-4 h-3 object-cover rounded-sm" />}
-                {league.country_name}
-              </span>
-            )}
-            {league.format && (
-              <span className="text-xs font-semibold text-violet-600 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-md">
-                {FORMAT_LABELS[league.format] ?? league.format}
-              </span>
-            )}
-            {league.organizer && <span className="text-xs text-gray-500">{league.organizer}</span>}
+    <div className="space-y-4">
+
+      {/* Unified toolbar: main tabs + season selector */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between">
+          {/* Main tabs */}
+          <div className="flex items-center overflow-x-auto">
+            {tabs.map(tab => (
+              <button key={tab.key} onClick={() => setMainTab(tab.key)}
+                className={`relative px-4 py-3 text-sm font-semibold transition-colors whitespace-nowrap shrink-0
+                  ${activeTab === tab.key
+                    ? "text-gray-900"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"}`}>
+                {tab.label}
+                {tab.badge > 0 && (
+                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full font-bold
+                    ${activeTab === tab.key ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-400"}`}>
+                    {tab.badge}
+                  </span>
+                )}
+                {activeTab === tab.key && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 rounded-t" />
+                )}
+              </button>
+            ))}
           </div>
+          {/* Season selector */}
+          {(seasons ?? []).length > 0 && (
+            <div className="flex items-center gap-0.5 px-2 border-l border-gray-100 shrink-0">
+              {(seasons ?? []).map(y => (
+                <button key={y} onClick={() => { setSeason(y); setMainTab(null); }}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all
+                    ${season === y
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}>
+                  {y}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Season selector */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium text-gray-500">{t("sports.season", "Temporada")}</span>
-        <div className="flex gap-1 flex-wrap">
-          {(seasons ?? []).map(y => (
-            <button key={y} onClick={() => setSeason(y)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
-                ${season === y ? "bg-violet-600 border-violet-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:border-violet-300"}`}>
-              {y}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main tabs */}
-      <div className="flex gap-1">
-        {tabs.map(tab => (
-          <button key={tab.key} onClick={() => setMainTab(tab.key)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all
-              ${activeTab === tab.key ? "bg-violet-600 border-violet-600 text-white shadow-sm" : "bg-white border-gray-200 text-gray-600 hover:border-violet-200"}`}>
-            {tab.label}
-            {tab.badge > 0 && (
-              <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold
-                ${activeTab === tab.key ? "bg-violet-500 text-white" : "bg-gray-100 text-gray-500"}`}>
-                {tab.badge}
-              </span>
-            )}
-          </button>
-        ))}
       </div>
 
       {/* ── CLASSIFICAÇÃO ── */}
       {activeTab === "classificacao" && (
         <>
-          <SubTabs value={split} onChange={setSplit} options={[
-            { key: "total", label: t("sports.total", "Total") },
-            { key: "home",  label: t("sports.home", "Casa") },
-            { key: "away",  label: t("sports.away", "Fora") },
-          ]} />
+          {/* Leader + split selector — unified strip */}
+          <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
+            {!loading && leader ? (
+              <Link to={`/dashboard/clubs/${leader.id}`}
+                className="flex items-center gap-2 min-w-0 group">
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">CAMPEÃO</span>
+                {leader.crest
+                  ? <img src={leader.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+                  : <Trophy size={16} className="text-gray-300 shrink-0" />
+                }
+                <span className="text-sm font-bold text-gray-900 group-hover:text-violet-700 transition-colors truncate">
+                  {leader.name}
+                </span>
+                <span className="text-sm font-extrabold tabular-nums text-gray-900 shrink-0">{leader.pts}</span>
+                <span className="text-xs text-gray-400 shrink-0">pts</span>
+              </Link>
+            ) : <div />}
+            <SubTabs
+              value={activeSplit}
+              onChange={val => setSplit(val)}
+              options={isAperturaClausura
+                ? [{ key: "clausura", label: "Clausura" }, { key: "apertura", label: "Apertura" }]
+                : [
+                  { key: "total", label: t("sports.total", "Total") },
+                  { key: "home", label: t("sports.home", "Casa") },
+                  { key: "away", label: t("sports.away", "Fora") },
+                ]
+              }
+            />
+          </div>
           {loading
             ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
-            : <StandingsTable rows={standings?.[split] ?? []} t={t} />
+            : <StandingsTable rows={activeStandings} t={t} seasonConfig={seasonConfig} />
           }
         </>
       )}
@@ -563,19 +767,21 @@ export default function LeagueSportsSection({ leagueId }) {
       {activeTab === "chaveamento" && (
         loading
           ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
-          : <BracketView
-              matches={matches ?? []}
-              structure_json={league.structure_json}
-              season={season}
-              t={t}
-            />
+          : <BracketView matches={matches ?? []} structure_json={league.structure_json} season={season} t={t} />
       )}
 
       {/* ── PARTIDAS ── */}
       {activeTab === "partidas" && (
         loading
           ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
-          : <RoundRobinMatches matches={matches ?? []} t={t} />
+          : <RoundRobinMatches matches={matchesForPhase} t={t} />
+      )}
+
+      {/* ── DISCIPLINAR ── */}
+      {activeTab === "disciplinar" && (
+        loading
+          ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
+          : <DisciplinaryTable rows={discipline ?? []} t={t} />
       )}
     </div>
   );

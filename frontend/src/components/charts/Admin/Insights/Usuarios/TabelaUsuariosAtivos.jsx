@@ -15,7 +15,6 @@ export default function TabelaUsuariosAtivos({ data }) {
         <thead className="bg-gray-50 border-b">
           <tr>
             <th className="px-4 py-2 text-left font-medium text-gray-500">Nome</th>
-            <th className="px-4 py-2 text-left font-medium text-gray-500">E-mail</th>
             <th className="px-4 py-2 text-left font-medium text-gray-500">Acessos</th>
           </tr>
         </thead>
@@ -24,7 +23,6 @@ export default function TabelaUsuariosAtivos({ data }) {
           {data.map((user) => (
             <tr key={user.id} className="hover:bg-gray-50">
               <td className="px-4 py-2">{user.name}</td>
-              <td className="px-4 py-2 text-gray-600">{user.email}</td>
               <td className="px-4 py-2 font-semibold">{user.login_count}</td>
             </tr>
           ))}

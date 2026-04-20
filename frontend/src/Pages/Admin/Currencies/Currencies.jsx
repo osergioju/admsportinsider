@@ -24,7 +24,7 @@ const labelClass =
 function ConfirmDeleteModal({ title, description, onConfirm, onClose, loading }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !loading && onClose()} />
+      <div className="absolute inset-0 bg-black/40 " onClick={() => !loading && onClose()} />
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl relative z-10 p-6 text-center animate-in zoom-in-95 duration-200">
         <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
           <Trash2 size={28} />
@@ -673,7 +673,7 @@ export default function Currencies() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => !saving && setShowNewModal(false)}
         >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/40 " />
           <div
             className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 p-6 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}

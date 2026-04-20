@@ -43,10 +43,10 @@ export default function SubscriptionManagement() {
   const isCanceling = user?.cancel_at_period_end === true;
   const expiresAt = user?.subscription_current_period_end
     ? new Date(user.subscription_current_period_end).toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : null;
 
   const benefits = currentPlan?.benefits
@@ -224,12 +224,10 @@ export default function SubscriptionManagement() {
               </div>
             </div>
           ) : (
-            <div className={`bg-white rounded-3xl border p-8 shadow-sm relative overflow-hidden group transition-all ${
-              isCanceling ? "border-amber-200" : "border-gray-200"
-            }`}>
-              <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none opacity-50 ${
-                isCanceling ? "bg-amber-50" : "bg-purple-50"
-              }`} />
+            <div className={`bg-white rounded-3xl border p-8 shadow-sm relative overflow-hidden group transition-all ${isCanceling ? "border-amber-200" : "border-gray-200"
+              }`}>
+              <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none opacity-50 ${isCanceling ? "bg-amber-50" : "bg-purple-50"
+                }`} />
 
               <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-6">
                 <div>
@@ -267,9 +265,8 @@ export default function SubscriptionManagement() {
                   </p>
                 </div>
 
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                  isCanceling ? "bg-amber-50 text-amber-500" : "bg-[#7F33D9]/10 text-[#7F33D9]"
-                }`}>
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isCanceling ? "bg-amber-50 text-amber-500" : "bg-[#7F33D9]/10 text-[#7F33D9]"
+                  }`}>
                   <Shield size={32} />
                 </div>
               </div>
@@ -341,7 +338,7 @@ export default function SubscriptionManagement() {
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-[60px] -mr-10 -mt-10 opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity" />
             <div className="relative z-10 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm group-hover:bg-white/30 transition-colors border border-white/10">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0  group-hover:bg-white/30 transition-colors border border-white/10">
                 <MessageCircle size={24} className="text-white" />
               </div>
               <div className="flex-1">
@@ -409,7 +406,7 @@ export default function SubscriptionManagement() {
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 "
             onClick={() => !portalLoading && setIsCancelModalOpen(false)}
           />
 

@@ -2,6 +2,8 @@ import { supabase } from "../utils/supabase.js";
 import db from  "../config/db.js";
 import xlsx from "xlsx";
 
+const CLUBS_START_COL = 4;
+
 // Ajusta os planos, q tá em virghual
 function parsePlans(raw) {
   if (raw === null || raw === undefined) return null;
@@ -229,7 +231,81 @@ export async function validateXlsxImport(req, res) {
 }
 
 
-// FUNÇÃO REAL QUE IMPORTA TUDO 
+function normalizeStr(s) {
+  return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+// Preview: resolve quais clubes do XLSX já existem no banco (por slug ou nome normalizado)
+export async function previewXlsxClubs(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: "Arquivo não enviado" });
+
+    const years = req.body.years ? JSON.parse(req.body.years) : [];
+    if (!years.length) return res.status(400).json({ error: "Nenhum ano selecionado" });
+
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+
+    // Coleta todos os slugs únicos de todas as abas de ano selecionadas
+    const rawSlugsSet = new Set();
+    for (const year of years) {
+      const sheet = workbook.Sheets[String(year)];
+      if (!sheet) continue;
+      const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: null });
+      const slugRow = rows[1] ?? [];
+      slugRow.slice(CLUBS_START_COL)
+        .filter(v => v != null && v !== "")
+        .map(String)
+        .forEach(s => rawSlugsSet.add(s));
+    }
+
+    const rawSlugs = [...rawSlugsSet];
+    if (!rawSlugs.length) return res.json({ foundClubs: [], notFoundSlugs: [], allClubs: [] });
+
+    // Busca todos os clubes ativos
+    const allClubsRes = await db.query(`
+      SELECT c.id_club, c.name, c.slug, c.crest_url, co.name AS country_name
+      FROM clubs c
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE c.active = true
+      ORDER BY co.name ASC, c.name ASC
+    `);
+
+    // Índices para matching
+    const bySlug = new Map(allClubsRes.rows.filter(c => c.slug).map(c => [c.slug, c]));
+    const byNorm = new Map(allClubsRes.rows.map(c => [normalizeStr(c.name), c]));
+
+    const foundClubs = [];
+    const notFoundSlugs = [];
+
+    for (const raw of rawSlugs) {
+      const normRaw = normalizeStr(raw.replace(/_/g, " "));
+      const club = bySlug.get(raw) || byNorm.get(normRaw);
+      if (club) {
+        foundClubs.push({ csvSlug: raw, id_club: club.id_club, name: club.name, crest_url: club.crest_url, country_name: club.country_name });
+      } else {
+        notFoundSlugs.push(raw);
+      }
+    }
+
+    // Agrupa todos os clubes por país para o SearchableSelect
+    const byCountry = new Map();
+    for (const c of allClubsRes.rows) {
+      const key = c.country_name ?? "—";
+      if (!byCountry.has(key)) byCountry.set(key, []);
+      byCountry.get(key).push({ value: String(c.id_club), label: c.name, image: c.crest_url || undefined });
+    }
+    const allClubsGrouped = [...byCountry.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "pt"))
+      .map(([groupLabel, options]) => ({ groupLabel, options }));
+
+    res.json({ foundClubs, notFoundSlugs, allClubsGrouped });
+  } catch (err) {
+    console.error("[previewXlsxClubs]", err);
+    res.status(500).json({ error: "Erro ao analisar clubes" });
+  }
+}
+
+// FUNÇÃO REAL QUE IMPORTA TUDO
 export async function importLeagueCountry(req, res) {
   const client = await db.connect();
 
@@ -290,6 +366,7 @@ export async function importLeagueCountry(req, res) {
     // 1️⃣ BULK UPSERT — INDICADORES DA LIGA
     // ======================================================
     const leagueIndicatorRows = [];
+    const seenIndicatorCodes = new Set();
 
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
@@ -299,7 +376,8 @@ export async function importLeagueCountry(req, res) {
       const plans = parsePlans(row[2]);
 
       if (!code || typeof code !== "string" || !name_pt || level == null) continue;
-      if (indicatorIdByCode[code]) continue;
+      if (seenIndicatorCodes.has(code)) continue;
+      seenIndicatorCodes.add(code);
 
       leagueIndicatorRows.push([code, name_pt, level, plans]);
     }
@@ -329,6 +407,7 @@ export async function importLeagueCountry(req, res) {
     // 2️⃣ BULK INSERT — LEAGUE_FINANCIALS
     // ======================================================
     const leagueFinancialRows = [];
+    const seenFinancialKeys = new Set();
 
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
@@ -342,6 +421,10 @@ export async function importLeagueCountry(req, res) {
         const year = leagueYears[idx];
         const value = row[5 + idx];
         if (typeof value !== "number") continue;
+
+        const key = `${id_indicator}|${year}`;
+        if (seenFinancialKeys.has(key)) continue;
+        seenFinancialKeys.add(key);
 
         leagueFinancialRows.push([leagueId, id_indicator, year, value]);
       }
@@ -390,8 +473,10 @@ export async function importLeagueCountry(req, res) {
     // ======================================================
     // 3️⃣ CLUBES / SEASONS / FINANCIALS
     // ======================================================
-    const CLUBS_START_COL = 4;
     const DATA_START_ROW = 7;
+
+    // clubMappings: { csvSlug: id_club } — fornecido pelo front para slugs não encontrados
+    const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
 
     for (const year of selectedYears) {
       const sheet = workbook.Sheets[String(year)];
@@ -399,30 +484,21 @@ export async function importLeagueCountry(req, res) {
 
       const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: null });
 
-      const clubSlugs = rows[1].slice(CLUBS_START_COL).filter(Boolean);
+      const clubSlugs = rows[1].slice(CLUBS_START_COL).filter(v => v != null && v !== "").map(String);
 
-      // --- Bulk resolve clubs ---
-      const existingClubs = await client.query(
-        `SELECT id_club, slug FROM clubs WHERE slug = ANY($1)`,
-        [clubSlugs]
+      // --- Resolve clubs: slug exato → nome normalizado → mapeamento manual → skip
+      const allClubsRes = await client.query(
+        `SELECT id_club, name, slug FROM clubs WHERE active = true`
       );
+      const bySlug = new Map(allClubsRes.rows.filter(c => c.slug).map(c => [c.slug, c.id_club]));
+      const byNorm = new Map(allClubsRes.rows.map(c => [normalizeStr(c.name), c.id_club]));
 
       const clubIdBySlug = {};
-      for (const r of existingClubs.rows) {
-        clubIdBySlug[r.slug] = r.id_club;
-      }
-
-      const newSlugs = clubSlugs.filter(s => !clubIdBySlug[s]);
-
-      for (const slug of newSlugs) {
-        const result = await client.query(
-          `INSERT INTO clubs (slug, name, active, id_country, created_at)
-           SELECT $1, $2, true, l.id_country, NOW()
-           FROM leagues l WHERE l.id_league = $3
-           RETURNING id_club`,
-          [slug, humanizeSlug(slug), leagueId]
-        );
-        clubIdBySlug[slug] = result.rows[0].id_club;
+      for (const slug of clubSlugs) {
+        const normSlug = normalizeStr(slug.replace(/_/g, " "));
+        const id = bySlug.get(slug) || byNorm.get(normSlug) || (clubMappings[slug] ? Number(clubMappings[slug]) : null);
+        if (id) clubIdBySlug[slug] = id;
+        // sem match e sem mapeamento → simplesmente ignorado (não cria clube)
       }
 
       // --- Bulk upsert club_seasons ---
@@ -520,7 +596,7 @@ export async function importLeagueCountry(req, res) {
 
 
 function humanizeSlug(slug) {
-  return slug
+  return String(slug)
     .replace(/_/g, " ")
     .replace(/\b\w/g, l => l.toUpperCase());
 }

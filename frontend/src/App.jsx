@@ -42,7 +42,8 @@ import UploadMatchesPage from "./Pages/Admin/Datasend/UploadMatchesPage";
 import GestaoPaises from "./Pages/Admin/GestaoPaises";
 import GestaoLigas from "./Pages/Admin/GestaoLigas";
 import GestaoClubes from "./Pages/Admin/GestaoClubes";
- 
+import GestaoJogadores from "./Pages/Admin/GestaoJogadores";
+
 // ADMIN - Gestão do usuário 
 import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
 import AdminNewUsuario from "./Pages/Admin/Usuarios/NovoUsuario";
@@ -84,9 +85,10 @@ import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 import AdminLayout from "./layouts/AdminLayout";
 
-// Rotas 
+// Rotas
 import PrivateRoute from "./routes/PrivateRoute";
 import RoleRoute from "./routes/RoleRoute";
+import AdminPermissionRoute from "./routes/AdminPermissionRoute";
 import ScrollToTop from "./components/uxui/ScrollTop";
 
 // Páginas do dashboard 
@@ -189,60 +191,101 @@ export default function App() {
           <Route element={<AdminLayout />}>
 
             <Route element={<RoleRoute allowedRoles={["admin", "admin_master"]} />}>
+
+              {/* ── Sempre acessíveis para qualquer admin ── */}
               <Route path="/admin" element={<AdminIndex />} />
               <Route path="/admin/profile" element={<AdminProfileDetails />} />
 
-              {/* Gestão de países, ligas e clubes */}
-              <Route path="/admin/gestao-paises" element={<GestaoPaises />} />
+              {/* ── Gestão de países, ligas e clubes ── */}
+              <Route element={<AdminPermissionRoute permissionKey="gestao-dados" />}>
+                <Route path="/admin/gestao-paises" element={<GestaoPaises />} />
+                <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
+                <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
+                <Route path="/admin/gestao-jogadores" element={<GestaoJogadores />} />
+              </Route>
 
-              <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
-              <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
+              {/* ── Gestão de usuários ── */}
+              <Route element={<AdminPermissionRoute permissionKey="usuarios" />}>
+                <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+                <Route path="/admin/new-user" element={<AdminNewUsuario />} />
+                <Route path="/admin/usuarios/:id" element={<UnicoUsuario />} />
+              </Route>
 
-              {/* GEstão de usuários */}
-              <Route path="/admin/usuarios" element={<AdminUsuarios />} />
-              <Route path="/admin/new-user" element={<AdminNewUsuario />} />
-              <Route path="/admin/usuarios/:id" element={<UnicoUsuario />} />
+              {/* ── Gestão de planos ── */}
+              <Route element={<AdminPermissionRoute permissionKey="planos" />}>
+                <Route path="/admin/gestao-planos" element={<GestaoPlanos />} />
+                <Route path="/admin/gestao-planos/novo" element={<NovoPlano />} />
+                <Route path="/admin/gestao-planos/:id" element={<EditarPlano />} />
+              </Route>
 
-              {/* GESTÃO DE PLANOS */}
-              <Route path="/admin/gestao-planos" element={<GestaoPlanos />} />
-              <Route path="/admin/gestao-planos/novo" element={<NovoPlano />} />
-              <Route path="/admin/gestao-planos/:id" element={<EditarPlano />} />
+              {/* ── Insights ── */}
+              <Route element={<AdminPermissionRoute permissionKey="insights-usuarios" />}>
+                <Route path="/admin/insights/usuarios" element={<InsightUsuarios />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="insights-clubes" />}>
+                <Route path="/admin/insights/clubes" element={<InsightClubes />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="insights-ligas" />}>
+                <Route path="/admin/insights/ligas" element={<InsightLigas />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="insights-financeiro" />}>
+                <Route path="/admin/insights/financeiro" element={<InsightFinanceiro />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="insights-planos" />}>
+                <Route path="/admin/insights/planos" element={<InsightPlanos />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="insights-importacoes" />}>
+                <Route path="/admin/insights/importacoes" element={<InsightImportacoes />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="insights-uso" />}>
+                <Route path="/admin/insights/uso" element={<InsightUso />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="insights-performance" />}>
+                <Route path="/admin/insights/performance" element={<InsightPerformance />} />
+              </Route>
 
-              {/* Insights */}
-              <Route path="/admin/insights/usuarios" element={<InsightUsuarios />} />
-              <Route path="/admin/insights/clubes" element={<InsightClubes />} />
-              <Route path="/admin/insights/ligas" element={<InsightLigas />} />
-              <Route path="/admin/insights/financeiro" element={<InsightFinanceiro />} />
-              <Route path="/admin/insights/planos" element={<InsightPlanos />} />
-              <Route path="/admin/insights/importacoes" element={<InsightImportacoes />} />
-              <Route path="/admin/insights/uso" element={<InsightUso />} />
-              <Route path="/admin/insights/performance" element={<InsightPerformance />} />
+              {/* ── Upload de dados ── */}
+              <Route element={<AdminPermissionRoute permissionKey="upload-financeiro" />}>
+                <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="upload-times" />}>
+                <Route path="/admin/upload/teams" element={<UploadTeamsPage />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="upload-jogadores" />}>
+                <Route path="/admin/upload/players" element={<UploadPlayersPage />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="upload-partidas" />}>
+                <Route path="/admin/upload/matches" element={<UploadMatchesPage />} />
+              </Route>
 
-              {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
-              <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
+              {/* ── Notificações ── */}
+              <Route element={<AdminPermissionRoute permissionKey="notifications" />}>
+                <Route path="/admin/notifications" element={<Notifications />} />
+              </Route>
 
-              {/*--------- Aqui o negócio fica louco, upload do primeiro XLSX -----------*/}
-              <Route path="/admin/upload/teams" element={<UploadTeamsPage />} />
-              <Route path="/admin/upload/players" element={<UploadPlayersPage />} />
-              <Route path="/admin/upload/matches" element={<UploadMatchesPage />} />
+              {/* ── Banners ── */}
+              <Route element={<AdminPermissionRoute permissionKey="banners" />}>
+                <Route path="/admin/banners" element={<Banners />} />
+              </Route>
 
-              {/* Notificações */}
-              <Route path="/admin/notifications" element={<Notifications />} />
+              {/* ── Regiões e idioma ── */}
+              <Route element={<AdminPermissionRoute permissionKey="regions" />}>
+                <Route path="/admin/regions" element={<Regions />} />
+                <Route path="/admin/regions/:id" element={<RegionsDetailPage />} />
+                <Route path="/admin/regions/:id/financial-indicators" element={<FinancialTransPage />} />
+                <Route path="/admin/regions/:id/common-terms" element={<CommonTermsTransPage />} />
+              </Route>
 
-              {/* Banners */}
-              <Route path="/admin/banners" element={<Banners />} />
+              {/* ── Moedas ── */}
+              <Route element={<AdminPermissionRoute permissionKey="currencies" />}>
+                <Route path="/admin/currencies" element={<Currencies />} />
+              </Route>
 
-              {/* Regiões e idioma */}
-              <Route path="/admin/regions" element={<Regions />} />
-              <Route path="/admin/regions/:id" element={<RegionsDetailPage />} />
-              <Route path="/admin/regions/:id/financial-indicators" element={<FinancialTransPage />} />
-              <Route path="/admin/regions/:id/common-terms" element={<CommonTermsTransPage />} />
+              {/* ── FAQ ── */}
+              <Route element={<AdminPermissionRoute permissionKey="faq" />}>
+                <Route path="/admin/faq" element={<FaqAdmin />} />
+              </Route>
 
-              {/* Moedas */}
-              <Route path="/admin/currencies" element={<Currencies />} />
-
-              {/* FAQ */}
-              <Route path="/admin/faq" element={<FaqAdmin />} />
             </Route>
 
 

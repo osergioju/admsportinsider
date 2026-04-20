@@ -17,6 +17,16 @@ import { AuthContext } from "../../../context/AuthContext"
 import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
 
 export default function DashClubUniques() {
+  function hexToRgb(hex) {
+    if (!hex) return null;
+    const cleaned = hex.replace("#", "");
+    const full = cleaned.length === 3
+      ? cleaned.split("").map(c => c + c).join("")
+      : cleaned;
+    const num = parseInt(full, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+
   const { t } = useTranslation();
   const { id } = useParams();
   const mainClubId = Number(id);
@@ -99,6 +109,7 @@ export default function DashClubUniques() {
   const [debtsEvolution, setDebtsEvolution] = useState(null);
   const [indicators, setIndicators] = useState(null);
   const [availableYears, setAvailableYears] = useState(null);
+
 
   /**
    * clubes por gráfico (sempre inclui o principal)
@@ -300,42 +311,73 @@ export default function DashClubUniques() {
     : "—";
 
 
+  // Cores 
+  function resolveColors(primary, secondary, tertiary) {
+    const c1 = primary || "#1a1a2e";
+    const c2 = secondary || c1;
+    const c3 = tertiary || c2;
+    return [c1, c2, c3];
+  }
+
+  const [c1, c2, c3] = resolveColors(theClub.club.primary_color, theClub.club.secondary_color, theClub.club.tertiary_color);
+
+  const rgb1 = hexToRgb(c1);
+  const rgb2 = hexToRgb(c2);
+  const glowPrimary = rgb1
+    ? `radial-gradient(circle, rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.45) 0%, transparent 70%)`
+    : "rgba(0,0,0,0.2)";
+
+  const glowSecondary = rgb2
+    ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)`
+    : glowPrimary;
+
   return (
     <div className="space-y-6">
       {/* HEADER */}
       <div
-        className="relative w-full p-4 lg:py-12 flex items-center lg:px-6 rounded-2xl border"
+        className="overflow-hidden relative w-full p-4 lg:py-12 flex items-center lg:px-6 rounded-2xl border"
         style={{
           background: `
-            radial-gradient(
-              circle at 10% 20%,
-              ${theClub.club.primary_color || "#FFF5F5"} 0%,
-              transparent 50%
-            ),
-            radial-gradient(
-              circle at 90% 80%,
-              ${theClub.club.tertiary_color || "#FFFFF5"} 0%,
-              transparent 50%
-            ),
-            radial-gradient(
-              circle at 50% 50%,
-              ${theClub.club.secondary_color} 0%,
-              ${theClub.club.secondary_color} 100%
-            )
-`,
+            radial-gradient(circle at 20% 30%, ${c1} 0%, transparent 60%),
+            radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
+            linear-gradient(135deg, ${c1}, ${c2}, ${c3})
+          `,
         }}
       >
-        <div className="overflow-hidden absolute bg-black rounded-full w-5 h-5 lg:w-10 lg:h-10 right-4 top-4">
+        {/* Overlay escuro para legibilidade */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)",
+          }}
+        />
+
+        {/* Glow decorativo canto inferior direito */}
+        <div
+          className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl"
+          style={{
+            background: glowPrimary
+          }}
+        />
+        {/* Glow decorativo canto superior esquerdo */}
+        <div
+          className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl"
+          style={{
+            background: glowSecondary
+          }}
+        />
+
+        <div className="relati overflow-hidden absolute bg-black rounded-full w-5 h-5 lg:w-10 lg:h-10 right-4 top-4">
           <img className="h-full" src={theClub.club.flag_url} alt="" />
         </div>
 
-        <div className="w-20 h-20 lg:w-24 lg:h-24 xl:w-34 xl:h-34 bg-contain bg-no-repeat bg-center"
+        <div className="relative w-20 h-20 lg:w-24 lg:h-24 xl:w-34 xl:h-34 bg-contain bg-no-repeat bg-center"
           style={{
             backgroundImage: `url(${theClub.club.crest_url})`,
           }}
         ></div>
 
-        <div className="ml-4 lg:ml-10 pb-4">
+        <div className="relative ml-4 lg:ml-10 pb-4">
           <h3 className="text-white text-2xl mb-3 lg:text-3xl font-light">
             {theClub.club.name}
           </h3>

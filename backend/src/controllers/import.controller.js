@@ -1,6 +1,7 @@
 import xlsx from "xlsx";
 import slugify from "slugify";
 import db from "../config/db.js";
+import allCountries from "world-countries";
 
 const toNumber = (v) => {
   if (!v || v === "N/A") return 0;
@@ -22,6 +23,30 @@ const chunk = (array, size) => {
   }
   return result;
 };
+
+// Normaliza formatos de temporada para um ano inteiro (usa o ano final).
+// "2023/2024" → 2024 | "2023/24" → 2024 | "23/24" → 2024 | "2024" → 2024
+function parseSeasonYear(raw) {
+  if (!raw) return null;
+  const str = String(raw).trim();
+  // "2023/2024" ou "2023-2024" → usa o segundo (ano final)
+  const full = str.match(/^(\d{4})[\/\-](\d{4})$/);
+  if (full) return Number(full[2]);
+  // "2023/24" ou "2023-24" → expande o segundo
+  const mixed = str.match(/^(\d{4})[\/\-](\d{2})$/);
+  if (mixed) {
+    const base = Math.floor(Number(mixed[1]) / 100) * 100;
+    return base + Number(mixed[2]);
+  }
+  // "23/24" ou "23-24" → expande ambos, retorna o segundo
+  const short = str.match(/^(\d{2})[\/\-](\d{2})$/);
+  if (short) {
+    const y = Number(short[2]);
+    return y >= 90 ? 1900 + y : 2000 + y;
+  }
+  const n = Number(str);
+  return isNaN(n) ? null : n;
+}
 
 // CSV files sent as buffer are read as Latin-1 by xlsx by default.
 // This helper forces UTF-8 decoding for CSV so accented chars (ã, ê, etc.) are preserved.
@@ -51,17 +76,20 @@ export async function importMatches(req, res) {
 
   try {
     const idLeague = Number(req.body.league);
-    const seasonYear = Number(req.body.season);
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
-    // clubMappings: { "csvTeamName": dbClubId }
-
-    if (!idLeague || !seasonYear) {
-      return res.status(400).json({ error: "Liga e temporada são obrigatórias" });
-    }
 
     const workbook = readWorkbook(req.file);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json(sheet, { raw: false, defval: null });
+
+    // Se o CSV tem coluna "season" (ex: "2024/2025"), usa parseSeasonYear → 2025
+    // Senão usa o ano enviado pelo frontend (já detectado pelo preview)
+    const csvSeasonRaw = rows[0]?.season ?? null;
+    const seasonYear = csvSeasonRaw ? parseSeasonYear(csvSeasonRaw) : parseSeasonYear(req.body.season);
+
+    if (!idLeague || !seasonYear) {
+      return res.status(400).json({ error: "Liga e temporada são obrigatórias" });
+    }
 
     await client.query("BEGIN");
 
@@ -91,16 +119,26 @@ export async function importMatches(req, res) {
     ------------------------------------------------------------------ */
 
     const clubsRes = await client.query(`
-      SELECT c.id_club, c.name, c.slug
+      SELECT c.id_club, c.name, c.short_name, c.slug
       FROM clubs c
       WHERE c.id_country = (SELECT id_country FROM leagues WHERE id_league = $1)
     `, [idLeague]);
 
-    const clubsMap = new Map();
+    const clubsByName   = new Map(); // slug(name) or db slug → id
+    const clubsByCommon = new Map(); // slug(common_name) → id
     for (const club of clubsRes.rows) {
-      const slug = club.slug || slugify(club.name, { lower: true, strict: true });
-      clubsMap.set(slug, club.id_club);
+      if (club.slug) clubsByName.set(club.slug, club.id_club);
+      clubsByName.set(slugify(club.name, { lower: true, strict: true }), club.id_club);
+      if (club.short_name) {
+        clubsByCommon.set(slugify(club.short_name, { lower: true, strict: true }), club.id_club);
+      }
     }
+
+    const resolveClub = (csvName) => {
+      if (!csvName) return null;
+      const s = slugify(csvName, { lower: true, strict: true });
+      return clubsByName.get(s) || clubsByCommon.get(s) || null;
+    };
 
     /* ------------------------------------------------------------------
        PREPARE ROWS
@@ -118,14 +156,8 @@ export async function importMatches(req, res) {
         continue;
       }
 
-      const homeSlug = slugify(homeName, { lower: true, strict: true });
-      const awaySlug = slugify(awayName, { lower: true, strict: true });
-
-      let homeClubId = clubsMap.get(homeSlug);
-      if (!homeClubId && clubMappings[homeName] != null) homeClubId = Number(clubMappings[homeName]);
-
-      let awayClubId = clubsMap.get(awaySlug);
-      if (!awayClubId && clubMappings[awayName] != null) awayClubId = Number(clubMappings[awayName]);
+      let homeClubId = resolveClub(homeName) ?? (clubMappings[homeName] != null ? Number(clubMappings[homeName]) : null);
+      let awayClubId = resolveClub(awayName) ?? (clubMappings[awayName] != null ? Number(clubMappings[awayName]) : null);
 
       if (!homeClubId || !awayClubId) {
         skippedReasons.push({ reason: "club_not_found", home: homeName, away: awayName });
@@ -386,6 +418,8 @@ export async function importPlayers(req, res) {
 
     const countriesRes = await client.query(`SELECT id_country, name FROM countries`);
     const countriesMap = new Map(countriesRes.rows.map(c => [c.name, c.id_country]));
+    const normalizeStr = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const countriesMapNorm = new Map(countriesRes.rows.map(c => [normalizeStr(c.name), c.id_country]));
 
     /* ------------------------------------------------------------------
        CACHE CLUB SEASONS
@@ -397,14 +431,18 @@ export async function importPlayers(req, res) {
 
     if (idLeague) {
       const cls = await client.query(`
-        SELECT cls.id_club_league_season, c.name AS club, s.year AS season
+        SELECT cls.id_club_league_season, c.name AS club, c.slug, c.description, s.year AS season
         FROM club_league_seasons cls
         JOIN clubs   c ON c.id_club   = cls.id_club
         JOIN seasons s ON s.id_season = cls.id_season
         WHERE cls.id_league = $1
       `, [idLeague]);
       for (const r of cls.rows) {
-        clubSeasonMap.set(`${r.club}__${r.season}`, r.id_club_league_season);
+        const yr = r.season;
+        clubSeasonMap.set(`${r.club}__${yr}`, r.id_club_league_season);
+        clubSeasonMap.set(`${slugify(r.club, { lower: true, strict: true })}__${yr}`, r.id_club_league_season);
+        if (r.slug) clubSeasonMap.set(`${r.slug}__${yr}`, r.id_club_league_season);
+        if (r.description) clubSeasonMap.set(`${slugify(r.description, { lower: true, strict: true })}__${yr}`, r.id_club_league_season);
       }
 
       /* ------------------------------------------------------------------
@@ -422,21 +460,33 @@ export async function importPlayers(req, res) {
               const dbName  = clubMappings[raw] ?? raw;
               return `${dbName}||${r.season}`;
             })
-        )].map(k => { const [n, s] = k.split("||"); return { dbName: n, seasonYear: Number(s) }; });
+        )].map(k => { const [n, s] = k.split("||"); return { dbName: n, seasonYear: parseSeasonYear(s) }; });
 
-        // Filtra só os que ainda não estão no mapa
-        const missing = csvPairs.filter(({ dbName, seasonYear }) => !clubSeasonMap.has(`${dbName}__${seasonYear}`));
+        // Filtra só os que ainda não estão no mapa (verifica slug também)
+        const missing = csvPairs.filter(({ dbName, seasonYear }) => {
+          const slug = slugify(dbName, { lower: true, strict: true });
+          return !clubSeasonMap.has(`${dbName}__${seasonYear}`) && !clubSeasonMap.has(`${slug}__${seasonYear}`);
+        });
 
         if (missing.length > 0) {
-          const allDbNames    = [...new Set(missing.map(m => m.dbName))];
           const allSeasonYears = [...new Set(missing.map(m => m.seasonYear))];
 
-          // Busca id_club pelos nomes
-          const clubLookup = await client.query(
-            `SELECT id_club, name FROM clubs WHERE name = ANY($1)`,
-            [allDbNames]
+          // Busca id_club usando slug/description matching
+          const allClubsForLink = await client.query(
+            `SELECT id_club, name, slug, description FROM clubs WHERE active = true`
           );
-          const clubNameToId = new Map(clubLookup.rows.map(c => [c.name, c.id_club]));
+          const lkByName = new Map();
+          const lkByDesc = new Map();
+          for (const c of allClubsForLink.rows) {
+            lkByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+            if (c.slug) lkByName.set(c.slug, c.id_club);
+            if (c.description) lkByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
+          }
+          const resolveClubForLink = (name) => {
+            const s = slugify(name, { lower: true, strict: true });
+            return lkByName.get(s) || lkByDesc.get(s) || null;
+          };
+          const clubNameToId = new Map(missing.map(m => [m.dbName, resolveClubForLink(m.dbName)]));
 
           // Cache de id_season por ano
           const seasonIdCache = new Map();
@@ -454,8 +504,10 @@ export async function importPlayers(req, res) {
           }
 
           for (const { dbName, seasonYear } of missing) {
+            const slugKey = slugify(dbName, { lower: true, strict: true });
             const mapKey  = `${dbName}__${seasonYear}`;
-            if (clubSeasonMap.has(mapKey)) continue;
+            const slugMapKey = `${slugKey}__${seasonYear}`;
+            if (clubSeasonMap.has(mapKey) || clubSeasonMap.has(slugMapKey)) continue;
 
             const idClub  = clubNameToId.get(dbName);
             const idSeason = seasonIdCache.get(seasonYear);
@@ -472,6 +524,7 @@ export async function importPlayers(req, res) {
             );
 
             clubSeasonMap.set(mapKey, clsRes.rows[0].id_club_league_season);
+            clubSeasonMap.set(slugMapKey, clsRes.rows[0].id_club_league_season);
             console.log(`[importPlayers] auto-created CLS: ${mapKey}`);
           }
         }
@@ -511,7 +564,9 @@ export async function importPlayers(req, res) {
 
       const rawNat = row.nationality || null;
       const resolvedNat = rawNat ? (nationalityMappings[rawNat] ?? rawNat) : null;
-      const idCountry = resolvedNat ? (countriesMap.get(resolvedNat) || null) : null;
+      const idCountry = resolvedNat
+        ? (countriesMap.get(resolvedNat) || countriesMapNorm.get(normalizeStr(resolvedNat)) || null)
+        : null;
 
       playersData.push([
         row.full_name,
@@ -575,10 +630,18 @@ export async function importPlayers(req, res) {
       // Resolve nome do clube: usa mapeamento do usuário se fornecido
       const rawClub = row["Current Club"];
       const resolvedClub = clubMappings[rawClub] ?? rawClub;
+      const clubSeasonYear = parseSeasonYear(row.season);
+      let idClubLeagueSeason;
+      if (idLeague) {
+        const slug = slugify(resolvedClub, { lower: true, strict: true });
+        idClubLeagueSeason = clubSeasonMap.get(`${resolvedClub}__${clubSeasonYear}`)
+          ?? clubSeasonMap.get(`${slug}__${clubSeasonYear}`);
+      } else {
+        idClubLeagueSeason = clubSeasonMap.get(`${resolvedClub}__${row.league}__${clubSeasonYear}`);
+      }
       const clubSeasonKey = idLeague
-        ? `${resolvedClub}__${row.season}`
-        : `${resolvedClub}__${row.league}__${row.season}`;
-      const idClubLeagueSeason = clubSeasonMap.get(clubSeasonKey);
+        ? `${resolvedClub}__${clubSeasonYear}`
+        : `${resolvedClub}__${row.league}__${clubSeasonYear}`;
 
       if (!idPlayer) {
         skippedNoPlayer++;
@@ -644,6 +707,16 @@ export async function importPlayers(req, res) {
         toInt(row.inside_box_saves_total_overall),
         toInt(row.offsides_total_overall),
         toInt(row.fouls_committed_total_overall),
+        // new split + per-90 columns
+        toInt(row.minutes_played_home),
+        toInt(row.minutes_played_away),
+        toNumber(row.min_per_match) || null,
+        toInt(row.appearances_home),
+        toInt(row.appearances_away),
+        toNumber(row.shots_on_target_per_90_overall) || null,
+        toNumber(row.shots_on_target_per90_percentile_overall) || null,
+        toNumber(row.pass_completion_rate_percentile_overall) || null,
+        toNumber(row.interceptions_per_90_overall) || null,
       ]);
     }
 
@@ -705,7 +778,7 @@ export async function importPlayers(req, res) {
     }
 
     for (const chunkRows of chunk(statsToInsert, 200)) {
-      const values = buildValues(chunkRows.length, 38); // 1 id + 9 base + 28 extended
+      const values = buildValues(chunkRows.length, 47); // 1 id + 9 base + 28 extended + 9 new split/per-90
       const params = chunkRows.flat();
 
       await client.query(`
@@ -725,7 +798,11 @@ export async function importPlayers(req, res) {
           dribbles_total, dribbles_successful,
           duels_won_pct,
           saves_total, inside_box_saves,
-          offsides, fouls_committed
+          offsides, fouls_committed,
+          minutes_home, minutes_away, minutes_per_match,
+          matches_home, matches_away,
+          shots_on_target_per90, shots_on_target_per90_pct,
+          pass_completion_rate_pct, interceptions_per90
         )
         VALUES ${values}
         ON CONFLICT (id_player_season) DO UPDATE
@@ -765,7 +842,16 @@ export async function importPlayers(req, res) {
               saves_total        = EXCLUDED.saves_total,
               inside_box_saves   = EXCLUDED.inside_box_saves,
               offsides           = EXCLUDED.offsides,
-              fouls_committed    = EXCLUDED.fouls_committed
+              fouls_committed    = EXCLUDED.fouls_committed,
+              minutes_home              = EXCLUDED.minutes_home,
+              minutes_away              = EXCLUDED.minutes_away,
+              minutes_per_match         = EXCLUDED.minutes_per_match,
+              matches_home              = EXCLUDED.matches_home,
+              matches_away              = EXCLUDED.matches_away,
+              shots_on_target_per90     = EXCLUDED.shots_on_target_per90,
+              shots_on_target_per90_pct = EXCLUDED.shots_on_target_per90_pct,
+              pass_completion_rate_pct  = EXCLUDED.pass_completion_rate_pct,
+              interceptions_per90       = EXCLUDED.interceptions_per90
       `, params);
     }
 
@@ -803,7 +889,7 @@ export async function importTeams(req, res) {
 
   try {
     const idLeague = Number(req.body.league);
-    const seasonYear = Number(req.body.season);
+    const seasonYear = parseSeasonYear(req.body.season);
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
     // clubMappings: { "csvCommonName": dbClubId }
 
@@ -846,15 +932,21 @@ export async function importTeams(req, res) {
     ------------------------------------------------------------------ */
 
     const clubsRes = await client.query(`
-      SELECT c.id_club, c.name, c.slug
+      SELECT c.id_club, c.name, c.description, c.slug
       FROM clubs c
       WHERE c.id_country = (SELECT id_country FROM leagues WHERE id_league = $1)
     `, [idLeague]);
 
-    const clubsMap = new Map();
+    // common_name (CSV) → name/slug do DB
+    // team_name   (CSV) → description do DB
+    const clubsByName = new Map();        // slug(name) ou db slug → id
+    const clubsByDesc = new Map();        // slug(description) → id
     for (const c of clubsRes.rows) {
-      if (c.slug) clubsMap.set(c.slug, c.id_club);
-      clubsMap.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+      if (c.slug) clubsByName.set(c.slug, c.id_club);
+      clubsByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+      if (c.description) {
+        clubsByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
+      }
     }
 
     /* ------------------------------------------------------------------
@@ -867,24 +959,35 @@ export async function importTeams(req, res) {
     const resolvedLog = []; // para debug
 
     for (const row of rows) {
-      const csvKey = row["common_name"] || row["team_name"] || "";
-      const slug = slugify(csvKey, { lower: true, strict: true });
-      let idClub = clubsMap.get(slug);
-      let resolvedVia = "slug";
+      const commonName = row["common_name"] || "";
+      const teamName   = row["team_name"]   || "";
+      const commonSlug = slugify(commonName, { lower: true, strict: true });
+      const teamSlug   = slugify(teamName,   { lower: true, strict: true });
 
-      // Fallback: mapeamento manual enviado pelo usuário
-      if (!idClub && clubMappings[csvKey] != null) {
-        idClub = Number(clubMappings[csvKey]);
-        resolvedVia = "manual_mapping";
+      // 1. common_name do CSV → name/slug do DB
+      // 2. team_name do CSV  → description do DB
+      let idClub = clubsByName.get(commonSlug) || clubsByDesc.get(teamSlug) || null;
+      let resolvedVia = idClub
+        ? (clubsByName.get(commonSlug) ? "common_name→name" : "team_name→description")
+        : null;
+
+      // 3. Mapeamento manual enviado pelo usuário
+      if (!idClub) {
+        // Mapeamento manual: tenta common_name primeiro, depois team_name
+        const manualKey = clubMappings[commonName] != null ? commonName : teamName;
+        if (clubMappings[manualKey] != null) {
+          idClub = Number(clubMappings[manualKey]);
+          resolvedVia = "manual_mapping";
+        }
       }
 
       if (!idClub) {
-        skipped.push(row["team_name"]);
-        console.warn(`[importTeams] ⚠️  não encontrado: "${csvKey}" (slug: "${slug}")`);
+        skipped.push(commonName || teamName);
+        console.warn(`[importTeams] ⚠️  não encontrado: common="${commonName}" team="${teamName}"`);
         continue;
       }
 
-      resolvedLog.push({ csvKey, idClub, via: resolvedVia });
+      resolvedLog.push({ common: commonName, team: teamName, idClub, via: resolvedVia });
       matchedClubIds.push(idClub);
 
       statsRows.push([
@@ -1183,40 +1286,56 @@ export async function previewTeams(req, res) {
     if (!rows.length) return res.status(400).json({ error: "Arquivo sem dados" });
 
     const csvCountry = rows[0].country || null;
-    const csvSeason = rows[0].season || null;
+    const csvSeason  = rows[0].season  || null;
+    const csvSeasonYear = parseSeasonYear(csvSeason); // ano normalizado (ex: "2023/2024" → 2023)
 
-    // Busca ligas do país detectado; se não achar, retorna todas
+    // Busca todos os clubes primeiro para detectar o país correto no banco via slug
+    const allClubsRes = await db.query(`
+      SELECT c.id_club, c.name, c.description, c.slug, c.crest_url, co.name AS country_name
+      FROM clubs c
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE c.active = true
+      ORDER BY co.name ASC, c.name ASC
+    `);
+
+    // Infere país real do banco a partir dos primeiros times do CSV (slug matching)
+    let detectedCountry = csvCountry;
+    {
+      const firstTeams = [...new Set(
+        rows.slice(0, 10).map(r => r.common_name || r.team_name).filter(Boolean)
+      )];
+      for (const name of firstTeams) {
+        const s = slugify(name, { lower: true, strict: true });
+        const found = allClubsRes.rows.find(c =>
+          slugify(c.name, { lower: true, strict: true }) === s ||
+          (c.slug && c.slug === s) ||
+          (c.description && slugify(c.description, { lower: true, strict: true }) === s)
+        );
+        if (found?.country_name) { detectedCountry = found.country_name; break; }
+      }
+    }
+
+    // Busca ligas do país detectado
     let leaguesRes = await db.query(`
       SELECT l.id_league, l.name, c.name AS country_name
       FROM leagues l
       JOIN countries c ON c.id_country = l.id_country
       WHERE LOWER(c.name) = LOWER($1) AND l.active = true
       ORDER BY l.name ASC
-    `, [csvCountry || ""]);
+    `, [detectedCountry || ""]);
+
+    // Busca todas as ligas (para o toggle "ver todas")
+    const allLeaguesRes = await db.query(`
+      SELECT l.id_league, l.name, c.name AS country_name
+      FROM leagues l
+      JOIN countries c ON c.id_country = l.id_country
+      WHERE l.active = true
+      ORDER BY c.name ASC, l.name ASC
+    `);
 
     if (!leaguesRes.rows.length) {
-      leaguesRes = await db.query(`
-        SELECT l.id_league, l.name, c.name AS country_name
-        FROM leagues l
-        JOIN countries c ON c.id_country = l.id_country
-        WHERE l.active = true
-        ORDER BY c.name ASC, l.name ASC
-      `);
+      leaguesRes = { rows: allLeaguesRes.rows };
     }
-
-    // Verifica quais times do CSV existem no banco (por slug)
-    const teamNames = rows
-      .map(r => r.common_name || r.team_name || "")
-      .filter(Boolean);
-
-    // Busca todos os clubes (com país e escudo) para o mapeamento
-    const allClubsRes = await db.query(`
-      SELECT c.id_club, c.name, c.slug, c.crest_url, co.name AS country_name
-      FROM clubs c
-      LEFT JOIN countries co ON co.id_country = c.id_country
-      WHERE c.active = true
-      ORDER BY co.name ASC, c.name ASC
-    `);
 
     const allClubs = allClubsRes.rows;
 
@@ -1226,24 +1345,39 @@ export async function previewTeams(req, res) {
       : allClubs;
     const checkPool = clubsForCheck.length > 0 ? clubsForCheck : allClubs;
 
-    const slugToId = new Map();
+    // common_name (CSV) → name/slug do DB
+    // team_name   (CSV) → description do DB
+    const poolByName = new Map();
+    const poolByDesc = new Map();
     for (const c of checkPool) {
-      if (c.slug) slugToId.set(c.slug, c.id_club);
-      slugToId.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+      if (c.slug) poolByName.set(c.slug, c.id_club);
+      poolByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+      if (c.description) {
+        poolByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
+      }
     }
 
     const foundTeams    = [];
     const notFoundTeams = [];
-    const nameToClubId  = new Map(); // csvName → id_club (para detectar conflitos)
+    const nameToClubId  = new Map(); // csvDisplayName → id_club (para detectar conflitos)
 
-    for (const name of teamNames) {
-      const slug   = slugify(name, { lower: true, strict: true });
-      const idClub = slugToId.get(slug);
+    // Chave de exibição: common_name se disponível, senão team_name
+    const teamNames = [...new Set(
+      rows.map(r => r.common_name || r.team_name || "").filter(Boolean)
+    )];
+
+    for (const displayName of teamNames) {
+      const srcRow     = rows.find(r => (r.common_name || r.team_name) === displayName) ?? {};
+      const commonName = srcRow.common_name || "";
+      const teamName   = srcRow.team_name   || "";
+      const commonSlug = slugify(commonName, { lower: true, strict: true });
+      const teamSlug   = slugify(teamName,   { lower: true, strict: true });
+      const idClub = poolByName.get(commonSlug) || poolByDesc.get(teamSlug) || null;
       if (idClub) {
-        foundTeams.push(name);
-        nameToClubId.set(name, idClub);
+        foundTeams.push(displayName);
+        nameToClubId.set(displayName, idClub);
       } else {
-        notFoundTeams.push(name);
+        notFoundTeams.push(displayName);
       }
     }
 
@@ -1268,7 +1402,9 @@ export async function previewTeams(req, res) {
     }
 
     res.json({
-      csvCountry, csvSeason, leagues: leaguesRes.rows,
+      csvCountry, csvSeason, csvSeasonYear,
+      leagues: leaguesRes.rows,
+      allLeagues: allLeaguesRes.rows,
       foundTeams, notFoundTeams,
       duplicateConflicts,
       allClubs: allClubs.map(c => ({
@@ -1294,25 +1430,24 @@ export async function previewMatches(req, res) {
 
     if (!rows.length) return res.status(400).json({ error: "Arquivo sem dados" });
 
-    // Auto-detecta ano a partir da primeira data válida
+    // 1. Se o CSV tem coluna "season" (ex: "2024/2025"), usa parseSeasonYear → 2025
+    // 2. Senão, pega o ANO MÁXIMO encontrado nas datas das partidas
     let detectedYear = null;
-    for (const row of rows) {
-      if (row.timestamp && Number(row.timestamp)) {
-        detectedYear = new Date(Number(row.timestamp) * 1000).getFullYear();
-        break;
-      } else if (row.date_GMT) {
-        const parsed = new Date(row.date_GMT.replace(" - ", " "));
-        if (!isNaN(parsed)) { detectedYear = parsed.getFullYear(); break; }
+    const csvSeasonRaw = rows[0]?.season ?? null;
+    if (csvSeasonRaw) {
+      detectedYear = parseSeasonYear(csvSeasonRaw);
+    } else {
+      for (const row of rows) {
+        let yr = null;
+        if (row.timestamp && Number(row.timestamp)) {
+          yr = new Date(Number(row.timestamp) * 1000).getFullYear();
+        } else if (row.date_GMT) {
+          const parsed = new Date(row.date_GMT.replace(" - ", " "));
+          if (!isNaN(parsed)) yr = parsed.getFullYear();
+        }
+        if (yr && yr > (detectedYear ?? 0)) detectedYear = yr;
       }
     }
-
-    const leaguesRes = await db.query(`
-      SELECT l.id_league, l.name, c.id_country, c.name AS country_name
-      FROM leagues l
-      JOIN countries c ON c.id_country = l.id_country
-      WHERE l.active = true
-      ORDER BY c.name ASC, l.name ASC
-    `);
 
     // Verifica quais times do CSV existem no banco (por slug)
     const uniqueTeamNames = [...new Set([
@@ -1321,24 +1456,65 @@ export async function previewMatches(req, res) {
     ])];
 
     const allClubsRes = await db.query(`
-      SELECT c.id_club, c.name, c.slug, c.crest_url, co.name AS country_name
+      SELECT c.id_club, c.name, c.short_name, c.slug, c.crest_url, co.name AS country_name
       FROM clubs c
       LEFT JOIN countries co ON co.id_country = c.id_country
       WHERE c.active = true
       ORDER BY co.name ASC, c.name ASC
     `);
 
-    const slugToId = new Map();
-    for (const c of allClubsRes.rows) {
-      if (c.slug) slugToId.set(c.slug, c.id_club);
-      slugToId.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+    // Detecta país inferindo pelo primeiro time encontrado no banco
+    const csvCountryFromRows = rows[0]?.country_name || rows[0]?.country || null;
+    let detectedCountry = csvCountryFromRows;
+    if (!detectedCountry && uniqueTeamNames.length > 0) {
+      for (const teamName of uniqueTeamNames.slice(0, 5)) {
+        const s = slugify(teamName, { lower: true, strict: true });
+        const found = allClubsRes.rows.find(c =>
+          c.slug === s || slugify(c.name, { lower: true, strict: true }) === s
+        );
+        if (found?.country_name) { detectedCountry = found.country_name; break; }
+      }
     }
+
+    // Ligas filtradas pelo país detectado; fallback = todas
+    let leaguesRes = await db.query(`
+      SELECT l.id_league, l.name, c.id_country, c.name AS country_name
+      FROM leagues l
+      JOIN countries c ON c.id_country = l.id_country
+      WHERE l.active = true AND LOWER(c.name) = LOWER($1)
+      ORDER BY l.name ASC
+    `, [detectedCountry || ""]);
+
+    if (!leaguesRes.rows.length) {
+      leaguesRes = await db.query(`
+        SELECT l.id_league, l.name, c.id_country, c.name AS country_name
+        FROM leagues l
+        JOIN countries c ON c.id_country = l.id_country
+        WHERE l.active = true
+        ORDER BY c.name ASC, l.name ASC
+      `);
+    }
+
+    const buildLookup = (clubs) => {
+      const byName   = new Map();
+      const byCommon = new Map();
+      for (const c of clubs) {
+        if (c.slug) byName.set(c.slug, c.id_club);
+        byName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+        if (c.short_name) byCommon.set(slugify(c.short_name, { lower: true, strict: true }), c.id_club);
+      }
+      return (name) => {
+        const s = slugify(name, { lower: true, strict: true });
+        return byName.get(s) || byCommon.get(s) || null;
+      };
+    };
+
+    const resolveAny = buildLookup(allClubsRes.rows);
 
     const foundTeams = [];
     const notFoundTeams = [];
     for (const name of uniqueTeamNames) {
-      const slug = slugify(name, { lower: true, strict: true });
-      if (slugToId.has(slug)) foundTeams.push(name);
+      if (resolveAny(name)) foundTeams.push(name);
       else notFoundTeams.push(name);
     }
 
@@ -1358,6 +1534,27 @@ export async function previewMatches(req, res) {
   }
 }
 
+// Suggestion para nacionalidades — verifica nome pt-BR, inglês e demônimo en
+function buildNatSuggestion(csvNat) {
+  const normalized = csvNat.toLowerCase().trim();
+  const wcEntry = allCountries.find((wc) => {
+    const ptbr      = wc.translations?.por?.common?.toLowerCase() ?? "";
+    const ptbrOff   = wc.translations?.por?.official?.toLowerCase() ?? "";
+    const en        = wc.name.common?.toLowerCase() ?? "";
+    const demonymM  = wc.demonyms?.eng?.m?.toLowerCase() ?? "";
+    const demonymF  = wc.demonyms?.eng?.f?.toLowerCase() ?? "";
+    return ptbr === normalized || ptbrOff === normalized || en === normalized
+      || demonymM === normalized || demonymF === normalized;
+  });
+  if (!wcEntry) return null;
+  return {
+    namePtBr: wcEntry.translations?.por?.common ?? wcEntry.name.common,
+    nameEn:   wcEntry.name.common,
+    cca2:     wcEntry.cca2,
+    flag:     `https://flagcdn.com/${wcEntry.cca2.toLowerCase()}.svg`,
+  };
+}
+
 export async function previewPlayers(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: "Arquivo não enviado" });
@@ -1368,50 +1565,278 @@ export async function previewPlayers(req, res) {
 
     if (!rows.length) return res.status(400).json({ error: "Arquivo sem dados" });
 
-    const csvLeague = rows.find(r => r.league)?.league || null;
-    const csvSeason = rows.find(r => r.season)?.season || null;
-    const csvClubs = [...new Set(rows.map(r => r["Current Club"]).filter(Boolean))].sort();
+    const csvLeague        = rows.find(r => r.league)?.league || null;
+    const csvSeason        = rows.find(r => r.season)?.season || null;
+    const csvSeasonYear    = parseSeasonYear(csvSeason);
+    const csvClubs         = [...new Set(rows.map(r => r["Current Club"]).filter(Boolean))].sort();
     const csvNationalities = [...new Set(rows.map(r => r.nationality).filter(Boolean))].sort();
 
-    // Clubes no banco
-    const clubsRes = await db.query(`SELECT id_club, name FROM clubs WHERE active = true ORDER BY name ASC`);
-    const dbClubNames = new Set(clubsRes.rows.map(c => c.name));
+    // Clubes — inclui escudo, país, slug e description para matching correto
+    const clubsRes = await db.query(`
+      SELECT c.id_club, c.name, c.slug, c.description, c.crest_url, co.name AS country_name
+      FROM clubs c
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE c.active = true
+      ORDER BY c.name ASC
+    `);
 
-    const foundClubs = csvClubs.filter(n => dbClubNames.has(n));
-    const notFoundClubs = csvClubs.filter(n => !dbClubNames.has(n));
+    // Two-map lookup: name/slug → id, description → id
+    const clubsByName = new Map();
+    const clubsByDesc = new Map();
+    for (const c of clubsRes.rows) {
+      clubsByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+      if (c.slug) clubsByName.set(c.slug, c.id_club);
+      if (c.description) clubsByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
+    }
+    const resolveClubId = (name) => {
+      const s = slugify(name, { lower: true, strict: true });
+      return clubsByName.get(s) || clubsByDesc.get(s) || null;
+    };
 
-    // Países no banco
-    const countriesRes = await db.query(`SELECT id_country, name FROM countries ORDER BY name ASC`);
-    const dbCountryNames = new Set(countriesRes.rows.map(c => c.name));
+    const foundClubs    = csvClubs.filter(n =>  resolveClubId(n));
+    const notFoundClubs = csvClubs.filter(n => !resolveClubId(n));
 
-    const foundNationalities = csvNationalities.filter(n => dbCountryNames.has(n));
-    const notFoundNationalities = csvNationalities.filter(n => !dbCountryNames.has(n));
+    // Detect country from first matched club
+    let detectedCountry = rows[0]?.country_name || rows[0]?.country || null;
+    if (!detectedCountry) {
+      for (const clubName of csvClubs.slice(0, 5)) {
+        const s = slugify(clubName, { lower: true, strict: true });
+        const found = clubsRes.rows.find(c =>
+          slugify(c.name, { lower: true, strict: true }) === s ||
+          (c.slug && c.slug === s) ||
+          (c.description && slugify(c.description, { lower: true, strict: true }) === s)
+        );
+        if (found?.country_name) { detectedCountry = found.country_name; break; }
+      }
+    }
 
-    // Ligas no banco
-    const leaguesRes = await db.query(`
+    // Países — inclui flag_url para o SearchableSelect com bandeiras
+    const countriesRes = await db.query(
+      `SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`
+    );
+    const normalize = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const dbCountryByNorm = new Map(countriesRes.rows.map(c => [normalize(c.name), c.name]));
+
+    const foundNationalities    = csvNationalities.filter(n =>  dbCountryByNorm.has(normalize(n)));
+    const notFoundNationalities = csvNationalities.filter(n => !dbCountryByNorm.has(normalize(n)));
+
+    // Sugestões world-countries para nacionalidades não encontradas (inclui demônimos en)
+    const notFoundNationalitiesData = notFoundNationalities.map(csvNat => ({
+      csvName:    csvNat,
+      suggestion: buildNatSuggestion(csvNat),
+    }));
+
+    // Ligas — filtra por país detectado, com fallback para todas
+    let leaguesRes = await db.query(`
       SELECT l.id_league, l.name, c.name AS country_name
       FROM leagues l
       JOIN countries c ON c.id_country = l.id_country
-      WHERE l.active = true
+      WHERE l.active = true AND LOWER(c.name) = LOWER($1)
       ORDER BY l.name ASC
-    `);
+    `, [detectedCountry || ""]);
+
+    if (!leaguesRes.rows.length) {
+      leaguesRes = await db.query(`
+        SELECT l.id_league, l.name, c.name AS country_name
+        FROM leagues l
+        JOIN countries c ON c.id_country = l.id_country
+        WHERE l.active = true
+        ORDER BY l.name ASC
+      `);
+    }
 
     const foundLeague = leaguesRes.rows.find(l => l.name === csvLeague) || null;
 
     res.json({
       csvLeague,
       csvSeason,
+      csvSeasonYear,
       foundLeague,
       foundClubs,
       notFoundClubs,
-      allLeagues: leaguesRes.rows,
-      allClubs: clubsRes.rows,
+      allLeagues:                leaguesRes.rows,
+      allClubs:                  clubsRes.rows,        // agora com crest_url + country_name
       foundNationalities,
-      notFoundNationalities,
-      allCountries: countriesRes.rows,
+      notFoundNationalities,                           // compat — array de strings
+      notFoundNationalitiesData,                       // novo — array de { csvName, suggestion }
+      allCountries:              countriesRes.rows,    // agora com flag_url
     });
   } catch (err) {
     console.error("[previewPlayers]", err);
     res.status(500).json({ error: "Erro ao analisar arquivo" });
+  }
+}
+
+// ─────────────────────────────────────────────
+// BULK LEAGUES IMPORT (CSV ponto-e-vírgula)
+// ─────────────────────────────────────────────
+
+// Dado um nome pt-BR do CSV, tenta encontrar no world-countries e retornar
+// o payload de sugestão (flag, nomes, cca2) para o frontend pré-preencher
+// o mini-modal de cadastro inline.
+function buildLeagueSuggestion(csvName) {
+  const normalized = csvName.toLowerCase().trim();
+  const wcEntry = allCountries.find((wc) => {
+    const ptbr = wc.translations?.por?.common?.toLowerCase() ?? "";
+    const ptbrOff = wc.translations?.por?.official?.toLowerCase() ?? "";
+    const en = wc.name.common?.toLowerCase() ?? "";
+    return ptbr === normalized || ptbrOff === normalized || en === normalized;
+  });
+  if (!wcEntry) return null;
+  return {
+    namePtBr: wcEntry.translations?.por?.common ?? wcEntry.name.common,
+    nameEn: wcEntry.name.common,
+    cca2: wcEntry.cca2,
+    flag: `https://flagcdn.com/${wcEntry.cca2.toLowerCase()}.svg`,
+  };
+}
+
+// Colunas CSV: A=Slug, B=Nível, C=País, D=Continente, E=Confederação,
+//              F=Competição, G=Nome completo, H=Fórmula(ignorada), I=Organizador, J=Nome da entidade(ignorado)
+function parseLeagueCSV(buffer) {
+  const text = buffer.toString("utf8");
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(";");
+    const country_name = cols[2]?.trim();
+    if (!country_name) continue;
+
+    rows.push({
+      slug:             cols[0]?.trim() || null,
+      tier:             cols[1]?.trim() || null,
+      country_name,
+      continent:        cols[3]?.trim() || null,
+      confederation:    cols[4]?.trim() || null,
+      competition_name: cols[5]?.trim() || null,
+      name:             cols[6]?.trim() || null,
+      // cols[7] = Fórmula de disputa → ignorada
+      organizer:        cols[8]?.trim() || null,
+      // cols[9] = Nome da entidade → ignorado
+    });
+  }
+  return rows;
+}
+
+// Resolve id_country para uma linha: tenta override manual, depois lookup por nome
+function resolveCountry(csvName, dbNameMap, overrideMap) {
+  const manual = overrideMap[csvName];
+  if (manual) return Number(manual);
+  return dbNameMap.get(csvName.toLowerCase().trim()) ?? null;
+}
+
+export async function previewLeaguesBulk(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: "Arquivo não enviado." });
+
+    // countryMap: { "Bolivia": "5", "Estados Unidos": "12" } — mapeamento manual do front
+    const overrideMap = req.body.countryMap ? JSON.parse(req.body.countryMap) : {};
+
+    const rows = parseLeagueCSV(req.file.buffer);
+
+    const [countriesRes, leaguesRes] = await Promise.all([
+      db.query(`SELECT id_country, name, flag_url FROM countries WHERE active = true ORDER BY name`),
+      db.query(`SELECT name, id_country FROM leagues`),
+    ]);
+
+    const dbNameMap = new Map(
+      countriesRes.rows.map((c) => [c.name.toLowerCase().trim(), c.id_country])
+    );
+    const leagueSet = new Set(
+      leaguesRes.rows.map((l) => `${l.name.toLowerCase().trim()}|${l.id_country}`)
+    );
+
+    // Países únicos do CSV + status de resolução + sugestão world-countries para os não encontrados
+    const uniqueCsvCountries = [...new Set(rows.map((r) => r.country_name))];
+    const countriesForMapping = uniqueCsvCountries.map((csvName) => {
+      const id_country = resolveCountry(csvName, dbNameMap, overrideMap);
+      const autoResolved = !!dbNameMap.get(csvName.toLowerCase().trim());
+      const registerSuggestion = id_country ? null : buildLeagueSuggestion(csvName);
+      return { csvName, id_country, autoResolved, status: id_country ? "ok" : "notfound", registerSuggestion };
+    });
+
+    const summary = {
+      total: rows.filter((r) => r.name).length,
+      insert: 0,
+      update: 0,
+      error: 0,
+    };
+
+    for (const row of rows) {
+      if (!row.name) continue;
+      const id_country = resolveCountry(row.country_name, dbNameMap, overrideMap);
+      if (!id_country) { summary.error++; continue; }
+      if (leagueSet.has(`${row.name.toLowerCase().trim()}|${id_country}`)) { summary.update++; } else { summary.insert++; }
+    }
+
+    return res.json({
+      countriesForMapping,
+      allDbCountries: countriesRes.rows,
+      summary,
+    });
+  } catch (err) {
+    console.error("[previewLeaguesBulk]", err);
+    res.status(500).json({ error: "Erro ao analisar o arquivo." });
+  }
+}
+
+export async function importLeaguesBulk(req, res) {
+  if (!req.file) return res.status(400).json({ error: "Arquivo não enviado." });
+
+  const overrideMap = req.body.countryMap ? JSON.parse(req.body.countryMap) : {};
+  const rows = parseLeagueCSV(req.file.buffer);
+
+  const countriesRes = await db.query(
+    `SELECT id_country, name FROM countries WHERE active = true`
+  );
+  const dbNameMap = new Map(
+    countriesRes.rows.map((c) => [c.name.toLowerCase().trim(), c.id_country])
+  );
+
+  const client = await db.connect();
+  const results = { inserted: 0, updated: 0, skipped: 0, errors: [] };
+
+  try {
+    await client.query("BEGIN");
+
+    for (const row of rows) {
+      if (!row.name) { results.skipped++; continue; }
+
+      const id_country = resolveCountry(row.country_name, dbNameMap, overrideMap);
+      if (!id_country) {
+        results.errors.push({ name: row.name, reason: `País não encontrado: "${row.country_name}"` });
+        continue;
+      }
+
+      const structure_json = JSON.stringify({
+        ...(row.continent        ? { continent:        row.continent }        : {}),
+        ...(row.confederation    ? { confederation:    row.confederation }    : {}),
+        ...(row.competition_name ? { competition_name: row.competition_name } : {}),
+      });
+
+      const result = await client.query(
+        `INSERT INTO leagues (id_country, name, organizer, slug, tier, structure_json)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+         ON CONFLICT (name, id_country) DO UPDATE SET
+           organizer      = EXCLUDED.organizer,
+           slug           = EXCLUDED.slug,
+           tier           = EXCLUDED.tier,
+           structure_json = EXCLUDED.structure_json
+         RETURNING (xmax = 0) AS inserted`,
+        [id_country, row.name, row.organizer, row.slug, row.tier, structure_json]
+      );
+
+      if (result.rows[0]?.inserted) { results.inserted++; } else { results.updated++; }
+    }
+
+    await client.query("COMMIT");
+    return res.json({ ...results, total: rows.length });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[importLeaguesBulk]", err);
+    return res.status(500).json({ error: "Erro na importação em massa." });
+  } finally {
+    client.release();
   }
 }

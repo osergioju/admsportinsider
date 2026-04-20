@@ -160,7 +160,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "revenue",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/revenues?to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/revenues?to=${chartCurrencies.revenue}&fromYear=2018&toYear=2025`,
       true
     );
   }, [chartComparisons.revenue, mainLeagueId, chartCurrencies.revenue]);
@@ -170,7 +170,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "payroll",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/costs/payroll?to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/costs/payroll?to=${chartCurrencies.payroll}&fromYear=2018&toYear=2025`,
       true
     );
   }, [chartComparisons.payroll, mainLeagueId, chartCurrencies.payroll]);
@@ -190,7 +190,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "netResult",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/net-result?to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/net-result?to=${chartCurrencies.netResult}&fromYear=2021&toYear=2025`,
       true
     );
   }, [chartComparisons.netResult, mainLeagueId, chartCurrencies.netResult]);
@@ -200,7 +200,7 @@ export default function DashLeagueUniques() {
     fetchChartData(
       "netEvolution",
       (leagueId) =>
-        `/dashboard/leagues/${leagueId}/financials/net-result/evolution?to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
+        `/dashboard/leagues/${leagueId}/financials/net-result/evolution?to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2025`,
       true
     );
   }, [chartComparisons.netEvolution, mainLeagueId, chartCurrencies.netEvolution]);
@@ -231,245 +231,256 @@ export default function DashLeagueUniques() {
     return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;
   }
 
-  return (
-    <div className="space-y-6">
+  const lg = theLeague.league;
+  const sj = lg.structure_json ?? {};
+  const competitionTitle = sj.competition_name ?? lg.name;
+  const subtitleName = sj.competition_name && sj.competition_name !== lg.name ? lg.name : null;
+  const metaParts = [lg.organizer, lg.country_name, sj.confederation].filter(Boolean);
 
-      {/* HEADER */}
-      <div className="w-full bg-white border rounded-2xl p-6 lg:p-8 flex items-center gap-5">
-        {theLeague.league.logo_url && (
-          <img src={theLeague.league.logo_url} className="w-16 h-16 object-contain shrink-0" alt={theLeague.league.name}/>
-        )}
-        <div>
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
-            {theLeague.league.name}
-            {theLeague.league.flag_url && <img className="w-6 h-4 object-cover rounded-sm" src={theLeague.league.flag_url} alt=""/>}
-          </h3>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-            <span className="text-sm text-gray-500">{theLeague.league.country_name}</span>
-            {theLeague.league.description && (
-              <p className="text-sm text-gray-400 max-w-2xl">{theLeague.league.description}</p>
+  return (
+    <div className="space-y-4">
+
+      {/* HEADER + PAGE TABS — unified card */}
+      <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-6 py-5 flex items-center gap-4">
+          {lg.logo_url && (
+            <div className="w-14 h-14 lg:w-20 lg:h-20 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center shrink-0">
+              <img src={lg.logo_url} className="w-full h-full object-contain" alt={lg.name} />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2 flex-wrap leading-tight">
+              {competitionTitle}
+              {lg.flag_url && <img className="w-5 h-3.5 object-cover rounded-sm shrink-0" src={lg.flag_url} alt="" />}
+            </h1>
+            {subtitleName && <p className="text-sm text-gray-500 mt-0.5">{subtitleName}</p>}
+            {metaParts.length > 0 && (
+              <p className="text-xs text-gray-400 mt-0.5">{metaParts.join(' · ')}</p>
             )}
           </div>
         </div>
-      </div>
 
-      {/* PAGE TABS: Esportivo | Financeiro */}
-      <div className="flex gap-1">
-        {[{key:"esportivo",label:t("sports.tab","Esportivo")},{key:"financeiro",label:t("menu.financial","Financeiro")}].map(tab=>(
-          <button key={tab.key} onClick={()=>setPageTab(tab.key)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${pageTab===tab.key?"bg-violet-600 border-violet-600 text-white shadow-sm":"bg-white border-gray-200 text-gray-600 hover:border-violet-200"}`}>
-            {tab.label}
-          </button>
-        ))}
+        {/* Tab strip at bottom of header */}
+        <div className="border-t border-gray-100 grid grid-cols-2">
+          {[{ key: "esportivo", label: t("sports.tab", "Esportivo") }, { key: "financeiro", label: t("menu.financial", "Financeiro") }].map((tab, i) => (
+            <button key={tab.key} onClick={() => setPageTab(tab.key)}
+              className={`relative py-3 text-sm font-semibold transition-colors
+                ${i > 0 ? "border-l border-gray-100" : ""}
+                ${pageTab === tab.key ? "text-violet-700" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"}`}>
+              {tab.label}
+              {pageTab === tab.key && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 rounded-t" />}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ESPORTIVO TAB */}
       {pageTab === "esportivo" && (
-        <LeagueSportsSection leagueId={mainLeagueId}/>
+        <LeagueSportsSection leagueId={mainLeagueId} />
       )}
 
       {/* FINANCEIRO TAB */}
       {pageTab === "financeiro" && (
-      <div className="max-w-full w-full overflow-hidden relative">
+        <div className="max-w-full w-full overflow-hidden relative">
 
-        <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
-          {!hasAccess("revenue", planID) ? (
-            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
-          ) : (
-            <RevenueSection
-              data={chartData.revenue}
-              selectedLeagues={chartComparisons.revenue}
-              setSelectedLeagues={(updater) =>
-                setChartComparisons((prev) => ({
-                  ...prev,
-                  revenue:
-                    typeof updater === "function"
-                      ? updater(prev.revenue)
-                      : updater,
-                }))
-              }
-              leagueMap={leagueMap}
-              setLeagueMap={setLeagueMap}
-              leagueColor={leagueColor}
-              setLeagueColor={setLeagueColor}
-              mainLeagueId={mainLeagueId}
-              currency={chartCurrencies.revenue}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({ ...prev, revenue: value }))
-              }
-            />
-          )}
+          <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
+            {!hasAccess("revenue", planID) ? (
+              <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+            ) : (
+              <RevenueSection
+                data={chartData.revenue}
+                selectedLeagues={chartComparisons.revenue}
+                setSelectedLeagues={(updater) =>
+                  setChartComparisons((prev) => ({
+                    ...prev,
+                    revenue:
+                      typeof updater === "function"
+                        ? updater(prev.revenue)
+                        : updater,
+                  }))
+                }
+                leagueMap={leagueMap}
+                setLeagueMap={setLeagueMap}
+                leagueColor={leagueColor}
+                setLeagueColor={setLeagueColor}
+                mainLeagueId={mainLeagueId}
+                currency={chartCurrencies.revenue}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({ ...prev, revenue: value }))
+                }
+              />
+            )}
 
-          {!hasAccess("revenueBreakdown", planID) ? (
-            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
-          ) : (
-            <RevenueBreakdownSection
-              data={chartData.revenueBreakdown}
-              selectedLeagues={chartComparisons.revenueBreakdown}
-              setSelectedLeagues={(updater) =>
-                setChartComparisons((prev) => ({
-                  ...prev,
-                  revenueBreakdown:
-                    typeof updater === "function"
-                      ? updater(prev.revenueBreakdown)
-                      : updater,
-                }))
-              }
-              leagueMap={leagueMap}
-              setLeagueMap={setLeagueMap}
-              mainLeagueId={mainLeagueId}
-              leagueColor={leagueColor}
-              setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.revenueBreakdown}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({ ...prev, revenueBreakdown: value }))
-              }
-            />
-          )}
+            {!hasAccess("revenueBreakdown", planID) ? (
+              <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+            ) : (
+              <RevenueBreakdownSection
+                data={chartData.revenueBreakdown}
+                selectedLeagues={chartComparisons.revenueBreakdown}
+                setSelectedLeagues={(updater) =>
+                  setChartComparisons((prev) => ({
+                    ...prev,
+                    revenueBreakdown:
+                      typeof updater === "function"
+                        ? updater(prev.revenueBreakdown)
+                        : updater,
+                  }))
+                }
+                leagueMap={leagueMap}
+                setLeagueMap={setLeagueMap}
+                mainLeagueId={mainLeagueId}
+                leagueColor={leagueColor}
+                setLeagueColor={setLeagueColor}
+                currency={chartCurrencies.revenueBreakdown}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({ ...prev, revenueBreakdown: value }))
+                }
+              />
+            )}
+          </div>
+
+          <div className="w-full grid lg:grid-cols-1 gap-4 mb-4">
+            {!hasAccess("payroll", planID) ? (
+              <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+            ) : (
+              <PayrollSection
+                data={chartData.payroll}
+                selectedLeagues={chartComparisons.payroll}
+                setSelectedLeagues={(updater) =>
+                  setChartComparisons((prev) => ({
+                    ...prev,
+                    payroll:
+                      typeof updater === "function"
+                        ? updater(prev.payroll)
+                        : updater,
+                  }))
+                }
+                leagueMap={leagueMap}
+                setLeagueMap={setLeagueMap}
+                mainLeagueId={mainLeagueId}
+                leagueColor={leagueColor}
+                setLeagueColor={setLeagueColor}
+                currency={chartCurrencies.payroll}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({ ...prev, payroll: value }))
+                }
+              />
+            )}
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4 mb-4">
+            {!hasAccess("costs", planID) ? (
+              <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+            ) : (
+              <CostsSection
+                data={chartData.costs}
+                selectedLeagues={chartComparisons.costs}
+                setSelectedLeagues={(updater) =>
+                  setChartComparisons((prev) => ({
+                    ...prev,
+                    costs:
+                      typeof updater === "function"
+                        ? updater(prev.costs)
+                        : updater,
+                  }))
+                }
+                leagueMap={leagueMap}
+                setLeagueMap={setLeagueMap}
+                mainLeagueId={mainLeagueId}
+                leagueColor={leagueColor}
+                setLeagueColor={setLeagueColor}
+                currency={chartCurrencies.costs}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({ ...prev, costs: value }))
+                }
+              />
+            )}
+
+            {!hasAccess("netResult", planID) ? (
+              <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+            ) : (
+              <NetResultSection
+                data={chartData.netEvolution}
+                selectedLeagues={chartComparisons.netEvolution}
+                setSelectedLeagues={(updater) =>
+                  setChartComparisons((prev) => ({
+                    ...prev,
+                    netEvolution:
+                      typeof updater === "function"
+                        ? updater(prev.netEvolution)
+                        : updater,
+                  }))
+                }
+                leagueMap={leagueMap}
+                setLeagueMap={setLeagueMap}
+                mainLeagueId={mainLeagueId}
+                leagueColor={leagueColor}
+                setLeagueColor={setLeagueColor}
+                currency={chartCurrencies.netEvolution}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({ ...prev, netEvolution: value }))
+                }
+              />
+            )}
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4 mb-4">
+            {!hasAccess("debts", planID) ? (
+              <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+            ) : (
+              <DebtsSection
+                data={chartData.debts}
+                selectedLeagues={chartComparisons.debts}
+                setSelectedLeagues={(updater) =>
+                  setChartComparisons((prev) => ({
+                    ...prev,
+                    debts:
+                      typeof updater === "function"
+                        ? updater(prev.debts)
+                        : updater,
+                  }))
+                }
+                leagueMap={leagueMap}
+                setLeagueMap={setLeagueMap}
+                mainLeagueId={mainLeagueId}
+                leagueColor={leagueColor}
+                setLeagueColor={setLeagueColor}
+                currency={chartCurrencies.debts}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({ ...prev, debts: value }))
+                }
+              />
+            )}
+
+            {!hasAccess("netResult", planID) ? (
+              <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
+            ) : (
+              <NetResultTableSection
+                data={chartData.netResult}
+                selectedLeagues={chartComparisons.netResult}
+                setSelectedLeagues={(updater) =>
+                  setChartComparisons((prev) => ({
+                    ...prev,
+                    netResult:
+                      typeof updater === "function"
+                        ? updater(prev.netResult)
+                        : updater,
+                  }))
+                }
+                leagueMap={leagueMap}
+                setLeagueMap={setLeagueMap}
+                mainLeagueId={mainLeagueId}
+                leagueColor={leagueColor}
+                setLeagueColor={setLeagueColor}
+                currency={chartCurrencies.netResult}
+                setCurrency={(value) =>
+                  setChartCurrencies((prev) => ({ ...prev, netResult: value }))
+                }
+              />
+            )}
+          </div>
+
         </div>
-
-        <div className="w-full grid lg:grid-cols-1 gap-4 mb-4">
-          {!hasAccess("payroll", planID) ? (
-            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
-          ) : (
-            <PayrollSection
-              data={chartData.payroll}
-              selectedLeagues={chartComparisons.payroll}
-              setSelectedLeagues={(updater) =>
-                setChartComparisons((prev) => ({
-                  ...prev,
-                  payroll:
-                    typeof updater === "function"
-                      ? updater(prev.payroll)
-                      : updater,
-                }))
-              }
-              leagueMap={leagueMap}
-              setLeagueMap={setLeagueMap}
-              mainLeagueId={mainLeagueId}
-              leagueColor={leagueColor}
-              setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.payroll}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({ ...prev, payroll: value }))
-              }
-            />
-          )}
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          {!hasAccess("costs", planID) ? (
-            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
-          ) : (
-            <CostsSection
-              data={chartData.costs}
-              selectedLeagues={chartComparisons.costs}
-              setSelectedLeagues={(updater) =>
-                setChartComparisons((prev) => ({
-                  ...prev,
-                  costs:
-                    typeof updater === "function"
-                      ? updater(prev.costs)
-                      : updater,
-                }))
-              }
-              leagueMap={leagueMap}
-              setLeagueMap={setLeagueMap}
-              mainLeagueId={mainLeagueId}
-              leagueColor={leagueColor}
-              setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.costs}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({ ...prev, costs: value }))
-              }
-            />
-          )}
-
-          {!hasAccess("netResult", planID) ? (
-            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
-          ) : (
-            <NetResultSection
-              data={chartData.netEvolution}
-              selectedLeagues={chartComparisons.netEvolution}
-              setSelectedLeagues={(updater) =>
-                setChartComparisons((prev) => ({
-                  ...prev,
-                  netEvolution:
-                    typeof updater === "function"
-                      ? updater(prev.netEvolution)
-                      : updater,
-                }))
-              }
-              leagueMap={leagueMap}
-              setLeagueMap={setLeagueMap}
-              mainLeagueId={mainLeagueId}
-              leagueColor={leagueColor}
-              setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.netEvolution}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({ ...prev, netEvolution: value }))
-              }
-            />
-          )}
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          {!hasAccess("debts", planID) ? (
-            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
-          ) : (
-            <DebtsSection
-              data={chartData.debts}
-              selectedLeagues={chartComparisons.debts}
-              setSelectedLeagues={(updater) =>
-                setChartComparisons((prev) => ({
-                  ...prev,
-                  debts:
-                    typeof updater === "function"
-                      ? updater(prev.debts)
-                      : updater,
-                }))
-              }
-              leagueMap={leagueMap}
-              setLeagueMap={setLeagueMap}
-              mainLeagueId={mainLeagueId}
-              leagueColor={leagueColor}
-              setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.debts}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({ ...prev, debts: value }))
-              }
-            />
-          )}
-
-          {!hasAccess("netResult", planID) ? (
-            <PlanUpgradePrompt title="Gráfico de receitas disponível apenas para os planos Pro e Premium" />
-          ) : (
-            <NetResultTableSection
-              data={chartData.netResult}
-              selectedLeagues={chartComparisons.netResult}
-              setSelectedLeagues={(updater) =>
-                setChartComparisons((prev) => ({
-                  ...prev,
-                  netResult:
-                    typeof updater === "function"
-                      ? updater(prev.netResult)
-                      : updater,
-                }))
-              }
-              leagueMap={leagueMap}
-              setLeagueMap={setLeagueMap}
-              mainLeagueId={mainLeagueId}
-              leagueColor={leagueColor}
-              setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.netResult}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({ ...prev, netResult: value }))
-              }
-            />
-          )}
-        </div>
-
-      </div>
       )} {/* end financeiro tab */}
     </div>
   );

@@ -184,7 +184,7 @@ export default function Regions() {
       {regionToDelete && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 "
             onClick={() => !deleting && setRegionToDelete(null)}
           />
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl relative z-10 p-6 text-center animate-in zoom-in-95 duration-200">

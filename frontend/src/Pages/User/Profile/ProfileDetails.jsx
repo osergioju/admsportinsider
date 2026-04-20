@@ -159,7 +159,7 @@ export default function ProfileDetails() {
 
       {/* ===== MODAL ===== */}
       {openModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/40  flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white rounded-2xl w-full max-w-2xl p-6 relative shadow-2xl animate-scale-in">
             <button
               onClick={close}

@@ -8,6 +8,13 @@ export default function TabelaUltimosUsuarios({ data }) {
     );
   }
 
+  const maskEmail = (email) => {
+    if (!email) return '-'
+    const [user, domain] = email.split('@')
+    const visible = user.slice(0, 2)
+    return `${visible}***@${domain}`
+  }
+
   // Função simples para formatar a data
   const formatDate = (dateString) => {
     const d = new Date(dateString);
@@ -34,7 +41,7 @@ export default function TabelaUltimosUsuarios({ data }) {
           {data.map((user) => (
             <tr key={user.id} className="hover:bg-gray-50">
               <td className="px-4 py-2">{user.name}</td>
-              <td className="px-4 py-2 text-gray-600">{user.email}</td>
+              <td className="px-4 py-2 text-gray-600">{maskEmail(user.email)}</td>
               <td className="px-4 py-2">{formatDate(user.created_at)}</td>
             </tr>
           ))}

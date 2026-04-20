@@ -7,11 +7,11 @@ import { useTranslation } from "../../../context/TranslationContext";
 const positionOrder = ["Goleiro", "Lateral", "Zagueiro", "Meio-campista", "Atacante"];
 
 const positionMeta = {
-  "Goleiro":       { labelKey: "players.position.goalkeepers", labelFallback: "Goleiros",       accent: "from-amber-400 to-orange-500",   badge: "bg-amber-100 text-amber-700",    dot: "bg-amber-400" },
-  "Lateral":       { labelKey: "players.position.fullbacks",   labelFallback: "Laterais",        accent: "from-sky-400 to-blue-600",       badge: "bg-sky-100 text-sky-700",        dot: "bg-sky-400" },
-  "Zagueiro":      { labelKey: "players.position.defenders",   labelFallback: "Zagueiros",       accent: "from-emerald-400 to-teal-600",   badge: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-400" },
-  "Meio-campista": { labelKey: "players.position.midfielders", labelFallback: "Meio campistas",  accent: "from-violet-400 to-purple-600",  badge: "bg-violet-100 text-violet-700",  dot: "bg-violet-400" },
-  "Atacante":      { labelKey: "players.position.forwards",    labelFallback: "Atacantes",        accent: "from-rose-400 to-red-600",       badge: "bg-rose-100 text-rose-700",      dot: "bg-rose-400" },
+  "Goleiro": { labelKey: "players.position.goalkeepers", labelFallback: "Goleiros", accent: "from-amber-400 to-orange-500", badge: "bg-amber-100 text-amber-700", dot: "bg-amber-400" },
+  "Lateral": { labelKey: "players.position.fullbacks", labelFallback: "Laterais", accent: "from-sky-400 to-blue-600", badge: "bg-sky-100 text-sky-700", dot: "bg-sky-400" },
+  "Zagueiro": { labelKey: "players.position.defenders", labelFallback: "Zagueiros", accent: "from-emerald-400 to-teal-600", badge: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-400" },
+  "Meio-campista": { labelKey: "players.position.midfielders", labelFallback: "Meio campistas", accent: "from-violet-400 to-purple-600", badge: "bg-violet-100 text-violet-700", dot: "bg-violet-400" },
+  "Atacante": { labelKey: "players.position.forwards", labelFallback: "Atacantes", accent: "from-rose-400 to-red-600", badge: "bg-rose-100 text-rose-700", dot: "bg-rose-400" },
 };
 
 function PlayerCard({ player }) {
@@ -39,7 +39,7 @@ function PlayerCard({ player }) {
             className="w-full h-full object-cover object-top"
           />
           {player.number != null && (
-            <span className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-black w-7 h-7 rounded-full flex items-center justify-center shadow-sm">
+            <span className="absolute top-2 right-2 bg-white/90  text-gray-700 text-xs font-black w-7 h-7 rounded-full flex items-center justify-center shadow-sm">
               {player.number}
             </span>
           )}
@@ -75,12 +75,12 @@ function PlayerCard({ player }) {
 }
 
 export default function ClubPlayers() {
-  const { id }     = useParams();
+  const { id } = useParams();
   const { t } = useTranslation();
-  const [season, setSeason]                 = useState("2025");
-  const [players, setPlayers]               = useState([]);
+  const [season, setSeason] = useState("2025");
+  const [players, setPlayers] = useState([]);
   const [availableSeasons, setAvailableSeasons] = useState(["2025"]);
-  const [loading, setLoading]               = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadPlayers();

@@ -136,7 +136,7 @@ export default function ClubsFavorites() {
                           e.stopPropagation();
                           toggleFavorite(club.id_club, "club");
                         }}
-                        className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-sm transition-all duration-200"
+                        className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40  transition-all duration-200"
                         aria-label="Remover favorito"
                       >
                         <Heart
@@ -148,7 +148,7 @@ export default function ClubsFavorites() {
                       </button>
 
                       {/* Escudo */}
-                      <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
+                      <div className="w-20 h-20 bg-white/10  rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
                         {club.crest_url ? (
                           <img
                             src={club.crest_url}

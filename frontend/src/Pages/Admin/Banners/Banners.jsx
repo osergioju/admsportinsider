@@ -190,15 +190,15 @@ export default function Banners() {
     switch (status) {
       case "published": return { label: "Publicado", color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle2 };
       case "scheduled": return { label: "Agendado", color: "bg-blue-50 text-blue-700 border-blue-200", icon: Clock };
-      case "expired":   return { label: "Expirado", color: "bg-red-50 text-red-700 border-red-200", icon: AlertCircle };
-      default:          return { label: "Rascunho", color: "bg-gray-100 text-gray-600 border-gray-200", icon: FileText };
+      case "expired": return { label: "Expirado", color: "bg-red-50 text-red-700 border-red-200", icon: AlertCircle };
+      default: return { label: "Rascunho", color: "bg-gray-100 text-gray-600 border-gray-200", icon: FileText };
     }
   }
 
-  const btnPrimary   = "flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
+  const btnPrimary = "flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
   const btnSecondary = "px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors";
-  const inputClass   = "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400";
-  const labelClass   = "block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1";
+  const inputClass = "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400";
+  const labelClass = "block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 ml-1";
 
   return (
     <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500 relative">
@@ -289,7 +289,7 @@ export default function Banners() {
                     {/* Dispositivos */}
                     <span className="flex items-center gap-1.5">
                       {banner.image_desktop_url && <Monitor size={13} className="text-gray-400" title="Desktop" />}
-                      {banner.image_mobile_url  && <Smartphone size={13} className="text-gray-400" title="Mobile" />}
+                      {banner.image_mobile_url && <Smartphone size={13} className="text-gray-400" title="Mobile" />}
                     </span>
                   </div>
                 </div>
@@ -325,7 +325,7 @@ export default function Banners() {
       {/* MODAL CRIAR / EDITAR */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setModalOpen(false)}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/40 " />
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
 
             <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
@@ -401,7 +401,7 @@ export default function Banners() {
       {/* MODAL EXCLUIR */}
       {deleteModalOpen && bannerToDelete && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !processing && setDeleteModalOpen(false)} />
+          <div className="absolute inset-0 bg-black/40 " onClick={() => !processing && setDeleteModalOpen(false)} />
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl relative z-10 p-6 text-center">
             <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash2 size={28} /></div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Excluir banner?</h3>

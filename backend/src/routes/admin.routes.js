@@ -1487,7 +1487,7 @@
  *         description: Erro interno do servidor
  */
 import { Router } from "express";
-import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder } from "../controllers/admin.controller.js";
+import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason } from "../controllers/admin.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1508,40 +1508,57 @@ router.get("/dashboard", getAdminDashboard);
 // PAÍSES - GESTÃO CRUD
 router.get("/countries", getAllCountries);
 router.get("/countries/:id", getAllCountriesById);
-router.post("/send-countries", createCountry);
-router.put("/countries/:id/update", updateCountry);
-router.delete("/disable-country/:id", disableCountry);
+router.post("/send-countries", adminGuard, createCountry);
+router.put("/countries/:id/update", adminGuard, updateCountry);
+router.delete("/disable-country/:id", adminGuard, disableCountry);
 
 // LIGAS - GESTÃO CRUD
 router.get("/leagues", getAllLeagues);
 router.get("/leagues/:id", getLeagueById);
-router.post("/send-league", createLeague);
-router.put("/leagues/:id/update", updateLeague);
-router.put("/leagues/:id/structure", saveLeagueStructure);
-router.delete("/disable-league/:id", disableLeague);
-router.post("/leagues/search", leaguesSearch);
+router.post("/send-league", adminGuard, createLeague);
+router.put("/leagues/:id/update", adminGuard, updateLeague);
+router.put("/leagues/:id/structure", adminGuard, saveLeagueStructure);
+router.delete("/disable-league/:id", adminGuard, disableLeague);
+router.post("/leagues/search", adminGuard, leaguesSearch);
+
+// EDITOR DE LIGA PERSONALIZADA
+router.get("/leagues/:id/seasons/:year/editor", adminGuard, getCustomEditorData);
+router.put("/leagues/:id/seasons/:year/groups", adminGuard, saveGroupAssignments);
+router.post("/leagues/:id/seasons/:year/clubs", adminGuard, addClubToSeason);
+router.delete("/leagues/:id/seasons/:year/clubs/:clubId", adminGuard, removeClubFromSeason);
+router.post("/leagues/:id/seasons/:year/matches", adminGuard, createCustomMatch);
+router.post("/leagues/:id/seasons/:year/matches/generate", adminGuard, generateMatchesFromGroups);
+router.put("/matches/:id", adminGuard, updateCustomMatch);
+router.delete("/matches/:id", adminGuard, deleteCustomMatch);
+
+// THESPORTSDB PROXIES
+router.get("/thesportsdb/team", adminGuard, fetchTeamFromSportsDB);
+router.get("/thesportsdb/player", adminGuard, fetchPlayerFromSportsDB);
+
+// JOGADORES - GESTÃO
+router.get("/players", adminGuard, adminGetPlayers);
+router.put("/players/:id/photo", adminGuard, updatePlayerPhoto);
 
 // CLUBES - GESTÃO CRUD
 router.get("/clubs", getAllClubs);
 router.get("/clubs/:id", getClubById);
-router.post("/send-club", createClub);
-router.put("/clubs/:id/update", updateClub);
-router.delete("/disable-club/:id", disableClub);
+router.post("/send-club", adminGuard, createClub);
+router.put("/clubs/:id/update", adminGuard, updateClub);
+router.delete("/disable-club/:id", adminGuard, disableClub);
 router.get("/attribute-keys", getAttributeKeys);
-router.post("/import-clubs-xlsx", uploadXlsx, uploadClubXlsx);
-router.post("/preview-import", uploadXlsx, previewClubImport)
-router.post("/clubs/search", clubsSearch);
+router.post("/import-clubs-xlsx", adminGuard, uploadXlsx, uploadClubXlsx);
+router.post("/preview-import", adminGuard, uploadXlsx, previewClubImport)
+router.post("/clubs/search", adminGuard, clubsSearch);
 router.get("/clubs-grouped-by-country", clubsGroupedByCountry);
-
 
 // USUÁRIOS - GESTÃO
 router.get("/users", getAllUsers);
-router.post("/users/:id", getUserById);
-router.post("/users/:id/disable", disableUser);
-router.post("/users/:id/enable", enableUser);
-router.post("/users/:id/change-plan", changeUserPlan);
-router.put("/users/:id/update", updateUser);
-router.post("/users/:id/resend-confirmation", resendConfirmationEmail);
+router.post("/users/:id", adminGuard, getUserById);
+router.post("/users/:id/disable", adminGuard, disableUser);
+router.post("/users/:id/enable", adminGuard, enableUser);
+router.post("/users/:id/change-plan", adminGuard, changeUserPlan);
+router.put("/users/:id/update", adminGuard, updateUser);
+router.post("/users/:id/resend-confirmation", adminGuard, resendConfirmationEmail);
 router.get("/insights/users", getUsersInsights);
 router.get("/insights/clubes", getClubsInsights);
 router.get("/insights/ligas", getLeaguesInsights);
@@ -1550,8 +1567,8 @@ router.get("/insights/planos", getPlanosInsights);
 router.get("/insights/importacoes", getImportacoesInsights);
 router.get("/insights/uso", getUsoInsights);
 router.get("/insights/performance", getPerformanceInsights);
-router.put("/users/:id/update-password", updateUserPassword);
-router.post("/create-user", createUser); // Criar usuaário 
+router.put("/users/:id/update-password", adminGuard, updateUserPassword);
+router.post("/create-user", adminGuard, createUser); // Criar usuaário 
 
 // Subir foto do clube
 router.post("/upload-club-logo", uploadImage, uploadClubLogo);
@@ -1559,9 +1576,9 @@ router.post("/upload-club-logo", uploadImage, uploadClubLogo);
 // PLANOS - CRUD
 router.get("/plans", getAllPlans);
 router.get("/plans/:id", getPlanById);
-router.post("/plans", createPlan);
-router.put("/plans/:id", updatePlan);
-router.delete("/plans/:id", disablePlan);
+router.post("/plans", adminGuard, createPlan);
+router.put("/plans/:id", adminGuard, updatePlan);
+router.delete("/plans/:id", adminGuard, disablePlan);
 
 // Notificações 
 router.post("/notifications", newNotification);
@@ -1572,11 +1589,11 @@ router.delete("/notifications/:id", deleteNotification);
 
 // Banners
 router.get("/banners", getAllBanners);
-router.post("/banners", createBanner);
+router.post("/banners", adminGuard, createBanner);
 router.put("/banners/reorder", reorderBanners);
 router.post("/banners/upload-image", uploadImage, uploadBannerImage);
 router.get("/banners/:id", getBannerById);
-router.put("/banners/:id", updateBanner);
+router.put("/banners/:id", adminGuard, updateBanner);
 router.delete("/banners/:id", deleteBanner);
 
 // Regiões e idiomas
@@ -1592,9 +1609,9 @@ router.post("/regions/:id/common-terms", saveCommonTermsTranslations);
 
 // Faq
 router.get("/faq", getAllFaqs);
-router.post("/faq", createFaq);
-router.put("/faq/:id", updateFaq);
-router.delete("/faq/:id", deleteFaq);
+router.post("/faq", adminGuard, createFaq);
+router.put("/faq/:id", adminGuard, updateFaq);
+router.delete("/faq/:id", adminGuard, deleteFaq);
 router.patch("/faq/order", updateFaqOrder);
 
 

@@ -41,7 +41,7 @@ const NotaCard = ({ nota }) => {
             href={`https://sportinsider.com.br/nota/${slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center w-full py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs font-medium hover:bg-white hover:text-[#7f34d9] transition-all duration-200"
+            className="block text-center w-full py-2 rounded-full bg-white/10  border border-white/20 text-white text-xs font-medium hover:bg-white hover:text-[#7f34d9] transition-all duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {t("notes.access", "Acessar nota")}

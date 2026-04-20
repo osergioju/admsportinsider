@@ -64,6 +64,7 @@ export async function getAllLeagues(req, res) {
       l.logo_url,
       l.format,
       l.structure_json,
+      l.primary_color,
       l.created_at,
       l.id_country,
       c.name AS country_name,
@@ -129,10 +130,11 @@ export async function createLeague(req, res) {
   }
 
   try {
+    const { primary_color, secondary_color } = req.body;
     await db.query(`
-      INSERT INTO leagues (id_country, name, description, logo_url, format)
-      VALUES ($1, $2, $3, $4, $5)
-    `, [id_country, name, description, logo_url, format || null]);
+      INSERT INTO leagues (id_country, name, description, logo_url, format, primary_color, secondary_color)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [id_country, name, description, logo_url, format || null, primary_color || null, secondary_color || null]);
 
     return res.status(201).json({ message: "Liga cadastrada com sucesso!" });
 
@@ -144,7 +146,7 @@ export async function createLeague(req, res) {
 
 export async function updateLeague(req, res) {
   const { id } = req.params;
-  const { id_country, name, description, logo_url, format } = req.body;
+  const { id_country, name, description, logo_url, format, primary_color, secondary_color } = req.body;
 
   try {
     await db.query(`
@@ -154,9 +156,11 @@ export async function updateLeague(req, res) {
         name = $2,
         description = $3,
         logo_url = $4,
-        format = $5
-      WHERE id_league = $6
-    `, [id_country, name, description, logo_url, format || null, id]);
+        format = $5,
+        primary_color = $6,
+        secondary_color = $7
+      WHERE id_league = $8
+    `, [id_country, name, description, logo_url, format || null, primary_color || null, secondary_color || null, id]);
 
     return res.json({ message: "Liga atualizada com sucesso!" });
 
@@ -484,18 +488,24 @@ export async function getClubById(req, res) {
 
     // Buscar atributos dinâmicos
     const attrResult = await db.query(`
-      SELECT 
-        key,
-        value,
-        value_type
+      SELECT key, value, value_type
       FROM club_attributes
       WHERE id_club = $1
       ORDER BY key ASC
     `, [id]);
 
+    // Buscar proprietários
+    const ownersResult = await db.query(`
+      SELECT id, name, ownership_pct
+      FROM club_owners
+      WHERE id_club = $1
+      ORDER BY ownership_pct DESC NULLS LAST, name ASC
+    `, [id]);
+
     return res.json({
       club,
-      attributes: attrResult.rows
+      attributes: attrResult.rows,
+      owners: ownersResult.rows,
     });
 
   } catch (err) {
@@ -526,13 +536,17 @@ export async function createClub(req, res) {
   const {
     id_country,
     name,
+    short_name,
     description,
     crest_url,
     founded_at,
     stadium_name,
+    stadium_capacity,
+    stadium_ownership,
     ownership_model,
     location,
-    attributes = [] // array vindo do front
+    attributes = [],
+    owners = [],
   } = req.body;
 
   if (!id_country || !name) {
@@ -548,21 +562,25 @@ export async function createClub(req, res) {
     const insertClub = await client.query(
       `
       INSERT INTO clubs (
-        id_country, name, description, crest_url,
-        founded_at, stadium_name, ownership_model, location
+        id_country, name, short_name, description, crest_url,
+        founded_at, stadium_name, stadium_capacity, stadium_ownership,
+        ownership_model, location
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING id_club
       `,
       [
         id_country,
         name,
+        short_name || null,
         description,
         crest_url,
         founded_at || null,
         stadium_name || null,
+        stadium_capacity ? Number(stadium_capacity) : null,
+        stadium_ownership || null,
         ownership_model || null,
-        location || null
+        location || null,
       ]
     );
 
@@ -585,6 +603,17 @@ export async function createClub(req, res) {
       }
     }
 
+    // 3️⃣ INSERT OWNERS
+    if (owners.length > 0) {
+      for (const owner of owners) {
+        if (!owner.name) continue;
+        await client.query(
+          `INSERT INTO club_owners (id_club, name, ownership_pct) VALUES ($1,$2,$3)`,
+          [id_club, owner.name, owner.pct ? Number(owner.pct) : null]
+        );
+      }
+    }
+
     await client.query("COMMIT");
     return res.status(201).json({ message: "Clube cadastrado com sucesso!" });
 
@@ -604,16 +633,20 @@ export async function updateClub(req, res) {
 
   const {
     name,
+    short_name,
     description,
     crest_url,
     founded_at,
     stadium_name,
+    stadium_capacity,
+    stadium_ownership,
     ownership_model,
     primary_color,
     secondary_color,
     tertiary_color,
     location,
-    attributes = [] // array de atributos novos/atualizados
+    attributes = [],
+    owners = [],
   } = req.body;
 
   const client = await db.connect();
@@ -626,29 +659,35 @@ export async function updateClub(req, res) {
       `
       UPDATE clubs SET
         name = $1,
-        description = $2,
-        crest_url = $3,
-        founded_at = $4,
-        stadium_name = $5,
-        ownership_model = $6,
-        primary_color = $7,
-        secondary_color = $8,
-        tertiary_color = $9,
-        location = $10
-      WHERE id_club = $11
+        short_name = $2,
+        description = $3,
+        crest_url = $4,
+        founded_at = $5,
+        stadium_name = $6,
+        stadium_capacity = $7,
+        stadium_ownership = $8,
+        ownership_model = $9,
+        primary_color = $10,
+        secondary_color = $11,
+        tertiary_color = $12,
+        location = $13
+      WHERE id_club = $14
       `,
       [
         name,
+        short_name || null,
         description,
         crest_url,
         founded_at || null,
         stadium_name || null,
+        stadium_capacity ? Number(stadium_capacity) : null,
+        stadium_ownership || null,
         ownership_model || null,
         primary_color || null,
         secondary_color || null,
         tertiary_color || null,
         location || null,
-        id
+        id,
       ]
     );
 
@@ -669,6 +708,18 @@ export async function updateClub(req, res) {
           attr.value,
           attr.type || "string"
         ]);
+      }
+    }
+
+    // 4️⃣ Substitui owners
+    await client.query("DELETE FROM club_owners WHERE id_club = $1", [id]);
+    if (owners.length > 0) {
+      for (const owner of owners) {
+        if (!owner.name) continue;
+        await client.query(
+          `INSERT INTO club_owners (id_club, name, ownership_pct) VALUES ($1,$2,$3)`,
+          [id, owner.name, owner.pct ? Number(owner.pct) : null]
+        );
       }
     }
 
@@ -837,7 +888,7 @@ export async function getUserById(req, res) {
 
   try {
     const result = await db.query(
-      `SELECT 
+      `SELECT
             u.id,
             u.name,
             u.email,
@@ -845,10 +896,11 @@ export async function getUserById(req, res) {
             u.created_at,
             u.plan_id,
             u.active,
+            u.admin_permissions,
             p.name AS plan_name
           FROM users u
           LEFT JOIN plans p ON p.id = u.plan_id
-          where u.id = $1
+          WHERE u.id = $1
           ORDER BY u.created_at DESC`, [id]
     )
     res.json({
@@ -906,11 +958,12 @@ export async function enableUser(req, res) {
 
 // Salvar as alterações do módulo central 
 export async function updateUser(req, res) {
+  console.log(req);
   const { id } = req.params;             // ID do usuário sendo atualizado
   const editorId = req.user.id;          // ID do usuário logado (vem do JWT)
   const editorRole = req.user.role;      // role do usuário logado
 
-  const { name, email, role } = req.body;
+  const { name, email, role, admin_permissions } = req.body;
 
   if (!name || !email) {
     return res.status(400).json({
@@ -928,7 +981,7 @@ export async function updateUser(req, res) {
       });
     }
 
-    // 🔒 2. Apenas admin_master pode alterar role de outros
+    // 🔒 2. Apenas admin_master pode alterar role e permissões de outros
     if (role && editorRole !== "admin_master") {
       return res.status(403).json({
         success: false,
@@ -949,15 +1002,21 @@ export async function updateUser(req, res) {
       });
     }
 
-    // 🔧 4. Atualiza (role só se tiver permissão)
+    // Permissões só se admin_master estiver salvando um admin
+    const permissions = editorRole === "admin_master" && role === "admin" && Array.isArray(admin_permissions)
+      ? admin_permissions
+      : null; // null = manter valor atual via COALESCE
+
+    // 🔧 4. Atualiza
     const result = await db.query(
       `UPDATE users
              SET name = $1,
                  email = $2,
-                 role = COALESCE($3, role)
+                 role = COALESCE($3, role),
+                 admin_permissions = COALESCE($5, admin_permissions)
              WHERE id = $4
-             RETURNING id, name, email, role, plan_id, active, created_at`,
-      [name, email, role ?? null, id]
+             RETURNING id, name, email, role, plan_id, active, admin_permissions, created_at`,
+      [name, email, role ?? null, id, permissions]
     );
 
     if (result.rowCount === 0) {
@@ -1120,7 +1179,7 @@ export async function updateUserPassword(req, res) {
 
 
 export async function createUser(req, res) {
-  const { name, email, password, role, plan_id } = req.body;
+  const { name, email, password, role, plan_id, admin_permissions } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({
@@ -1142,11 +1201,16 @@ export async function createUser(req, res) {
     // Criptografa senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Permissões só fazem sentido para role 'admin'
+    const permissions = role === "admin" && Array.isArray(admin_permissions)
+      ? admin_permissions
+      : [];
+
     // Criação
     await db.query(
-      `INSERT INTO users (name, email, password_hash, role, plan_id, email_verified, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-      [name, email, hashedPassword, role, plan_id || null, true]
+      `INSERT INTO users (name, email, password_hash, role, plan_id, email_verified, admin_permissions, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+      [name, email, hashedPassword, role, plan_id || null, true, permissions]
     );
 
     return res.status(201).json({
@@ -1797,5 +1861,537 @@ export async function uploadClubXlsx(req, res) {
     });
   } finally {
     client.release(); // ← SEMPRE devolve ao pool
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/thesportsdb/team?name=Palmeiras
+// Proxy para TheSportsDB — retorna dados de escudo, cores e estádio
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchTeamFromSportsDB(req, res) {
+  const name = req.query.name?.trim();
+  if (!name) return res.status(400).json({ error: "Parâmetro name obrigatório" });
+
+  try {
+    const url = `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(name)}`;
+    const response = await fetch(url);
+    if (!response.ok) return res.status(502).json({ error: "Erro ao consultar TheSportsDB" });
+
+    const json = await response.json();
+    const team = json?.teams?.[0] ?? null;
+    if (!team) return res.json({ found: false });
+
+    res.json({
+      found:             true,
+      crest_url:         team.strBadge   || null,
+      logo_url:          team.strLogo    || null,
+      primary_color:     team.strColour1 || null,
+      secondary_color:   team.strColour2 || null,
+      stadium_name:      team.strStadium || null,
+      stadium_capacity:  team.intStadiumCapacity ? Number(team.intStadiumCapacity) : null,
+      short_name:        team.strTeamShort || null,
+      country:           team.strCountry  || null,
+      founded:           team.intFormedYear || null,
+    });
+  } catch (err) {
+    console.error("[fetchTeamFromSportsDB]", err);
+    res.status(500).json({ error: "Erro interno ao buscar escudo" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/thesportsdb/player?name=Neymar
+// Proxy para TheSportsDB — retorna foto, posição, nacionalidade e data de nascimento
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchPlayerFromSportsDB(req, res) {
+  const name = req.query.name?.trim();
+  if (!name) return res.status(400).json({ error: "Parâmetro name obrigatório" });
+
+  try {
+    const url = `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`;
+    const response = await fetch(url);
+    if (!response.ok) return res.status(502).json({ error: "Erro ao consultar TheSportsDB" });
+
+    const json = await response.json();
+    const player = json?.player?.[0] ?? null;
+    if (!player) return res.json({ found: false });
+
+    res.json({
+      found:       true,
+      photo_url:   player.strThumb  || player.strCutout || null,
+      cutout_url:  player.strCutout || null,
+      nationality: player.strNationality || null,
+      position:    player.strPosition   || null,
+      born:        player.dateBorn      || null,
+      team:        player.strTeam       || null,
+      name:        player.strPlayer     || null,
+    });
+  } catch (err) {
+    console.error("[fetchPlayerFromSportsDB]", err);
+    res.status(500).json({ error: "Erro interno ao buscar jogador" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET  /admin/players?search=&page=
+// Lista paginada de jogadores para o painel admin
+// ─────────────────────────────────────────────────────────────────────────────
+export async function adminGetPlayers(req, res) {
+  const search = (req.query.search || "").trim();
+  const page   = Math.max(1, parseInt(req.query.page) || 1);
+  const limit  = 30;
+  const offset = (page - 1) * limit;
+
+  try {
+    const [dataRes, countRes] = await Promise.all([
+      db.query(
+        `SELECT p.id_player, p.full_name, p.photo_url, p.position, p.birthday,
+                co.name AS nationality, co.flag_url
+         FROM players p
+         LEFT JOIN countries co ON co.id_country = p.nationality
+         WHERE ($1 = '' OR p.full_name ILIKE '%' || $1 || '%')
+         ORDER BY p.full_name ASC
+         LIMIT $2 OFFSET $3`,
+        [search, limit, offset]
+      ),
+      db.query(
+        `SELECT COUNT(*) FROM players p
+         WHERE ($1 = '' OR p.full_name ILIKE '%' || $1 || '%')`,
+        [search]
+      ),
+    ]);
+
+    res.json({
+      players:    dataRes.rows,
+      total:      parseInt(countRes.rows[0].count),
+      page,
+      totalPages: Math.ceil(parseInt(countRes.rows[0].count) / limit),
+    });
+  } catch (err) {
+    console.error("[adminGetPlayers]", err);
+    res.status(500).json({ error: "Erro ao listar jogadores" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /admin/players/:id/photo
+// Atualiza somente a foto de um jogador
+// ─────────────────────────────────────────────────────────────────────────────
+export async function updatePlayerPhoto(req, res) {
+  const { id } = req.params;
+  const { photo_url } = req.body;
+  if (!photo_url) return res.status(400).json({ error: "photo_url obrigatório" });
+
+  try {
+    await db.query(
+      `UPDATE players SET photo_url = $1 WHERE id_player = $2`,
+      [photo_url, id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[updatePlayerPhoto]", err);
+    res.status(500).json({ error: "Erro ao atualizar foto" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CUSTOM LEAGUE EDITOR — grupos e partidas manuais
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Resolve id_season a partir do ano (cria se não existir)
+async function ensureSeason(client, year) {
+  const r = await client.query(
+    `INSERT INTO seasons (year) VALUES ($1)
+     ON CONFLICT (year) DO UPDATE SET year = EXCLUDED.year
+     RETURNING id_season`,
+    [Number(year)]
+  );
+  return r.rows[0].id_season;
+}
+
+// POST /admin/leagues/:id/seasons/:year/clubs
+// Adiciona um clube à temporada (cria club_league_seasons + club_seasons)
+export async function addClubToSeason(req, res) {
+  const { id, year } = req.params;
+  const idLeague = Number(id);
+  const idClub   = Number(req.body.id_club);
+  if (!idClub) return res.status(400).json({ error: "id_club obrigatório" });
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const idSeason = await ensureSeason(client, year);
+
+    await client.query(`
+      INSERT INTO competition_seasons (id_league, id_season)
+      VALUES ($1, $2) ON CONFLICT DO NOTHING
+    `, [idLeague, idSeason]);
+
+    await client.query(`
+      INSERT INTO club_seasons (id_club, id_league, year, division)
+      VALUES ($1, $2, $3, '1') ON CONFLICT (id_club, id_league, year) DO NOTHING
+    `, [idClub, idLeague, Number(year)]);
+
+    await client.query(`
+      INSERT INTO club_league_seasons (id_club, id_league, id_season)
+      VALUES ($1, $2, $3) ON CONFLICT DO NOTHING
+    `, [idClub, idLeague, idSeason]);
+
+    await client.query("COMMIT");
+
+    const clubRes = await db.query(`
+      SELECT c.id_club, c.name, c.crest_url, co.name AS country_name
+      FROM clubs c
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE c.id_club = $1
+    `, [idClub]);
+
+    res.status(201).json({ club: clubRes.rows[0] });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[addClubToSeason]", err);
+    res.status(500).json({ error: "Erro ao adicionar clube" });
+  } finally {
+    client.release();
+  }
+}
+
+// DELETE /admin/leagues/:id/seasons/:year/clubs/:clubId
+// Remove um clube da temporada (e suas atribuições de grupo)
+export async function removeClubFromSeason(req, res) {
+  const { id, year, clubId } = req.params;
+  const idLeague = Number(id);
+  const idClub   = Number(clubId);
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const seasonRes = await client.query(
+      `SELECT id_season FROM seasons WHERE year = $1`, [Number(year)]
+    );
+    const idSeason = seasonRes.rows[0]?.id_season;
+    if (!idSeason) { await client.query("ROLLBACK"); return res.json({ ok: true }); }
+
+    // Remove atribuições de grupo
+    await client.query(
+      `DELETE FROM competition_group_clubs WHERE id_league=$1 AND id_season=$2 AND id_club=$3`,
+      [idLeague, idSeason, idClub]
+    );
+    // Remove da temporada
+    await client.query(
+      `DELETE FROM club_league_seasons WHERE id_club=$1 AND id_league=$2 AND id_season=$3`,
+      [idClub, idLeague, idSeason]
+    );
+
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[removeClubFromSeason]", err);
+    res.status(500).json({ error: "Erro ao remover clube" });
+  } finally {
+    client.release();
+  }
+}
+
+// GET /admin/leagues/:id/seasons/:year/editor
+// Retorna: clubes da temporada + grupos salvos + partidas da temporada
+export async function getCustomEditorData(req, res) {
+  const { id, year } = req.params;
+  const idLeague = Number(id);
+  try {
+    const seasonRes = await db.query(
+      `SELECT id_season FROM seasons WHERE year = $1`, [Number(year)]
+    );
+    const idSeason = seasonRes.rows[0]?.id_season ?? null;
+
+    // Clubes vinculados à temporada
+    const clubsRes = idSeason ? await db.query(`
+      SELECT c.id_club, c.name, c.crest_url, co.name AS country_name
+      FROM club_league_seasons cls
+      JOIN clubs c ON c.id_club = cls.id_club
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE cls.id_league = $1 AND cls.id_season = $2
+      ORDER BY c.name ASC
+    `, [idLeague, idSeason]) : { rows: [] };
+
+    // Atribuições a grupos
+    const groupsRes = idSeason ? await db.query(`
+      SELECT phase_key, group_key, id_club, slot_order
+      FROM competition_group_clubs
+      WHERE id_league = $1 AND id_season = $2
+      ORDER BY phase_key, group_key, slot_order
+    `, [idLeague, idSeason]) : { rows: [] };
+
+    // Partidas da temporada (com contexto de fase/grupo)
+    const matchesRes = idSeason ? await db.query(`
+      SELECT
+        m.id_match, m.match_date, m.status, m.game_week,
+        m.home_goals, m.away_goals, m.phase_key, m.group_key,
+        hc.name AS home_name, hc.crest_url AS home_crest,
+        ac.name AS away_name, ac.crest_url AS away_crest
+      FROM matches m
+      JOIN clubs hc ON hc.id_club = m.home_club_id
+      JOIN clubs ac ON ac.id_club = m.away_club_id
+      WHERE m.id_league = $1 AND m.id_season = $2
+      ORDER BY m.phase_key, m.group_key, m.match_date NULLS LAST, m.id_match
+    `, [idLeague, idSeason]) : { rows: [] };
+
+    // Todos os clubes disponíveis no sistema (para o seletor de adição)
+    const allClubsRes = await db.query(`
+      SELECT c.id_club, c.name, c.crest_url, co.name AS country_name
+      FROM clubs c
+      LEFT JOIN countries co ON co.id_country = c.id_country
+      WHERE c.active = true
+      ORDER BY co.name ASC, c.name ASC
+    `);
+
+    res.json({
+      idSeason,
+      clubs:    clubsRes.rows,
+      groups:   groupsRes.rows,
+      matches:  matchesRes.rows,
+      allClubs: allClubsRes.rows,
+    });
+  } catch (err) {
+    console.error("[getCustomEditorData]", err);
+    res.status(500).json({ error: "Erro ao carregar dados do editor" });
+  }
+}
+
+// PUT /admin/leagues/:id/seasons/:year/groups
+// Body: { assignments: [{ phase_key, group_key, id_club, slot_order }] }
+export async function saveGroupAssignments(req, res) {
+  const { id, year } = req.params;
+  const idLeague = Number(id);
+  const { assignments = [] } = req.body;
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const idSeason = await ensureSeason(client, year);
+
+    // Garante competition_seasons
+    await client.query(`
+      INSERT INTO competition_seasons (id_league, id_season)
+      VALUES ($1, $2) ON CONFLICT DO NOTHING
+    `, [idLeague, idSeason]);
+
+    // Replace total das atribuições da temporada
+    await client.query(
+      `DELETE FROM competition_group_clubs WHERE id_league = $1 AND id_season = $2`,
+      [idLeague, idSeason]
+    );
+
+    for (const a of assignments) {
+      await client.query(`
+        INSERT INTO competition_group_clubs (id_league, id_season, phase_key, group_key, id_club, slot_order)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (id_league, id_season, phase_key, id_club) DO UPDATE
+          SET group_key = EXCLUDED.group_key, slot_order = EXCLUDED.slot_order
+      `, [idLeague, idSeason, a.phase_key, a.group_key ?? null, Number(a.id_club), a.slot_order ?? 0]);
+    }
+
+    await client.query("COMMIT");
+    res.json({ ok: true, saved: assignments.length });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[saveGroupAssignments]", err);
+    res.status(500).json({ error: "Erro ao salvar atribuições" });
+  } finally {
+    client.release();
+  }
+}
+
+// POST /admin/leagues/:id/seasons/:year/matches
+// Body: { home_club_id, away_club_id, match_date?, phase_key?, group_key?, game_week? }
+export async function createCustomMatch(req, res) {
+  const { id, year } = req.params;
+  const idLeague = Number(id);
+  const { home_club_id, away_club_id, match_date, phase_key, group_key, game_week } = req.body;
+
+  if (!home_club_id || !away_club_id) {
+    return res.status(400).json({ error: "home_club_id e away_club_id são obrigatórios" });
+  }
+  if (Number(home_club_id) === Number(away_club_id)) {
+    return res.status(400).json({ error: "Time mandante e visitante não podem ser iguais" });
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const idSeason = await ensureSeason(client, year);
+
+    await client.query(`
+      INSERT INTO competition_seasons (id_league, id_season)
+      VALUES ($1, $2) ON CONFLICT DO NOTHING
+    `, [idLeague, idSeason]);
+
+    const r = await client.query(`
+      INSERT INTO matches (
+        id_league, id_season, home_club_id, away_club_id,
+        match_date, status, phase_key, group_key, game_week
+      ) VALUES ($1,$2,$3,$4,$5,'scheduled',$6,$7,$8)
+      RETURNING id_match
+    `, [
+      idLeague, idSeason,
+      Number(home_club_id), Number(away_club_id),
+      match_date || null,
+      phase_key || null,
+      group_key || null,
+      game_week ? Number(game_week) : null,
+    ]);
+
+    await client.query("COMMIT");
+
+    // Busca dados completos para retornar ao front
+    const full = await db.query(`
+      SELECT m.id_match, m.match_date, m.status, m.game_week,
+             m.home_goals, m.away_goals, m.phase_key, m.group_key,
+             hc.name AS home_name, hc.crest_url AS home_crest,
+             ac.name AS away_name, ac.crest_url AS away_crest
+      FROM matches m
+      JOIN clubs hc ON hc.id_club = m.home_club_id
+      JOIN clubs ac ON ac.id_club = m.away_club_id
+      WHERE m.id_match = $1
+    `, [r.rows[0].id_match]);
+
+    res.status(201).json({ match: full.rows[0] });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[createCustomMatch]", err);
+    res.status(500).json({ error: "Erro ao criar partida" });
+  } finally {
+    client.release();
+  }
+}
+
+// PUT /admin/matches/:id
+// Body: { match_date?, home_goals?, away_goals?, status?, phase_key?, group_key?, game_week? }
+export async function updateCustomMatch(req, res) {
+  const idMatch = Number(req.params.id);
+  const { match_date, home_goals, away_goals, status, phase_key, group_key, game_week } = req.body;
+
+  try {
+    await db.query(`
+      UPDATE matches SET
+        match_date  = COALESCE($1, match_date),
+        home_goals  = $2,
+        away_goals  = $3,
+        status      = COALESCE($4, status),
+        phase_key   = $5,
+        group_key   = $6,
+        game_week   = $7
+      WHERE id_match = $8
+    `, [
+      match_date ?? null,
+      home_goals != null ? Number(home_goals) : null,
+      away_goals != null ? Number(away_goals) : null,
+      status ?? null,
+      phase_key ?? null,
+      group_key ?? null,
+      game_week != null ? Number(game_week) : null,
+      idMatch,
+    ]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[updateCustomMatch]", err);
+    res.status(500).json({ error: "Erro ao atualizar partida" });
+  }
+}
+
+// DELETE /admin/matches/:id
+export async function deleteCustomMatch(req, res) {
+  const idMatch = Number(req.params.id);
+  try {
+    await db.query(`DELETE FROM match_stats WHERE id_match = $1`, [idMatch]);
+    await db.query(`DELETE FROM matches WHERE id_match = $1`, [idMatch]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[deleteCustomMatch]", err);
+    res.status(500).json({ error: "Erro ao excluir partida" });
+  }
+}
+
+// POST /admin/leagues/:id/seasons/:year/matches/generate
+// Gera partidas automaticamente baseado nas atribuições de grupos (modo assistido)
+export async function generateMatchesFromGroups(req, res) {
+  const { id, year } = req.params;
+  const idLeague = Number(id);
+  const { phase_key, formato = "ida_volta", overwrite = false } = req.body;
+
+  if (!phase_key) return res.status(400).json({ error: "phase_key obrigatório" });
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+
+    const seasonRes = await client.query(
+      `SELECT id_season FROM seasons WHERE year = $1`, [Number(year)]
+    );
+    const idSeason = seasonRes.rows[0]?.id_season;
+    if (!idSeason) return res.status(404).json({ error: "Temporada não encontrada" });
+
+    // Busca clubes da fase/grupos
+    const clubsRes = await client.query(`
+      SELECT id_club, group_key, slot_order
+      FROM competition_group_clubs
+      WHERE id_league = $1 AND id_season = $2 AND phase_key = $3
+      ORDER BY group_key, slot_order
+    `, [idLeague, idSeason, phase_key]);
+
+    if (!clubsRes.rows.length) {
+      return res.status(400).json({ error: "Nenhum clube atribuído a esta fase" });
+    }
+
+    if (overwrite) {
+      await client.query(
+        `DELETE FROM matches WHERE id_league = $1 AND id_season = $2 AND phase_key = $3`,
+        [idLeague, idSeason, phase_key]
+      );
+    }
+
+    // Agrupa por group_key
+    const byGroup = new Map();
+    for (const r of clubsRes.rows) {
+      const key = r.group_key ?? "__none__";
+      if (!byGroup.has(key)) byGroup.set(key, []);
+      byGroup.get(key).push(r.id_club);
+    }
+
+    let created = 0;
+    for (const [groupKey, clubIds] of byGroup) {
+      const gk = groupKey === "__none__" ? null : groupKey;
+      // Todos contra todos dentro do grupo
+      for (let i = 0; i < clubIds.length; i++) {
+        for (let j = i + 1; j < clubIds.length; j++) {
+          await client.query(`
+            INSERT INTO matches (id_league, id_season, home_club_id, away_club_id, status, phase_key, group_key)
+            VALUES ($1,$2,$3,$4,'scheduled',$5,$6)
+            ON CONFLICT DO NOTHING
+          `, [idLeague, idSeason, clubIds[i], clubIds[j], phase_key, gk]);
+          created++;
+
+          if (formato === "ida_volta") {
+            await client.query(`
+              INSERT INTO matches (id_league, id_season, home_club_id, away_club_id, status, phase_key, group_key)
+              VALUES ($1,$2,$3,$4,'scheduled',$5,$6)
+              ON CONFLICT DO NOTHING
+            `, [idLeague, idSeason, clubIds[j], clubIds[i], phase_key, gk]);
+            created++;
+          }
+        }
+      }
+    }
+
+    await client.query("COMMIT");
+    res.json({ ok: true, created });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[generateMatchesFromGroups]", err);
+    res.status(500).json({ error: "Erro ao gerar partidas" });
+  } finally {
+    client.release();
   }
 }

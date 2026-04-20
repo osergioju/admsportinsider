@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
-import { 
-    Plus, 
-    ChevronRight, 
-    CreditCard, 
-    Trash2, 
-    Loader2, 
-    CheckCircle2, 
+import {
+    Plus,
+    ChevronRight,
+    CreditCard,
+    Trash2,
+    Loader2,
+    CheckCircle2,
     AlertCircle,
     ChevronLeft,
     X,
@@ -61,7 +61,7 @@ export default function GestaoPlanos() {
         try {
             await api.delete(`/admin/plans/${planToDisable.id}`);
             setFeedback({ type: 'success', text: 'Plano desativado com sucesso!' });
-            
+
             await loadPlans();
 
             // Fecha o modal após o feedback
@@ -84,7 +84,7 @@ export default function GestaoPlanos() {
         const isSuccess = msg.type === 'success';
         return (
             <div className={`mb-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${isSuccess ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
-                {isSuccess ? <CheckCircle2 size={18} className="text-green-600 shrink-0"/> : <AlertCircle size={18} className="text-red-600 shrink-0"/>}
+                {isSuccess ? <CheckCircle2 size={18} className="text-green-600 shrink-0" /> : <AlertCircle size={18} className="text-red-600 shrink-0" />}
                 <span>{msg.text}</span>
             </div>
         );
@@ -94,14 +94,14 @@ export default function GestaoPlanos() {
 
     return (
         <div className="w-full max-w-7xl mx-auto p-2 sm:p-6 animate-in fade-in duration-500 relative">
-            
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-[#111] tracking-tight">Gestão de Planos</h1>
                     <p className="text-gray-500 text-sm mt-1">Configure os modelos de assinatura disponíveis.</p>
                 </div>
-                
+
                 <Link to="/admin/gestao-planos/novo" className={btnPrimary}>
                     <Plus size={18} /> Criar plano
                 </Link>
@@ -217,7 +217,7 @@ export default function GestaoPlanos() {
             {/* MODAL DE CONFIRMAÇÃO DE DESATIVAÇÃO */}
             {deleteModalOpen && planToDisable && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !processing && setDeleteModalOpen(false)}/>
+                    <div className="absolute inset-0 bg-black/40 " onClick={() => !processing && setDeleteModalOpen(false)} />
                     <div className="bg-white w-full max-w-sm rounded-3xl shadow-xl relative z-10 p-6 text-center">
                         <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                             <AlertTriangle size={28} />
@@ -226,24 +226,24 @@ export default function GestaoPlanos() {
                         <p className="text-sm text-gray-500 mb-6">
                             Você tem certeza que deseja desativar o plano <strong>"{planToDisable.name}"</strong>?
                         </p>
-                        
+
                         <FeedbackMessage msg={feedback} />
 
                         {!feedback && (
                             <div className="flex gap-3 justify-center">
-                                <button 
-                                    onClick={() => setDeleteModalOpen(false)} 
+                                <button
+                                    onClick={() => setDeleteModalOpen(false)}
                                     className="px-4 py-2 border border-gray-200 rounded-full text-sm font-medium hover:bg-gray-50"
                                     disabled={processing}
                                 >
                                     Cancelar
                                 </button>
-                                <button 
-                                    onClick={handleConfirmDisable} 
+                                <button
+                                    onClick={handleConfirmDisable}
                                     className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 shadow-lg shadow-red-500/20 flex items-center gap-2"
                                     disabled={processing}
                                 >
-                                    {processing && <Loader2 size={14} className="animate-spin"/>}
+                                    {processing && <Loader2 size={14} className="animate-spin" />}
                                     Sim, desativar
                                 </button>
                             </div>

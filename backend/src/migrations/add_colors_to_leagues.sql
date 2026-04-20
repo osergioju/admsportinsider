@@ -1,0 +1,2 @@
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS primary_color VARCHAR(7);
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS secondary_color VARCHAR(7);

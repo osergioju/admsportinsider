@@ -138,7 +138,7 @@ export default function Register() {
                         </p>
 
 
-                        <div className="bg-[#FFFFFF05] border border-[#FFFFFF10] rounded-2xl p-6 w-full max-w-sm backdrop-blur-sm">
+                        <div className="bg-[#FFFFFF05] border border-[#FFFFFF10] rounded-2xl p-6 w-full max-w-sm ">
                             <span className="text-sm text-[#FFFFFF99] block mb-2">
                                 Já confirmou seu e-mail?
                             </span>

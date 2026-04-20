@@ -3,8 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { ChevronLeft, Loader2, MapPin, User, Users } from "lucide-react";
 
-const fmt  = (v, d = 1) => v != null ? Number(v).toFixed(d) : null;
-const fmtDate = d => d ? new Date(d).toLocaleDateString("pt-BR",{timeZone:"UTC",weekday:"long",day:"2-digit",month:"long",year:"numeric"}) : "—";
+const fmt = (v, d = 1) => v != null ? Number(v).toFixed(d) : null;
+const fmtDate = d => d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC", weekday: "long", day: "2-digit", month: "long", year: "numeric" }) : "—";
 
 /* Comparison bar: shows two teams side by side with proportion bar */
 function StatBar({ label, home, away, isPercent }) {
@@ -24,14 +24,14 @@ function StatBar({ label, home, away, isPercent }) {
         <span>{display(a)}</span>
       </div>
       <div className="h-2 rounded-full bg-gray-100 overflow-hidden flex">
-        <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${homePct}%` }}/>
-        <div className="h-full bg-gray-300 rounded-full transition-all duration-500" style={{ width: `${100-homePct}%` }}/>
+        <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${homePct}%` }} />
+        <div className="h-full bg-gray-300 rounded-full transition-all duration-500" style={{ width: `${100 - homePct}%` }} />
       </div>
     </div>
   );
 }
 
-const TABS = ["Esportivo","Disciplinar","Financeiro"];
+const TABS = ["Esportivo", "Disciplinar", "Financeiro"];
 
 export default function MatchDetail() {
   const { id } = useParams();
@@ -49,13 +49,14 @@ export default function MatchDetail() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-24 text-gray-400 gap-2">
-      <Loader2 className="animate-spin w-5 h-5"/>
+      <Loader2 className="animate-spin w-5 h-5" />
       <span className="text-sm">Carregando partida...</span>
     </div>
   );
   if (!data) return null;
 
   const { home, away, score, score_ht, info, stats, league, season, game_week } = data;
+  console.log(data);
   const s = stats ?? {};
 
   return (
@@ -64,7 +65,7 @@ export default function MatchDetail() {
       {/* Back */}
       <button onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-violet-600 transition-colors font-medium">
-        <ChevronLeft size={16}/>
+        <ChevronLeft size={16} />
         Voltar
       </button>
 
@@ -84,8 +85,8 @@ export default function MatchDetail() {
           {/* Home */}
           <Link to={`/dashboard/clubs/${home.id}`} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
             {home.crest
-              ? <img src={home.crest} alt={home.name} className="w-16 h-16 object-contain"/>
-              : <div className="w-16 h-16 rounded-2xl bg-gray-100"/>
+              ? <img src={home.crest} alt={home.name} className="w-16 h-16 object-contain" />
+              : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
             }
             <span className="text-xs font-bold text-gray-800 text-center leading-tight">{home.name}</span>
           </Link>
@@ -105,8 +106,8 @@ export default function MatchDetail() {
           {/* Away */}
           <Link to={`/dashboard/clubs/${away.id}`} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
             {away.crest
-              ? <img src={away.crest} alt={away.name} className="w-16 h-16 object-contain"/>
-              : <div className="w-16 h-16 rounded-2xl bg-gray-100"/>
+              ? <img src={away.crest} alt={away.name} className="w-16 h-16 object-contain" />
+              : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
             }
             <span className="text-xs font-bold text-gray-800 text-center leading-tight">{away.name}</span>
           </Link>
@@ -118,13 +119,13 @@ export default function MatchDetail() {
             <span className="capitalize">{fmtDate(data.date)}</span>
           )}
           {info.stadium && (
-            <span className="flex items-center gap-1"><MapPin size={11}/>{info.stadium}</span>
+            <span className="flex items-center gap-1"><MapPin size={11} />{info.stadium}</span>
           )}
           {info.referee && (
-            <span className="flex items-center gap-1"><User size={11}/>{info.referee}</span>
+            <span className="flex items-center gap-1"><User size={11} />{info.referee}</span>
           )}
           {info.attendance && (
-            <span className="flex items-center gap-1"><Users size={11}/>{Number(info.attendance).toLocaleString("pt-BR")} presentes</span>
+            <span className="flex items-center gap-1"><Users size={11} />{Number(info.attendance).toLocaleString("pt-BR")} presentes</span>
           )}
         </div>
       </div>
@@ -133,7 +134,7 @@ export default function MatchDetail() {
       <div className="flex gap-1">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${tab===t?"bg-violet-600 border-violet-600 text-white shadow-sm":"bg-white border-gray-200 text-gray-600 hover:border-violet-200"}`}>
+            className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${tab === t ? "bg-violet-600 border-violet-600 text-white shadow-sm" : "bg-white border-gray-200 text-gray-600 hover:border-violet-200"}`}>
             {t}
           </button>
         ))}
@@ -151,19 +152,19 @@ export default function MatchDetail() {
 
         {tab === "Esportivo" && (
           <div className="space-y-4">
-            <StatBar label="Chutes" home={s.home_shots} away={s.away_shots}/>
-            <StatBar label="Chutes a gol" home={s.home_shots_on_target} away={s.away_shots_on_target}/>
-            <StatBar label="Posse de bola %" home={s.home_possession} away={s.away_possession} isPercent/>
-            <StatBar label="xG pré-jogo" home={fmt(s.home_xg_pre,2)} away={fmt(s.away_xg_pre,2)}/>
-            <StatBar label="Escanteios" home={s.home_corners} away={s.away_corners}/>
+            <StatBar label="Chutes" home={s.home_shots} away={s.away_shots} />
+            <StatBar label="Chutes a gol" home={s.home_shots_on_target} away={s.away_shots_on_target} />
+            <StatBar label="Posse de bola %" home={s.home_possession} away={s.away_possession} isPercent />
+            <StatBar label="xG pré-jogo" home={fmt(s.home_xg_pre, 2)} away={fmt(s.away_xg_pre, 2)} />
+            <StatBar label="Escanteios" home={s.home_corners} away={s.away_corners} />
           </div>
         )}
 
         {tab === "Disciplinar" && (
           <div className="space-y-4">
-            <StatBar label="Faltas" home={s.home_fouls} away={s.away_fouls}/>
-            <StatBar label="Cartões amarelos" home={s.home_yellow_cards} away={s.away_yellow_cards}/>
-            <StatBar label="Cartões vermelhos" home={s.home_red_cards} away={s.away_red_cards}/>
+            <StatBar label="Faltas" home={s.home_fouls} away={s.away_fouls} />
+            <StatBar label="Cartões amarelos" home={s.home_yellow_cards} away={s.away_yellow_cards} />
+            <StatBar label="Cartões vermelhos" home={s.home_red_cards} away={s.away_red_cards} />
           </div>
         )}
 
@@ -175,7 +176,7 @@ export default function MatchDetail() {
                 {info.attendance ? Number(info.attendance).toLocaleString("pt-BR") : "—"}
               </span>
             </div>
-            {[["Pagantes","—"],["Receita","—"],["Despesa","—"],["Resultado líquido","—"]].map(([l,v])=>(
+            {[["Pagantes", "—"], ["Receita", "—"], ["Despesa", "—"], ["Resultado líquido", "—"]].map(([l, v]) => (
               <div key={l} className="flex items-center justify-between py-2 border-b border-gray-50">
                 <span className="text-sm text-gray-600">{l}</span>
                 <span className="text-sm font-bold text-gray-400">{v}</span>

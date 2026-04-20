@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
-import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2 } from "lucide-react";
+import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2, FileSpreadsheet, AlertTriangle } from "lucide-react";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
 import CompetitionSetupModal from "./CompetitionSetupModal";
+import ImportLeaguesModal from "./ImportLeaguesModal";
+import CustomLeagueEditor from "./CustomLeagueEditor";
 
 export default function GestaoLigas() {
     const [leagues, setLeagues] = useState([]);
@@ -10,10 +12,12 @@ export default function GestaoLigas() {
     const [modal, setModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
-    const [newLeague, setNewLeague] = useState({ id_country: "", name: "", description: "", logo_url: "", format: "" });
+    const [newLeague, setNewLeague] = useState({ id_country: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [setupLeague, setSetupLeague] = useState(null); // liga sendo configurada
+    const [importModalOpen, setImportModalOpen] = useState(false);
+    const [customEditor, setCustomEditor] = useState(null); // { league, year }
 
     // --- BUSCA ---
     const [searchTerm, setSearchTerm] = useState("");
@@ -24,7 +28,7 @@ export default function GestaoLigas() {
             const respLeagues = await api.get(`/admin/leagues?limit=1000`);
             setLeagues(respLeagues.data.leagues);
 
-            const respCountries = await api.get(`/admin/countries?onlyActive=true`);
+            const respCountries = await api.get(`/admin/countries?onlyActive=true&limit=1000`);
             const countryOptions = respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name, image: c.flag_url }));
             setCountries(countryOptions);
         } catch (err) { console.error("Erro dados:", err); }
@@ -40,7 +44,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", name: "", description: "", logo_url: "", format: "" });
+        setNewLeague({ id_country: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
         setIsEditing(false); setModal(true);
     };
 
@@ -99,6 +103,13 @@ export default function GestaoLigas() {
                         <input type="text" placeholder="Filtrar ligas..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"><X size={14} /></button>}
                     </div>
+                    <button
+                        onClick={() => setImportModalOpen(true)}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                        <FileSpreadsheet size={18} className="text-green-600" />
+                        <span className="hidden lg:inline">Importar</span>
+                    </button>
                     <button onClick={openCreateModal} className={btnPrimary}><Plus size={18} /> Nova Liga</button>
                 </div>
             </div>
@@ -110,7 +121,7 @@ export default function GestaoLigas() {
                         {filteredLeagues.map((league) => (
                             <div key={league.id_league} className="group relative bg-white border border-gray-100 rounded-2xl p-6 hover:border-[#7F33D9]/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center gap-4">
                                 <div
-                                    className="relative w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center p-3 border border-gray-100 group-hover:bg-white transition-colors cursor-pointer"
+                                    className="relative w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:bg-white transition-colors cursor-pointer"
                                     onClick={() => openEditModal(league.id_league)}
                                 >
                                     {league.logo_url ? <img src={league.logo_url} className="w-full h-full object-contain drop-shadow-sm" alt={league.name} /> : <Trophy size={32} className="text-gray-300" />}
@@ -127,10 +138,25 @@ export default function GestaoLigas() {
                                 >
                                     <Settings2 size={13} />
                                 </button>
+                                {/* Botão editor personalizado — só para ligas com alguma edição do tipo personalizado */}
+                                {(() => {
+                                    const anos = Object.keys(league.structure_json ?? {}).filter(k => /^\d{4}$/.test(k));
+                                    const isPersonalizado = anos.some(a => league.structure_json[a]?.tipo === "personalizado");
+                                    if (!isPersonalizado) return null;
+                                    return (
+                                        <button
+                                            onClick={() => setCustomEditor({ league })}
+                                            title="Editor personalizado"
+                                            className="absolute bottom-3 left-3 w-7 h-7 rounded-full bg-violet-50 border border-violet-200 flex items-center justify-center text-violet-500 hover:bg-violet-100 transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <FileSpreadsheet size={13} />
+                                        </button>
+                                    );
+                                })()}
                                 {/* Indicador de estrutura configurada */}
                                 {league.structure_json && Object.keys(league.structure_json).length > 0 && (
                                     <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-emerald-400"
-                                         title={`Estrutura configurada (${Object.keys(league.structure_json).sort((a,b)=>b-a).join(", ")})`} />
+                                        title={`Estrutura configurada (${Object.keys(league.structure_json).sort((a, b) => b - a).join(", ")})`} />
                                 )}
                             </div>
                         ))}
@@ -153,10 +179,26 @@ export default function GestaoLigas() {
                 />
             )}
 
+            {/* Modal - Importação em massa */}
+            {importModalOpen && (
+                <ImportLeaguesModal
+                    onClose={() => setImportModalOpen(false)}
+                    onSuccess={loadData}
+                />
+            )}
+
+            {/* Modal - Editor personalizado */}
+            {customEditor && (
+                <CustomLeagueEditor
+                    league={customEditor.league}
+                    onClose={() => setCustomEditor(null)}
+                />
+            )}
+
             {/* Modal - Renderização */}
             {modal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setModal(false)}>
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-black/40 " />
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                         <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                             <h2 className="text-xl font-bold text-gray-900">{isEditing ? "Editar Liga" : "Nova Liga"}</h2>
@@ -184,14 +226,34 @@ export default function GestaoLigas() {
                                 <label className={labelClass}>Logo URL</label>
                                 <input type="text" className={inputClass} value={newLeague.logo_url} onChange={(e) => setNewLeague({ ...newLeague, logo_url: e.target.value })} />
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelClass}>Cor Primária</label>
+                                    <div className="flex items-center gap-2">
+                                        <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" value={newLeague.primary_color || "#7F33D9"} onChange={(e) => setNewLeague({ ...newLeague, primary_color: e.target.value })} />
+                                        <input type="text" className={inputClass} placeholder="#000000" value={newLeague.primary_color} onChange={(e) => setNewLeague({ ...newLeague, primary_color: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Cor Secundária</label>
+                                    <div className="flex items-center gap-2">
+                                        <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" value={newLeague.secondary_color || "#ffffff"} onChange={(e) => setNewLeague({ ...newLeague, secondary_color: e.target.value })} />
+                                        <input type="text" className={inputClass} placeholder="#ffffff" value={newLeague.secondary_color} onChange={(e) => setNewLeague({ ...newLeague, secondary_color: e.target.value })} />
+                                    </div>
+                                </div>
+                            </div>
                             <div>
-                                <label className={labelClass}>Formato</label>
+                                <label className={labelClass}>Formato <span className="text-gray-300 normal-case font-normal tracking-normal">(padrão global)</span></label>
                                 <select className={inputClass} value={newLeague.format} onChange={(e) => setNewLeague({ ...newLeague, format: e.target.value })}>
                                     <option value="">Não definido</option>
                                     <option value="pontos_corridos">Pontos Corridos</option>
                                     <option value="mata_mata">Mata-Mata</option>
                                     <option value="grupos">Grupos + Mata-Mata</option>
                                 </select>
+                                <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1.5">
+                                    <AlertTriangle size={11} className="shrink-0" />
+                                    O formato configurado em <strong>Estrutura</strong> (por edição) tem prioridade sobre este campo.
+                                </p>
                             </div>
                             <div className="pt-4 flex items-center justify-between gap-4">
                                 {isEditing && <button onClick={() => disableLeague(currentLeague.id_league)} className="text-red-500 text-xs font-bold uppercase tracking-wide hover:bg-red-50 px-3 py-2 rounded-lg"><Trash2 size={14} className="inline mr-1" /> Desativar</button>}

@@ -51,7 +51,7 @@ function RegisterCountryModal({ suggestion, onClose, onCreated }) {
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50 " />
       <div
         className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 p-6 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -328,7 +328,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
         className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
         onClick={handleClose}
       >
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-black/40 " />
         <div
           className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 p-6"
           onClick={(e) => e.stopPropagation()}

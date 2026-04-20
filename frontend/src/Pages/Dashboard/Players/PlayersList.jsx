@@ -99,10 +99,11 @@ function PlayerCard({ player, onClick }) {
       <div className="flex items-start gap-3">
         <div className="w-11 h-11 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=f3f4f6&color=6b7280&size=88`}
+            src={player.photo_url ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=f3f4f6&color=6b7280&size=88`}
             alt={player.name}
             loading="lazy"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
           />
         </div>
         <div className="flex-1 min-w-0">

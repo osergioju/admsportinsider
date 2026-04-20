@@ -40,7 +40,7 @@ export default function DashCountries() {
   }, [search, countries]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto pb-16 space-y-6">
+    <div className="w-full mx-auto pb-16 space-y-6">
 
       {/* Header */}
       <div>
@@ -69,7 +69,7 @@ export default function DashCountries() {
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 18 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -86,7 +86,7 @@ export default function DashCountries() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(country => (
             <button
               key={country.id}

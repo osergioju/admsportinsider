@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../../services/api";
 import {
     Trash2, Loader2, Plus, Search, ChevronLeft, ChevronRight,
-    X, Shield, UploadCloud, FileSpreadsheet
+    X, Shield, UploadCloud, FileSpreadsheet, Wand2, CheckCircle2, AlertCircle
 } from "lucide-react";
 import ImportModal from "./ImportModal";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
@@ -25,8 +25,9 @@ const ITEMS_PER_PAGE = 8;
 // Estado inicial do formulário de clube
 // ---------------------------------------------------------------------------
 const EMPTY_CLUB = {
-    id_country: "", name: "", description: "", crest_url: "",
-    founded_at: "", stadium_name: "", ownership_model: "",
+    id_country: "", name: "", short_name: "", description: "", crest_url: "",
+    founded_at: "", stadium_name: "", stadium_capacity: "", stadium_ownership: "",
+    ownership_model: "",
     primary_color: "#000000", secondary_color: "#ffffff", tertiary_color: "#ffffff", location: "",
 };
 
@@ -34,15 +35,41 @@ const EMPTY_CLUB = {
 // ---------------------------------------------------------------------------
 // Sub-componente: Modal de Criar / Editar Clube
 // ---------------------------------------------------------------------------
-function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAttributes, onClose, onSave, onDisable }) {
+function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAttributes, initialOwners, onClose, onSave, onDisable }) {
     const [newClub, setNewClub] = useState(initialClub);
     const [attributes, setAttributes] = useState(initialAttributes);
+    const [owners, setOwners] = useState(initialOwners ?? []);
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
     const set = (field) => (e) => setNewClub((p) => ({ ...p, [field]: e.target.value }));
+
+    const addOwner = () => setOwners(p => [...p, { name: "", pct: "" }]);
+    const removeOwner = i => setOwners(p => p.filter((_, idx) => idx !== i));
+    const updateOwner = (i, field, val) => setOwners(p => { const c = [...p]; c[i] = { ...c[i], [field]: val }; return c; });
+
+    const [fetchStatus, setFetchStatus] = useState(null); // null | "loading" | "found" | "notfound"
+    const fetchCrest = async () => {
+        if (!newClub.name) return;
+        setFetchStatus("loading");
+        try {
+            const { data } = await api.get(`/admin/thesportsdb/team?name=${encodeURIComponent(newClub.name)}`);
+            if (!data.found) { setFetchStatus("notfound"); return; }
+            setNewClub(p => ({
+                ...p,
+                crest_url: data.crest_url || p.crest_url,
+                primary_color: data.primary_color || p.primary_color,
+                secondary_color: data.secondary_color || p.secondary_color,
+                stadium_name: p.stadium_name || data.stadium_name || p.stadium_name,
+                stadium_capacity: p.stadium_capacity || data.stadium_capacity || p.stadium_capacity,
+                short_name: p.short_name || data.short_name || p.short_name,
+            }));
+            setFetchStatus("found");
+        } catch { setFetchStatus("notfound"); }
+        finally { setTimeout(() => setFetchStatus(null), 3000); }
+    };
 
     const uploadLogo = async () => {
         if (!file) return alert("Selecione uma imagem");
@@ -77,7 +104,7 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
     const handleSave = async () => {
         setLoading(true);
         try {
-            await onSave({ ...newClub, attributes });
+            await onSave({ ...newClub, attributes, owners });
             setSuccess(true);
             setTimeout(() => { onClose(); }, 700);
         } catch {
@@ -92,7 +119,7 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
             className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
             onClick={onClose}
         >
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-black/40 " />
             <div
                 className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
@@ -112,9 +139,15 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Coluna esquerda */}
                         <div className="space-y-4">
-                            <div>
-                                <label className={labelClass}>Nome</label>
-                                <input type="text" className={inputClass} value={newClub.name} onChange={set("name")} />
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="col-span-2">
+                                    <label className={labelClass}>Nome</label>
+                                    <input type="text" className={inputClass} value={newClub.name} onChange={set("name")} />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Apelido</label>
+                                    <input type="text" className={inputClass} placeholder="ex: Flamengo" value={newClub.short_name} onChange={set("short_name")} maxLength={50} />
+                                </div>
                             </div>
                             <div>
                                 <label className={labelClass}>País</label>
@@ -148,6 +181,21 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                                 <label className={labelClass}>Estádio</label>
                                 <input type="text" className={inputClass} value={newClub.stadium_name} onChange={set("stadium_name")} />
                             </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className={labelClass}>Capacidade</label>
+                                    <input type="number" className={inputClass} placeholder="ex: 78838" value={newClub.stadium_capacity} onChange={set("stadium_capacity")} />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Propriedade</label>
+                                    <select className={inputClass} value={newClub.stadium_ownership} onChange={set("stadium_ownership")}>
+                                        <option value="">Selecione</option>
+                                        <option value="Próprio">Próprio</option>
+                                        <option value="Alugado">Alugado</option>
+                                        <option value="Cedido">Cedido</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div>
                                 <label className={labelClass}>Localização</label>
                                 <input type="text" className={inputClass} value={newClub.location} onChange={set("location")} />
@@ -179,13 +227,32 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                                             ? <img src={newClub.crest_url} className="w-full h-full object-cover" alt="Logo" />
                                             : <Shield size={24} className="text-gray-300" />}
                                     </div>
-                                    <input
-                                        type="text"
-                                        className={inputClass}
-                                        placeholder="URL da Logo"
-                                        value={newClub.crest_url}
-                                        onChange={set("crest_url")}
-                                    />
+                                    <div className="flex-1 space-y-1.5">
+                                        <input
+                                            type="text"
+                                            className={inputClass}
+                                            placeholder="URL da Logo"
+                                            value={newClub.crest_url}
+                                            onChange={set("crest_url")}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={fetchCrest}
+                                            disabled={!newClub.name || fetchStatus === "loading"}
+                                            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-50
+                                                bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100"
+                                        >
+                                            {fetchStatus === "loading" ? (
+                                                <><Loader2 size={12} className="animate-spin" /> Buscando...</>
+                                            ) : fetchStatus === "found" ? (
+                                                <><CheckCircle2 size={12} className="text-emerald-500" /> Escudo encontrado!</>
+                                            ) : fetchStatus === "notfound" ? (
+                                                <><AlertCircle size={12} className="text-red-400" /> Não encontrado</>
+                                            ) : (
+                                                <><Wand2 size={12} /> Buscar no TheSportsDB</>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-3 gap-4">
@@ -243,6 +310,42 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                             <datalist id="attr-keys">
                                 {attributeKeys.map((k) => <option key={k} value={k} />)}
                             </datalist>
+                        </div>
+                    </div>
+
+                    {/* Proprietários */}
+                    <div className="mt-6 pt-6 border-t border-gray-100">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-gray-900">Proprietários</h3>
+                            <button onClick={addOwner} className="text-xs font-bold text-[#7F33D9] hover:bg-purple-50 px-3 py-1.5 rounded-lg">
+                                + Dono
+                            </button>
+                        </div>
+                        <div className="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            {owners.length === 0 && (
+                                <p className="text-xs text-gray-400 text-center py-1">Nenhum proprietário cadastrado.</p>
+                            )}
+                            {owners.map((o, i) => (
+                                <div key={i} className="flex gap-2 items-center">
+                                    <input
+                                        className={`${inputClass} !py-1.5 !text-xs flex-1`}
+                                        placeholder="Nome do proprietário"
+                                        value={o.name}
+                                        onChange={e => updateOwner(i, "name", e.target.value)}
+                                    />
+                                    <input
+                                        type="number"
+                                        min="0" max="100" step="0.1"
+                                        className={`${inputClass} !py-1.5 !text-xs w-24`}
+                                        placeholder="%"
+                                        value={o.pct}
+                                        onChange={e => updateOwner(i, "pct", e.target.value)}
+                                    />
+                                    <button onClick={() => removeOwner(i)} className="text-gray-300 hover:text-red-400 transition-colors p-1 rounded">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
@@ -327,7 +430,7 @@ export default function GestaoClubes() {
 
     // --- Handlers do modal de clube ---
     const openCreateModal = () =>
-        setClubModal({ isEditing: false, club: EMPTY_CLUB, attributes: [] });
+        setClubModal({ isEditing: false, club: EMPTY_CLUB, attributes: [], owners: [] });
 
     const openEditModal = async (id) => {
         try {
@@ -335,12 +438,65 @@ export default function GestaoClubes() {
             const clubData = data.club;
             setClubModal({
                 isEditing: true,
-                club: { ...clubData, founded_at: clubData.founded_at?.split("T")[0] ?? "" },
+                club: {
+                    ...clubData,
+                    short_name: clubData.short_name ?? "",
+                    stadium_capacity: clubData.stadium_capacity ?? "",
+                    stadium_ownership: clubData.stadium_ownership ?? "",
+                    founded_at: clubData.founded_at?.split("T")[0] ?? "",
+                },
                 attributes: data.attributes || [],
+                owners: (data.owners || []).map(o => ({ name: o.name, pct: o.ownership_pct ?? "" })),
             });
         } catch (err) {
             console.error(err);
         }
+    };
+
+    // --- Busca em massa de escudos ---
+    const [bulkState, setBulkState] = useState(null); // null | { total, done, found, errors }
+    const bulkAbort = useRef(false);
+
+    const handleBulkFetch = async () => {
+        if (!window.confirm(`Buscar escudos para todos os clubes sem escudo? Isso pode demorar alguns minutos.`)) return;
+        const clubsSemEscudo = allClubs.filter(c => !c.crest_url);
+        if (!clubsSemEscudo.length) { alert("Todos os clubes já têm escudo."); return; }
+
+        bulkAbort.current = false;
+        setBulkState({ total: clubsSemEscudo.length, done: 0, found: 0, errors: 0 });
+
+        for (let i = 0; i < clubsSemEscudo.length; i++) {
+            if (bulkAbort.current) break;
+            const club = clubsSemEscudo[i];
+            try {
+                const { data } = await api.get(`/admin/thesportsdb/team?name=${encodeURIComponent(club.name)}`);
+                if (data.found && data.crest_url) {
+                    await api.put(`/admin/clubs/${club.id_club}/update`, {
+                        ...club,
+                        short_name: club.short_name || data.short_name || "",
+                        stadium_capacity: club.stadium_capacity || data.stadium_capacity || "",
+                        stadium_ownership: club.stadium_ownership || "",
+                        primary_color: club.primary_color || data.primary_color || "#000000",
+                        secondary_color: club.secondary_color || data.secondary_color || "#ffffff",
+                        tertiary_color: club.tertiary_color || "#ffffff",
+                        stadium_name: club.stadium_name || data.stadium_name || "",
+                        crest_url: data.crest_url,
+                        attributes: [],
+                        owners: [],
+                    });
+                    setBulkState(p => ({ ...p, done: p.done + 1, found: p.found + 1 }));
+                } else {
+                    setBulkState(p => ({ ...p, done: p.done + 1 }));
+                }
+            } catch {
+                setBulkState(p => ({ ...p, done: p.done + 1, errors: p.errors + 1 }));
+            }
+            // rate limit: 400ms entre chamadas
+            await new Promise(r => setTimeout(r, 400));
+        }
+
+        loadData();
+        setTimeout(() => setBulkState(null), 5000);
     };
 
     const handleSaveClub = async (payload) => {
@@ -397,11 +553,41 @@ export default function GestaoClubes() {
                         <FileSpreadsheet size={18} className="text-green-600" />
                         <span className="hidden lg:inline">Importar</span>
                     </button>
+                    <button
+                        onClick={handleBulkFetch}
+                        disabled={!!bulkState}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-bold hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        {bulkState ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                        Buscar Escudos
+                    </button>
                     <button onClick={openCreateModal} className={btnPrimary}>
                         <Plus size={18} /> Novo Clube
                     </button>
                 </div>
             </div>
+
+            {/* Barra de progresso da busca em massa */}
+            {bulkState && (
+                <div className="bg-violet-50 border border-violet-100 rounded-2xl px-5 py-4 flex items-center gap-4">
+                    <Loader2 size={18} className="animate-spin text-violet-500 shrink-0" />
+                    <div className="flex-1">
+                        <div className="flex justify-between text-xs font-semibold text-violet-700 mb-1.5">
+                            <span>Buscando escudos... {bulkState.done}/{bulkState.total}</span>
+                            <span className="text-emerald-600">{bulkState.found} encontrados</span>
+                        </div>
+                        <div className="w-full bg-violet-100 rounded-full h-1.5">
+                            <div
+                                className="bg-violet-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{ width: `${(bulkState.done / bulkState.total) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+                    <button onClick={() => { bulkAbort.current = true; }} className="text-xs text-gray-400 hover:text-red-400 font-semibold transition-colors">
+                        Cancelar
+                    </button>
+                </div>
+            )}
 
             {/* Grid de clubes */}
             <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-4 sm:p-6 min-h-[400px] flex flex-col">
@@ -488,6 +674,7 @@ export default function GestaoClubes() {
                     isEditing={clubModal.isEditing}
                     initialClub={clubModal.club}
                     initialAttributes={clubModal.attributes}
+                    initialOwners={clubModal.owners}
                     onClose={() => setClubModal(null)}
                     onSave={handleSaveClub}
                     onDisable={handleDisableClub}

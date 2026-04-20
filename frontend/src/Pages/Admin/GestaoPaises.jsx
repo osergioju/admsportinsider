@@ -6,10 +6,10 @@ import _paises from "world-countries";
 // Nações do Reino Unido que competem separadamente no futebol mas não
 // existem como países soberanos no world-countries
 const UK_NATIONS = [
-  { cca2: "gb-eng", name: { common: "Inglaterra" } },
-  { cca2: "gb-sct", name: { common: "Escócia" } },
-  { cca2: "gb-wls", name: { common: "País de Gales" } },
-  { cca2: "gb-nir", name: { common: "Irlanda do Norte" } },
+    { cca2: "gb-eng", name: { common: "Inglaterra" } },
+    { cca2: "gb-sct", name: { common: "Escócia" } },
+    { cca2: "gb-wls", name: { common: "País de Gales" } },
+    { cca2: "gb-nir", name: { common: "Irlanda do Norte" } },
 ];
 
 const paises = [..._paises, ...UK_NATIONS];
@@ -150,7 +150,7 @@ export default function GestaoPaises() {
             {/* Modal */}
             {modalMode && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={closeModal}>
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-black/40 " />
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative z-10 overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                             <h3 className="font-bold text-lg text-gray-900">
@@ -176,10 +176,10 @@ export default function GestaoPaises() {
                                     </div>
                                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 min-h-[120px] flex flex-col items-center justify-center text-center">
                                         {paisSelecionado ? (
-                                            success ? <div className="text-green-600 font-bold"><Check size={24} className="mx-auto mb-2"/>Cadastrado!</div> :
-                                            loading ? <Loader2 size={32} className="animate-spin text-[#7F33D9]" /> :
-                                            <div><img src={paisSelecionado.flag} className="w-16 h-auto shadow-sm rounded mb-3 mx-auto"/> <span className="text-lg font-bold block">{paisSelecionado.value}</span></div>
-                                        ) : <div className="text-gray-400"><Globe size={32} className="mb-2 opacity-50 mx-auto"/><span className="text-xs">Nenhum país selecionado</span></div>}
+                                            success ? <div className="text-green-600 font-bold"><Check size={24} className="mx-auto mb-2" />Cadastrado!</div> :
+                                                loading ? <Loader2 size={32} className="animate-spin text-[#7F33D9]" /> :
+                                                    <div><img src={paisSelecionado.flag} className="w-16 h-auto shadow-sm rounded mb-3 mx-auto" /> <span className="text-lg font-bold block">{paisSelecionado.value}</span></div>
+                                        ) : <div className="text-gray-400"><Globe size={32} className="mb-2 opacity-50 mx-auto" /><span className="text-xs">Nenhum país selecionado</span></div>}
                                     </div>
                                     <button onClick={sendCountry} disabled={!paisSelecionado || loading || success} className={`${btnPrimary} w-full justify-center py-3`}>Confirmar Cadastro</button>
                                 </div>
