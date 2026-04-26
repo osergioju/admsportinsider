@@ -37,11 +37,33 @@ import {
     Search,
     Check,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function FrontPage() {
+    const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone;
+
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const handleShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Sport Insider',
+                    text: 'Acesse o app:',
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.log('Cancelado ou erro:', err);
+            }
+        } else {
+            alert('Compartilhamento não suportado nesse navegador');
+        }
+    };
+
     const { loadingAuth, user } = useRedirectIfAuthenticated();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [show, setShow] = useState(true);
 
     const leftPillStyle = "flex items-center justify-center gap-2 px-3 py-2 bg-white border border-[#E5E5E5] rounded-full text-[#404040] text-xs sm:text-sm font-medium shadow-sm z-20 relative whitespace-nowrap hover:scale-105 transition-transform cursor-default";
     const rightPillStyle = "flex items-center gap-3 px-4 py-3 bg-white border border-[#F0F0F0] rounded-2xl text-[#404040] text-sm font-medium shadow-sm z-20 relative w-full hover:border-purple-200 transition-colors cursor-default";
@@ -53,11 +75,56 @@ export default function FrontPage() {
     const primaryButtonClass = "bg-gradient-to-r from-[#904EDE] to-[#4E2A78] flex items-center justify-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all";
     const secondaryButtonClass = "flex items-center justify-center border border-[#A572E1] text-[#A572E1] rounded-full hover:bg-white/5 transition-colors";
 
+    useEffect(() => {
+        const dismissed = localStorage.getItem('pwa-banner-dismissed');
+        if (dismissed) {
+            setShow(false);
+        }
+    }, []);
+
     if (loadingAuth || user) return null;
 
     return (
 
         <div className="w-full bg-[#030015]">
+            {isIOS && !isStandalone && show && (
+                <div className="fixed bottom-6 left-4 right-4 z-50">
+                    <div className="bg-gradient-to-r from-[#1C142F] to-[#3D315D] text-white rounded-2xl px-5 py-4 shadow-2xl backdrop-blur-xl border border-white/10">
+
+                        <div className="flex items-center justify-between gap-4">
+
+                            {/* Texto */}
+                            <div className="flex-1">
+                                <p className="text-sm font-semibold tracking-tight">
+                                    Instale o app
+                                </p>
+                                <p className="text-xs text-white/70 mt-1 leading-relaxed">
+                                    Use o menu de compartilhar do navegador e selecione “Adicionar à Tela de Início”.
+                                </p>
+                            </div>
+
+                            {/* Ações */}
+                            <div className="flex items-center gap-2">
+
+                                <button
+                                    onClick={handleShare}
+                                    className="bg-[#7F33D9] hover:bg-[#6a28b8] transition-all px-4 py-2 rounded-full text-xs font-semibold shadow-lg shadow-purple-900/30"
+                                >
+                                    Compartilhar
+                                </button>
+
+                                <button
+                                    onClick={() => setShow(false)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+                                >
+                                    <span className="text-white/60 text-sm">×</span>
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* --- NAVBAR --- */}
             <div className="w-full flex justify-center pt-8 px-4 sm:px-6 lg:px-8 z-20">
