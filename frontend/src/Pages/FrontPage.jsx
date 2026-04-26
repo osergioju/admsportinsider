@@ -37,11 +37,11 @@ import {
     Search,
     Check,
 } from "lucide-react";
+import { useState } from "react";
 
 export default function FrontPage() {
     const { loadingAuth, user } = useRedirectIfAuthenticated();
-
-
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const leftPillStyle = "flex items-center justify-center gap-2 px-3 py-2 bg-white border border-[#E5E5E5] rounded-full text-[#404040] text-xs sm:text-sm font-medium shadow-sm z-20 relative whitespace-nowrap hover:scale-105 transition-transform cursor-default";
     const rightPillStyle = "flex items-center gap-3 px-4 py-3 bg-white border border-[#F0F0F0] rounded-2xl text-[#404040] text-sm font-medium shadow-sm z-20 relative w-full hover:border-purple-200 transition-colors cursor-default";
@@ -71,7 +71,7 @@ export default function FrontPage() {
                             />
                         </Link>
                     </div>
-                    <div className="lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
+                    <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 gap-10 text-[#C2B3E0] font-light">
                         <Link to="/dados"><div className="cursor-pointer hover:text-white transition-colors">METODOLOGIA</div></Link>
                         <Link to="/pricing"><div className="cursor-pointer hover:text-white transition-colors">PLANOS</div></Link>
                         <Link to="/dashboard-public"><div className="cursor-pointer hover:text-white transition-colors">TESTE GRÁTIS</div></Link>
@@ -81,9 +81,23 @@ export default function FrontPage() {
                         <Link className="bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-5 py-3 text-sm sm:px-5 sm:py-3 sm:text-sm sm:mr-0 flex items-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all lg:text-lg" to="/login">
                             Acessar <ArrowUpRight className="ml-2 w-3 h-3 sm:w-4 sm:h-4"></ArrowUpRight>
                         </Link>
+                        <div className="flex items-center lg:hidden">
+                            <button className="ml-2 bg-gradient-to-r from-[#904EDE] to-[#4E2A78] mr-0 px-4 py-3 text-sm sm:px-5 sm:py-3 sm:text-sm sm:mr-0 flex items-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all lg:text-lg" onClick={() => setMenuOpen(!menuOpen)}>
+                                ☰
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {menuOpen && (
+                <div className="w-[90%] left-[5%] bg-gradient-to-r from-[#904EDE] to-[#4E2A78] absolute top-[120px] rounded-xl bg-[#1C142F] flex flex-col items-center gap-2 py-6 z-50">
+                    <Link className="text-white font-light" to="/dados">METODOLOGIA</Link>
+                    <Link className="text-white font-light" to="/pricing">PLANOS</Link>
+                    <Link className="text-white font-light" to="/dashboard-public">TESTE GRÁTIS</Link>
+                    <Link className="text-white font-light" to="/register">COMEÇAR AGORA</Link>
+                </div>
+            )}
 
             {/* --- HERO SECTION --- */}
             <div className="pt-20 pb-2 w-full relative ">

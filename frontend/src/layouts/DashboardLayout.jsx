@@ -349,7 +349,7 @@ export default function DashboardLayout() {
             </div>
 
             {/* --- CONTEÚDO PRINCIPAL (HEADER ORIGINAL) --- */}
-            <div className="lg:w-[calc(100%-260px)] bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:overflow-y-auto lg:px-10 w-full px-4">
+            <div className="lg:w-[calc(100%-260px)] bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:px-10 w-full px-4">
 
                 <header className="hidden lg:flex items-center justify-between mb-10 sticky top-0 bg-[#F6F5FA] z-30 py-4">
 
