@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart, SearchX, Loader2 } from "lucide-react";
 import { api } from "../../services/api"
 import { useFavorites } from "../../hooks/useFavorites";
+import { clubUrl } from "../../utils/clubUrl";
 
 const getInitials = (name) => {
   if (!name) return "";
@@ -121,7 +122,7 @@ export default function ClubsFavorites() {
                 className="animate-fadein"
                 style={{ animationDelay: `${i * 40}ms`, animationFillMode: "both" }}
               >
-                <Link to={`/dashboard/clubs/${club.id_club}`} className="block group/card h-full">
+                <Link to={clubUrl(club.id_club ?? club.id, club.slug)} className="block group/card h-full">
                   <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-1 h-full">
 
                     {/* Header colorido */}

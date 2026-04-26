@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../../context/TranslationContext";
 import ReactECharts from "echarts-for-react";
 import { adaptDebtsBreakdown } from "./debtsBreakdown.adapter";
 import { useContext } from "react";

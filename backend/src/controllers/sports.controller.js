@@ -81,7 +81,7 @@ export async function getClubCompetitions(req, res) {
     for (const comp of compRes.rows) {
       // Full standings with home/away splits
       const standingsRes = await db.query(`
-        SELECT c.id_club, c.name AS club_name, c.crest_url,
+        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug,
           ccs.position_total, ccs.position_home, ccs.position_away,
           ccs.points,
           ccs.matches_total, ccs.matches_home, ccs.matches_away,
@@ -119,8 +119,8 @@ export async function getClubCompetitions(req, res) {
       // All matches of this club in this competition
       const matchesRes = await db.query(`
         SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
-               hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest,
-               ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest,
+               hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
+               ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug,
                ms.home_goals_ht, ms.away_goals_ht
         FROM matches m
         JOIN clubs hc ON hc.id_club = m.home_club_id
@@ -138,8 +138,8 @@ export async function getClubCompetitions(req, res) {
         matchesByWeek[w].push({
           id: m.id_match,
           date: m.match_date,
-          home: { id: m.home_id, name: m.home_name, crest: m.home_crest },
-          away: { id: m.away_id, name: m.away_name, crest: m.away_crest },
+          home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug },
+          away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug },
           home_goals: m.home_goals,
           away_goals: m.away_goals,
           home_goals_ht: m.home_goals_ht,
@@ -162,8 +162,8 @@ export async function getClubCompetitions(req, res) {
       if (isKnockoutComp) {
         const allMatchRes = await db.query(`
           SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals,
-                 hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest,
-                 ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest
+                 hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
+                 ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug
           FROM matches m
           JOIN clubs hc ON hc.id_club = m.home_club_id
           JOIN clubs ac ON ac.id_club = m.away_club_id
@@ -178,8 +178,8 @@ export async function getClubCompetitions(req, res) {
           allByWeek[w].push({
             id: m.id_match,
             date: m.match_date,
-            home: { id: m.home_id, name: m.home_name, crest: m.home_crest },
-            away: { id: m.away_id, name: m.away_name, crest: m.away_crest },
+            home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug },
+            away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug },
             home_goals: m.home_goals,
             away_goals: m.away_goals,
           });
@@ -193,6 +193,7 @@ export async function getClubCompetitions(req, res) {
         id: r.id_club,
         name: r.club_name,
         crest: r.crest_url,
+        slug: r.club_slug ?? null,
         pos: r[posF],
         pts: posF === 'position_total' ? (r.points ?? r[wF] * 3 + r[dF]) : (r[wF] * 3 + r[dF]),
         j: r[mF],
@@ -500,6 +501,7 @@ export async function getPlayerDetail(req, res) {
         c.id_club,
         c.name       AS club_name,
         c.crest_url,
+        c.slug       AS club_slug,
         l.id_league,
         l.name       AS league_name,
         s.year,
@@ -585,7 +587,7 @@ export async function getPlayerDetail(req, res) {
         year: row.year,
         shirt_number: row.shirt_number,
         market_value: row.market_value,
-        club: { id: row.id_club, name: row.club_name, crest_url: row.crest_url },
+        club: { id: row.id_club, name: row.club_name, crest_url: row.crest_url, slug: row.club_slug ?? null },
         league: { id: row.id_league, name: row.league_name },
         stats: {
           goals: row.goals ?? 0,
@@ -647,15 +649,15 @@ export async function getPlayerDetail(req, res) {
 // Computa classificação a partir de partidas brutas (usado no Apertura/Clausura)
 function computePhaseStandings(rawRows) {
   const clubs = new Map();
-  const get = (id, name, crest) => {
-    if (!clubs.has(id)) clubs.set(id, { id, name, crest, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 });
+  const get = (id, name, crest, slug) => {
+    if (!clubs.has(id)) clubs.set(id, { id, name, crest, slug: slug ?? null, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 });
     return clubs.get(id);
   };
   for (const m of rawRows) {
     if (m.home_goals == null || m.away_goals == null) continue;
     const hg = Number(m.home_goals), ag = Number(m.away_goals);
-    const h = get(m.home_id, m.home_name, m.home_crest);
-    const a = get(m.away_id, m.away_name, m.away_crest);
+    const h = get(m.home_id, m.home_name, m.home_crest, m.home_slug);
+    const a = get(m.away_id, m.away_name, m.away_crest, m.away_slug);
     h.j++; a.j++; h.gp += hg; h.gc += ag; a.gp += ag; a.gc += hg;
     if (hg > ag) { h.v++; a.d++; } else if (hg < ag) { a.v++; h.d++; } else { h.e++; a.e++; }
   }
@@ -752,8 +754,8 @@ export async function getLeagueSports(req, res) {
     const matchesRes = await db.query(`
       SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
              m.phase_key,
-             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest,
-             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest,
+             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
+             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug,
              ms.home_goals_ht, ms.away_goals_ht
       FROM matches m
       JOIN clubs hc ON hc.id_club = m.home_club_id
@@ -882,7 +884,7 @@ export async function getLeagueSports(req, res) {
       }
     } else {
       const standingsRes = await db.query(`
-        SELECT c.id_club, c.name AS club_name, c.crest_url,
+        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug,
           ccs.position_total, ccs.position_home, ccs.position_away,
           ccs.points,
           ccs.matches_total, ccs.matches_home, ccs.matches_away,
@@ -904,7 +906,7 @@ export async function getLeagueSports(req, res) {
       `, [idCS]);
 
       const mkRow = (r, posF, wF, dF, lF, gpF, gcF, mF) => ({
-        id: r.id_club, name: r.club_name, crest: r.crest_url,
+        id: r.id_club, name: r.club_name, crest: r.crest_url, slug: r.club_slug ?? null,
         pos: r[posF] || null,
         pts: r[wF] * 3 + r[dF],
         j: r[mF], v: r[wF], e: r[dF], d: r[lF],
@@ -1017,8 +1019,8 @@ export async function getMatchDetail(req, res) {
     const r = (await db.query(`
       SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
              m.attendance, m.referee, m.stadium_name,
-             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest,
-             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest,
+             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
+             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug,
              l.id_league, l.name AS league_name, s.year AS season,
              ms.home_shots, ms.away_shots,
              ms.home_shots_on_target, ms.away_shots_on_target,
@@ -1043,8 +1045,8 @@ export async function getMatchDetail(req, res) {
     res.json({
       id: r.id_match, game_week: r.game_week, date: r.match_date, status: r.status,
       league: { id: r.id_league, name: r.league_name }, season: r.season,
-      home: { id: r.home_id, name: r.home_name, crest: r.home_crest },
-      away: { id: r.away_id, name: r.away_name, crest: r.away_crest },
+      home: { id: r.home_id, name: r.home_name, crest: r.home_crest, slug: r.home_slug ?? null },
+      away: { id: r.away_id, name: r.away_name, crest: r.away_crest, slug: r.away_slug ?? null },
       score: { home: r.home_goals, away: r.away_goals },
       score_ht: { home: r.home_goals_ht, away: r.away_goals_ht },
       info: { attendance: r.attendance, referee: r.referee, stadium: r.stadium_name },

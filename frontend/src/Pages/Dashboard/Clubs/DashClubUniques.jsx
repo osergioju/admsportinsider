@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
-import { CalendarDays, Castle, Handshake } from "lucide-react";
+import { Landmark } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
 
 // Sections
@@ -335,13 +335,13 @@ export default function DashClubUniques() {
     <div className="space-y-6">
       {/* HEADER */}
       <div
-        className="overflow-hidden relative w-full p-4 lg:py-12 flex items-center lg:px-6 rounded-2xl border"
+        className="w-full rounded-2xl overflow-hidden relative"
         style={{
           background: `
-            radial-gradient(circle at 20% 30%, ${c1} 0%, transparent 60%),
-            radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
-            linear-gradient(135deg, ${c1}, ${c2}, ${c3})
-          `,
+                          radial-gradient(circle at 20% 30%, ${c1} 0%, transparent 60%),
+                          radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
+                          linear-gradient(135deg, ${c1}, ${c2}, ${c3})
+                      `,
         }}
       >
         {/* Overlay escuro para legibilidade */}
@@ -367,37 +367,49 @@ export default function DashClubUniques() {
           }}
         />
 
-        <div className="relati overflow-hidden absolute bg-black rounded-full w-5 h-5 lg:w-10 lg:h-10 right-4 top-4">
-          <img className="h-full" src={theClub.club.flag_url} alt="" />
-        </div>
+        <div className="relative z-10 p-6 sm:p-8">
 
-        <div className="relative w-20 h-20 lg:w-24 lg:h-24 xl:w-34 xl:h-34 bg-contain bg-no-repeat bg-center"
-          style={{
-            backgroundImage: `url(${theClub.club.crest_url})`,
-          }}
-        ></div>
+          {/* ── Header ──────────────────────────────────────── */}
+          <div className="flex items-start gap-5">
 
-        <div className="relative ml-4 lg:ml-10 pb-4">
-          <h3 className="text-white text-2xl mb-3 lg:text-3xl font-light">
-            {theClub.club.name}
-          </h3>
+            {/* Crest flutuante com glow */}
+            <div
+              className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center p-2.5"
+            >
+              <img
+                src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + theClub.club.crest_url + `.webp`}
+                alt={theClub.club.name}
+                className="w-full h-full object-contain drop-shadow-lg"
+              />
+            </div>
 
-          <ul className="flex flex-col lg:flex-row lg:items-center gap-0 lg:gap-4">
-            <li className="text-white text-sm flex items-center gap-2">
-              <CalendarDays className="w-4" />
-              Fundação: <strong>{foundedAt}</strong>
-            </li>
+            {/* Nome + short_name */}
+            <div className="flex-1 justify-center min-w-0 items-center">
+              <h1 className="text-white text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-bold drop-shadow-md truncate">
+                {theClub.club.name}
+              </h1>
+              {theClub.club.description && (
+                <span className="inline-block mt-1.5 text-white/70 text-sm font-semibold bg-white/10 border border-white/20 px-2.5 py-0.5 rounded-full">
+                  {theClub.club.description}
+                </span>
+              )}
+            </div>
 
-            <li className="text-white text-sm flex items-center gap-2">
-              <Castle className="w-4" />
-              {theClub.club?.stadium_name || "Estádio não informado"}
-            </li>
-
-            <li className="text-white text-sm flex items-center gap-2">
-              <Handshake className="w-4" />
-              {theClub.club?.ownership_model || "Modelo não informado"}
-            </li>
-          </ul>
+            {/* Bandeira */}
+            {theClub.club.flag_url && (
+              <div
+                className="shrink-0 w-9 h-9 rounded-full overflow-hidden shadow-lg"
+                style={{ border: "2px solid rgba(255,255,255,0.28)" }}
+                title={theClub.club.country_name}
+              >
+                <img
+                  src={theClub.club.flag_url}
+                  alt={theClub.club.country_name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

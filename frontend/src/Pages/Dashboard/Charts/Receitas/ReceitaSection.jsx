@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../context/TranslationContext";
 import { X } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 

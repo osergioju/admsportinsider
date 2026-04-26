@@ -167,6 +167,7 @@ export default function App() {
           {/* Clubes */}
           <Route path="/dashboard/clubs" element={<DashClubs />} />
           <Route path="/dashboard/clubs/:id" element={<PrePageClubs />} />
+          <Route path="/dashboard/clubs/:id/:slug" element={<PrePageClubs />} />
           <Route path="/dashboard/clubs/finance/:id" element={<DashClubUniques />} />
           <Route path="/dashboard/clubs/competitions/:id" element={<CompetitionsClubs />} />
           <Route path="/dashboard/clubs/club-players/:id" element={<ClubPlayers />} />

@@ -195,7 +195,7 @@ export default function SubscriptionManagement() {
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800">
           <CalendarX2 size={18} className="shrink-0 mt-0.5 text-amber-500" />
           <div className="flex-1">
-            <p className="text-sm font-bold">Cancelamento agendado</p>
+            <p className="text-sm font-bold">{t("financial.cancel_scheduled_banner", "Cancelamento agendado")}</p>
             <p className="text-xs text-amber-700 mt-0.5">
               Seu acesso ao <strong>{currentPlan?.name}</strong> será encerrado em{" "}
               <strong>{expiresAt}</strong>. Até lá, todos os recursos continuam disponíveis.
@@ -206,7 +206,7 @@ export default function SubscriptionManagement() {
             disabled={portalLoading}
             className="shrink-0 text-xs font-bold text-amber-700 hover:text-amber-900 underline underline-offset-2 transition-colors disabled:opacity-50 whitespace-nowrap"
           >
-            {portalLoading ? "Aguarde..." : "Reativar"}
+            {portalLoading ? "Aguarde..." : t("financial.reactivate", "Reativar")}
           </button>
         </div>
       )}
@@ -249,7 +249,7 @@ export default function SubscriptionManagement() {
                             currency: "BRL",
                           })}
                         </span>
-                        <span className="text-gray-500 text-sm">/mês</span>
+                        <span className="text-gray-500 text-sm">{t("financial.per_month", "/mês")}</span>
                       </>
                     )}
                   </div>
@@ -370,7 +370,7 @@ export default function SubscriptionManagement() {
                       style: "currency",
                       currency: "BRL",
                     })}
-                    <span className="text-gray-400 font-normal">/mês</span>
+                    <span className="text-gray-400 font-normal">{t("financial.per_month", "/mês")}</span>
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">

@@ -301,9 +301,10 @@ export async function clubsSearch(req, res) {
     // Query principal
     const clubsQuery = await db.query(
       `
-      SELECT 
+      SELECT
         c.id_club,
         c.name,
+        c.slug,
         c.description,
         c.crest_url,
         c.primary_color,

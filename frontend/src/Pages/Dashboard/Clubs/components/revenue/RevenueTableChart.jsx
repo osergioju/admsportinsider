@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../../context/TranslationContext";
 // components/revenue/RevenueTableChart.jsx
 import { useMemo } from "react";
 import { adaptRevenueLineData } from "./revenue.adapter";

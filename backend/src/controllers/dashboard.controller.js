@@ -1781,6 +1781,7 @@ export async function getCountryDetail(req, res) {
         SELECT
           c.id_club       AS id,
           c.name          AS name,
+          c.slug          AS slug,
           c.crest_url     AS crest_url,
           c.primary_color AS primary_color
         FROM clubs c

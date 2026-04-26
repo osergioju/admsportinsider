@@ -328,7 +328,7 @@ export default function DashLeagues() {
           {(countriesLoading || continentalLeagues.length > 0) && (
             <div>
               <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
-                Competições Continentais
+                {t("leagues.continental_competitions", "Competições continentais")}
               </p>
               {countriesLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">

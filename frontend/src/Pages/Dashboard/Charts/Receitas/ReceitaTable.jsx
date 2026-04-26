@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../context/TranslationContext";
 export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagueColor }) {
   if (!data || ligasSelecionadas.length === 0) {
     return (

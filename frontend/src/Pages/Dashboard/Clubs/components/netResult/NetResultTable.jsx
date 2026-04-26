@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../../context/TranslationContext";
 import { adaptNetResultTable } from "./netResult.adapter";
 import React from "react";
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../../services/api";
+import { clubUrl } from "../../utils/clubUrl";
 import { ChevronLeft, ChevronDown, Loader2, Timer, Star } from "lucide-react";
 import { useTranslation } from "../../context/TranslationContext";
 
@@ -162,7 +163,7 @@ function CompetitionTabs({ comp }) {
           <SectionLabel>Competição</SectionLabel>
           <StatPillGrid>
             <StatPill wide label={t("player.stat.club", "Clube")} value={
-              <Link to={`/dashboard/clubs/${comp.club.id}`} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.club.name}</Link>
+              <Link to={clubUrl(comp.club.id, comp.club.slug)} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.club.name}</Link>
             } />
             <StatPill wide label={t("player.stat.league", "Liga")} value={
               <Link to={`/dashboard/league/${comp.league.id}`} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.league.name}</Link>

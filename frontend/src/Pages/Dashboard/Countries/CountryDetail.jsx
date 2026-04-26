@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../../../services/api";
+import { clubUrl } from "../../../utils/clubUrl";
 import { ChevronLeft, Globe, Heart, Search, X } from "lucide-react";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
@@ -88,7 +89,7 @@ function ClubCard({ club, isFavorited, toggleFavorite }) {
   const favorited = isFavorited(club.id, "club");
   console.log(club);
   return (
-    <Link to={`/dashboard/clubs/${club.id}`} className="block group">
+    <Link to={clubUrl(club.id, club.slug)} className="block group">
       <div className="relative h-full rounded-2xl overflow-hidden border border-gray-100 bg-white hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200">
 
         {/* Faixa de acento em gradiente — identidade do clube sem agredir */}

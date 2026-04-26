@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../../context/TranslationContext";
 import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptPayrollLineData } from "./payroll.adapter";

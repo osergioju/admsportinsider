@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart, SearchX, Loader2 } from "lucide-react";
 import { api } from "../../services/api";
 import { useFavorites } from "../../hooks/useFavorites";
+import { useTranslation } from "../../context/TranslationContext";
 
 const getInitials = (name) => {
   if (!name) return "";
@@ -10,6 +11,7 @@ const getInitials = (name) => {
 };
 
 export default function LeaguesFavorites() {
+  const { t } = useTranslation();
   const { favorites, isFavorited, toggleFavorite, loading: loadingFavs } = useFavorites();
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,17 +64,17 @@ export default function LeaguesFavorites() {
             <div className="flex items-center gap-2 mb-2">
               <Heart size={18} className="text-[#7F33D9]" fill="#7F33D9" />
               <span className="text-xs font-semibold tracking-widest text-[#7F33D9] uppercase">
-                Meus favoritos
+                {t("favorites.my_favorites", "Meus favoritos")}
               </span>
             </div>
             <h1 className="text-3xl lg:text-4xl font-bold text-[#0A0A0A] tracking-tight leading-tight">
-              Ligas salvas
+              {t("favorites.saved_leagues", "Ligas Salvas")}
             </h1>
             <p className="mt-1 text-sm text-gray-400 font-light">
               {isReady
                 ? leagues.length > 0
                   ? `${leagues.length} liga${leagues.length > 1 ? "s" : ""} na sua lista`
-                  : "Nenhuma liga favoritada ainda"
+                  : t("favorites.no_leagues_yet", "Nenhuma liga favoritada ainda")
                 : "Carregando..."}
             </p>
           </div>
@@ -97,16 +99,16 @@ export default function LeaguesFavorites() {
               <SearchX size={32} className="text-[#7F33D9] opacity-60" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-700">Nenhuma liga favoritada</p>
+              <p className="text-lg font-semibold text-gray-700">{t("favorites.no_leagues_yet", "Nenhuma liga favoritada ainda")}</p>
               <p className="text-sm text-gray-400 font-light mt-1">
-                Explore as ligas e clique no ❤️ para salvá-las aqui.
+                {t("favorites.explore_hint", "Explore as ligas e clique no ❤️ para salvá-las aqui.")}
               </p>
             </div>
             <Link
               to="/dashboard/leagues"
               className="mt-2 px-6 py-2.5 bg-[#7F33D9] text-white text-sm rounded-full font-medium hover:bg-[#6a28b8] transition-all shadow-md shadow-purple-200"
             >
-              Explorar ligas
+              {t("favorites.explore_leagues", "Explorar ligas")}
             </Link>
           </div>
         )}

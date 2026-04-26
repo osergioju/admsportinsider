@@ -1,4 +1,5 @@
 // components/debts/DebtsSection.jsx
+import { useTranslation } from "../../../../../context/TranslationContext";
 import { X } from "lucide-react";
 import DebtsBreakdownBarChart from "./DebtsBreakdownBarChart";
 import ChartFilter from "../filter/ChartFilter";
@@ -13,6 +14,8 @@ export default function DebtsSection({
   currency,
   setCurrency
 }) {
+  const { t } = useTranslation();
+
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
       prev.includes(clube.id_club)
@@ -35,9 +38,9 @@ export default function DebtsSection({
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Dívidas
+        {t("club.finance.debts", "Dívidas")}
       </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 
       <ChartFilter
         clubesSelecionados={selectedClubs}

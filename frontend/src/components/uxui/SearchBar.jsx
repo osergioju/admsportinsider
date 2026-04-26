@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
+import { clubUrl } from "../../utils/clubUrl";
 import { useTranslation } from "../../context/TranslationContext";
 
 
@@ -478,7 +479,7 @@ export default function SearchBar() {
     if (item.id_league !== undefined) {
       navigate(`/dashboard/league/${item.id_league}`);
     } else if (item.id_club !== undefined) {
-      navigate(`/dashboard/clubs/${item.id_club}`);
+      navigate(clubUrl(item.id_club, item.slug));
     } else if (item.id_country !== undefined) {
       navigate(`/dashboard/countries/${item.id_country}`);
     } else if (item.id_player !== undefined) {
@@ -638,7 +639,7 @@ export default function SearchBar() {
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  {totalResults} resultado{totalResults !== 1 ? "s" : ""}
+                  {t("search.results_count", "{count} resultados").replace("{count}", totalResults)}
                 </span>
                 <span
                   style={{

@@ -176,6 +176,14 @@ export default function PlayersList() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const positionLabel = {
+    "Goleiro":      t("players.position.goalkeeper", "Goleiro"),
+    "Zagueiro":     t("players.position.defender",   "Zagueiro"),
+    "Lateral":      t("players.position.fullback",   "Lateral"),
+    "Meio-campista":t("players.position.midfielder", "Meio-campista"),
+    "Atacante":     t("players.position.forward",    "Atacante"),
+  };
+
   // ── Países ─────────────────────────────────────────────────────────────────
   const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
@@ -333,7 +341,7 @@ export default function PlayersList() {
                   : "bg-white border-gray-200 text-gray-600 hover:border-violet-200 hover:text-violet-600"
                 }`}
             >
-              {pos}
+              {positionLabel[pos] ?? pos}
             </button>
           ))}
         </div>

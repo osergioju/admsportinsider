@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
+import { clubUrl } from "../../../utils/clubUrl";
 import { Loader2, Trophy, ChevronsDown } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
 
@@ -44,7 +45,7 @@ function DisciplinaryTable({ rows, t }) {
             <tr key={row.id ?? i} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
               <td className="px-3 py-3 text-center font-semibold text-gray-400">{i + 1}</td>
               <td className="px-3 py-3">
-                <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700">
+                <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700">
                   {row.crest ? <img src={row.crest} alt="" className="w-5 h-5 object-contain shrink-0" /> : <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />}
                   {row.name}
                 </Link>
@@ -149,7 +150,7 @@ function StandingsTable({ rows, t, seasonConfig, legendContLabel }) {
 
                 <td className="px-3 py-3 sticky left-[40px] bg-white z-10">
                   <Link
-                    to={`/dashboard/clubs/${row.id}`}
+                    to={clubUrl(row.id, row.slug)}
                     className={`flex items-center gap-2.5 hover:text-violet-700 transition-colors ${pos === 1 ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}
                   >
                     {row.crest
@@ -290,7 +291,7 @@ function ConfrontoCard({ confronto }) {
           {team.crest
             ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
             : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
-          <Link to={`/dashboard/clubs/${team.id}`}
+          <Link to={clubUrl(team.id, team.slug)}
             className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
               ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
             {team.name}
@@ -332,7 +333,7 @@ function ConfrontoCard({ confronto }) {
       {team.crest
         ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
         : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
-      <Link to={`/dashboard/clubs/${team.id}`}
+      <Link to={clubUrl(team.id, team.slug)}
         className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
           ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
         {team.name}
@@ -666,7 +667,7 @@ function GroupPhaseView({ phase, t, adminGroups }) {
                         {row.pos}
                       </td>
                       <td className="px-2 py-2 max-w-[120px]">
-                        <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                        <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
                           {row.crest
                             ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
                             : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
@@ -852,7 +853,7 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
                       {ri + 1}
                     </td>
                     <td className="px-3 py-2">
-                      <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                      <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
                         {row.crest
                           ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
                           : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
@@ -940,7 +941,7 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
                               {row.pos}
                             </td>
                             <td className="px-2 py-2">
-                              <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                              <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
                                 {row.crest
                                   ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
                                   : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
@@ -1110,7 +1111,7 @@ function BracketView({ matches, structure_json, season, t, fasesOverride, groupC
             )}
             <div className="min-w-0">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Campeão</p>
-              <Link to={`/dashboard/clubs/${champion.id}`}
+              <Link to={clubUrl(champion.id, champion.slug)}
                 className="text-base font-bold text-gray-900 hover:text-violet-700 transition-colors truncate block">
                 {champion.name}
               </Link>
@@ -1360,7 +1361,7 @@ export default function LeagueSportsSection({ leagueId }) {
         <>
           <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
             {!loading && leader ? (
-              <Link to={`/dashboard/clubs/${leader.id}`}
+              <Link to={clubUrl(leader.id, leader.slug)}
                 className="flex items-center gap-2 min-w-0 group">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0 hidden lg:block">CAMPEÃO</span>
                 {leader.crest

@@ -1,4 +1,5 @@
 // components/costs/CostsSection.jsx
+import { useTranslation } from "../../../../../context/TranslationContext";
 import { X } from "lucide-react";
 import CostsPieChart from "./CostsPieChart";
 import ChartFilter from "../filter/ChartFilter";
@@ -16,6 +17,8 @@ export default function CostsSection({
   currency,
   setCurrency
 }) {
+  const { t } = useTranslation();
+
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
       prev.includes(clube.id_club)
@@ -75,9 +78,9 @@ export default function CostsSection({
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Custos
+        {t("club.finance.costs", "Custos")}
       </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 
       <div className="w-full">
         <ChartFilter

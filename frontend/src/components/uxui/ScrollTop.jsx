@@ -119,7 +119,7 @@ const DYNAMIC_ROUTES = [
     fallback: "Elenco do clube",
   },
   {
-    pattern: /^\/dashboard\/clubs\/([^/]+)$/,
+    pattern: /^\/dashboard\/clubs\/(\d+)(?:\/[^/]+)?$/,
     fetch: async (id) => {
       const { data } = await api.get(`/dashboard/clubs/${id}/info`);
       return data?.club?.name ?? null;

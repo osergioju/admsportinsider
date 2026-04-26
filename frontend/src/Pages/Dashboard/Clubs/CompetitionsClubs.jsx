@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../../../services/api";
+import { clubUrl } from "../../../utils/clubUrl";
 import { Loader2, ChevronDown, Trophy, ChevronsDown } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
 
@@ -51,7 +52,7 @@ function ConfrontoCard({ confronto }) {
       return (
         <div className={`flex items-center gap-1.5 px-3 py-2.5`}>
           {team.crest ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" /> : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
-          <Link to={`/dashboard/clubs/${team.id}`} className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>{team.name}</Link>
+          <Link to={clubUrl(team.id, team.slug)} className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>{team.name}</Link>
           <ScoreBox score={s1} href={`/dashboard/matches/${leg1.id}`} dim={!isWinner} />
           <ScoreBox score={s2} href={`/dashboard/matches/${leg2.id}`} dim={!isWinner} />
           <AggBox score={aggScore} isWinner={isWinner} />
@@ -83,7 +84,7 @@ function ConfrontoCard({ confronto }) {
   const SingleRow = ({ team, score, isWinner, isLoser }) => (
     <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-35" : ""}`}>
       {team.crest ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" /> : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
-      <Link to={`/dashboard/clubs/${team.id}`} className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>{team.name}</Link>
+      <Link to={clubUrl(team.id, team.slug)} className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>{team.name}</Link>
       {score !== null && <span className={`text-base tabular-nums font-extrabold shrink-0 ${isWinner ? "text-gray-900" : "text-gray-400"}`}>{score}</span>}
     </div>
   );
@@ -358,7 +359,7 @@ function ClubGroupView({ phase, clubId, t }) {
                     <tr key={row.id} className={`border-t border-gray-50 ${isMain ? "bg-violet-50" : "hover:bg-gray-50/60 transition-colors"}`}>
                       <td className={`px-2 py-2 text-center font-bold text-gray-500 ${advances ? "border-l-2 border-emerald-400" : "border-l-2 border-transparent"}`}>{row.pos}</td>
                       <td className="px-2 py-2 max-w-[120px]">
-                        <Link to={`/dashboard/clubs/${row.id}`} className={`flex items-center gap-1.5 hover:text-violet-700 transition-colors ${isMain ? "font-bold text-violet-700" : "font-medium text-gray-700"}`}>
+                        <Link to={clubUrl(row.id, row.slug)} className={`flex items-center gap-1.5 hover:text-violet-700 transition-colors ${isMain ? "font-bold text-violet-700" : "font-medium text-gray-700"}`}>
                           {row.crest ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" /> : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
                           <span className="truncate">{row.name}</span>
                         </Link>

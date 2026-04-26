@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../../../services/api";
+import { clubUrl } from "../../../utils/clubUrl";
 import { ChevronLeft, Loader2, MapPin, User, Users } from "lucide-react";
 
 const fmt = (v, d = 1) => v != null ? Number(v).toFixed(d) : null;
@@ -83,7 +84,7 @@ export default function MatchDetail() {
         {/* Score */}
         <div className="flex items-center justify-between px-8 py-6 gap-4">
           {/* Home */}
-          <Link to={`/dashboard/clubs/${home.id}`} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
+          <Link to={clubUrl(home.id, home.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
             {home.crest
               ? <img src={home.crest} alt={home.name} className="w-16 h-16 object-contain" />
               : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
@@ -104,7 +105,7 @@ export default function MatchDetail() {
           </div>
 
           {/* Away */}
-          <Link to={`/dashboard/clubs/${away.id}`} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
+          <Link to={clubUrl(away.id, away.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
             {away.crest
               ? <img src={away.crest} alt={away.name} className="w-16 h-16 object-contain" />
               : <div className="w-16 h-16 rounded-2xl bg-gray-100" />

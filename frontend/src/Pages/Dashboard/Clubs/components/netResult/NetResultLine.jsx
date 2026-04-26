@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../../context/TranslationContext";
 import ReactECharts from "echarts-for-react";
 import { adaptNetResultEvolution } from "./netResultTableLine.adapter"
 

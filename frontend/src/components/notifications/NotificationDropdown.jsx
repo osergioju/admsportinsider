@@ -1,6 +1,7 @@
 import { useState, useContext, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom"; // Importante!
 import { api } from "../../services/api";
+import { useTranslation } from "../../context/TranslationContext";
 import { useNotificationPolling } from "../../hooks/useNotificationPolling";
 import NotificationModal from "./NotificationModal";
 import { AuthContext } from "../../context/AuthContext";
@@ -8,6 +9,7 @@ import { Bell, ChevronRight, Clock, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function NotificationDropdown() {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -53,7 +55,7 @@ export default function NotificationDropdown() {
         <>
             <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80  flex justify-between items-center sticky top-0 z-10">
                 <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-[#111] text-base">Notificações</h3>
+                    <h3 className="font-bold text-[#111] text-base">{t("notifications.title", "Notificações")}</h3>
                     {unreadCount > 0 && (
                         <span className="text-[10px] font-bold text-[#7F33D9] bg-purple-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
                             {unreadCount} Novas
@@ -108,7 +110,7 @@ export default function NotificationDropdown() {
                     onClick={() => setOpen(false)}
                     className="group flex items-center justify-center gap-2 w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wide bg-gray-50 border border-gray-200 text-gray-600 shadow-sm transition-all duration-300 hover:border-[#7F33D9] hover:text-[#7F33D9] hover:bg-purple-50/50 hover:shadow-md"
                 >
-                    Ver todas
+                    {t("notifications.see_all", "Ver todas")}
                     <ChevronRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
             </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../../context/TranslationContext";
 import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueLineData } from "./revenue.adapter";

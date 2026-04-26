@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../context/TranslationContext";
 import { useContext, useState } from "react";
 import { AuthContext } from "../../../context/AuthContext";
 import { User, ArrowUpRight, Cog, CircleDollarSign, ArrowDown, Trash } from "lucide-react";

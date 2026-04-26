@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../../../context/TranslationContext";
 import ReactECharts from "echarts-for-react";
 import { adaptCostsBreakdown } from "./costsBreakdown.adapter";
 export default function CostsPieChart({

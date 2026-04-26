@@ -1,4 +1,5 @@
 // components/revenue/RevenueSection.jsx
+import { useTranslation } from "../../../../../context/TranslationContext";
 import { X } from "lucide-react";
 import { } from "react";
 import RevenueLineChart from "./RevenueLineChart";
@@ -18,8 +19,7 @@ export default function RevenueSection({
   currency,
   setCurrency
 }) {
-
-
+  const { t } = useTranslation();
 
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
@@ -86,9 +86,9 @@ export default function RevenueSection({
       <div className="flex items-center flex-wrap">
         <div className="w-full">
           <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-            Receitas <small className="text-xs">(por ano)</small>
+            {t("club.finance.revenue_by_year", "Receitas (por ano)")}
           </h2>
-          <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+          <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
         </div>
         <div className="w-full">
           <ChartFilter

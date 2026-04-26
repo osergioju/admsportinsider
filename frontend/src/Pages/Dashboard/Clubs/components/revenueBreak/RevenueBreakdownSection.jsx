@@ -1,4 +1,5 @@
 // components/revenueBreak/RevenueBreakdownSection.jsx
+import { useTranslation } from "../../../../../context/TranslationContext";
 import { X, Heart } from "lucide-react";
 import RevenueBreakdownBarChart from "./RevenueBreakdownBarChart";
 import ChartFilter from "../filter/ChartFilter";
@@ -19,6 +20,8 @@ export default function RevenueBreakdownSection({
   setCurrency,
   yearSelectionMode
 }) {
+  const { t } = useTranslation();
+
   function handleAddClub(clube) {
     setSelectedClubs((prev) =>
       prev.includes(clube.id_club)
@@ -106,7 +109,7 @@ export default function RevenueBreakdownSection({
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="text-[#0A0A0A] font-[400] text-xl">
-        Receitas <small className="text-xs">(por origem)</small>
+        {t("club.finance.revenue_by_origin", "Receitas (por origem)")}
         {selectedClubs.length > 0 && (
           <button
             className="cursor-pointer border rounded-full w-10 h-10 flex items-center justify-center text-[#d9337e] hover:bg-[#d9337e] hover:text-white transition-all"
@@ -115,7 +118,7 @@ export default function RevenueBreakdownSection({
           </button>
         )}
       </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 
       <ChartFilter
         clubesSelecionados={selectedClubs}
