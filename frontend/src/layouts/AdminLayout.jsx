@@ -21,7 +21,8 @@ import {
     Languages,
     MessageCircleQuestionMark,
     CircleDollarSign,
-    ChartArea
+    ChartArea,
+    Trophy
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -100,13 +101,22 @@ export default function AdminLayout() {
                 </div>
             </div>
 
-                    {(user.role === "admin_master" || user.role === "admin") && (
+            {(user.role === "admin_master" || user.role === "admin") && (
                 <div className="space-y-6">
 
                     {/* SEÇÃO: GERAL — sempre visível */}
                     <div>
                         <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Geral</span>
                         <ul className="space-y-1">
+                            <div className="group">
+                                <MenuItem
+                                    to="/dashboard"
+                                    onClick={() => setOpenMenu(false)}
+                                    className={menuItemStyle}
+                                    icon={<Trophy strokeWidth={1.5} size={20} className={iconStyle} />}
+                                    label={<span className={textStyle}>Dashboard público</span>}
+                                />
+                            </div>
 
                             <div className="group">
                                 <MenuItem
@@ -190,82 +200,82 @@ export default function AdminLayout() {
                     {/* SEÇÃO: ADMINISTRATIVO */}
                     {(canAccess("usuarios") || canAccess("planos") || Object.keys(
                         Object.fromEntries(
-                            ["insights-usuarios","insights-clubes","insights-ligas","insights-financeiro",
-                             "insights-planos","insights-importacoes","insights-uso","insights-performance"]
-                            .filter(k => canAccess(k)).map(k => [k, true])
+                            ["insights-usuarios", "insights-clubes", "insights-ligas", "insights-financeiro",
+                                "insights-planos", "insights-importacoes", "insights-uso", "insights-performance"]
+                                .filter(k => canAccess(k)).map(k => [k, true])
                         )
                     ).length > 0) && (
-                        <div>
-                            <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Administrativo</span>
-                            <ul className="space-y-1">
+                            <div>
+                                <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Administrativo</span>
+                                <ul className="space-y-1">
 
-                                {/* Dropdown Configurações */}
-                                {canAccess("usuarios") && (
-                                    <li>
-                                        <button onClick={() => setOpenConfig(!openConfig)} className={menuItemStyle}>
-                                            <div className="flex items-center gap-3">
-                                                <Settings strokeWidth={1.5} className={iconStyle} size={20} />
-                                                <span className={textStyle}>Configurações</span>
-                                            </div>
-                                            <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openConfig ? "rotate-180 text-purple-500" : ""}`} />
-                                        </button>
-                                        {openConfig && (
-                                            <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/usuarios" label="Listar Usuários" />
-                                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/new-user" label="Adicionar Usuário" />
-                                            </ul>
-                                        )}
-                                    </li>
-                                )}
+                                    {/* Dropdown Configurações */}
+                                    {canAccess("usuarios") && (
+                                        <li>
+                                            <button onClick={() => setOpenConfig(!openConfig)} className={menuItemStyle}>
+                                                <div className="flex items-center gap-3">
+                                                    <Settings strokeWidth={1.5} className={iconStyle} size={20} />
+                                                    <span className={textStyle}>Configurações</span>
+                                                </div>
+                                                <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openConfig ? "rotate-180 text-purple-500" : ""}`} />
+                                            </button>
+                                            {openConfig && (
+                                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/usuarios" label="Listar Usuários" />
+                                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/new-user" label="Adicionar Usuário" />
+                                                </ul>
+                                            )}
+                                        </li>
+                                    )}
 
-                                {/* Dropdown Insights */}
-                                {["insights-usuarios","insights-clubes","insights-ligas","insights-financeiro",
-                                  "insights-planos","insights-importacoes","insights-uso","insights-performance"]
-                                  .some(k => canAccess(k)) && (
-                                    <li>
-                                        <button onClick={() => setOpenInsights(!openInsights)} className={menuItemStyle}>
-                                            <div className="flex items-center gap-3">
-                                                <BarChart strokeWidth={1.5} className={iconStyle} size={20} />
-                                                <span className={textStyle}>Insights</span>
-                                            </div>
-                                            <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openInsights ? "rotate-180 text-purple-500" : ""}`} />
-                                        </button>
-                                        {openInsights && (
-                                            <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                                {canAccess("insights-usuarios") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/usuarios" label="Usuários" />}
-                                                {canAccess("insights-clubes") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/clubes" label="Clubes" />}
-                                                {canAccess("insights-ligas") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/ligas" label="Ligas" />}
-                                                {canAccess("insights-financeiro") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/financeiro" label="Financeiro" />}
-                                                {canAccess("insights-planos") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/planos" label="Planos" />}
-                                                {canAccess("insights-importacoes") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/importacoes" label="Importações" />}
-                                                {canAccess("insights-uso") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/uso" label="Uso do Sistema" />}
-                                                {canAccess("insights-performance") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/performance" label="Performance" />}
-                                            </ul>
+                                    {/* Dropdown Insights */}
+                                    {["insights-usuarios", "insights-clubes", "insights-ligas", "insights-financeiro",
+                                        "insights-planos", "insights-importacoes", "insights-uso", "insights-performance"]
+                                        .some(k => canAccess(k)) && (
+                                            <li>
+                                                <button onClick={() => setOpenInsights(!openInsights)} className={menuItemStyle}>
+                                                    <div className="flex items-center gap-3">
+                                                        <BarChart strokeWidth={1.5} className={iconStyle} size={20} />
+                                                        <span className={textStyle}>Insights</span>
+                                                    </div>
+                                                    <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openInsights ? "rotate-180 text-purple-500" : ""}`} />
+                                                </button>
+                                                {openInsights && (
+                                                    <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                                        {canAccess("insights-usuarios") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/usuarios" label="Usuários" />}
+                                                        {canAccess("insights-clubes") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/clubes" label="Clubes" />}
+                                                        {canAccess("insights-ligas") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/ligas" label="Ligas" />}
+                                                        {canAccess("insights-financeiro") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/financeiro" label="Financeiro" />}
+                                                        {canAccess("insights-planos") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/planos" label="Planos" />}
+                                                        {canAccess("insights-importacoes") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/importacoes" label="Importações" />}
+                                                        {canAccess("insights-uso") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/uso" label="Uso do Sistema" />}
+                                                        {canAccess("insights-performance") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/insights/performance" label="Performance" />}
+                                                    </ul>
+                                                )}
+                                            </li>
                                         )}
-                                    </li>
-                                )}
 
-                                {/* Dropdown Planos */}
-                                {canAccess("planos") && (
-                                    <li>
-                                        <button onClick={() => setOpenPlanos(!openPlanos)} className={menuItemStyle}>
-                                            <div className="flex items-center gap-3">
-                                                <Package strokeWidth={1.5} className={iconStyle} size={20} />
-                                                <span className={textStyle}>Planos</span>
-                                            </div>
-                                            <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openPlanos ? "rotate-180 text-purple-500" : ""}`} />
-                                        </button>
-                                        {openPlanos && (
-                                            <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-planos" label="Listar Planos" />
-                                                <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-planos/novo" label="Criar Plano" />
-                                            </ul>
-                                        )}
-                                    </li>
-                                )}
-                            </ul>
-                        </div>
-                    )}
+                                    {/* Dropdown Planos */}
+                                    {canAccess("planos") && (
+                                        <li>
+                                            <button onClick={() => setOpenPlanos(!openPlanos)} className={menuItemStyle}>
+                                                <div className="flex items-center gap-3">
+                                                    <Package strokeWidth={1.5} className={iconStyle} size={20} />
+                                                    <span className={textStyle}>Planos</span>
+                                                </div>
+                                                <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openPlanos ? "rotate-180 text-purple-500" : ""}`} />
+                                            </button>
+                                            {openPlanos && (
+                                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-planos" label="Listar Planos" />
+                                                    <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-planos/novo" label="Criar Plano" />
+                                                </ul>
+                                            )}
+                                        </li>
+                                    )}
+                                </ul>
+                            </div>
+                        )}
                 </div>
             )}
 
