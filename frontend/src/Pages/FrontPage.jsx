@@ -88,7 +88,7 @@ export default function FrontPage() {
 
         <div className="w-full bg-[#030015]">
             {isIOS && !isStandalone && show && (
-                <div className="fixed bottom-6 left-4 right-4 z-50">
+                <div className="hidden fixed bottom-6 left-4 right-4 z-50">
                     <div className="bg-gradient-to-r from-[#1C142F] to-[#3D315D] text-white rounded-2xl px-5 py-4 shadow-2xl backdrop-blur-xl border border-white/10">
 
                         <div className="flex items-center justify-between gap-4">
