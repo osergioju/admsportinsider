@@ -43,7 +43,7 @@ export default function FixedMenu() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+    <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around px-2 py-2 pb-safe">
         {items.map(({ to, icon: Icon, label, active }) => (
           <Link

@@ -1,42 +1,45 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- PWA: manifest -->
-    <link rel="manifest" href="/manifest.json" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-    <!-- Favicon padrão -->
-    <link rel="icon" type="image/png" href="/icon-192.png" />
+  <!-- PWA: manifest -->
+  <link rel="manifest" href="/manifest.json" />
 
-    <!-- iOS: ícone e comportamento de app -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="PRO - Sportinsider" />
+  <!-- Favicon padrão -->
+  <link rel="icon" type="image/png" href="/icon-192.png" />
 
-    <!-- Android / Chrome -->
-    <meta name="theme-color" content="#7F33D9" />
-    <meta name="mobile-web-app-capable" content="yes" />
+  <!-- iOS: ícone e comportamento de app -->
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PRO - Sportinsider" />
 
-    <!-- SEO / compartilhamento -->
-    <meta name="application-name" content="PRO - Sportinsider" />
-    <meta name="description" content="Dashboard de dados esportivos e financeiros" />
+  <!-- Android / Chrome -->
+  <meta name="theme-color" content="#7F33D9" />
+  <meta name="mobile-web-app-capable" content="yes" />
 
-    <title>PRO - Sportinsider</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+  <!-- SEO / compartilhamento -->
+  <meta name="application-name" content="PRO - Sportinsider" />
+  <meta name="description" content="Dashboard de dados esportivos e financeiros" />
 
-    <!-- Registro do Service Worker (habilita instalação no Android) -->
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/sw.js").catch(() => {});
-        });
-      }
-    </script>
-  </body>
+  <title>PRO - Sportinsider</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+
+  <!-- Registro do Service Worker (habilita instalação no Android) -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => { });
+      });
+    }
+  </script>
+</body>
+
 </html>

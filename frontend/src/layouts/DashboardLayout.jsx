@@ -268,7 +268,7 @@ export default function DashboardLayout() {
             <div className="lg:border-r lg:relative top-0 lg:w-[260px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
 
                 {/* ── HEADER MOBILE ── */}
-                <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
+                <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm pt-[env(safe-area-inset-top)]">
 
                     {/* Linha 1: brand + auth/avatar */}
                     <div className="flex items-center justify-between px-4 pt-3 pb-2">
