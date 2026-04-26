@@ -1,6 +1,5 @@
 import { useState, useContext, useEffect } from "react";
 import Input from "../../components/uxui/Input";
-import useTitle from '../../hooks/useTitle'
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import LoadingSkeleton from "../../components/uxui/LoadingSkeleton";
@@ -14,8 +13,6 @@ import SubmitButton from "../../components/uxui/SubmitButton";
 import { useRedirectIfAuthenticated } from "../../services/checkUser";
 
 export default function Login() {
-    useTitle("Entre na sua conta");
-
     const { loadingAuth, user } = useRedirectIfAuthenticated();
 
     const { login } = useContext(AuthContext);
