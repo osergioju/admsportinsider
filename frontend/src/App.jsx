@@ -43,6 +43,7 @@ import GestaoPaises from "./Pages/Admin/GestaoPaises";
 import GestaoLigas from "./Pages/Admin/GestaoLigas";
 import GestaoClubes from "./Pages/Admin/GestaoClubes";
 import GestaoJogadores from "./Pages/Admin/GestaoJogadores";
+import GestaoContinent from "./Pages/Admin/GestaoContinent";
 
 // ADMIN - Gestão do usuário 
 import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
@@ -199,6 +200,7 @@ export default function App() {
               {/* ── Gestão de países, ligas e clubes ── */}
               <Route element={<AdminPermissionRoute permissionKey="gestao-dados" />}>
                 <Route path="/admin/gestao-paises" element={<GestaoPaises />} />
+                <Route path="/admin/gestao-continentes" element={<GestaoContinent />} />
                 <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
                 <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
                 <Route path="/admin/gestao-jogadores" element={<GestaoJogadores />} />

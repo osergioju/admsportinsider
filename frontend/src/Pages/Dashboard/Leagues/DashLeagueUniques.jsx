@@ -244,12 +244,12 @@ export default function DashLeagueUniques() {
       <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="px-6 py-5 flex items-center gap-4">
           {lg.logo_url && (
-            <div className="w-14 h-14 lg:w-20 lg:h-20 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center shrink-0">
+            <div className="w-20 h-20 lg:w-40 lg:h-40 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center shrink-0">
               <img src={lg.logo_url} className="w-full h-full object-contain" alt={lg.name} />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2 flex-wrap leading-tight">
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900 flex items-center gap-2 flex-wrap leading-tight">
               {competitionTitle}
               {lg.flag_url && <img className="w-5 h-3.5 object-cover rounded-sm shrink-0" src={lg.flag_url} alt="" />}
             </h1>

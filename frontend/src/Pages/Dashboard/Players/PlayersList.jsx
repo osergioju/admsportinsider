@@ -9,18 +9,18 @@ import { useTranslation } from "../../../context/TranslationContext";
 const POSITIONS = ["Goleiro", "Zagueiro", "Lateral", "Meio-campista", "Atacante"];
 
 const POSITION_STYLE = {
-  "Goleiro":       { bg: "bg-blue-50   border-blue-200",   text: "text-blue-700"   },
-  "Zagueiro":      { bg: "bg-green-50  border-green-200",  text: "text-green-700"  },
-  "Lateral":       { bg: "bg-teal-50   border-teal-200",   text: "text-teal-700"   },
+  "Goleiro": { bg: "bg-blue-50   border-blue-200", text: "text-blue-700" },
+  "Zagueiro": { bg: "bg-green-50  border-green-200", text: "text-green-700" },
+  "Lateral": { bg: "bg-teal-50   border-teal-200", text: "text-teal-700" },
   "Meio-campista": { bg: "bg-violet-50 border-violet-200", text: "text-violet-700" },
-  "Atacante":      { bg: "bg-orange-50 border-orange-200", text: "text-orange-700" },
+  "Atacante": { bg: "bg-orange-50 border-orange-200", text: "text-orange-700" },
 };
 
 function formatMV(value) {
   if (!value) return null;
   const n = Number(value);
   if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `€${(n / 1_000).toFixed(0)}K`;
+  if (n >= 1_000) return `€${(n / 1_000).toFixed(0)}K`;
   return `€${n}`;
 }
 
@@ -88,7 +88,7 @@ function CountryCard({ country, onClick }) {
 
 function PlayerCard({ player, onClick }) {
   const pos = POSITION_STYLE[player.position] ?? POSITION_STYLE["Meio-campista"];
-  const mv  = formatMV(player.market_value);
+  const mv = formatMV(player.market_value);
 
   return (
     <button
@@ -173,29 +173,29 @@ function PlayerCard({ player, onClick }) {
 // ─── Página principal ──────────────────────────────────────────────────────────
 
 export default function PlayersList() {
-  const navigate  = useNavigate();
-  const { t }     = useTranslation();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // ── Países ─────────────────────────────────────────────────────────────────
-  const [countries, setCountries]             = useState([]);
+  const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState(null);
 
   // ── Jogadores ──────────────────────────────────────────────────────────────
-  const [players, setPlayers]         = useState([]);
-  const [total, setTotal]             = useState(null);
-  const [page, setPage]               = useState(1);
-  const [hasMore, setHasMore]         = useState(false);
-  const [loading, setLoading]         = useState(false);
+  const [players, setPlayers] = useState([]);
+  const [total, setTotal] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // ── Filtros ────────────────────────────────────────────────────────────────
-  const [search, setSearch]               = useState("");
+  const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [position, setPosition]           = useState("");
+  const [position, setPosition] = useState("");
 
-  const sentinelRef  = useRef(null);
-  const observerRef  = useRef(null);
+  const sentinelRef = useRef(null);
+  const observerRef = useRef(null);
   const searchTimeout = useRef(null);
 
   // ── Carrega países uma vez ─────────────────────────────────────────────────
@@ -233,7 +233,7 @@ export default function PlayersList() {
     if (reset) setLoading(true); else setLoadingMore(true);
     try {
       const params = new URLSearchParams({ page: p });
-      if (s)   params.set("search", s);
+      if (s) params.set("search", s);
       if (pos) params.set("position", pos);
       if (nat) params.set("nationality", nat);
 
@@ -317,11 +317,10 @@ export default function PlayersList() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setPosition("")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-              position === ""
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${position === ""
                 ? "bg-violet-600 border-violet-600 text-white shadow-sm"
                 : "bg-white border-gray-200 text-gray-600 hover:border-violet-200 hover:text-violet-600"
-            }`}
+              }`}
           >
             {t("ui.all", "Todos")}
           </button>
@@ -329,11 +328,10 @@ export default function PlayersList() {
             <button
               key={pos}
               onClick={() => setPosition(pos === position ? "" : pos)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                position === pos
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${position === pos
                   ? "bg-violet-600 border-violet-600 text-white shadow-sm"
                   : "bg-white border-gray-200 text-gray-600 hover:border-violet-200 hover:text-violet-600"
-              }`}
+                }`}
             >
               {pos}
             </button>

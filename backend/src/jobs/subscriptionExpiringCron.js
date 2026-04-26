@@ -13,19 +13,20 @@ import { sendSubscriptionExpiringEmail, sendSubscriptionEndedEmail } from "../ut
  *    do Stripe não chegou (customer.subscription.deleted falhou na entrega).
  */
 export function startSubscriptionExpiringCron() {
-  const cronExpression = process.env.NODE_ENV === "production" ? "0 9 * * *" : "* * * * *";
+  const cronExpression = "0 9 * * *";
   cron.schedule(cronExpression, async () => {
 
     // ── 1. Lembrete de expiração ─────────────────────────────────────────────
     console.log("[subscriptionExpiringCron] Verificando assinaturas prestes a expirar...");
     try {
       const { rows: expiring } = await db.query(`
-        SELECT u.name, u.email, p.name AS plan_name, u.subscription_current_period_end
+        SELECT u.id, u.name, u.email, p.name AS plan_name, u.subscription_current_period_end
         FROM users u
         JOIN plans p ON p.id = u.plan_id
         WHERE u.cancel_at_period_end = true
           AND u.subscription_current_period_end >= NOW() + interval '2 days'
           AND u.subscription_current_period_end <  NOW() + interval '3 days'
+          AND (u.expiring_email_sent_date IS NULL OR u.expiring_email_sent_date < CURRENT_DATE)
       `);
 
       console.log(`[subscriptionExpiringCron] ${expiring.length} usuário(s) prestes a expirar.`);
@@ -37,6 +38,10 @@ export function startSubscriptionExpiringCron() {
             planName: user.plan_name,
             periodEnd: user.subscription_current_period_end,
           });
+          await db.query(
+            `UPDATE users SET expiring_email_sent_date = CURRENT_DATE WHERE id = $1`,
+            [user.id]
+          );
           console.log(`[subscriptionExpiringCron] Lembrete enviado para: ${user.email}`);
         } catch (err) {
           console.error(`[subscriptionExpiringCron] Falha ao enviar lembrete para ${user.email}:`, err.message);

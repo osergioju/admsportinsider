@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Search, X, Heart } from "lucide-react";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 54;
 
 // ─── Paginação ────────────────────────────────────────────────────────────────
 
@@ -49,8 +49,8 @@ function Pagination({ page, totalPages, total, onChange }) {
               key={p}
               onClick={() => onChange(p)}
               className={`w-9 h-9 rounded-full text-sm font-medium transition ${p === page
-                  ? "bg-[#7F33D9] text-white"
-                  : "border border-gray-200 text-gray-600 hover:border-[#7F33D9] hover:text-[#7F33D9]"
+                ? "bg-[#7F33D9] text-white"
+                : "border border-gray-200 text-gray-600 hover:border-[#7F33D9] hover:text-[#7F33D9]"
                 }`}
             >
               {p}
@@ -86,48 +86,105 @@ function SkeletonCard() {
 
 // ─── Card de clube ────────────────────────────────────────────────────────────
 
+function lightenHex(hex, amount = 0.35) {
+  if (!hex || !hex.startsWith("#")) return hex;
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const r = parseInt(full.substring(0, 2), 16);
+  const g = parseInt(full.substring(2, 4), 16);
+  const b = parseInt(full.substring(4, 6), 16);
+  const mix = (c) => Math.round(c + (255 - c) * amount);
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+}
+
+/**
+ * Helper: cria fundo MUITO sutil pro miolo do escudo (~6% da cor do clube).
+ * Garante contraste pro logo sem agredir como o fundo chapado anterior.
+ */
+function tintBg(hex) {
+  if (!hex || !hex.startsWith("#")) return "#f8f8f9";
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const r = parseInt(full.substring(0, 2), 16);
+  const g = parseInt(full.substring(2, 4), 16);
+  const b = parseInt(full.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.06)`;
+}
+
 function ClubCard({ club, isFavorited, toggleFavorite }) {
   const initials = (club.name || "?").substring(0, 3).toUpperCase();
+  const baseColor = club.primary_color || "#7F33D9";
+  const accentGradient = `linear-gradient(90deg, ${baseColor} 0%, ${lightenHex(baseColor, 0.4)} 100%)`;
+  const favorited = isFavorited(club.id_club, "club");
 
   return (
     <Link to={`/dashboard/clubs/${club.id_club}`} className="block group">
-      <div className="h-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div className="relative h-full rounded-2xl overflow-hidden border border-gray-100 bg-white hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200">
 
-        {/* Topo colorido */}
+        {/* Faixa de acento em gradiente — identidade do clube sem agredir */}
         <div
-          className="h-36 flex items-center justify-center relative"
-          style={{ backgroundColor: club.primary_color || "#7F33D9" }}
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{ background: accentGradient }}
+        />
+
+        {/* Botão favoritar — discreto, só ganha cor quando ativo */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite(club.id_club, "club");
+          }}
+          className="absolute top-2.5 right-2.5 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition z-10"
+          aria-label="Favoritar"
         >
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(club.id_club, "club"); }}
-            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40  transition"
-            aria-label="Favoritar"
+          <Heart
+            size={14}
+            strokeWidth={2}
+            className={favorited ? "text-rose-500" : "text-gray-300 group-hover:text-gray-400"}
+            fill={favorited ? "currentColor" : "transparent"}
+          />
+        </button>
+
+        {/* Conteúdo */}
+        <div className="pt-6 pb-4 px-3 flex flex-col items-center gap-2.5">
+
+          {/* Escudo: círculo com tint sutil da cor do clube */}
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300"
+            style={{ backgroundColor: tintBg(baseColor) }}
           >
-            <Heart
-              size={13}
-              strokeWidth={2}
-              className="text-white"
-              fill={isFavorited(club.id_club, "club") ? "white" : "transparent"}
-            />
-          </button>
-
-          <div className="w-20 h-20 bg-white/10  rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
-            {club.crest_url
-              ? <img src={club.crest_url} alt={club.name} className="w-14 h-14 object-contain drop-shadow-lg" />
-              : <span className="text-white font-black text-xl italic">{initials}</span>
-            }
+            {club.crest_url ? (
+              <img
+                src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${club.crest_url}.webp`}
+                alt={club.name}
+                className="w-12 h-12 object-contain"
+              />
+            ) : (
+              <span
+                className="font-bold text-sm tracking-tight"
+                style={{ color: baseColor }}
+              >
+                {initials}
+              </span>
+            )}
           </div>
-        </div>
 
-        {/* Info */}
-        <div className="px-3 py-3 text-center">
-          <p className="text-sm font-semibold text-gray-800 line-clamp-1 group-hover:text-[#7F33D9] transition-colors">
+          {/* Nome do clube */}
+          <p className="text-[13px] font-medium text-gray-900 line-clamp-1 text-center group-hover:text-[#7F33D9] transition-colors w-full">
             {club.name}
           </p>
+
+          {/* Metadata: bandeira + país (terciário, mais discreto) */}
           {club.flag_url && (
-            <div className="mt-1.5 flex items-center justify-center gap-1.5">
-              <img src={club.flag_url} className="w-4 h-2.5 object-cover rounded-sm" alt="" />
-              <span className="text-[10px] text-gray-400 truncate max-w-[100px]">{club.country_name}</span>
+            <div className="flex items-center justify-center gap-1.5">
+              <img
+                src={club.flag_url}
+                className="w-3.5 h-2.5 object-cover rounded-[1px]"
+                alt=""
+              />
+              <span className="text-[11px] text-gray-400 truncate max-w-[100px]">
+                {club.country_name}
+              </span>
             </div>
           )}
         </div>
@@ -135,6 +192,7 @@ function ClubCard({ club, isFavorited, toggleFavorite }) {
     </Link>
   );
 }
+
 
 // ─── Card de país ─────────────────────────────────────────────────────────────
 
@@ -387,7 +445,7 @@ export default function DashClubs() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {clubs.map(club => (
                 <ClubCard
                   key={club.id_club}

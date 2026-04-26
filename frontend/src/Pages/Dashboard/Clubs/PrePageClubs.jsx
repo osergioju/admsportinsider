@@ -170,7 +170,7 @@ export default function PrePageClubs() {
                         className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center p-2.5"
                     >
                         <img
-                            src={theClub.club.crest_url}
+                            src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + theClub.club.crest_url + `.webp`}
                             alt={theClub.club.name}
                             className="w-full h-full object-contain drop-shadow-lg"
                         />
@@ -181,9 +181,9 @@ export default function PrePageClubs() {
                         <h1 className="text-white text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-bold drop-shadow-md truncate">
                             {theClub.club.name}
                         </h1>
-                        {theClub.club.short_name && (
+                        {theClub.club.description && (
                             <span className="inline-block mt-1.5 text-white/70 text-sm font-semibold bg-white/10 border border-white/20 px-2.5 py-0.5 rounded-full">
-                                {theClub.club.short_name}
+                                {theClub.club.description}
                             </span>
                         )}
                     </div>

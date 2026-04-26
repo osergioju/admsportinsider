@@ -1,5 +1,5 @@
 import { supabase } from "../utils/supabase.js";
-import db from  "../config/db.js";
+import db from "../config/db.js";
 import xlsx from "xlsx";
 
 const CLUBS_START_COL = 4;

@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronDown, Loader2, Timer, Star } from "lucide-react";
 import { useTranslation } from "../../context/TranslationContext";
 
 /* ── helpers ── */
-const fmt    = (v, d = 1) => v != null ? Number(v).toFixed(d) : "—";
-const fmtI   = v => v != null ? Number(v) : "—";
+const fmt = (v, d = 1) => v != null ? Number(v).toFixed(d) : "—";
+const fmtI = v => v != null ? Number(v) : "—";
 const fmtPct = v => v != null ? `${Number(v).toFixed(1)}%` : "—";
 const fmtDate = d => d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
 
@@ -25,11 +25,11 @@ function calcAge(b) {
 
 /* ── Position style ── */
 const POS_STYLE = {
-  "Goleiro":       { badge: "bg-blue-50   text-blue-700   border-blue-200"   },
-  "Zagueiro":      { badge: "bg-emerald-50 text-emerald-700 border-emerald-200"},
-  "Lateral":       { badge: "bg-teal-50   text-teal-700   border-teal-200"   },
+  "Goleiro": { badge: "bg-blue-50   text-blue-700   border-blue-200" },
+  "Zagueiro": { badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  "Lateral": { badge: "bg-teal-50   text-teal-700   border-teal-200" },
   "Meio-campista": { badge: "bg-violet-50  text-violet-700 border-violet-200" },
-  "Atacante":      { badge: "bg-orange-50  text-orange-700 border-orange-200" },
+  "Atacante": { badge: "bg-orange-50  text-orange-700 border-orange-200" },
 };
 const posStyle = pos => POS_STYLE[pos] ?? POS_STYLE["Meio-campista"];
 
@@ -110,10 +110,10 @@ function SectionLabel({ children }) {
 /* ── Tabs ── */
 const TABS = [
   { key: "participacao", label: "Participação" },
-  { key: "ofensivo",     label: "Ofensivo"     },
-  { key: "chutes",       label: "Chutes"       },
-  { key: "tecnico",      label: "Técnico"      },
-  { key: "disciplinar",  label: "Disciplinar"  },
+  { key: "ofensivo", label: "Ofensivo" },
+  { key: "chutes", label: "Chutes" },
+  { key: "tecnico", label: "Técnico" },
+  { key: "disciplinar", label: "Disciplinar" },
 ];
 
 /* ── CompetitionTabs ── */
@@ -142,32 +142,32 @@ function CompetitionTabs({ comp }) {
       {tab === "participacao" && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <BigStat value={fmtI(st.matches_total)}                       label={t("player.stat.total_matches","Partidas")} />
-            <BigStat value={fmtI(st.matches_started)}                     label={t("player.stat.as_starter",   "Titular")} />
-            <BigStat value={fmtI(st.minutes_total)}                       label={t("player.stat.total_minutes","Minutos")} icon={<Timer size={11} />} />
-            <BigStat value={st.rating > 0 && !isNaN(Number(st.rating)) ? fmt(st.rating, 2) : "—"} label={t("player.stat.avg_rating",   "Rating")}  numColor="text-amber-500" icon={<Star size={11} />} />
+            <BigStat value={fmtI(st.matches_total)} label={t("player.stat.total_matches", "Partidas")} />
+            <BigStat value={fmtI(st.matches_started)} label={t("player.stat.as_starter", "Titular")} />
+            <BigStat value={fmtI(st.minutes_total)} label={t("player.stat.total_minutes", "Minutos")} icon={<Timer size={11} />} />
+            <BigStat value={st.rating > 0 && !isNaN(Number(st.rating)) ? fmt(st.rating, 2) : "—"} label={t("player.stat.avg_rating", "Rating")} numColor="text-amber-500" icon={<Star size={11} />} />
           </div>
 
           <SectionLabel>Partidas e minutos</SectionLabel>
           <div className="space-y-1">
-            <SplitCard label={t("player.stat.matches",       "Partidas")} total={st.matches_total} home={st.matches_home} away={st.matches_away} />
-            <SplitCard label={t("player.stat.minutes_played","Minutos")}  total={st.minutes_total} home={st.minutes_home} away={st.minutes_away} />
+            <SplitCard label={t("player.stat.matches", "Partidas")} total={st.matches_total} home={st.matches_home} away={st.matches_away} />
+            <SplitCard label={t("player.stat.minutes_played", "Minutos")} total={st.minutes_total} home={st.minutes_home} away={st.minutes_away} />
           </div>
           <StatPillGrid>
-            <StatPill label={t("player.stat.minutes_per_game","Min/jogo")}
+            <StatPill label={t("player.stat.minutes_per_game", "Min/jogo")}
               value={st.minutes_per_match != null ? fmt(st.minutes_per_match) : (st.minutes_total && st.matches_total ? fmt(st.minutes_total / mp) : "—")} />
-            <StatPill label={t("player.stat.starter_matches","Titular")} value={fmtI(st.matches_started)} />
+            <StatPill label={t("player.stat.starter_matches", "Titular")} value={fmtI(st.matches_started)} />
           </StatPillGrid>
 
           <SectionLabel>Competição</SectionLabel>
           <StatPillGrid>
-            <StatPill wide label={t("player.stat.club",  "Clube")} value={
+            <StatPill wide label={t("player.stat.club", "Clube")} value={
               <Link to={`/dashboard/clubs/${comp.club.id}`} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.club.name}</Link>
             } />
-            <StatPill wide label={t("player.stat.league","Liga")} value={
+            <StatPill wide label={t("player.stat.league", "Liga")} value={
               <Link to={`/dashboard/league/${comp.league.id}`} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.league.name}</Link>
             } />
-            <StatPill label={t("player.stat.jersey",       "Camisa")}       value={comp.shirt_number ?? "—"} />
+            <StatPill label={t("player.stat.jersey", "Camisa")} value={comp.shirt_number ?? "—"} />
             <StatPill label={t("player.stat.market_value", "Valor mercado")}
               value={comp.market_value ? `€ ${Number(comp.market_value).toLocaleString("pt-BR")}` : "—"} />
           </StatPillGrid>
@@ -178,26 +178,26 @@ function CompetitionTabs({ comp }) {
       {tab === "ofensivo" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-            <BigStat value={fmtI(st.goals)}              label={t("player.stat.goals",       "Gols")}      numColor="text-emerald-600" />
-            <BigStat value={fmtI(st.assists)}            label={t("player.stat.assists_short","Assist.")}  numColor="text-blue-600"    />
-            <BigStat value={fmt(st.xg, 2)}               label="xG"                                        numColor="text-violet-600"  />
-            <BigStat value={fmtI(st.penalties_scored)}   label={t("player.stat.penalties",   "Pênaltis")}                             />
-            <BigStat value={fmtI(st.clean_sheets_total)} label={t("player.stat.clean_sheets","C. Sheets")}                            />
+            <BigStat value={fmtI(st.goals)} label={t("player.stat.goals", "Gols")} numColor="text-emerald-600" />
+            <BigStat value={fmtI(st.assists)} label={t("player.stat.assists_short", "Assist.")} numColor="text-blue-600" />
+            <BigStat value={fmt(st.xg, 2)} label="xG" numColor="text-violet-600" />
+            <BigStat value={fmtI(st.penalties_scored)} label={t("player.stat.penalties", "Pênaltis")} />
+            <BigStat value={fmtI(st.clean_sheets_total)} label={t("player.stat.clean_sheets", "C. Sheets")} />
           </div>
 
           <SectionLabel>Casa e fora</SectionLabel>
           <div className="space-y-1">
-            <SplitCard label={t("player.stat.goals",       "Gols")}        total={st.goals}              home={st.goals_home}        away={st.goals_away}        />
-            <SplitCard label={t("player.stat.assists",     "Assistências")} total={st.assists}            home={st.assists_home}      away={st.assists_away}      />
-            <SplitCard label={t("player.stat.clean_sheets","Clean sheets")} total={st.clean_sheets_total} home={st.clean_sheets_home} away={st.clean_sheets_away} />
+            <SplitCard label={t("player.stat.goals", "Gols")} total={st.goals} home={st.goals_home} away={st.goals_away} />
+            <SplitCard label={t("player.stat.assists", "Assistências")} total={st.assists} home={st.assists_home} away={st.assists_away} />
+            <SplitCard label={t("player.stat.clean_sheets", "Clean sheets")} total={st.clean_sheets_total} home={st.clean_sheets_home} away={st.clean_sheets_away} />
           </div>
 
           <SectionLabel>Detalhes</SectionLabel>
           <StatPillGrid>
-            <StatPill label={t("player.stat.penalties_scored","Pênaltis marcados")} value={fmtI(st.penalties_scored)} />
-            <StatPill label={t("player.stat.penalties_missed","Pênaltis perdidos")} value={fmtI(st.penalties_missed)} />
-            <StatPill label={t("player.stat.offsides",       "Impedimentos")}       value={fmtI(st.offsides)}        />
-            <StatPill label="xG total"                                               value={fmt(st.xg, 2)}            />
+            <StatPill label={t("player.stat.penalties_scored", "Pênaltis marcados")} value={fmtI(st.penalties_scored)} />
+            <StatPill label={t("player.stat.penalties_missed", "Pênaltis perdidos")} value={fmtI(st.penalties_missed)} />
+            <StatPill label={t("player.stat.offsides", "Impedimentos")} value={fmtI(st.offsides)} />
+            <StatPill label="xG total" value={fmt(st.xg, 2)} />
           </StatPillGrid>
         </div>
       )}
@@ -206,20 +206,20 @@ function CompetitionTabs({ comp }) {
       {tab === "chutes" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-2">
-            <BigStat value={fmtI(st.shots)}               label={t("player.tab.shots",         "Chutes")}   />
-            <BigStat value={fmtI(st.shots_on_target)}     label={t("player.stat.on_target_short","A gol")}  />
-            <BigStat value={fmtPct(st.shot_accuracy_pct)} label={t("player.stat.accuracy_short","Precisão")} numColor="text-emerald-600" />
+            <BigStat value={fmtI(st.shots)} label={t("player.tab.shots", "Chutes")} />
+            <BigStat value={fmtI(st.shots_on_target)} label={t("player.stat.on_target_short", "A gol")} />
+            <BigStat value={fmtPct(st.shot_accuracy_pct)} label={t("player.stat.accuracy_short", "Precisão")} numColor="text-emerald-600" />
           </div>
 
           <SectionLabel>Eficiência</SectionLabel>
           <StatPillGrid>
-            <StatPill label={t("player.stat.total_shots",  "Chutes totais")}    value={fmtI(st.shots)}            />
-            <StatPill label={t("player.stat.shots_per_game","Chutes/jogo")}     value={st.shots && st.matches_total ? fmt(st.shots / mp) : "—"} />
-            <StatPill label={t("player.stat.on_target",    "A gol")}            value={fmtI(st.shots_on_target)}  />
-            <StatPill label={t("player.stat.shot_accuracy","Precisão %")}       value={fmtPct(st.shot_accuracy_pct)} />
-            <StatPill label={t("player.stat.shots_on_target_per90","A gol/90")}
+            <StatPill label={t("player.stat.total_shots", "Chutes totais")} value={fmtI(st.shots)} />
+            <StatPill label={t("player.stat.shots_per_game", "Chutes/jogo")} value={st.shots && st.matches_total ? fmt(st.shots / mp) : "—"} />
+            <StatPill label={t("player.stat.on_target", "A gol")} value={fmtI(st.shots_on_target)} />
+            <StatPill label={t("player.stat.shot_accuracy", "Precisão %")} value={fmtPct(st.shot_accuracy_pct)} />
+            <StatPill label={t("player.stat.shots_on_target_per90", "A gol/90")}
               value={st.shots_on_target_per90 != null ? fmt(st.shots_on_target_per90, 2) : "—"} />
-            <StatPill label={t("player.stat.shots_on_target_per90_pct","Precisão percentil")}
+            <StatPill label={t("player.stat.shots_on_target_per90_pct", "Precisão percentil")}
               value={fmtPct(st.shots_on_target_per90_pct)} />
           </StatPillGrid>
         </div>
@@ -229,39 +229,39 @@ function CompetitionTabs({ comp }) {
       {tab === "tecnico" && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <BigStat value={fmtI(st.passes)}        label={t("player.stat.passes",       "Passes")}   />
-            <BigStat value={fmtPct(st.pass_completion_rate)} label={t("player.stat.pass_accuracy_short","Acerto")} numColor="text-blue-600" />
-            <BigStat value={fmtI(st.tackles)}       label={t("player.stat.tackles",      "Desarmes")} />
-            <BigStat value={fmtI(st.interceptions)} label={t("player.stat.interceptions","Intercep.")} />
+            <BigStat value={fmtI(st.passes)} label={t("player.stat.passes", "Passes")} />
+            <BigStat value={fmtPct(st.pass_completion_rate)} label={t("player.stat.pass_accuracy_short", "Acerto")} numColor="text-blue-600" />
+            <BigStat value={fmtI(st.tackles)} label={t("player.stat.tackles", "Desarmes")} />
+            <BigStat value={fmtI(st.interceptions)} label={t("player.stat.interceptions", "Intercep.")} />
           </div>
 
           <SectionLabel>Passes</SectionLabel>
           <StatPillGrid>
-            <StatPill label={t("player.stat.passes_correct","Total")}            value={fmtI(st.passes)}                    />
-            <StatPill label={t("player.stat.pass_rate",     "Taxa de acerto")}   value={fmtPct(st.pass_completion_rate)}    />
-            <StatPill label={t("player.stat.pass_completion_rate_pct","Acerto percentil")} value={fmtPct(st.pass_completion_rate_pct)} />
-            <StatPill label={t("player.stat.short_passes",  "Passes curtos")}    value={fmtI(st.short_passes)}              />
-            <StatPill label={t("player.stat.long_passes",   "Passes longos")}    value={fmtI(st.long_passes)}               />
-            <StatPill label={t("player.stat.key_passes",    "Passes-chave")}     value={fmtI(st.key_passes)}                />
+            <StatPill label={t("player.stat.passes_correct", "Total")} value={fmtI(st.passes)} />
+            <StatPill label={t("player.stat.pass_rate", "Taxa de acerto")} value={fmtPct(st.pass_completion_rate)} />
+            <StatPill label={t("player.stat.pass_completion_rate_pct", "Acerto percentil")} value={fmtPct(st.pass_completion_rate_pct)} />
+            <StatPill label={t("player.stat.short_passes", "Passes curtos")} value={fmtI(st.short_passes)} />
+            <StatPill label={t("player.stat.long_passes", "Passes longos")} value={fmtI(st.long_passes)} />
+            <StatPill label={t("player.stat.key_passes", "Passes-chave")} value={fmtI(st.key_passes)} />
           </StatPillGrid>
 
           <SectionLabel>Defesa e duelos</SectionLabel>
           <StatPillGrid>
-            <StatPill label={t("player.stat.tackles",        "Desarmes")}         value={fmtI(st.tackles)}             />
-            <StatPill label={t("player.stat.interceptions",  "Interceptações")}   value={fmtI(st.interceptions)}       />
-            <StatPill label={t("player.stat.interceptions_per90","Interc./90")}
+            <StatPill label={t("player.stat.tackles", "Desarmes")} value={fmtI(st.tackles)} />
+            <StatPill label={t("player.stat.interceptions", "Interceptações")} value={fmtI(st.interceptions)} />
+            <StatPill label={t("player.stat.interceptions_per90", "Interc./90")}
               value={st.interceptions_per90 != null ? fmt(st.interceptions_per90, 2) : "—"} />
-            <StatPill label={t("player.stat.crosses",        "Cruzamentos")}      value={fmtI(st.crosses_total)}       />
-            <StatPill label={t("player.stat.dribbles_attempted","Dribles tent.")} value={fmtI(st.dribbles_total)}      />
-            <StatPill label={t("player.stat.dribbles_success","Dribles ok")}      value={fmtI(st.dribbles_successful)} />
-            <StatPill label={t("player.stat.total_duels",    "Duelos")}           value={fmtI(st.duels)}               />
-            <StatPill label={t("player.stat.duels_won",      "Duelos vencidos %")} value={fmtPct(st.duels_won_pct)}   />
+            <StatPill label={t("player.stat.crosses", "Cruzamentos")} value={fmtI(st.crosses_total)} />
+            <StatPill label={t("player.stat.dribbles_attempted", "Dribles tent.")} value={fmtI(st.dribbles_total)} />
+            <StatPill label={t("player.stat.dribbles_success", "Dribles ok")} value={fmtI(st.dribbles_successful)} />
+            <StatPill label={t("player.stat.total_duels", "Duelos")} value={fmtI(st.duels)} />
+            <StatPill label={t("player.stat.duels_won", "Duelos vencidos %")} value={fmtPct(st.duels_won_pct)} />
           </StatPillGrid>
 
           <SectionLabel>Goleiro</SectionLabel>
           <StatPillGrid>
-            <StatPill label={t("player.stat.saves",       "Defesas")}        value={fmtI(st.saves_total)}      />
-            <StatPill label={t("player.stat.saves_inside","Defesas na área")} value={fmtI(st.inside_box_saves)} />
+            <StatPill label={t("player.stat.saves", "Defesas")} value={fmtI(st.saves_total)} />
+            <StatPill label={t("player.stat.saves_inside", "Defesas na área")} value={fmtI(st.inside_box_saves)} />
           </StatPillGrid>
         </div>
       )}
@@ -270,19 +270,19 @@ function CompetitionTabs({ comp }) {
       {tab === "disciplinar" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-2">
-            <BigStat value={fmtI(st.yellow_cards)}    label={t("player.stat.yellow_cards","Amarelos")}  numColor="text-amber-500"  icon={<YellowCard />} />
-            <BigStat value={fmtI(st.red_cards)}       label={t("player.stat.red_cards",   "Vermelhos")} numColor="text-red-600"    icon={<RedCard />}    />
-            <BigStat value={fmtI(st.fouls_committed)} label={t("player.stat.fouls",       "Faltas")}    />
+            <BigStat value={fmtI(st.yellow_cards)} label={t("player.stat.yellow_cards", "Amarelos")} numColor="text-amber-500" icon={<YellowCard />} />
+            <BigStat value={fmtI(st.red_cards)} label={t("player.stat.red_cards", "Vermelhos")} numColor="text-red-600" icon={<RedCard />} />
+            <BigStat value={fmtI(st.fouls_committed)} label={t("player.stat.fouls", "Faltas")} />
           </div>
 
           <SectionLabel>Detalhe</SectionLabel>
           <StatPillGrid>
-            <StatPill label={t("player.stat.yellow_cards","Amarelos")}
+            <StatPill label={t("player.stat.yellow_cards", "Amarelos")}
               value={<span className="inline-flex items-center gap-1.5 text-amber-600 font-bold"><YellowCard size="sm" />{fmtI(st.yellow_cards)}</span>} />
-            <StatPill label={t("player.stat.red_cards","Vermelhos")}
+            <StatPill label={t("player.stat.red_cards", "Vermelhos")}
               value={<span className="inline-flex items-center gap-1.5 text-red-600 font-bold"><RedCard size="sm" />{fmtI(st.red_cards)}</span>} />
-            <StatPill label={t("player.stat.fouls",         "Faltas cometidas")} value={fmtI(st.fouls_committed)} />
-            <StatPill label={t("player.stat.fouls_per_game","Faltas/jogo")}
+            <StatPill label={t("player.stat.fouls", "Faltas cometidas")} value={fmtI(st.fouls_committed)} />
+            <StatPill label={t("player.stat.fouls_per_game", "Faltas/jogo")}
               value={st.fouls_committed && st.matches_total ? fmt(st.fouls_committed / mp) : "—"} />
           </StatPillGrid>
         </div>
@@ -297,9 +297,9 @@ export default function Players() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [data, setData]         = useState(null);
-  const [season, setSeason]     = useState(null);
-  const [loading, setLoading]   = useState(true);
+  const [data, setData] = useState(null);
+  const [season, setSeason] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState({});
 
   useEffect(() => { loadPlayer(); }, [id]);
@@ -325,10 +325,10 @@ export default function Players() {
     return {
       matches: sumStat(s, "matches_total"),
       minutes: sumStat(s, "minutes_total"),
-      goals:   sumStat(s, "goals"),
+      goals: sumStat(s, "goals"),
       assists: sumStat(s, "assists"),
-      yellow:  sumStat(s, "yellow_cards"),
-      red:     sumStat(s, "red_cards"),
+      yellow: sumStat(s, "yellow_cards"),
+      red: sumStat(s, "red_cards"),
       rating: (() => {
         const valid = s.map(c => Number(c.stats.rating)).filter(v => v > 0 && !isNaN(v));
         return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
@@ -346,7 +346,7 @@ export default function Players() {
 
   const { player, seasons, availableSeasons } = data;
   const age = calcAge(player.birthday);
-  const ps  = posStyle(player.position);
+  const ps = posStyle(player.position);
 
   return (
     <div className="w-full pb-12 space-y-4">
@@ -360,9 +360,9 @@ export default function Players() {
           </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-5 px-6 py-5">
+        <div className="items-center flex flex-col sm:flex-row gap-5 px-6 py-5">
           {/* Avatar */}
-          <div className="shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
+          <div className="lg:w-40 lg:h-40 shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
             <img
               src={player.photo_url ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(player.full_name)}&background=f3f4f6&color=6b7280&size=200`}
@@ -375,7 +375,7 @@ export default function Players() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="min-w-0">
-                <h1 className="text-lg font-bold text-gray-900 leading-tight truncate">{player.full_name}</h1>
+                <h1 className="text-lg lg:text-2xl font-bold text-gray-900 leading-tight truncate">{player.full_name}</h1>
                 {player.position && (
                   <span className={`inline-flex items-center mt-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${ps.badge}`}>
                     {player.position}
@@ -390,7 +390,7 @@ export default function Players() {
             <div className="flex flex-wrap gap-x-6 gap-y-1.5">
               {player.birthday && (
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("player.stat.birth","Nasc.")}</span>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("player.stat.birth", "Nasc.")}</span>
                   <span className="text-sm text-gray-700 font-medium">
                     {fmtDate(player.birthday)}{age ? ` · ${age} anos` : ""}
                   </span>
@@ -398,7 +398,7 @@ export default function Players() {
               )}
               {player.nationality && (
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("player.stat.nationality","Nac.")}</span>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("player.stat.nationality", "Nac.")}</span>
                   <span className="text-sm text-gray-700 font-medium">{player.nationality}</span>
                 </div>
               )}
@@ -409,8 +409,8 @@ export default function Players() {
 
       {/* ── Seletor de temporada ── */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm font-semibold text-gray-500 flex items-center gap-1.5">
-          <Timer size={14} />{t("sports.season","Temporada")}
+        <span className="w-full text-sm font-semibold text-gray-500 flex items-center gap-1.5">
+          <Timer size={14} />{t("sports.season", "Temporada")}
         </span>
         <div className="flex gap-1.5 flex-wrap">
           {(availableSeasons ?? []).map(y => (
@@ -428,24 +428,24 @@ export default function Players() {
       {/* ── Summary agregado ── */}
       {summary && (
         <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-          <BigStat value={fmtI(summary.matches)} label={t("player.stat.matches",     "Partidas")}  />
-          <BigStat value={fmtI(summary.minutes)} label={t("player.stat.minutes",     "Minutos")}   icon={<Timer size={11} />} />
-          <BigStat value={fmtI(summary.goals)}   label={t("player.stat.goals",       "Gols")}      numColor="text-emerald-600" />
-          <BigStat value={fmtI(summary.assists)} label={t("player.stat.assists_short","Assist.")}  numColor="text-blue-600" />
-          <BigStat value={fmtI(summary.yellow)}  label={t("player.stat.yellow_short","Amarelos")} numColor="text-amber-500" icon={<YellowCard size="sm" />} />
-          <BigStat value={fmtI(summary.red)}     label={t("player.stat.red_cards",   "Vermelhos")} numColor="text-red-600"  icon={<RedCard size="sm" />} />
-          <BigStat value={summary.rating != null ? fmt(summary.rating, 1) : "—"} label={t("player.stat.rating","Rating")} numColor="text-amber-500" icon={<Star size={11} />} />
+          <BigStat value={fmtI(summary.matches)} label={t("player.stat.matches", "Partidas")} />
+          <BigStat value={fmtI(summary.minutes)} label={t("player.stat.minutes", "Minutos")} icon={<Timer size={11} />} />
+          <BigStat value={fmtI(summary.goals)} label={t("player.stat.goals", "Gols")} numColor="text-emerald-600" />
+          <BigStat value={fmtI(summary.assists)} label={t("player.stat.assists_short", "Assist.")} numColor="text-blue-600" />
+          <BigStat value={fmtI(summary.yellow)} label={t("player.stat.yellow_short", "Amarelos")} numColor="text-amber-500" icon={<YellowCard size="sm" />} />
+          <BigStat value={fmtI(summary.red)} label={t("player.stat.red_cards", "Vermelhos")} numColor="text-red-600" icon={<RedCard size="sm" />} />
+          <BigStat value={summary.rating != null ? fmt(summary.rating, 1) : "—"} label={t("player.stat.rating", "Rating")} numColor="text-amber-500" icon={<Star size={11} />} />
         </div>
       )}
 
       {/* ── Competições (accordion) ── */}
       {loading ? (
         <div className="flex justify-center py-10 text-gray-400 gap-2">
-          <Loader2 className="animate-spin w-5 h-5" /><span className="text-sm">{t("ui.loading","Carregando...")}</span>
+          <Loader2 className="animate-spin w-5 h-5" /><span className="text-sm">{t("ui.loading", "Carregando...")}</span>
         </div>
       ) : !seasons?.length ? (
         <div className="py-12 text-center text-gray-400 text-sm">
-          {t("sports.no_data_season","Nenhum dado para a temporada")} {season}.
+          {t("sports.no_data_season", "Nenhum dado para a temporada")} {season}.
         </div>
       ) : seasons.map(comp => {
         const isOpen = !!expanded[comp.league.id];

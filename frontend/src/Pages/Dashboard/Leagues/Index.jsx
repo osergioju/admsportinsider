@@ -49,8 +49,8 @@ function Pagination({ page, totalPages, total, onChange }) {
               key={p}
               onClick={() => onChange(p)}
               className={`w-9 h-9 rounded-full text-sm font-medium transition ${p === page
-                  ? "bg-[#7F33D9] text-white"
-                  : "border border-gray-200 text-gray-600 hover:border-[#7F33D9] hover:text-[#7F33D9]"
+                ? "bg-[#7F33D9] text-white"
+                : "border border-gray-200 text-gray-600 hover:border-[#7F33D9] hover:text-[#7F33D9]"
                 }`}
             >
               {p}
@@ -115,7 +115,7 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
             />
           </button>
 
-          <div className="relative z-10 w-20 h-20 bg-white/10  rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
+          <div className="bg-white relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
             {league.logo_url
               ? <img src={league.logo_url} alt={league.name} className="w-14 h-14 object-contain drop-shadow-lg" />
               : <span className="text-white font-black text-xl italic">{initials}</span>
@@ -173,6 +173,7 @@ export default function DashLeagues() {
 
   const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
+  const [continentalLeagues, setContinentalLeagues] = useState([]);
 
   const [leagues, setLeagues] = useState([]);
   const [total, setTotal] = useState(0);
@@ -186,11 +187,15 @@ export default function DashLeagues() {
 
   const debounceRef = useRef(null);
 
-  // ── Carrega países (uma vez) ────────────────────────────────────────────
+  // ── Carrega países e ligas continentais (uma vez) ───────────────────────
   useEffect(() => {
-    api.get("/dashboard/countries")
-      .then(({ data }) => setCountries(data.countries || []))
-      .catch(console.error)
+    Promise.all([
+      api.get("/dashboard/countries"),
+      api.get("/dashboard/leagues/continental"),
+    ]).then(([{ data: countryData }, { data: contData }]) => {
+      setCountries(countryData.countries || []);
+      setContinentalLeagues(contData.leagues || []);
+    }).catch(console.error)
       .finally(() => setCountriesLoading(false));
   }, []);
 
@@ -315,31 +320,61 @@ export default function DashLeagues() {
         )}
       </div>
 
-      {/* ── View: países ────────────────────────────────────────────────── */}
+      {/* ── View: exploração ────────────────────────────────────────────── */}
       {!inResultsView && (
-        <div>
-          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
-            {t("ui.explore_by_country", "Explorar por país")}
-          </p>
+        <div className="space-y-6">
 
-          {countriesLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {Array.from({ length: 15 }).map((_, i) => (
-                <div key={i} className="h-[58px] bg-gray-100 rounded-2xl animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {leagueCountries.map(c => (
-                <CountryCard
-                  key={c.id}
-                  country={c}
-                  count={Number(c.leagues_count)}
-                  onClick={() => handleCountryClick(c)}
-                />
-              ))}
+          {/* Competições Continentais */}
+          {(countriesLoading || continentalLeagues.length > 0) && (
+            <div>
+              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
+                Competições Continentais
+              </p>
+              {countriesLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-[58px] bg-gray-100 rounded-2xl animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {continentalLeagues.map(league => (
+                    <LeagueCard
+                      key={league.id_league}
+                      league={league}
+                      isFavorited={isFavorited}
+                      toggleFavorite={toggleFavorite}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
+          {/* Explorar por país */}
+          <div>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
+              {t("ui.explore_by_country", "Explorar por país")}
+            </p>
+            {countriesLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <div key={i} className="h-[58px] bg-gray-100 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {leagueCountries.map(c => (
+                  <CountryCard
+                    key={c.id}
+                    country={c}
+                    count={Number(c.leagues_count)}
+                    onClick={() => handleCountryClick(c)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

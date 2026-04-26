@@ -312,7 +312,12 @@ export default function UploadPlayersPage() {
                     — "{preview.csvLeague}" encontrada automaticamente
                   </span>
                 )}
-                {!preview.foundLeague && (
+                {!preview.foundLeague && preview.isMultiCountry && (
+                  <span className="ml-2 text-purple-400 normal-case font-normal">
+                    — selecione a liga continental
+                  </span>
+                )}
+                {!preview.foundLeague && !preview.isMultiCountry && (
                   <span className="ml-2 text-amber-500 normal-case font-normal">
                     — "{preview.csvLeague}" não encontrada, selecione abaixo
                   </span>
@@ -321,7 +326,9 @@ export default function UploadPlayersPage() {
               <select value={leagueId} onChange={e => setLeagueId(e.target.value)} className={selectClass}>
                 <option value="">Selecione a liga</option>
                 {preview.allLeagues.map(l => (
-                  <option key={l.id_league} value={l.id_league}>{l.name} ({l.country_name})</option>
+                  <option key={l.id_league} value={l.id_league}>
+                    {l.name}{l.country_name ? ` (${l.country_name})` : ""}
+                  </option>
                 ))}
               </select>
             </div>

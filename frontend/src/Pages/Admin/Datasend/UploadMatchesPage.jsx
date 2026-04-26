@@ -179,25 +179,40 @@ export default function UploadMatchesPage() {
               </div>
             </div>
 
+            {/* Filtro de País — só para ligas nacionais */}
+            {!preview.isMultiCountry && (
+              <div>
+                <label className={labelClass}>Filtrar por País</label>
+                <select value={selectedCountry} onChange={e => { setSelectedCountry(e.target.value); setLeague(""); }} className={selectClass}>
+                  <option value="">Todos os países</option>
+                  {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
+
             {/* Liga */}
             <div>
-              <label className={labelClass}>Filtrar por País</label>
-              <select value={selectedCountry} onChange={e => { setSelectedCountry(e.target.value); setLeague(""); }} className={selectClass}>
-                <option value="">Todos os países</option>
-                {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Liga</label>
+              <label className={labelClass}>
+                Liga
+                {preview.isMultiCountry && (
+                  <span className="ml-2 text-purple-400 normal-case font-normal">— selecione a liga continental</span>
+                )}
+              </label>
               {filteredLeagues.length === 0 ? (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-sm text-amber-700">
                   <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                  Nenhuma liga encontrada. Cadastre uma liga primeiro.
+                  {preview.isMultiCountry
+                    ? "Nenhuma liga continental cadastrada. Cadastre uma liga sem país associado."
+                    : "Nenhuma liga encontrada. Cadastre uma liga primeiro."}
                 </div>
               ) : (
                 <select value={league} onChange={e => setLeague(e.target.value)} className={selectClass}>
                   <option value="">Selecione a liga</option>
-                  {filteredLeagues.map(l => <option key={l.id_league} value={l.id_league}>{l.name} — {l.country_name}</option>)}
+                  {filteredLeagues.map(l => (
+                    <option key={l.id_league} value={l.id_league}>
+                      {l.name}{l.country_name ? ` — ${l.country_name}` : ""}
+                    </option>
+                  ))}
                 </select>
               )}
             </div>

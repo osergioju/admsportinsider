@@ -62,7 +62,7 @@ export async function getClubCompetitions(req, res) {
       JOIN competition_seasons cs ON cs.id_competition_season = ccs.id_competition_season
       JOIN leagues l ON l.id_league = cs.id_league
       JOIN seasons s ON s.id_season = cs.id_season
-      JOIN countries co ON co.id_country = l.id_country
+      LEFT JOIN countries co ON co.id_country = l.id_country
       WHERE ccs.id_club = $1 AND s.year = $2
     `, [clubId, season]);
 
@@ -152,6 +152,43 @@ export async function getClubCompetitions(req, res) {
         .sort((a, b) => Number(a[0]) - Number(b[0]))
         .map(([week, games]) => ({ week: Number(week), games }));
 
+      // For knockout competitions fetch ALL league matches so the frontend can
+      // build the full bracket and then extract only this club's confrontos.
+      const seasonFmtKey = String(season);
+      const seasonFmt = comp.structure_json?.[seasonFmtKey]?.tipo || comp.format || "";
+      const isKnockoutComp = !["pontos_corridos", "pontos_corridos_turno_unico", "grupos", "apertura_clausura"].includes(seasonFmt);
+
+      let leagueMatchesGrouped = [];
+      if (isKnockoutComp) {
+        const allMatchRes = await db.query(`
+          SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals,
+                 hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest,
+                 ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest
+          FROM matches m
+          JOIN clubs hc ON hc.id_club = m.home_club_id
+          JOIN clubs ac ON ac.id_club = m.away_club_id
+          WHERE m.id_league = $1 AND m.id_season = $2
+          ORDER BY m.game_week ASC NULLS LAST, m.match_date ASC
+        `, [comp.id_league, comp.id_season]);
+
+        const allByWeek = {};
+        for (const m of allMatchRes.rows) {
+          const w = m.game_week ?? 0;
+          if (!allByWeek[w]) allByWeek[w] = [];
+          allByWeek[w].push({
+            id: m.id_match,
+            date: m.match_date,
+            home: { id: m.home_id, name: m.home_name, crest: m.home_crest },
+            away: { id: m.away_id, name: m.away_name, crest: m.away_crest },
+            home_goals: m.home_goals,
+            away_goals: m.away_goals,
+          });
+        }
+        leagueMatchesGrouped = Object.entries(allByWeek)
+          .sort((a, b) => Number(a[0]) - Number(b[0]))
+          .map(([week, games]) => ({ week: Number(week), games }));
+      }
+
       const buildRow = (r, posF, wF, dF, lF, gpF, gcF, mF) => ({
         id: r.id_club,
         name: r.club_name,
@@ -220,6 +257,7 @@ export async function getClubCompetitions(req, res) {
         },
 
         matches: matchesGrouped,
+        leagueMatches: leagueMatchesGrouped,
         form,
       });
     }
@@ -373,23 +411,27 @@ export async function getClubPlayers(req, res) {
 
   try {
     const result = await db.query(`
-      SELECT
-        p.id_player,
-        p.full_name,
-        p.birthday,
-        p.position,
-        co.name     AS nationality,
-        co.flag_url,
-        ps.shirt_number,
-        ps.market_value,
-        s.year
-      FROM player_seasons ps
-      JOIN players p ON p.id_player = ps.id_player
-      JOIN club_league_seasons cls ON cls.id_club_league_season = ps.id_club_league_season
-      JOIN seasons s ON s.id_season = cls.id_season
-      LEFT JOIN countries co ON co.id_country = p.nationality
-      WHERE cls.id_club = $1 AND s.year = $2
-      ORDER BY ps.shirt_number ASC NULLS LAST
+      SELECT * FROM (
+        SELECT DISTINCT ON (p.id_player)
+          p.id_player,
+          p.full_name,
+          p.birthday,
+          p.position,
+          p.photo_url,
+          co.name AS nationality,
+          co.flag_url,
+          ps.shirt_number,
+          ps.market_value,
+          s.year
+        FROM player_seasons ps
+        JOIN players p ON p.id_player = ps.id_player
+        JOIN club_league_seasons cls ON cls.id_club_league_season = ps.id_club_league_season
+        JOIN seasons s ON s.id_season = cls.id_season
+        LEFT JOIN countries co ON co.id_country = p.nationality
+        WHERE cls.id_club = $1 AND s.year = $2
+        ORDER BY p.id_player, ps.shirt_number ASC NULLS LAST
+      ) sub
+      ORDER BY shirt_number ASC NULLS LAST
     `, [clubId, season]);
 
     const players = result.rows.map(p => ({
@@ -400,6 +442,7 @@ export async function getClubPlayers(req, res) {
       age: calcAge(p.birthday),
       nationality: p.nationality || "—",
       flag_url: p.flag_url,
+      photo_url: p.photo_url,
       market_value: p.market_value,
     }));
 
@@ -605,7 +648,7 @@ export async function getPlayerDetail(req, res) {
 function computePhaseStandings(rawRows) {
   const clubs = new Map();
   const get = (id, name, crest) => {
-    if (!clubs.has(id)) clubs.set(id, { id, name, crest, j:0, v:0, e:0, d:0, gp:0, gc:0 });
+    if (!clubs.has(id)) clubs.set(id, { id, name, crest, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 });
     return clubs.get(id);
   };
   for (const m of rawRows) {
@@ -617,9 +660,9 @@ function computePhaseStandings(rawRows) {
     if (hg > ag) { h.v++; a.d++; } else if (hg < ag) { a.v++; h.d++; } else { h.e++; a.e++; }
   }
   return [...clubs.values()]
-    .map(c => ({ ...c, pts: c.v*3+c.e, sg: c.gp-c.gc, pct: c.j>0 ? Math.round(((c.v*3+c.e)/(c.j*3))*100) : 0 }))
-    .sort((a, b) => (b.pts-a.pts) || (b.sg-a.sg) || (b.gp-a.gp))
-    .map((c, i) => ({ ...c, pos: i+1 }));
+    .map(c => ({ ...c, pts: c.v * 3 + c.e, sg: c.gp - c.gc, pct: c.j > 0 ? Math.round(((c.v * 3 + c.e) / (c.j * 3)) * 100) : 0 }))
+    .sort((a, b) => (b.pts - a.pts) || (b.sg - a.sg) || (b.gp - a.gp))
+    .map((c, i) => ({ ...c, pos: i + 1 }));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -645,7 +688,7 @@ export async function getLeagueSports(req, res) {
              l.structure_json,
              c.name AS country_name, c.flag_url
       FROM leagues l
-      JOIN countries c ON c.id_country = l.id_country
+      LEFT JOIN countries c ON c.id_country = l.id_country
       WHERE l.id_league = $1
     `, [leagueId]);
     if (!leagueRes.rows.length) return res.status(404).json({ error: 'Liga não encontrada' });
@@ -675,9 +718,40 @@ export async function getLeagueSports(req, res) {
     const fmt = seasonConfig?.tipo || league.format || 'pontos_corridos';
     const isAperturaClausura = fmt === 'apertura_clausura';
 
-    // Busca partidas brutas (sempre necessário)
+    // Busca fases configuradas (compatível com estrutura antiga "fases" e nova "torneios")
+    const configuredFases = seasonConfig?.fases ?? [];
+    // Para apertura_clausura com novo formato: deriva os torneios
+    const configuredTorneios = seasonConfig?.torneios ?? null; // [{ key, nome, fases }]
+    const acTorneioKeys = configuredTorneios
+      ? configuredTorneios.map(t => t.key)
+      : configuredFases.map(f =>
+        (f.nome || '').toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")
+      );
+    const isMultiFase = isAperturaClausura || (configuredFases.length > 1 && ['misto', 'personalizado', 'apertura_clausura'].includes(fmt));
+
+    // Para apertura_clausura: normaliza qualquer phase_key para o torneio pai
+    // Ex: "Apertura" → "apertura", "apertura_fase_de_grupos" → "apertura", "fase_1" → melhor match
+    const normalizeToTorneio = isAperturaClausura ? (phaseKey) => {
+      if (!phaseKey) return null;
+      const lower = phaseKey.toLowerCase();
+      const torneioKeys = acTorneioKeys.length ? acTorneioKeys : ['clausura', 'apertura'];
+      // Match exato
+      if (torneioKeys.includes(lower)) return lower;
+      // Phase_key começa com torneio key (ex: apertura_fase_de_grupos → apertura)
+      for (const tk of torneioKeys) {
+        if (lower.startsWith(tk + '_') || lower === tk) return tk;
+      }
+      // Match parcial (ex: "Apertura" → "apertura" quando acTorneioKeys = ["apertura","clausura"])
+      for (const tk of torneioKeys) {
+        if (lower.includes(tk) || tk.includes(lower)) return tk;
+      }
+      return lower; // retorna normalizado mas sem match
+    } : null;
+
+    // Busca partidas brutas (sempre necessário) — inclui phase_key
     const matchesRes = await db.query(`
       SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
+             m.phase_key,
              hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest,
              ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest,
              ms.home_goals_ht, ms.away_goals_ht
@@ -689,34 +763,123 @@ export async function getLeagueSports(req, res) {
       ORDER BY m.game_week ASC NULLS LAST, m.match_date ASC
     `, [leagueId, idSeason]);
 
-    // Detecta ponto de corte Apertura/Clausura por gap temporal > 45 dias
-    let splitDate = null;
+    // Verifica se as partidas já foram mapeadas via phase_key (fonte de verdade)
+    // Um mapeamento é considerado "confirmado" se ≥50% das partidas com data têm phase_key
+    const withDate = matchesRes.rows.filter(m => m.match_date);
+    const withPhaseKey = withDate.filter(m => m.phase_key);
+    const phaseKeyConfirmed = withDate.length > 0 && (withPhaseKey.length / withDate.length) >= 0.5;
+
+    // Calcula phase das partidas:
+    // Para apertura_clausura: SEMPRE usa detecção temporal para o split apertura/clausura.
+    // Phase_keys como "fase_1" ou "partidas_interzonais" são sub-fases dentro de um torneio,
+    // não o torneio em si — só datas garantem o split correto.
+    // Para outros formatos: usa phase_key se confirmado, senão undefined.
+    let resolvePhase;
+
     if (isAperturaClausura) {
-      const sorted = matchesRes.rows
-        .filter(r => r.match_date)
-        .sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
-      const GAP_MS = 45 * 24 * 3600 * 1000;
-      for (let i = 1; i < sorted.length; i++) {
-        if (new Date(sorted[i].match_date) - new Date(sorted[i-1].match_date) > GAP_MS) {
-          splitDate = sorted[i].match_date;
-          break;
-        }
+      const torneioKeys = acTorneioKeys.length >= 2 ? acTorneioKeys : ['apertura', 'clausura'];
+      const torneioKeysLower = torneioKeys.map(k => k.toLowerCase());
+      const key0 = torneioKeys[0];
+      const key1 = torneioKeys[1];
+
+      console.log(`\n========== [getLeagueSports] AC DIAGNOSTIC ==========`);
+      console.log(`League=${leagueId} Season=${season} Torneios=${JSON.stringify(torneioKeys)}`);
+      console.log(`configuredTorneios:`, JSON.stringify((configuredTorneios ?? []).map(t => ({ key: t.key, nome: t.nome, startDate: t.startDate, numFases: t.fases?.length })), null, 2));
+      console.log(`Total matches: ${matchesRes.rows.length}, com data: ${matchesRes.rows.filter(m => m.match_date).length}`);
+      const phaseKeyStats = {};
+      for (const m of matchesRes.rows) {
+        const k = m.phase_key ?? 'null';
+        phaseKeyStats[k] = (phaseKeyStats[k] ?? 0) + 1;
       }
+      console.log(`phase_key distribution:`, JSON.stringify(phaseKeyStats, null, 2));
+
+      // Tenta bater phase_key direto com torneio key (ex: "Apertura" → "apertura")
+      const directPhaseMatch = (pk) => {
+        if (!pk) return null;
+        const lower = pk.toLowerCase();
+        for (const tk of torneioKeysLower) {
+          if (lower === tk) return tk;
+          if (lower.startsWith(tk + '_')) return tk;
+        }
+        return null;
+      };
+
+      // 1) PRIMÁRIO: startDate configurado
+      // Funciona com 2 datas (ambos configurados) ou 1 data no torneio POSTERIOR (key1/clausura).
+      // Se apenas o torneio inicial (key0) tem data, não é suficiente para determinar onde o segundo começa
+      // → cai no fallback temporal.
+      const torneiosComData = (configuredTorneios ?? []).filter(t => t.startDate);
+      // Considera utilizável se: >=2 datas, ou a única data é de um torneio que NÃO seja key0
+      const usableStartDates = torneiosComData.length >= 2
+        || (torneiosComData.length === 1 && torneiosComData[0].key !== key0);
+
+      if (usableStartDates) {
+        // Torneio sem startDate recebe todas as partidas ANTES da primeira data configurada (= é o inicial)
+        const noDateKey = torneioKeys.find(k => !torneiosComData.some(t => t.key === k)) ?? key0;
+        const sorted = [...torneiosComData].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        console.log(`[AC] Usando startDate. noDateKey=${noDateKey}, sorted=${JSON.stringify(sorted.map(t => ({ key: t.key, startDate: t.startDate })))}`);
+        resolvePhase = (m) => {
+          const direct = directPhaseMatch(m.phase_key);
+          if (direct) return direct;
+          if (!m.match_date) return noDateKey;
+          const ms = new Date(m.match_date).getTime();
+          let assigned = noDateKey;
+          for (const t of sorted) {
+            if (ms >= new Date(t.startDate).getTime()) assigned = t.key;
+          }
+          return assigned;
+        };
+      } else {
+        // 2) FALLBACK: maior gap temporal (> 15 dias)
+        const sortedByDate = matchesRes.rows
+          .filter(r => r.match_date)
+          .sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+        const MIN_GAP_MS = 15 * 24 * 3600 * 1000;
+        let maxGapMs = 0;
+        let splitDate = null;
+        for (let i = 1; i < sortedByDate.length; i++) {
+          const gap = new Date(sortedByDate[i].match_date) - new Date(sortedByDate[i - 1].match_date);
+          if (gap > maxGapMs && gap >= MIN_GAP_MS) {
+            maxGapMs = gap;
+            splitDate = sortedByDate[i].match_date;
+          }
+        }
+        console.log(`[AC] Usando temporal gap. splitDate=${splitDate}, maxGap=${Math.round(maxGapMs / 86400000)}d`);
+
+        resolvePhase = (m) => {
+          const direct = directPhaseMatch(m.phase_key);
+          if (direct) return direct;
+          if (!splitDate) return key0;
+          return m.match_date && new Date(m.match_date) >= new Date(splitDate) ? key1 : key0;
+        };
+      }
+    } else if (phaseKeyConfirmed) {
+      resolvePhase = (m) => m.phase_key ?? undefined;
+    } else {
+      resolvePhase = () => undefined;
     }
 
     // Classificação
     let standings;
     if (isAperturaClausura) {
-      const clausuraRows = splitDate
-        ? matchesRes.rows.filter(m => !m.match_date || new Date(m.match_date) < new Date(splitDate))
-        : matchesRes.rows;
-      const aperturaRows = splitDate
-        ? matchesRes.rows.filter(m => m.match_date && new Date(m.match_date) >= new Date(splitDate))
-        : [];
-      standings = {
-        clausura: computePhaseStandings(clausuraRows),
-        apertura: computePhaseStandings(aperturaRows),
-      };
+      // Agrupa por torneio (phase já está normalizado para torneio key)
+      const byTorneio = {};
+      for (const m of matchesRes.rows) {
+        const tk = resolvePhase(m) ?? 'sem_fase';
+        if (!byTorneio[tk]) byTorneio[tk] = [];
+        byTorneio[tk].push(m);
+      }
+      const splitResult = Object.fromEntries(Object.entries(byTorneio).map(([k, v]) => [k, v.length]));
+      console.log(`[AC] Split result:`, JSON.stringify(splitResult));
+
+      const torneioKeys = acTorneioKeys.length >= 2
+        ? acTorneioKeys
+        : ['apertura', 'clausura'];
+
+      standings = {};
+      for (const tk of torneioKeys) {
+        standings[tk] = computePhaseStandings(byTorneio[tk] ?? []);
+      }
     } else {
       const standingsRes = await db.query(`
         SELECT c.id_club, c.name AS club_name, c.crest_url,
@@ -733,7 +896,6 @@ export async function getLeagueSports(req, res) {
         JOIN clubs c ON c.id_club = ccs.id_club
         WHERE ccs.id_competition_season = $1
         ORDER BY
-          -- posição 0 = não preenchida, cai no fallback por pontos
           CASE WHEN ccs.position_total = 0 OR ccs.position_total IS NULL THEN 1 ELSE 0 END,
           ccs.position_total ASC NULLS LAST,
           (ccs.wins_total * 3 + ccs.draws_total) DESC NULLS LAST,
@@ -741,7 +903,6 @@ export async function getLeagueSports(req, res) {
           ccs.goals_for_total DESC NULLS LAST
       `, [idCS]);
 
-      // pos=0 é tratado como null → StandingsTable usa o índice como fallback
       const mkRow = (r, posF, wF, dF, lF, gpF, gcF, mF) => ({
         id: r.id_club, name: r.club_name, crest: r.crest_url,
         pos: r[posF] || null,
@@ -761,16 +922,14 @@ export async function getLeagueSports(req, res) {
       };
     }
 
-    // Agrupa partidas por rodada, adicionando fase para apertura_clausura
+    // Agrupa partidas por rodada, adicionando phase resolvida
     const byWeek = {};
     for (const m of matchesRes.rows) {
       const w = m.game_week ?? 0;
       if (!byWeek[w]) byWeek[w] = [];
-      const phase = isAperturaClausura && splitDate
-        ? (m.match_date && new Date(m.match_date) >= new Date(splitDate) ? 'apertura' : 'clausura')
-        : undefined;
       byWeek[w].push({
-        id: m.id_match, date: m.match_date, status: m.status, phase,
+        id: m.id_match, date: m.match_date, status: m.status,
+        phase: resolvePhase(m),
         home: { id: m.home_id, name: m.home_name, crest: m.home_crest },
         away: { id: m.away_id, name: m.away_name, crest: m.away_crest },
         home_goals: m.home_goals, away_goals: m.away_goals,
@@ -780,6 +939,27 @@ export async function getLeagueSports(req, res) {
     const matches = Object.entries(byWeek)
       .sort((a, b) => Number(a[0]) - Number(b[0]))
       .map(([week, games]) => ({ week: Number(week), games }));
+
+    // Sinaliza se as fases foram confirmadas pelo admin ou ainda são inferência
+    const phaseMappingStatus = isMultiFase
+      ? (phaseKeyConfirmed ? 'confirmed' : 'inferred')
+      : 'na';
+
+    // Atribuições de grupos (Grupo A / B) para apertura_clausura
+    let groupClubs = {};
+    if (isAperturaClausura) {
+      const gcRes = await db.query(`
+        SELECT phase_key, group_key, id_club
+        FROM competition_group_clubs
+        WHERE id_league = $1 AND id_season = $2
+        ORDER BY slot_order ASC, id_club ASC
+      `, [leagueId, idSeason]);
+      for (const row of gcRes.rows) {
+        if (!groupClubs[row.phase_key]) groupClubs[row.phase_key] = {};
+        if (!groupClubs[row.phase_key][row.group_key]) groupClubs[row.phase_key][row.group_key] = [];
+        groupClubs[row.phase_key][row.group_key].push(row.id_club);
+      }
+    }
 
     // ── Disciplinar agregado por clube na temporada ──────────────────────────
     const disciplineRes = await db.query(`
@@ -820,7 +1000,7 @@ export async function getLeagueSports(req, res) {
       red: r.red_cards,
     }));
 
-    res.json({ league, seasons, season, standings, matches, discipline });
+    res.json({ league, seasons, season, standings, matches, discipline, phaseMappingStatus, groupClubs });
   } catch (err) {
     console.error('[getLeagueSports]', err);
     res.status(500).json({ error: 'Erro ao buscar dados da liga' });

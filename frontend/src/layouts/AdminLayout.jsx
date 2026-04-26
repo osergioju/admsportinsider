@@ -141,6 +141,7 @@ export default function AdminLayout() {
                                     {openDados && (
                                         <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-paises" label="Países" />
+                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-continentes" label="Continentes / Regiões" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-ligas" label="Ligas" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-clubes" label="Clubes" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-jogadores" label="Jogadores" />

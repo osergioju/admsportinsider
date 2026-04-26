@@ -1,36 +1,41 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
-import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2, FileSpreadsheet, AlertTriangle } from "lucide-react";
+import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2, FileSpreadsheet, AlertTriangle, Shuffle } from "lucide-react";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
 import CompetitionSetupModal from "./CompetitionSetupModal";
 import ImportLeaguesModal from "./ImportLeaguesModal";
 import CustomLeagueEditor from "./CustomLeagueEditor";
+import TeamGroupAssignment from "./TeamGroupAssignment";
 
 export default function GestaoLigas() {
     const [leagues, setLeagues] = useState([]);
     const [countries, setCountries] = useState([]);
+    const [continents, setContinents] = useState([]);
     const [modal, setModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
-    const [newLeague, setNewLeague] = useState({ id_country: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
+    const [leagueScope, setLeagueScope] = useState("country"); // "country" | "continent"
+    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [setupLeague, setSetupLeague] = useState(null); // liga sendo configurada
     const [importModalOpen, setImportModalOpen] = useState(false);
     const [customEditor, setCustomEditor] = useState(null); // { league, year }
+    const [phaseMapper, setPhaseMapper] = useState(null); // { league }
 
     // --- BUSCA ---
     const [searchTerm, setSearchTerm] = useState("");
 
     async function loadData() {
         try {
-            // Busca TUDO
-            const respLeagues = await api.get(`/admin/leagues?limit=1000`);
+            const [respLeagues, respCountries, respContinents] = await Promise.all([
+                api.get(`/admin/leagues?limit=1000`),
+                api.get(`/admin/countries?onlyActive=true&limit=1000`),
+                api.get(`/admin/continents`),
+            ]);
             setLeagues(respLeagues.data.leagues);
-
-            const respCountries = await api.get(`/admin/countries?onlyActive=true&limit=1000`);
-            const countryOptions = respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name, image: c.flag_url }));
-            setCountries(countryOptions);
+            setCountries(respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name, image: c.flag_url })));
+            setContinents(respContinents.data.continents.map(c => ({ value: c.id_continent, label: c.name, image: c.logo_url })));
         } catch (err) { console.error("Erro dados:", err); }
     }
 
@@ -44,7 +49,8 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
+        setNewLeague({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
+        setLeagueScope("country");
         setIsEditing(false); setModal(true);
     };
 
@@ -53,6 +59,7 @@ export default function GestaoLigas() {
             const { data } = await api.get(`/admin/leagues/${id}`);
             setCurrentLeague(data.league);
             setNewLeague({ ...data.league });
+            setLeagueScope(data.league.id_continent ? "continent" : "country");
             setIsEditing(true); setModal(true);
         } catch (err) { console.error(err); }
     };
@@ -128,7 +135,9 @@ export default function GestaoLigas() {
                                 </div>
                                 <div className="flex flex-col gap-1 w-full cursor-pointer" onClick={() => openEditModal(league.id_league)}>
                                     <span className="font-bold text-gray-900 text-base group-hover:text-[#7F33D9] transition-colors truncate w-full">{league.name}</span>
-                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{league.country_name || "Internacional"}</span>
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                        {league.continent_name ? `🌍 ${league.continent_name}` : (league.country_name || "Internacional")}
+                                    </span>
                                 </div>
                                 {/* Botão configurar estrutura */}
                                 <button
@@ -138,19 +147,39 @@ export default function GestaoLigas() {
                                 >
                                     <Settings2 size={13} />
                                 </button>
-                                {/* Botão editor personalizado — só para ligas com alguma edição do tipo personalizado */}
+                                {/* Botões inferiores esquerda */}
                                 {(() => {
                                     const anos = Object.keys(league.structure_json ?? {}).filter(k => /^\d{4}$/.test(k));
                                     const isPersonalizado = anos.some(a => league.structure_json[a]?.tipo === "personalizado");
-                                    if (!isPersonalizado) return null;
+                                    // Botão âmbar: só para ligas com torneios que têm fases de grupo
+                                    const hasGrupos = anos.some(a => {
+                                        const cfg = league.structure_json[a];
+                                        return (cfg?.torneios ?? []).some(t =>
+                                            (t.fases ?? []).some(f => f.tipo === "grupo")
+                                        );
+                                    });
+                                    if (!isPersonalizado && !hasGrupos) return null;
                                     return (
-                                        <button
-                                            onClick={() => setCustomEditor({ league })}
-                                            title="Editor personalizado"
-                                            className="absolute bottom-3 left-3 w-7 h-7 rounded-full bg-violet-50 border border-violet-200 flex items-center justify-center text-violet-500 hover:bg-violet-100 transition-all opacity-0 group-hover:opacity-100"
-                                        >
-                                            <FileSpreadsheet size={13} />
-                                        </button>
+                                        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                                            {isPersonalizado && (
+                                                <button
+                                                    onClick={() => setCustomEditor({ league })}
+                                                    title="Editor personalizado"
+                                                    className="w-7 h-7 rounded-full bg-violet-50 border border-violet-200 flex items-center justify-center text-violet-500 hover:bg-violet-100 transition-all"
+                                                >
+                                                    <FileSpreadsheet size={13} />
+                                                </button>
+                                            )}
+                                            {hasGrupos && (
+                                                <button
+                                                    onClick={() => setPhaseMapper({ league })}
+                                                    title="Atribuir times aos grupos"
+                                                    className="w-7 h-7 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 hover:bg-amber-100 transition-all"
+                                                >
+                                                    <Shuffle size={13} />
+                                                </button>
+                                            )}
+                                        </div>
                                     );
                                 })()}
                                 {/* Indicador de estrutura configurada */}
@@ -195,6 +224,15 @@ export default function GestaoLigas() {
                 />
             )}
 
+            {/* Modal - Atribuir times aos grupos */}
+            {phaseMapper && (
+                <TeamGroupAssignment
+                    league={phaseMapper.league}
+                    onClose={() => setPhaseMapper(null)}
+                    onSaved={() => setPhaseMapper(null)}
+                />
+            )}
+
             {/* Modal - Renderização */}
             {modal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setModal(false)}>
@@ -205,15 +243,48 @@ export default function GestaoLigas() {
                             <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
                         </div>
                         <div className="p-8 space-y-5">
+                            {/* Toggle País / Continente */}
                             <div>
-                                <label className={labelClass}>País</label>
-                                <SearchableSelect
-                                    options={countries}
-                                    value={newLeague.id_country}
-                                    onChange={(val) => setNewLeague({ ...newLeague, id_country: val })}
-                                    placeholder="Buscar país..."
-                                />
+                                <label className={labelClass}>Tipo de liga</label>
+                                <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setLeagueScope("country"); setNewLeague({ ...newLeague, id_continent: "" }); }}
+                                        className={`flex-1 py-2 text-sm font-medium transition-colors ${leagueScope === "country" ? "bg-[#7F33D9] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                    >
+                                        Nacional / País
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setLeagueScope("continent"); setNewLeague({ ...newLeague, id_country: "" }); }}
+                                        className={`flex-1 py-2 text-sm font-medium transition-colors ${leagueScope === "continent" ? "bg-[#7F33D9] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                    >
+                                        Continental / Mundial
+                                    </button>
+                                </div>
                             </div>
+
+                            {leagueScope === "country" ? (
+                                <div>
+                                    <label className={labelClass}>País</label>
+                                    <SearchableSelect
+                                        options={countries}
+                                        value={newLeague.id_country}
+                                        onChange={(val) => setNewLeague({ ...newLeague, id_country: val })}
+                                        placeholder="Buscar país..."
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className={labelClass}>Continente / Região</label>
+                                    <SearchableSelect
+                                        options={continents}
+                                        value={newLeague.id_continent}
+                                        onChange={(val) => setNewLeague({ ...newLeague, id_continent: val })}
+                                        placeholder="Selecionar região..."
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className={labelClass}>Nome</label>
                                 <input type="text" className={inputClass} value={newLeague.name} onChange={(e) => setNewLeague({ ...newLeague, name: e.target.value })} />

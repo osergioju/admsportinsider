@@ -1487,7 +1487,7 @@
  *         description: Erro interno do servidor
  */
 import { Router } from "express";
-import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason } from "../controllers/admin.controller.js";
+import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason, getAllContinents, createContinent, updateContinent, disableContinent, getTournamentSuggestions, bulkAssignPhases, getGroupClubs, saveGroupClubs } from "../controllers/admin.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1512,6 +1512,12 @@ router.post("/send-countries", adminGuard, createCountry);
 router.put("/countries/:id/update", adminGuard, updateCountry);
 router.delete("/disable-country/:id", adminGuard, disableCountry);
 
+// CONTINENTES - GESTÃO CRUD
+router.get("/continents", getAllContinents);
+router.post("/continents", adminGuard, createContinent);
+router.put("/continents/:id", adminGuard, updateContinent);
+router.delete("/continents/:id", adminGuard, disableContinent);
+
 // LIGAS - GESTÃO CRUD
 router.get("/leagues", getAllLeagues);
 router.get("/leagues/:id", getLeagueById);
@@ -1530,6 +1536,12 @@ router.post("/leagues/:id/seasons/:year/matches", adminGuard, createCustomMatch)
 router.post("/leagues/:id/seasons/:year/matches/generate", adminGuard, generateMatchesFromGroups);
 router.put("/matches/:id", adminGuard, updateCustomMatch);
 router.delete("/matches/:id", adminGuard, deleteCustomMatch);
+
+// MAPEAMENTO DE TORNEIOS/FASES
+router.get("/leagues/:id/seasons/:year/tournament-suggestions", adminGuard, getTournamentSuggestions);
+router.post("/leagues/:id/seasons/:year/assign-phases", adminGuard, bulkAssignPhases);
+router.get("/leagues/:id/seasons/:year/group-clubs", adminGuard, getGroupClubs);
+router.post("/leagues/:id/seasons/:year/group-clubs", adminGuard, saveGroupClubs);
 
 // THESPORTSDB PROXIES
 router.get("/thesportsdb/team", adminGuard, fetchTeamFromSportsDB);

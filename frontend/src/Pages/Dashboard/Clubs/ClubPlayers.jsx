@@ -19,6 +19,8 @@ function PlayerCard({ player }) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const meta = positionMeta[player.position] || positionMeta["Meio-campista"];
+  const player_pic = player.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=f3f4f6&color=6b7280&size=200`;
+  console.log(player);
 
   return (
     <div
@@ -34,7 +36,7 @@ function PlayerCard({ player }) {
         {/* Photo / Avatar */}
         <div className="relative bg-gray-50 aspect-square overflow-hidden">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=f3f4f6&color=6b7280&size=200`}
+            src={player_pic}
             alt={player.name}
             className="w-full h-full object-cover object-top"
           />

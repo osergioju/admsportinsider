@@ -205,7 +205,7 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                         {/* Coluna direita */}
                         <div className="space-y-4">
                             <div>
-                                <label className={labelClass}>Logo</label>
+                                <label className={labelClass}>Escudo</label>
                                 <div className="flex gap-2 mb-2">
                                     <input
                                         type="file"
@@ -391,7 +391,7 @@ export default function GestaoClubes() {
         try {
             const [clubsResp, countriesResp] = await Promise.all([
                 api.get("/admin/clubs?limit=2000"),
-                api.get("/admin/countries?onlyActive=true"),
+                api.get("/admin/countries?limit=300"),
             ]);
             setAllClubs(clubsResp.data.clubs);
             setCountries(countriesResp.data.countries);
@@ -601,7 +601,7 @@ export default function GestaoClubes() {
                             >
                                 <div className="relative w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center p-2 border border-gray-100 group-hover:bg-white transition-colors overflow-hidden">
                                     {club.crest_url ? (
-                                        <img src={club.crest_url} className="w-full h-full object-contain" alt={club.name} />
+                                        <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + club.crest_url + `.webp`} className="w-full h-full object-contain" alt={club.name} />
                                     ) : (
                                         <div
                                             className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xs"

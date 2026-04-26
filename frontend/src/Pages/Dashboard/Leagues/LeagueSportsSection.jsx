@@ -92,7 +92,7 @@ function SubTabs({ value, onChange, options }) {
 
 // ─── Standings table ──────────────────────────────────────────────────────────
 
-function StandingsTable({ rows, t, seasonConfig }) {
+function StandingsTable({ rows, t, seasonConfig, legendContLabel }) {
   if (!rows?.length) return (
     <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_classification", "Sem dados de classificação.")}</p>
   );
@@ -123,8 +123,8 @@ function StandingsTable({ rows, t, seasonConfig }) {
       <table className="w-full text-sm min-w-[540px]">
         <thead>
           <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b border-gray-100">
-            <th className="py-3 px-3 text-center font-semibold w-10">#</th>
-            <th className="py-3 px-3 text-left font-semibold">Clube</th>
+            <th className="py-3 px-3 text-center font-semibold w-10 sticky left-0 bg-gray-50 z-20">#</th>
+            <th className="py-3 px-3 text-left font-semibold sticky left-[40px] bg-gray-50 z-20">Clube</th>
             <th className="py-3 px-2 text-center font-semibold text-violet-500">P</th>
             <th className="py-3 px-2 text-center font-semibold">J</th>
             <th className="py-3 px-2 text-center font-semibold text-emerald-500">V</th>
@@ -141,14 +141,17 @@ function StandingsTable({ rows, t, seasonConfig }) {
             const pos = row.pos ?? i + 1;
             return (
               <tr key={row.id ?? i} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
-                <td className={`px-3 py-3 ${zoneBar(pos)}`}>
+                <td className={`px-3 py-3 sticky left-0 bg-white z-10 ${zoneBar(pos)}`}>
                   <span className={`text-sm font-bold block text-center tabular-nums ${pos === 1 ? "text-gray-900" : "text-gray-400"}`}>
                     {pos}
                   </span>
                 </td>
-                <td className="px-3 py-3">
-                  <Link to={`/dashboard/clubs/${row.id}`}
-                    className={`flex items-center gap-2.5 hover:text-violet-700 transition-colors ${pos === 1 ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}>
+
+                <td className="px-3 py-3 sticky left-[40px] bg-white z-10">
+                  <Link
+                    to={`/dashboard/clubs/${row.id}`}
+                    className={`flex items-center gap-2.5 hover:text-violet-700 transition-colors ${pos === 1 ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}
+                  >
                     {row.crest
                       ? <img src={row.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
                       : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />
@@ -179,13 +182,49 @@ function StandingsTable({ rows, t, seasonConfig }) {
             <span className="w-2 h-2 rounded-full bg-gray-900 shrink-0" />Líder
           </span>
           <span className="flex items-center gap-1.5 text-xs text-gray-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />Zona continental
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />{legendContLabel ?? "Zona continental"}
           </span>
           <span className="flex items-center gap-1.5 text-xs text-gray-400">
             <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />Rebaixamento
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Two-group standings (apertura/clausura com grupos A e B) ────────────────
+
+function GroupedStandings({ rows, groupClubs, classificados, t, seasonConfig }) {
+  const entries = Object.entries(groupClubs);
+  if (!entries.length) return <StandingsTable rows={rows} t={t} seasonConfig={seasonConfig} />;
+
+  return (
+    <div className={`grid gap-4 ${entries.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
+      {entries.map(([groupKey, clubIds]) => {
+        const groupRows = rows
+          .filter(r => clubIds.includes(r.id))
+          .sort((a, b) => (b.pts - a.pts) || (b.sg - a.sg) || (b.gp - a.gp))
+          .map((r, i) => ({ ...r, pos: i + 1 }));
+        const groupConfig = {
+          continental_spots: classificados ?? 0,
+          relegation_spots: 0,
+        };
+        return (
+          <div key={groupKey} className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center">
+                <span className="text-xs font-bold text-violet-700">{groupKey}</span>
+              </div>
+              <span className="text-sm font-bold text-gray-700">Grupo {groupKey}</span>
+              {classificados > 0 && (
+                <span className="text-xs text-gray-400 ml-1">{classificados} avançam</span>
+              )}
+            </div>
+            <StandingsTable rows={groupRows} t={t} seasonConfig={groupConfig} legendContLabel="Avança" />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -328,15 +367,84 @@ function ConfrontoCard({ confronto }) {
 
 // ─── Bracket helpers ──────────────────────────────────────────────────────────
 
-function buildConfrontos(flatMatches) {
-  const map = new Map();
-  for (const m of flatMatches) {
-    const key = [m.home.id, m.away.id].sort((a, b) => a - b).join("_");
-    if (!map.has(key)) map.set(key, { team1: m.home, team2: m.away, legs: [] });
-    map.get(key).legs.push(m);
+// Infer group membership via BFS connected components, then compute standings
+function computeGroupStandings(games) {
+  if (!games.length) return [];
+  const teamOpponents = new Map();
+  const teamInfo = new Map();
+  for (const g of games) {
+    for (const side of [g.home, g.away]) {
+      if (!teamOpponents.has(side.id)) teamOpponents.set(side.id, new Set());
+      teamInfo.set(side.id, side);
+    }
+    teamOpponents.get(g.home.id).add(g.away.id);
+    teamOpponents.get(g.away.id).add(g.home.id);
   }
-  return [...map.values()].map(({ team1, team2, legs }) => {
-    legs.sort((a, b) => new Date(a.date ?? 0) - new Date(b.date ?? 0));
+  const visited = new Set();
+  const groups = [];
+  for (const teamId of teamOpponents.keys()) {
+    if (visited.has(teamId)) continue;
+    const group = [];
+    const queue = [teamId];
+    visited.add(teamId);
+    while (queue.length) {
+      const curr = queue.shift();
+      group.push(curr);
+      for (const opp of (teamOpponents.get(curr) ?? [])) {
+        if (!visited.has(opp)) { visited.add(opp); queue.push(opp); }
+      }
+    }
+    groups.push(group);
+  }
+  groups.sort((a, b) => Math.min(...a) - Math.min(...b));
+  return groups.map(groupIds => {
+    const idSet = new Set(groupIds);
+    const stats = {};
+    for (const id of groupIds) {
+      const info = teamInfo.get(id);
+      stats[id] = { id, name: info?.name ?? "", crest: info?.crest ?? null, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
+    }
+    for (const g of games) {
+      if (!idSet.has(g.home.id) || !idSet.has(g.away.id)) continue;
+      if (g.home_goals == null || g.away_goals == null) continue;
+      const h = stats[g.home.id]; const a = stats[g.away.id];
+      h.j++; a.j++;
+      h.gp += g.home_goals; h.gc += g.away_goals;
+      a.gp += g.away_goals; a.gc += g.home_goals;
+      if (g.home_goals > g.away_goals) { h.v++; h.pts += 3; a.d++; }
+      else if (g.home_goals < g.away_goals) { a.v++; a.pts += 3; h.d++; }
+      else { h.e++; a.e++; h.pts++; a.pts++; }
+    }
+    const rows = Object.values(stats).map(s => ({ ...s, sg: s.gp - s.gc, pct: s.j ? Math.round((s.pts / (s.j * 3)) * 100) : 0 }));
+    rows.sort((a, b) => b.pts - a.pts || b.sg - a.sg || b.gp - a.gp || b.v - a.v);
+    rows.forEach((r, i) => { r.pos = i + 1; });
+    return rows;
+  });
+}
+
+// maxLegs: 1 = turno_unico (cada jogo é confronto independente), 2 = ida_volta
+function buildConfrontos(flatMatches, maxLegs = 2) {
+  // Ordena por data para que as pernas sejam agrupadas cronologicamente
+  const sorted = [...flatMatches].sort((a, b) => new Date(a.date ?? 0) - new Date(b.date ?? 0));
+
+  const pairCount = new Map(); // pairKey → quantos jogos já foram vistos para esse par
+  const confrontoMap = new Map(); // confrontoKey → { team1, team2, legs }
+
+  for (const m of sorted) {
+    const pairKey = [m.home.id, m.away.id].sort((a, b) => a - b).join("_");
+    const seen = pairCount.get(pairKey) ?? 0;
+    // Cada maxLegs jogos do mesmo par formam um novo confronto
+    const confrontoIdx = Math.floor(seen / maxLegs);
+    const confrontoKey = `${pairKey}_${confrontoIdx}`;
+
+    if (!confrontoMap.has(confrontoKey)) {
+      confrontoMap.set(confrontoKey, { team1: m.home, team2: m.away, legs: [] });
+    }
+    confrontoMap.get(confrontoKey).legs.push(m);
+    pairCount.set(pairKey, seen + 1);
+  }
+
+  return [...confrontoMap.values()].map(({ team1, team2, legs }) => {
     const t1 = legs[0]?.home ?? team1;
     const t2 = legs[0]?.away ?? team2;
     const agg = {};
@@ -390,7 +498,7 @@ function splitIntoRounds(cluster) {
   return rounds;
 }
 
-function assignPhases(confrontos, structure_json, season) {
+function assignPhases(confrontos, flatGames, structure_json, season, fasesOverride) {
   if (!confrontos.length) return [];
 
   const sorted = [...confrontos].sort(
@@ -398,39 +506,80 @@ function assignPhases(confrontos, structure_json, season) {
   );
 
   const yearData = structure_json?.[String(season)];
-  const fases = yearData?.fases ?? [];
+  const fases = fasesOverride ?? yearData?.fases ?? [];
 
-  // 1. Broad temporal separation (months apart = different phase blocks)
-  const clusters = temporalCluster(sorted, 14);
+  const clusterAndExpand = (arr) => {
+    const clusters = temporalCluster(arr, 14);
+    const expanded = [];
+    for (const cl of clusters) {
+      for (const round of splitIntoRounds(cl)) expanded.push(round);
+    }
+    return expanded;
+  };
 
-  // 2. Within each cluster, split into rounds where no team plays twice.
-  //    This handles: multiple early rounds in the same month, and Semis+Final
-  //    in the same December window (finalists appear in both rounds).
-  const expanded = [];
-  for (const cl of clusters) {
-    for (const round of splitIntoRounds(cl)) expanded.push(round);
-  }
-
-  if (fases.length > 0) {
-    const N = fases.length;
+  const mapExpandedToPhases = (expanded, phaseList) => {
+    const N = phaseList.length;
     const result = new Array(N).fill(null).map(() => []);
     const offset = N - expanded.length;
-
     if (offset >= 0) {
-      // Fewer rounds than phases: early phases have no data (hidden by filter below)
       expanded.forEach((grp, i) => { result[offset + i] = grp; });
     } else {
-      // More rounds than phases: collapse surplus early rounds into phase 0
       result[0] = expanded.slice(0, 1 - offset).flat();
       expanded.slice(1 - offset).forEach((grp, i) => { result[1 + i] = grp; });
     }
+    return result;
+  };
 
-    return fases
-      .map((f, i) => ({ nome: f.nome ?? `Fase ${i + 1}`, confrontos: result[i] }))
-      .filter(p => p.confrontos.length > 0);
+  if (fases.length > 0) {
+    // Count leading mata_mata phases that have an explicit confrontos count
+    let explicitPrefixLen = 0;
+    for (const f of fases) {
+      if (f.tipo === "mata_mata" && (f.confrontos ?? 0) > 0) explicitPrefixLen++;
+      else break;
+    }
+
+    const phaseResults = new Array(fases.length).fill(null).map(() => []);
+    let cursor = 0;
+
+    // Sequential slicing for explicit-count prefix phases
+    for (let i = 0; i < explicitPrefixLen; i++) {
+      const n = fases[i].confrontos;
+      phaseResults[i] = sorted.slice(cursor, cursor + n);
+      cursor += n;
+    }
+
+    // Temporal clustering for remaining phases
+    const remaining = sorted.slice(cursor);
+    const unresolvedFases = fases.slice(explicitPrefixLen);
+    if (unresolvedFases.length > 0 && remaining.length > 0) {
+      const expanded = clusterAndExpand(remaining);
+      const subResults = mapExpandedToPhases(expanded, unresolvedFases);
+      for (let i = 0; i < unresolvedFases.length; i++) {
+        phaseResults[explicitPrefixLen + i] = subResults[i] ?? [];
+      }
+    }
+
+    return fases.map((f, i) => {
+      const phaseConfrontos = phaseResults[i] ?? [];
+      let games = [];
+      if (f.tipo === "grupo" && phaseConfrontos.length > 0 && flatGames?.length) {
+        const dates = phaseConfrontos.flatMap(c => c.legs.map(l => new Date(l.date ?? 0).getTime())).filter(Boolean);
+        if (dates.length) {
+          const minDate = Math.min(...dates);
+          const maxDate = Math.max(...dates);
+          games = flatGames.filter(g => {
+            const t = new Date(g.date ?? 0).getTime();
+            return t >= minDate - 86400000 && t <= maxDate + 86400000;
+          });
+        }
+      }
+      return { nome: f.nome ?? `Fase ${i + 1}`, tipo: f.tipo, faseConfig: f, confrontos: phaseConfrontos, games };
+    }).filter(p => p.confrontos.length > 0 || p.tipo === "grupo");
   }
 
   // ── Fallback: no structure configured ────────────────────────────────────────
+  const expanded = clusterAndExpand(sorted);
+
   const BRACKET_NAMES = [
     ["Final"],
     ["Semifinal", "Final"],
@@ -445,8 +594,409 @@ function assignPhases(confrontos, structure_json, season) {
   const off = names.length - expanded.length;
 
   return names
-    .map((nome, i) => ({ nome, confrontos: expanded[i - off] ?? [] }))
+    .map((nome, i) => ({ nome, tipo: "mata_mata", faseConfig: {}, confrontos: expanded[i - off] ?? [], games: [] }))
     .filter(p => p.confrontos.length > 0);
+}
+
+// ─── Group phase view ─────────────────────────────────────────────────────────
+
+function GroupPhaseView({ phase, t, adminGroups }) {
+  const bfsGroups = useMemo(() => computeGroupStandings(phase.games ?? []), [phase.games]);
+  const advanceCount = phase.faseConfig?.classificados_por_grupo ?? 2;
+
+  // Alinha grupos BFS com os rótulos do admin (A, B, ...) quando disponível
+  const groups = useMemo(() => {
+    if (!adminGroups || !Object.keys(adminGroups).length) {
+      return bfsGroups.map((rows, i) => ({ label: String.fromCharCode(65 + i), rows }));
+    }
+    const adminEntries = Object.entries(adminGroups).sort(([a], [b]) => a.localeCompare(b));
+    const used = new Set();
+    return adminEntries.map(([label, clubIds]) => {
+      const idSet = new Set(clubIds);
+      let bestIdx = -1, bestOverlap = -1;
+      for (let i = 0; i < bfsGroups.length; i++) {
+        if (used.has(i)) continue;
+        const overlap = bfsGroups[i].filter(r => idSet.has(r.id)).length;
+        if (overlap > bestOverlap) { bestOverlap = overlap; bestIdx = i; }
+      }
+      if (bestIdx >= 0) used.add(bestIdx);
+      return { label, rows: bestIdx >= 0 ? bfsGroups[bestIdx] : [] };
+    });
+  }, [bfsGroups, adminGroups]);
+
+  if (!groups.length || groups.every(g => !g.rows.length)) return (
+    <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_matches", "Nenhuma partida registrada.")}</p>
+  );
+
+  const cols = groups.length <= 2
+    ? "grid-cols-1 sm:grid-cols-2"
+    : groups.length <= 4
+      ? "grid-cols-1 sm:grid-cols-2"
+      : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4";
+
+  return (
+    <div className={`grid gap-4 w-full ${cols}`}>
+      {groups.map(({ label, rows }, gi) => (
+        <div key={label} className="rounded-xl border border-gray-100 overflow-hidden bg-white shadow-sm">
+          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              Grupo {label}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs min-w-[260px]">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-50">
+                  <th className="py-1.5 px-2 text-center w-6">#</th>
+                  <th className="py-1.5 px-2 text-left">Clube</th>
+                  <th className="py-1.5 px-2 text-center font-bold text-violet-500">P</th>
+                  <th className="py-1.5 px-2 text-center">J</th>
+                  <th className="py-1.5 px-2 text-center text-emerald-500">V</th>
+                  <th className="py-1.5 px-2 text-center">E</th>
+                  <th className="py-1.5 px-2 text-center text-red-400">D</th>
+                  <th className="py-1.5 px-2 text-center">SG</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, ri) => {
+                  const advances = ri < advanceCount;
+                  return (
+                    <tr key={row.id} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
+                      <td className={`px-2 py-2 text-center font-bold text-gray-500 ${advances ? "border-l-2 border-emerald-400" : "border-l-2 border-transparent"}`}>
+                        {row.pos}
+                      </td>
+                      <td className="px-2 py-2 max-w-[120px]">
+                        <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                          {row.crest
+                            ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
+                            : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
+                          <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>
+                            {row.name}
+                          </span>
+                        </Link>
+                      </td>
+                      <td className="px-2 py-2 text-center font-bold text-gray-900 tabular-nums">{row.pts}</td>
+                      <td className="px-2 py-2 text-center text-gray-500 tabular-nums">{row.j}</td>
+                      <td className="px-2 py-2 text-center font-semibold text-emerald-600 tabular-nums">{row.v}</td>
+                      <td className="px-2 py-2 text-center text-gray-500 tabular-nums">{row.e}</td>
+                      <td className="px-2 py-2 text-center text-red-400 tabular-nums">{row.d}</td>
+                      <td className={`px-2 py-2 text-center font-semibold tabular-nums ${row.sg > 0 ? "text-emerald-600" : row.sg < 0 ? "text-red-500" : "text-gray-400"}`}>
+                        {row.sg > 0 ? `+${row.sg}` : row.sg}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {advanceCount > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-gray-50 bg-gray-50/50">
+              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                Avança ({advanceCount})
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Torneio panel view (apertura_clausura) ───────────────────────────────────
+// Separa jogos de grupos dos jogos de mata-mata usando os grupos do admin,
+// computa standings apenas dentro de cada grupo e exibe o bracket da fase K.O.
+
+function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupoFaseConfig, activeTorneioConfig, t }) {
+  const flatGames = useMemo(() => matchesForPhase.flatMap(w => w.games), [matchesForPhase]);
+
+  // Índice de info de times (nome + crest) a partir dos standings ou jogos
+  const teamInfo = useMemo(() => {
+    const info = {};
+    for (const r of (activeStandings ?? [])) info[r.id] = { name: r.name, crest: r.crest };
+    for (const g of flatGames) {
+      if (!info[g.home.id]) info[g.home.id] = { name: g.home.name, crest: g.home.crest };
+      if (!info[g.away.id]) info[g.away.id] = { name: g.away.name, crest: g.away.crest };
+    }
+    return info;
+  }, [activeStandings, flatGames]);
+
+  // Separa jogos por fase: grupo vs mata-mata.
+  // Usa a rodada (week) como critério primário porque times do mesmo grupo
+  // podem se reencontrar nas eliminatórias (ex: duas equipes do Grupo A nas Quartas).
+  // - Rodadas 1..maxGroupRound → fase de grupos
+  // - Rodadas > maxGroupRound → interzonais/eliminatórias
+  // - Rodada 0 (null) sem resultado → jogo agendado → grupo
+  // - Rodada 0 (null) com resultado → jogo sem rodada = eliminatória tardia
+  const { grupoGames, mataMataGames } = useMemo(() => {
+    // maxGroupRound = número de rodadas da fase de grupos (times_por_grupo - 1 para turno_unico)
+    const maxGroupRound = (grupoFaseConfig?.times_por_grupo ?? 0) - 1;
+
+    if (maxGroupRound > 0) {
+      const grupoIds = new Set();
+      const mmIds = new Set();
+      for (const { week, games } of matchesForPhase) {
+        for (const g of games) {
+          if (g.home_goals == null && g.away_goals == null) {
+            grupoIds.add(g.id); // agendado → grupo
+          } else if (week > 0 && week <= maxGroupRound) {
+            grupoIds.add(g.id); // rodada de grupo explícita
+          } else {
+            mmIds.add(g.id); // rodada além do grupo ou sem rodada com resultado
+          }
+        }
+      }
+      return {
+        grupoGames: flatGames.filter(g => grupoIds.has(g.id)),
+        mataMataGames: flatGames.filter(g => mmIds.has(g.id)),
+      };
+    }
+
+    // Fallback: usa pertencimento ao grupo (quando times_por_grupo não configurado)
+    if (!adminGroups || !Object.keys(adminGroups).length) {
+      return { grupoGames: flatGames, mataMataGames: [] };
+    }
+    const groupSets = Object.fromEntries(
+      Object.entries(adminGroups).map(([k, ids]) => [k, new Set(ids)])
+    );
+    const grupo = [], mm = [];
+    for (const g of flatGames) {
+      const isGrupo = Object.values(groupSets).some(s => s.has(g.home.id) && s.has(g.away.id));
+      (isGrupo ? grupo : mm).push(g);
+    }
+    return { grupoGames: grupo, mataMataGames: mm };
+  }, [flatGames, matchesForPhase, adminGroups, grupoFaseConfig]);
+
+  // Standings por grupo (apenas jogos dentro do grupo)
+  const groupStandings = useMemo(() => {
+    if (!adminGroups) return null;
+    const result = {};
+    for (const [gKey, clubIds] of Object.entries(adminGroups)) {
+      const idSet = new Set(clubIds);
+      const stats = Object.fromEntries(
+        clubIds.map(id => [id, {
+          id,
+          name: teamInfo[id]?.name ?? '',
+          crest: teamInfo[id]?.crest ?? null,
+          j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0,
+        }])
+      );
+      for (const g of grupoGames) {
+        if (!idSet.has(g.home.id) || !idSet.has(g.away.id)) continue;
+        if (g.home_goals == null || g.away_goals == null) continue;
+        const h = stats[g.home.id]; const a = stats[g.away.id];
+        if (!h || !a) continue;
+        h.j++; a.j++;
+        h.gp += Number(g.home_goals); h.gc += Number(g.away_goals);
+        a.gp += Number(g.away_goals); a.gc += Number(g.home_goals);
+        if (g.home_goals > g.away_goals) { h.v++; a.d++; }
+        else if (g.home_goals < g.away_goals) { a.v++; h.d++; }
+        else { h.e++; a.e++; }
+      }
+      result[gKey] = Object.values(stats)
+        .map(c => ({ ...c, pts: c.v * 3 + c.e, sg: c.gp - c.gc }))
+        .sort((a, b) => (b.pts - a.pts) || (b.sg - a.sg) || (b.gp - a.gp))
+        .map((c, i) => ({ ...c, pos: i + 1 }));
+    }
+    return result;
+  }, [adminGroups, grupoGames, teamInfo]);
+
+  // Mata-mata: reagrupa por rodada para o BracketView
+  const mataMataWeeks = useMemo(() => {
+    if (!mataMataGames.length) return [];
+    const mataMataIds = new Set(mataMataGames.map(g => g.id));
+    return matchesForPhase
+      .map(({ week, games }) => ({ week, games: games.filter(g => mataMataIds.has(g.id)) }))
+      .filter(w => w.games.length > 0);
+  }, [matchesForPhase, mataMataGames]);
+
+  const classificados = grupoFaseConfig?.classificados_por_grupo ?? 2;
+  const mataMataFases = activeTorneioConfig?.fases?.filter(f => f.tipo === "mata_mata") ?? [];
+  const hasGroups = groupStandings && Object.keys(groupStandings).length > 0;
+  const hasMataMata = mataMataWeeks.length > 0 && mataMataFases.length > 0;
+
+  // Torneio de pontos corridos: sem grupos nem mata-mata, exibe tabela de classificação direta
+  const isPontosCorreidos = !grupoFaseConfig
+    && mataMataFases.length === 0
+    && (activeTorneioConfig?.fases ?? []).some(f => f.tipo === "pontos_corridos");
+
+  if (isPontosCorreidos) {
+    const classificadosPc = activeTorneioConfig?.fases?.find(f => f.tipo === "pontos_corridos")?.classificados_por_grupo ?? 0;
+    if (!activeStandings?.length) {
+      return <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_matches", "Nenhuma partida registrada.")}</p>;
+    }
+    return (
+      <div className="w-full rounded-xl border border-gray-100 overflow-hidden bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs min-w-[300px]">
+            <thead>
+              <tr className="text-gray-400 border-b border-gray-100 bg-gray-50">
+                <th className="py-2 px-3 text-center w-8">#</th>
+                <th className="py-2 px-3 text-left">Clube</th>
+                <th className="py-2 px-3 text-center font-bold text-violet-500">P</th>
+                <th className="py-2 px-3 text-center">J</th>
+                <th className="py-2 px-3 text-center text-emerald-500">V</th>
+                <th className="py-2 px-3 text-center">E</th>
+                <th className="py-2 px-3 text-center text-red-400">D</th>
+                <th className="py-2 px-3 text-center">GP</th>
+                <th className="py-2 px-3 text-center">GC</th>
+                <th className="py-2 px-3 text-center">SG</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeStandings.map((row, ri) => {
+                const advances = classificadosPc > 0 && ri < classificadosPc;
+                return (
+                  <tr key={row.id} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
+                    <td className={`px-3 py-2 text-center font-bold text-gray-500 ${advances ? "border-l-2 border-emerald-400" : "border-l-2 border-transparent"}`}>
+                      {ri + 1}
+                    </td>
+                    <td className="px-3 py-2">
+                      <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                        {row.crest
+                          ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
+                          : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
+                        <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>{row.name}</span>
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2 text-center font-bold text-gray-900 tabular-nums">{row.points ?? row.pts ?? 0}</td>
+                    <td className="px-3 py-2 text-center text-gray-500 tabular-nums">{row.played ?? row.j ?? 0}</td>
+                    <td className="px-3 py-2 text-center font-semibold text-emerald-600 tabular-nums">{row.won ?? row.v ?? 0}</td>
+                    <td className="px-3 py-2 text-center text-gray-500 tabular-nums">{row.drawn ?? row.e ?? 0}</td>
+                    <td className="px-3 py-2 text-center text-red-400 tabular-nums">{row.lost ?? row.d ?? 0}</td>
+                    <td className="px-3 py-2 text-center text-gray-500 tabular-nums">{row.goals_for ?? row.gp ?? 0}</td>
+                    <td className="px-3 py-2 text-center text-gray-500 tabular-nums">{row.goals_against ?? row.gc ?? 0}</td>
+                    <td className={`px-3 py-2 text-center font-semibold tabular-nums ${(row.goal_diff ?? row.sg ?? 0) > 0 ? "text-emerald-600" : (row.goal_diff ?? row.sg ?? 0) < 0 ? "text-red-500" : "text-gray-400"}`}>
+                      {(row.goal_diff ?? row.sg ?? 0) > 0 ? `+${row.goal_diff ?? row.sg}` : (row.goal_diff ?? row.sg ?? 0)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {classificadosPc > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-gray-50 bg-gray-50/50">
+            <span className="flex items-center gap-1 text-[10px] text-gray-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+              Avança ({classificadosPc})
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!hasGroups && !hasMataMata) {
+    const hasAnyGames = flatGames.length > 0;
+    return (
+      <p className="text-sm text-center text-gray-400 py-8">
+        {hasAnyGames
+          ? "Atribua os times aos grupos no painel de administração para visualizar o torneio."
+          : t("sports.no_matches", "Nenhuma partida registrada.")}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center w-full">
+      {/* ── Fase de Grupos ── */}
+      {hasGroups && (
+        <div className="w-full">
+          <div className="flex items-center gap-2.5 mb-4 px-1 justify-center">
+            <span className="text-sm lg:text-xl font-bold text-gray-900 uppercase tracking-wide">
+              {grupoFaseConfig?.nome ?? "Fase de Grupos"}
+            </span>
+            <span className="text-xs lg:text-xl text-gray-400">
+              · {Object.keys(groupStandings).length} grupos
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {Object.entries(groupStandings).sort().map(([label, rows]) => (
+              <div key={label} className="rounded-xl border border-gray-100 overflow-hidden bg-white shadow-sm">
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Grupo {label}</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs min-w-[260px]">
+                    <thead>
+                      <tr className="text-gray-400 border-b border-gray-50">
+                        <th className="py-1.5 px-2 text-center w-6">#</th>
+                        <th className="py-1.5 px-2 text-left">Clube</th>
+                        <th className="py-1.5 px-2 text-center font-bold text-violet-500">P</th>
+                        <th className="py-1.5 px-2 text-center">J</th>
+                        <th className="py-1.5 px-2 text-center text-emerald-500">V</th>
+                        <th className="py-1.5 px-2 text-center">E</th>
+                        <th className="py-1.5 px-2 text-center text-red-400">D</th>
+                        <th className="py-1.5 px-2 text-center">SG</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, ri) => {
+                        const advances = ri < classificados;
+                        return (
+                          <tr key={row.id} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
+                            <td className={`px-2 py-2 text-center font-bold text-gray-500 ${advances ? "border-l-2 border-emerald-400" : "border-l-2 border-transparent"}`}>
+                              {row.pos}
+                            </td>
+                            <td className="px-2 py-2">
+                              <Link to={`/dashboard/clubs/${row.id}`} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                                {row.crest
+                                  ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
+                                  : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
+                                <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>
+                                  {row.name}
+                                </span>
+                              </Link>
+                            </td>
+                            <td className="px-2 py-2 text-center font-bold text-gray-900 tabular-nums">{row.pts}</td>
+                            <td className="px-2 py-2 text-center text-gray-500 tabular-nums">{row.j}</td>
+                            <td className="px-2 py-2 text-center font-semibold text-emerald-600 tabular-nums">{row.v}</td>
+                            <td className="px-2 py-2 text-center text-gray-500 tabular-nums">{row.e}</td>
+                            <td className="px-2 py-2 text-center text-red-400 tabular-nums">{row.d}</td>
+                            <td className={`px-2 py-2 text-center font-semibold tabular-nums ${row.sg > 0 ? "text-emerald-600" : row.sg < 0 ? "text-red-500" : "text-gray-400"}`}>
+                              {row.sg > 0 ? `+${row.sg}` : row.sg}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {classificados > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-gray-50 bg-gray-50/50">
+                    <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                      Avança ({classificados})
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Conector ── */}
+      {hasGroups && hasMataMata && (
+        <div className="flex flex-col items-center my-6 text-gray-200">
+          <div className="w-px h-6 bg-gray-200" />
+          <ChevronsDown size={18} />
+        </div>
+      )}
+
+      {/* ── Fases mata-mata ── */}
+      {hasMataMata && (
+        <BracketView
+          matches={mataMataWeeks}
+          structure_json={null}
+          season={null}
+          t={t}
+          fasesOverride={mataMataFases}
+        />
+      )}
+    </div>
+  );
 }
 
 const phaseColumns = (n) => {
@@ -462,15 +1012,25 @@ const phaseMaxWidth = (n) => {
   return "max-w-full";
 };
 
-function BracketView({ matches, structure_json, season, t }) {
-  const confrontos = useMemo(() => buildConfrontos(matches.flatMap(w => w.games)), [matches]);
-  const phases = useMemo(() => assignPhases(confrontos, structure_json, season), [confrontos, structure_json, season]);
+function BracketView({ matches, structure_json, season, t, fasesOverride, groupClubs }) {
+  const flatGames = useMemo(() => matches.flatMap(w => w.games), [matches]);
+  // maxLegs: 1 se todas as fases são turno_unico, 2 se alguma é ida_volta
+  const maxLegs = useMemo(() => {
+    const mataMataFases = (fasesOverride ?? []).filter(f => f.tipo === "mata_mata");
+    if (mataMataFases.length === 0) return 2;
+    return mataMataFases.some(f => f.formato === "ida_volta") ? 2 : 1;
+  }, [fasesOverride]);
+
+  const confrontos = useMemo(() => buildConfrontos(flatGames, maxLegs), [flatGames, maxLegs]);
+  const phases = useMemo(() => assignPhases(confrontos, flatGames, structure_json, season, fasesOverride), [confrontos, flatGames, structure_json, season, fasesOverride]);
 
   if (!confrontos.length) return (
     <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_matches", "Nenhuma partida registrada.")}</p>
   );
 
-  const finalPhase = phases[phases.length - 1];
+  // Champion is the winner of the last knockout (non-grupo) phase
+  const knockoutPhases = phases.filter(p => p.tipo !== "grupo");
+  const finalPhase = knockoutPhases[knockoutPhases.length - 1];
   const finalConf = finalPhase?.confrontos[0];
   const champion = finalConf ? (() => {
     const { team1, team2, agg } = finalConf;
@@ -486,12 +1046,35 @@ function BracketView({ matches, structure_json, season, t }) {
     <div className="flex flex-col items-center gap-0 w-full">
       {phases.map((phase, pi) => {
         const isLast = pi === phases.length - 1;
+
+        // ── Group stage ───────────────────────────────────────────────────────
+        if (phase.tipo === "grupo") {
+          return (
+            <div key={phase.nome} className="w-full flex flex-col items-center">
+              <div className="justify-center w-full flex items-center gap-2.5 mb-4 px-1">
+                <span className="text-sm lg:text-xl font-bold text-gray-900 uppercase tracking-wide">{phase.nome}</span>
+                {(phase.faseConfig?.grupos ?? 0) > 0 && (
+                  <span className="text-xs lg:text-xl text-gray-400">· {phase.faseConfig.grupos} grupos</span>
+                )}
+              </div>
+              <GroupPhaseView phase={phase} t={t} adminGroups={groupClubs} />
+              {!isLast && (
+                <div className="flex flex-col items-center my-4 text-gray-200">
+                  <div className="w-px h-5 bg-gray-200" />
+                  <ChevronsDown size={16} />
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // ── Knockout phase ────────────────────────────────────────────────────
         const cols = phaseColumns(phase.confrontos.length);
         const mw = phaseMaxWidth(phase.confrontos.length);
 
         return (
           <div key={phase.nome} className="w-full flex flex-col items-center">
-            {/* Phase header — sober, no gradient */}
+            {/* Phase header */}
             <div className="justify-center w-full flex items-center gap-2.5 mb-4 px-1">
               <span className="text-sm lg:text-xl font-bold text-gray-900 uppercase tracking-wide">{phase.nome}</span>
               <span className="text-xs lg:text-xl text-gray-400">
@@ -636,7 +1219,7 @@ export default function LeagueSportsSection({ leagueId }) {
         const resSeason = s ?? res.season;
         const resCfg = res.league?.structure_json?.[String(resSeason)];
         const resFmt = resCfg?.tipo || res.league?.format || "pontos_corridos";
-        const isKo = resFmt !== "pontos_corridos" && resFmt !== "pontos_corridos_turno_unico" && resFmt !== "grupos";
+        const isKo = resFmt !== "pontos_corridos" && resFmt !== "pontos_corridos_turno_unico" && resFmt !== "grupos" && resFmt !== "apertura_clausura";
         setMainTab(isKo ? "chaveamento" : "classificacao");
       }
     } catch (e) { console.error(e); }
@@ -651,33 +1234,62 @@ export default function LeagueSportsSection({ leagueId }) {
   );
   if (!data) return null;
 
-  const { league, seasons, standings, matches, discipline } = data;
+  const { league, seasons, standings, matches, discipline, groupClubs } = data;
   const seasonConfig = league.structure_json?.[String(season)] ?? null;
   const fmt = seasonConfig?.tipo || league.format || "pontos_corridos";
   const isKnockout = fmt !== "pontos_corridos" && fmt !== "pontos_corridos_turno_unico" && fmt !== "grupos" && fmt !== "apertura_clausura";
   const isAperturaClausura = fmt === "apertura_clausura";
   const totalRounds = matches?.length ?? 0;
 
-  // Para apertura_clausura, split controla "clausura" | "apertura"; senão "total" | "home" | "away"
-  const splitOptions = isAperturaClausura ? ["clausura", "apertura"] : ["total", "home", "away"];
-  const activeSplit = splitOptions.includes(split) ? split : splitOptions[0];
+  // Para apertura_clausura: deriva as sub-tabs dos torneios configurados (novo formato)
+  const acTorneios = seasonConfig?.torneios ?? null;
+  const acSplitOptions = isAperturaClausura
+    ? (acTorneios
+        ? acTorneios.map(t => ({ key: t.key, label: t.nome }))
+        : [{ key: "apertura", label: "Apertura" }, { key: "clausura", label: "Clausura" }])
+    : [
+        { key: "total", label: t("sports.total", "Total") },
+        { key: "home",  label: t("sports.home",  "Casa")  },
+        { key: "away",  label: t("sports.away",  "Fora")  },
+      ];
+
+  const splitKeys = acSplitOptions.map(o => o.key);
+  const activeSplit = splitKeys.includes(split) ? split : splitKeys[0];
 
   // Partidas filtradas pela fase ativa (apertura_clausura)
+  // Filtra também os jogos dentro de cada rodada para não misturar apertura/clausura
   const matchesForPhase = isAperturaClausura
-    ? (matches ?? []).filter(w => w.games.some(g => g.phase === activeSplit))
+    ? (matches ?? [])
+        .map(w => ({ ...w, games: w.games.filter(g => g.phase === activeSplit) }))
+        .filter(w => w.games.length > 0)
     : (matches ?? []);
 
   // Líder da fase ativa
   const activeStandings = standings?.[activeSplit] ?? [];
   const leader = activeStandings[0] ?? null;
 
+  // Grupos do torneio ativo (apertura_clausura com fase de grupos)
+  const activeTorneioConfig = acTorneios?.find(t => t.key === activeSplit) ?? null;
+  const grupoFaseConfig = activeTorneioConfig?.fases?.find(f => f.tipo === "grupo") ?? null;
+  const grupoPhaseKey = grupoFaseConfig
+    ? `${activeSplit}_${grupoFaseConfig.nome.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")}`
+    : null;
+  const activeGroupClubs = grupoPhaseKey ? (groupClubs?.[grupoPhaseKey] ?? null) : null;
+
+  const hasGrupoPhase = !!grupoFaseConfig;
+
   const tabs = [];
-  if (!isKnockout) tabs.push({ key: "classificacao", label: "Classificação" });
-  if (isKnockout) tabs.push({ key: "chaveamento", label: "Chaveamento" });
+  if (isAperturaClausura) {
+    tabs.push({ key: "torneio", label: "Torneio" });
+  } else if (isKnockout) {
+    tabs.push({ key: "chaveamento", label: "Chaveamento" });
+  } else {
+    tabs.push({ key: "classificacao", label: "Classificação" });
+  }
   if (!isKnockout) tabs.push({ key: "partidas", label: "Rodadas", badge: totalRounds });
   tabs.push({ key: "disciplinar", label: "Disciplinar" });
 
-  const activeTab = mainTab ?? tabs[0]?.key;
+  const activeTab = (mainTab && tabs.some(t => t.key === mainTab)) ? mainTab : tabs[0]?.key;
 
   return (
     <div className="space-y-4">
@@ -723,15 +1335,34 @@ export default function LeagueSportsSection({ leagueId }) {
         </div>
       </div>
 
-      {/* ── CLASSIFICAÇÃO ── */}
+      {/* ── TORNEIO (apertura_clausura) — grupos + eliminatórias numa só view ── */}
+      {activeTab === "torneio" && (
+        <>
+          <div className="flex items-center justify-end gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
+            <SubTabs value={activeSplit} onChange={val => setSplit(val)} options={acSplitOptions} />
+          </div>
+          {loading
+            ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
+            : <TorneioPanelView
+                matchesForPhase={matchesForPhase}
+                adminGroups={activeGroupClubs}
+                activeStandings={activeStandings}
+                grupoFaseConfig={grupoFaseConfig}
+                activeTorneioConfig={activeTorneioConfig}
+                t={t}
+              />
+          }
+        </>
+      )}
+
+      {/* ── CLASSIFICAÇÃO (outros formatos) ── */}
       {activeTab === "classificacao" && (
         <>
-          {/* Leader + split selector — unified strip */}
           <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
             {!loading && leader ? (
               <Link to={`/dashboard/clubs/${leader.id}`}
                 className="flex items-center gap-2 min-w-0 group">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0">CAMPEÃO</span>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0 hidden lg:block">CAMPEÃO</span>
                 {leader.crest
                   ? <img src={leader.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
                   : <Trophy size={16} className="text-gray-300 shrink-0" />
@@ -743,18 +1374,7 @@ export default function LeagueSportsSection({ leagueId }) {
                 <span className="text-xs text-gray-400 shrink-0">pts</span>
               </Link>
             ) : <div />}
-            <SubTabs
-              value={activeSplit}
-              onChange={val => setSplit(val)}
-              options={isAperturaClausura
-                ? [{ key: "clausura", label: "Clausura" }, { key: "apertura", label: "Apertura" }]
-                : [
-                  { key: "total", label: t("sports.total", "Total") },
-                  { key: "home", label: t("sports.home", "Casa") },
-                  { key: "away", label: t("sports.away", "Fora") },
-                ]
-              }
-            />
+            <SubTabs value={split} onChange={val => setSplit(val)} options={acSplitOptions} />
           </div>
           {loading
             ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
@@ -763,7 +1383,7 @@ export default function LeagueSportsSection({ leagueId }) {
         </>
       )}
 
-      {/* ── CHAVEAMENTO ── */}
+      {/* ── CHAVEAMENTO (mata-mata puro) ── */}
       {activeTab === "chaveamento" && (
         loading
           ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>

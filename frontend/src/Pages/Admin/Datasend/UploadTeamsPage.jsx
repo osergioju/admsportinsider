@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { api } from "../../../services/api";
 import {
   Loader2, UploadCloud, Shield, ArrowRight, CheckCircle2,
@@ -21,10 +21,35 @@ export default function UploadTeamsPage() {
   const [preview, setPreview] = useState(null);
   // { csvCountry, csvSeason, leagues, foundTeams, notFoundTeams, allClubs }
 
+  const [countries, setCountries] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState("");
   const [league, setLeague] = useState("");
   const [clubMappings, setClubMappings] = useState({}); // { "csvName": clubId }
   const [showAllLeagues, setShowAllLeagues] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  useEffect(() => {
+    async function loadCountries() {
+      try {
+        let page = 1;
+        let all = [];
+
+        while (true) {
+          const { data } = await api.get(`/admin/countries?page=${page}`);
+          all = [...all, ...data.countries];
+
+          if (page >= data.pagination.totalPages) break;
+          page++;
+        }
+
+        setCountries(all);
+      } catch (e) {
+        console.error("Erro ao carregar países");
+      }
+    }
+
+    loadCountries();
+  }, []);
 
   function handleFileChange(e) {
     setFile(e.target.files[0] || null);
@@ -47,6 +72,7 @@ export default function UploadTeamsPage() {
       });
       setPreview(data);
       if (data.leagues.length === 1) setLeague(String(data.leagues[0].id_league));
+      if (data.isMultiCountry) setShowAllLeagues(true);
       const init = {};
       for (const name of data.notFoundTeams) init[name] = "";
       // Pré-popula conflitos para o usuário ver e resolver
@@ -130,6 +156,19 @@ export default function UploadTeamsPage() {
     })).sort((a, b) => (b._isDetected ? 1 : 0) - (a._isDetected ? 1 : 0));
   }, [preview?.allClubs, preview?.csvCountry]);
 
+  const shouldAskCountry =
+    preview &&
+    !preview.isMultiCountry &&
+    !preview.csvCountry;
+
+  const countriesOptions = useMemo(() => {
+    return countries.map(c => ({
+      value: c.name,
+      label: c.name,
+      image: c.flag_url
+    }));
+  }, [countries]);
+
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center mb-10">
@@ -182,8 +221,13 @@ export default function UploadTeamsPage() {
             {/* Info detectada */}
             <div className="flex gap-3">
               <div className="flex-1 p-3 bg-purple-50 rounded-2xl border border-purple-100">
-                <p className="text-[10px] uppercase font-black text-purple-400 mb-1">País detectado</p>
-                <p className="text-sm font-bold text-purple-700 flex items-center gap-1"><MapPin size={13} />{preview.csvCountry || "—"}</p>
+                <p className="text-[10px] uppercase font-black text-purple-400 mb-1">
+                  {preview.isMultiCountry ? "Escopo" : "País detectado"}
+                </p>
+                <p className="text-sm font-bold text-purple-700 flex items-center gap-1">
+                  <MapPin size={13} />
+                  {preview.isMultiCountry ? "Continental (múltiplos países)" : (preview.csvCountry || "—")}
+                </p>
               </div>
               <div className="flex-1 p-3 bg-purple-50 rounded-2xl border border-purple-100">
                 <p className="text-[10px] uppercase font-black text-purple-400 mb-1">Temporada</p>
@@ -194,20 +238,48 @@ export default function UploadTeamsPage() {
               </div>
             </div>
 
+            {shouldAskCountry && (
+              <div className="space-y-1.5">
+                <label className={labelClass}>Selecionar País</label>
+
+                <SearchableSelect
+                  grouped={[
+                    {
+                      groupLabel: "Países",
+                      options: countriesOptions
+                    }
+                  ]}
+                  value={selectedCountry}
+                  onChange={(val) => {
+                    setSelectedCountry(val);
+                    setLeague(""); // reset liga
+                  }}
+                  placeholder="Buscar país..."
+                />
+
+                <p className="text-[11px] text-gray-400 ml-1">
+                  Não conseguimos identificar automaticamente. Selecione o país para filtrar as ligas.
+                </p>
+              </div>
+            )}
+
             {/* Liga */}
             <div>
               <label className={labelClass}>
                 Liga
                 {preview.leagues.length === 1 && <span className="text-green-500 normal-case font-normal ml-1">— pré-selecionada</span>}
+                {preview.isMultiCountry && <span className="text-purple-400 normal-case font-normal ml-1">— selecione a liga continental</span>}
               </label>
               {preview.leagues.length === 0 && !showAllLeagues ? (
                 <div className="space-y-2">
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-sm text-amber-700">
                     <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                    Nenhuma liga encontrada para "{preview.csvCountry}". Cadastre uma liga ou{" "}
-                    <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">
-                      ver todas as ligas
-                    </button>.
+                    {preview.isMultiCountry
+                      ? <>Nenhuma liga continental cadastrada. Cadastre uma liga sem país associado ou{" "}
+                        <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">ver todas as ligas</button>.</>
+                      : <>Nenhuma liga encontrada para "{preview.csvCountry}". Cadastre uma liga ou{" "}
+                        <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">ver todas as ligas</button>.</>
+                    }
                   </div>
                 </div>
               ) : (
@@ -216,11 +288,11 @@ export default function UploadTeamsPage() {
                     <option value="">Selecione a liga</option>
                     {(showAllLeagues ? preview.allLeagues ?? preview.leagues : preview.leagues).map(l => (
                       <option key={l.id_league} value={l.id_league}>
-                        {l.name}{l.country_name !== preview.csvCountry ? ` (${l.country_name})` : ""}
+                        {l.name}{!preview.isMultiCountry && l.country_name && l.country_name !== preview.csvCountry ? ` (${l.country_name})` : ""}
                       </option>
                     ))}
                   </select>
-                  {!showAllLeagues && preview.leagues.length > 0 && (
+                  {!preview.isMultiCountry && !showAllLeagues && preview.leagues.length > 0 && (
                     <button
                       onClick={() => setShowAllLeagues(true)}
                       className="text-[11px] text-gray-400 hover:text-[#7F33D9] font-medium ml-1 underline underline-offset-2 transition-colors"
@@ -228,7 +300,7 @@ export default function UploadTeamsPage() {
                       Ver todas as ligas
                     </button>
                   )}
-                  {showAllLeagues && (
+                  {!preview.isMultiCountry && showAllLeagues && (
                     <button
                       onClick={() => { setShowAllLeagues(false); setLeague(""); }}
                       className="text-[11px] text-gray-400 hover:text-[#7F33D9] font-medium ml-1 underline underline-offset-2 transition-colors"

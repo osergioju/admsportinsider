@@ -162,32 +162,63 @@ function splitIntoRounds(cluster) {
   return rounds;
 }
 
-function assignPhases(confrontos, structure_json, season) {
+// Same assignPhases as LeagueSportsSection — supports explicit confrontos counts
+function assignPhases(confrontos, flatGames, structure_json, season) {
   if (!confrontos.length) return [];
   const sorted = [...confrontos].sort((a, b) => new Date(a.firstDate ?? 0) - new Date(b.firstDate ?? 0));
   const yearData = structure_json?.[String(season)];
   const fases = yearData?.fases ?? [];
-  const clusters = temporalCluster(sorted, 14);
-  const expanded = [];
-  for (const cl of clusters) {
-    for (const round of splitIntoRounds(cl)) expanded.push(round);
-  }
-  if (fases.length > 0) {
-    const N = fases.length;
+
+  const clusterAndExpand = (arr) => {
+    const clusters = temporalCluster(arr, 14);
+    const expanded = [];
+    for (const cl of clusters) for (const round of splitIntoRounds(cl)) expanded.push(round);
+    return expanded;
+  };
+  const mapExpanded = (expanded, phaseList) => {
+    const N = phaseList.length;
     const result = new Array(N).fill(null).map(() => []);
     const offset = N - expanded.length;
-    if (offset >= 0) {
-      expanded.forEach((grp, i) => { result[offset + i] = grp; });
-    } else {
-      result[0] = expanded.slice(0, 1 - offset).flat();
-      expanded.slice(1 - offset).forEach((grp, i) => { result[1 + i] = grp; });
+    if (offset >= 0) { expanded.forEach((grp, i) => { result[offset + i] = grp; }); }
+    else { result[0] = expanded.slice(0, 1 - offset).flat(); expanded.slice(1 - offset).forEach((grp, i) => { result[1 + i] = grp; }); }
+    return result;
+  };
+
+  if (fases.length > 0) {
+    let explicitPrefixLen = 0;
+    for (const f of fases) {
+      if (f.tipo === "mata_mata" && (f.confrontos ?? 0) > 0) explicitPrefixLen++;
+      else break;
     }
-    return fases.map((f, i) => ({ nome: f.nome ?? `Fase ${i + 1}`, confrontos: result[i] })).filter(p => p.confrontos.length > 0);
+    const phaseResults = new Array(fases.length).fill(null).map(() => []);
+    let cursor = 0;
+    for (let i = 0; i < explicitPrefixLen; i++) {
+      phaseResults[i] = sorted.slice(cursor, cursor + fases[i].confrontos);
+      cursor += fases[i].confrontos;
+    }
+    const remaining = sorted.slice(cursor);
+    const unresolvedFases = fases.slice(explicitPrefixLen);
+    if (unresolvedFases.length > 0 && remaining.length > 0) {
+      const subResults = mapExpanded(clusterAndExpand(remaining), unresolvedFases);
+      for (let i = 0; i < unresolvedFases.length; i++) phaseResults[explicitPrefixLen + i] = subResults[i] ?? [];
+    }
+    return fases.map((f, i) => {
+      const phaseConfrontos = phaseResults[i] ?? [];
+      let games = [];
+      if (f.tipo === "grupo" && phaseConfrontos.length > 0 && flatGames?.length) {
+        const dates = phaseConfrontos.flatMap(c => c.legs.map(l => new Date(l.date ?? 0).getTime())).filter(Boolean);
+        if (dates.length) {
+          const minDate = Math.min(...dates); const maxDate = Math.max(...dates);
+          games = flatGames.filter(g => { const t = new Date(g.date ?? 0).getTime(); return t >= minDate - 86400000 && t <= maxDate + 86400000; });
+        }
+      }
+      return { nome: f.nome ?? `Fase ${i + 1}`, tipo: f.tipo, faseConfig: f, confrontos: phaseConfrontos, games };
+    }).filter(p => p.confrontos.length > 0 || p.tipo === "grupo");
   }
+
+  const expanded = clusterAndExpand(sorted);
   const BRACKET_NAMES = [
-    ["Final"],
-    ["Semifinal", "Final"],
-    ["Quartas de Final", "Semifinal", "Final"],
+    ["Final"], ["Semifinal", "Final"], ["Quartas de Final", "Semifinal", "Final"],
     ["Oitavas de Final", "Quartas de Final", "Semifinal", "Final"],
     ["16 avos de Final", "Oitavas de Final", "Quartas de Final", "Semifinal", "Final"],
     ["32 avos de Final", "16 avos de Final", "Oitavas de Final", "Quartas de Final", "Semifinal", "Final"],
@@ -195,79 +226,231 @@ function assignPhases(confrontos, structure_json, season) {
   const n = Math.min(expanded.length, BRACKET_NAMES.length);
   const names = BRACKET_NAMES[n - 1] ?? ["Confrontos"];
   const off = names.length - expanded.length;
-  return names.map((nome, i) => ({ nome, confrontos: expanded[i - off] ?? [] })).filter(p => p.confrontos.length > 0);
+  return names.map((nome, i) => ({ nome, tipo: "mata_mata", faseConfig: {}, confrontos: expanded[i - off] ?? [], games: [] })).filter(p => p.confrontos.length > 0);
+}
+
+// Infer group standings via BFS connected components
+function computeGroupStandings(games) {
+  if (!games.length) return [];
+  const teamOpponents = new Map();
+  const teamInfo = new Map();
+  for (const g of games) {
+    for (const side of [g.home, g.away]) {
+      if (!teamOpponents.has(side.id)) teamOpponents.set(side.id, new Set());
+      teamInfo.set(side.id, side);
+    }
+    teamOpponents.get(g.home.id).add(g.away.id);
+    teamOpponents.get(g.away.id).add(g.home.id);
+  }
+  const visited = new Set();
+  const groups = [];
+  for (const teamId of teamOpponents.keys()) {
+    if (visited.has(teamId)) continue;
+    const group = []; const queue = [teamId]; visited.add(teamId);
+    while (queue.length) { const curr = queue.shift(); group.push(curr); for (const opp of (teamOpponents.get(curr) ?? [])) { if (!visited.has(opp)) { visited.add(opp); queue.push(opp); } } }
+    groups.push(group);
+  }
+  groups.sort((a, b) => Math.min(...a) - Math.min(...b));
+  return groups.map(groupIds => {
+    const idSet = new Set(groupIds);
+    const stats = {};
+    for (const id of groupIds) { const info = teamInfo.get(id); stats[id] = { id, name: info?.name ?? "", crest: info?.crest ?? null, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 }; }
+    for (const g of games) {
+      if (!idSet.has(g.home.id) || !idSet.has(g.away.id)) continue;
+      if (g.home_goals == null || g.away_goals == null) continue;
+      const h = stats[g.home.id]; const a = stats[g.away.id];
+      h.j++; a.j++; h.gp += g.home_goals; h.gc += g.away_goals; a.gp += g.away_goals; a.gc += g.home_goals;
+      if (g.home_goals > g.away_goals) { h.v++; h.pts += 3; a.d++; } else if (g.home_goals < g.away_goals) { a.v++; a.pts += 3; h.d++; } else { h.e++; a.e++; h.pts++; a.pts++; }
+    }
+    const rows = Object.values(stats).map(s => ({ ...s, sg: s.gp - s.gc, pct: s.j ? Math.round((s.pts / (s.j * 3)) * 100) : 0 }));
+    rows.sort((a, b) => b.pts - a.pts || b.sg - a.sg || b.gp - a.gp || b.v - a.v);
+    rows.forEach((r, i) => { r.pos = i + 1; });
+    return rows;
+  });
 }
 
 const phaseColumns = (n) => n === 1 ? "grid-cols-1" : n === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4";
 const phaseMaxWidth = (n) => n === 1 ? "max-w-[280px]" : n === 2 ? "max-w-[560px]" : n <= 4 ? "max-w-[80%]" : "max-w-full";
 
-function assignPhasesForClub(confrontos, structure_json, season) {
-  if (!confrontos.length) return [];
-  const fases = structure_json?.[String(season)]?.fases ?? [];
-  const sorted = [...confrontos].sort((a, b) => new Date(a.firstDate ?? 0) - new Date(b.firstDate ?? 0));
+// Compute club's knockout result using the full league bracket
+function getKnockoutResult(leagueMatches, matches, structure_json, season, clubId) {
+  const src = leagueMatches?.length ? leagueMatches : matches;
+  if (!src?.length) return null;
+  const flatGames = src.flatMap(w => w.games);
+  const allConfrontos = buildConfrontos(flatGames);
+  if (!allConfrontos.length) return null;
 
-  if (!fases.length) {
-    return sorted.map((c, i) => ({ nome: `Confronto ${i + 1}`, confrontos: [c] }));
-  }
+  const allPhases = assignPhases(allConfrontos, flatGames, structure_json, season);
+  const clubPhases = allPhases.map(phase => ({
+    ...phase,
+    confrontos: phase.tipo === "grupo"
+      ? buildConfrontos(flatGames.filter(g => g.home.id === clubId || g.away.id === clubId))
+      : phase.confrontos.filter(c => c.team1.id === clubId || c.team2.id === clubId),
+  })).filter(p => p.confrontos.length > 0);
 
-  // Separate confrontos with known game_week from those without
-  const known = new Map(); // phaseIdx → confronto[]
-  const unknown = [];
-  for (const c of sorted) {
-    const maxWeek = Math.max(0, ...c.legs.map(l => l.game_week ?? 0));
-    if (maxWeek > 0 && maxWeek <= fases.length) {
-      const idx = maxWeek - 1;
-      if (!known.has(idx)) known.set(idx, []);
-      known.get(idx).push(c);
-    } else {
-      unknown.push(c);
-    }
-  }
+  if (!clubPhases.length) return null;
+  const lastPhase = clubPhases[clubPhases.length - 1];
+  const lastConfronto = lastPhase.confrontos[lastPhase.confrontos.length - 1];
+  if (!lastConfronto) return null;
 
-  // Anchor unknown confrontos chronologically before the lowest known phase
-  const knownIndices = [...known.keys()].sort((a, b) => a - b);
-  const anchor = knownIndices.length > 0 ? knownIndices[0] : fases.length;
-  const startIdx = anchor - unknown.length;
-  unknown.forEach((c, i) => {
-    const idx = Math.max(0, startIdx + i);
-    if (!known.has(idx)) known.set(idx, []);
-    known.get(idx).push(c);
-  });
+  const myAgg = lastConfronto.agg[clubId] ?? null;
+  const opponentEntry = Object.entries(lastConfronto.agg).find(([id]) => Number(id) !== clubId);
+  const oppAgg = opponentEntry?.[1] ?? null;
 
-  return [...known.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([idx, cs]) => ({ nome: fases[idx]?.nome ?? `Fase ${idx + 1}`, confrontos: cs }))
-    .filter(p => p.confrontos.length > 0);
+  if (myAgg === null || oppAgg === null) return { phase: lastPhase.nome, status: "unknown" };
+  if (myAgg < oppAgg) return { phase: lastPhase.nome, status: "eliminated" };
+
+  const allFases = structure_json?.[String(season)]?.fases ?? [];
+  const lastKoFase = [...allFases].reverse().find(f => f.tipo === "mata_mata");
+  const isLastFase = !lastKoFase || lastPhase.nome === lastKoFase.nome;
+  if (isLastFase && myAgg > oppAgg) return { phase: lastPhase.nome, status: "champion" };
+  return { phase: lastPhase.nome, status: "advancing" };
 }
 
-function ClubBracketView({ matches, structure_json, season, t, clubId }) {
-  // Attach game_week to each leg so phase detection works
-  const flatMatches = useMemo(() =>
-    matches.flatMap(w => w.games.map(g => ({ ...g, game_week: w.week }))),
-    [matches]
-  );
-  const confrontos = useMemo(() => buildConfrontos(flatMatches), [flatMatches]);
-  const phases = useMemo(() => assignPhasesForClub(confrontos, structure_json, season), [confrontos, structure_json, season]);
+// Group phase mini-table showing only the club's group
+function ClubGroupView({ phase, clubId, t }) {
+  const allGroups = useMemo(() => computeGroupStandings(phase.games ?? []), [phase.games]);
+  const clubGroup = useMemo(() => allGroups.find(g => g.some(r => r.id === clubId)) ?? [], [allGroups, clubId]);
+  const advanceCount = phase.faseConfig?.classificados_por_grupo ?? 2;
 
-  if (!confrontos.length) return (
+  // Club's confrontos within this group
+  const clubGroupGames = useMemo(() =>
+    (phase.games ?? []).filter(g => g.home.id === clubId || g.away.id === clubId),
+    [phase.games, clubId]
+  );
+  const clubConfrontos = useMemo(() => buildConfrontos(clubGroupGames), [clubGroupGames]);
+
+  if (!clubGroup.length && !clubConfrontos.length) return (
+    <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_matches", "Sem dados do grupo.")}</p>
+  );
+
+  // Determine which group letter this is
+  const groupIdx = allGroups.indexOf(clubGroup);
+  const groupLabel = groupIdx >= 0 ? `Grupo ${String.fromCharCode(65 + groupIdx)}` : "Grupo";
+
+  return (
+    <div className="w-full space-y-4">
+      {/* Group standings */}
+      {clubGroup.length > 0 && (
+        <div className="rounded-xl border border-gray-100 overflow-hidden bg-white shadow-sm">
+          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{groupLabel}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs min-w-[280px]">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-50">
+                  <th className="py-1.5 px-2 text-center w-6">#</th>
+                  <th className="py-1.5 px-2 text-left">Clube</th>
+                  <th className="py-1.5 px-2 text-center font-bold text-violet-500">P</th>
+                  <th className="py-1.5 px-2 text-center">J</th>
+                  <th className="py-1.5 px-2 text-center text-emerald-500">V</th>
+                  <th className="py-1.5 px-2 text-center">E</th>
+                  <th className="py-1.5 px-2 text-center text-red-400">D</th>
+                  <th className="py-1.5 px-2 text-center">SG</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clubGroup.map((row, ri) => {
+                  const advances = ri < advanceCount;
+                  const isMain = row.id === clubId;
+                  return (
+                    <tr key={row.id} className={`border-t border-gray-50 ${isMain ? "bg-violet-50" : "hover:bg-gray-50/60 transition-colors"}`}>
+                      <td className={`px-2 py-2 text-center font-bold text-gray-500 ${advances ? "border-l-2 border-emerald-400" : "border-l-2 border-transparent"}`}>{row.pos}</td>
+                      <td className="px-2 py-2 max-w-[120px]">
+                        <Link to={`/dashboard/clubs/${row.id}`} className={`flex items-center gap-1.5 hover:text-violet-700 transition-colors ${isMain ? "font-bold text-violet-700" : "font-medium text-gray-700"}`}>
+                          {row.crest ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" /> : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
+                          <span className="truncate">{row.name}</span>
+                        </Link>
+                      </td>
+                      <td className="px-2 py-2 text-center font-bold text-gray-900 tabular-nums">{row.pts}</td>
+                      <td className="px-2 py-2 text-center text-gray-500 tabular-nums">{row.j}</td>
+                      <td className="px-2 py-2 text-center font-semibold text-emerald-600 tabular-nums">{row.v}</td>
+                      <td className="px-2 py-2 text-center text-gray-500 tabular-nums">{row.e}</td>
+                      <td className="px-2 py-2 text-center text-red-400 tabular-nums">{row.d}</td>
+                      <td className={`px-2 py-2 text-center font-semibold tabular-nums ${row.sg > 0 ? "text-emerald-600" : row.sg < 0 ? "text-red-500" : "text-gray-400"}`}>{row.sg > 0 ? `+${row.sg}` : row.sg}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {advanceCount > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-gray-50 bg-gray-50/50">
+              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" /> Avança ({advanceCount})
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      {/* Club's confrontos within the group */}
+      {clubConfrontos.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {clubConfrontos.map((c, i) => <ConfrontoCard key={i} confronto={c} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClubBracketView({ matches, leagueMatches, structure_json, season, t, clubId }) {
+  // Use full league matches when available to build the complete bracket
+  const srcMatches = leagueMatches?.length ? leagueMatches : matches;
+
+  const flatGames = useMemo(() => srcMatches.flatMap(w => w.games), [srcMatches]);
+  const allConfrontos = useMemo(() => buildConfrontos(flatGames), [flatGames]);
+
+  // Build full bracket phases (same logic as league page)
+  const allPhases = useMemo(() =>
+    assignPhases(allConfrontos, flatGames, structure_json, season),
+    [allConfrontos, flatGames, structure_json, season]
+  );
+
+  // Filter each phase to only show confrontos involving this club
+  const phases = useMemo(() =>
+    allPhases
+      .map(phase => {
+        if (phase.tipo === "grupo") {
+          // Group phases are handled by ClubGroupView — keep as-is
+          return phase;
+        }
+        return { ...phase, confrontos: phase.confrontos.filter(c => c.team1.id === clubId || c.team2.id === clubId) };
+      })
+      .filter(phase => phase.tipo === "grupo" ? (phase.games?.length > 0) : phase.confrontos.length > 0),
+    [allPhases, clubId]
+  );
+
+  const koResult = useMemo(() =>
+    getKnockoutResult(leagueMatches, matches, structure_json, season, clubId),
+    [leagueMatches, matches, structure_json, season, clubId]
+  );
+
+  if (!allConfrontos.length) return (
     <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_matches", "Nenhuma partida registrada.")}</p>
   );
-
-  // Detect if club was eliminated in the last confronto
-  const lastPhase = phases[phases.length - 1];
-  const lastConfronto = lastPhase?.confrontos[lastPhase.confrontos.length - 1];
-  let wasEliminated = false;
-  if (lastConfronto) {
-    const myAgg = lastConfronto.agg[clubId] ?? null;
-    const opponentEntry = Object.entries(lastConfronto.agg).find(([id]) => Number(id) !== clubId);
-    const oppAgg = opponentEntry?.[1] ?? null;
-    if (myAgg !== null && oppAgg !== null && myAgg < oppAgg) wasEliminated = true;
-  }
 
   return (
     <div className="flex flex-col items-center gap-0 w-full">
       {phases.map((phase, pi) => {
         const isLast = pi === phases.length - 1;
+
+        if (phase.tipo === "grupo") {
+          return (
+            <div key={phase.nome} className="w-full flex flex-col items-center">
+              <div className="justify-center w-full flex items-center gap-2.5 mb-4 px-1">
+                <span className="text-sm lg:text-xl font-bold text-gray-900 uppercase tracking-wide">{phase.nome}</span>
+              </div>
+              <ClubGroupView phase={phase} clubId={clubId} t={t} />
+              {!isLast && (
+                <div className="flex flex-col items-center my-4 text-gray-200">
+                  <div className="w-px h-5 bg-gray-200" /><ChevronsDown size={16} />
+                </div>
+              )}
+            </div>
+          );
+        }
+
         const cols = phaseColumns(phase.confrontos.length);
         const mw = phaseMaxWidth(phase.confrontos.length);
         return (
@@ -281,20 +464,27 @@ function ClubBracketView({ matches, structure_json, season, t, clubId }) {
             </div>
             {!isLast && (
               <div className="flex flex-col items-center my-4 text-gray-200">
-                <div className="w-px h-5 bg-gray-200" />
-                <ChevronsDown size={16} />
+                <div className="w-px h-5 bg-gray-200" /><ChevronsDown size={16} />
               </div>
             )}
           </div>
         );
       })}
-      {wasEliminated && (
+
+      {koResult?.status === "eliminated" && (
         <div className="flex flex-col items-center mt-4 gap-2 w-full max-w-[280px] mb-6">
           <div className="w-px h-5 bg-gray-100" />
           <div className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-center">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Eliminado nas {lastPhase?.nome}
-            </p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Eliminado nas {koResult.phase}</p>
+          </div>
+        </div>
+      )}
+      {koResult?.status === "champion" && (
+        <div className="flex flex-col items-center mt-4 gap-2 w-full max-w-[280px] mb-6">
+          <div className="w-px h-5 bg-gray-200" />
+          <ChevronsDown size={16} className="text-gray-200" />
+          <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+            <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">Campeão</p>
           </div>
         </div>
       )}
@@ -539,6 +729,37 @@ export default function CompetitionsClubs() {
         const s = comp.summary ?? {};
         const mp = sp.matches || s.matches || 1;
 
+        const seasonFmt = comp.structure_json?.[String(season)]?.tipo;
+        const compFmt = seasonFmt || comp.format;
+        const isKoComp = compFmt && compFmt !== "pontos_corridos" && compFmt !== "pontos_corridos_turno_unico" && compFmt !== "grupos" && compFmt !== "apertura_clausura";
+        const koResult = isKoComp ? getKnockoutResult(comp.leagueMatches, comp.matches, comp.structure_json, season, clubId) : null;
+
+        const headerBadge = (() => {
+          if (isKoComp) {
+            if (!koResult) return null;
+            if (koResult.status === "champion")
+              return <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Campeão</span>;
+            if (koResult.status === "eliminated")
+              return <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">Elim. · {koResult.phase}</span>;
+            if (koResult.status === "advancing")
+              return <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{koResult.phase}</span>;
+            return null;
+          }
+          if (s.pos > 0)
+            return <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{s.pos}{t("sports.place_suffix", "º lugar")}</span>;
+          return null;
+        })();
+
+        const positionBigNum = (() => {
+          if (isKoComp) {
+            if (koResult?.status === "champion") return <BigNum value="Campeão" label="Resultado" highlight />;
+            if (koResult?.status === "eliminated") return <BigNum value={koResult.phase} label="Eliminado em" highlight />;
+            if (koResult?.status === "advancing") return <BigNum value={koResult.phase} label="Fase" highlight />;
+            return <BigNum value="—" label={t("sports.position", "Posição")} highlight />;
+          }
+          return <BigNum value={s.pos || "—"} label={t("sports.position", "Posição")} highlight />;
+        })();
+
         return (
           <div key={comp.id} className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
 
@@ -551,7 +772,7 @@ export default function CompetitionsClubs() {
                   : <div className="w-7 h-7 lg:w-12 lg:h-12 rounded-lg bg-gray-100 flex items-center justify-center"><Trophy size={14} className="text-gray-400" /></div>
                 }
                 <span className="text-sm font-bold text-gray-900">{comp.name}</span>
-                {s.pos && <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{s.pos}{t("sports.place_suffix", "º lugar")}</span>}
+                {headerBadge}
               </div>
               <ChevronDown size={18} className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
             </button>
@@ -561,7 +782,7 @@ export default function CompetitionsClubs() {
 
                 {/* Big numbers summary */}
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 px-5 py-4 border-b border-gray-100">
-                  <BigNum value={s.pos} label={t("sports.position", "Posição")} highlight />
+                  {positionBigNum}
                   <BigNum value={s.pts} label={t("sports.points", "Pontos")} />
                   <BigNum value={s.wins} label={t("sports.wins", "Vitórias")} />
                   <BigNum value={s.draws} label={t("sports.draws", "Empates")} />
@@ -586,6 +807,7 @@ export default function CompetitionsClubs() {
                   {mt === "chaveamento" && (
                     <ClubBracketView
                       matches={comp.matches ?? []}
+                      leagueMatches={comp.leagueMatches ?? []}
                       structure_json={comp.structure_json}
                       season={season}
                       t={t}
@@ -705,11 +927,16 @@ export default function CompetitionsClubs() {
                       <p className="text-sm text-gray-400 text-center py-8">{t("sports.no_matches", "Nenhuma partida registrada.")}</p>
                     );
                     if (isKo) {
-                      // Group by opponent pair for knockout
-                      const flatWithWeek = comp.matches.flatMap(w => w.games.map(g => ({ ...g, game_week: w.week })));
-                      const confrontos = buildConfrontos(flatWithWeek)
-                        .sort((a, b) => new Date(a.firstDate ?? 0) - new Date(b.firstDate ?? 0));
-                      const phases = assignPhasesForClub(confrontos, comp.structure_json, season);
+                      const srcMatches = comp.leagueMatches?.length ? comp.leagueMatches : comp.matches;
+                      const flatGames = srcMatches.flatMap(w => w.games);
+                      const allConfrontos = buildConfrontos(flatGames);
+                      const allPhases = assignPhases(allConfrontos, flatGames, comp.structure_json, season);
+                      const phases = allPhases.map(phase => ({
+                        ...phase,
+                        confrontos: phase.tipo === "grupo"
+                          ? buildConfrontos(flatGames.filter(g => g.home.id === clubId || g.away.id === clubId))
+                          : phase.confrontos.filter(c => c.team1.id === clubId || c.team2.id === clubId),
+                      })).filter(p => p.confrontos.length > 0);
                       return phases.map(phase => (
                         <div key={phase.nome} className="rounded-xl border border-gray-100 overflow-hidden">
                           <div className="bg-gray-50 px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100">
