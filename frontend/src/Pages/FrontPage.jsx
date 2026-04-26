@@ -213,7 +213,7 @@ export default function FrontPage() {
                         </div>
 
                         <h2 className="mb-4 text-3xl lg:text-5xl font-medium text-[#1B1917] leading-tight">
-                            O futebol gera bilhões — mas os<br className="hidden lg:block" />
+                            O futebol gera bilhões — mas os <br className="hidden lg:block" />
                             dados continuam fragmentados
                         </h2>
                         <p className="text-sm lg:text-lg text-[#0A0A0AB2] max-w-3xl">
