@@ -233,7 +233,7 @@ export async function getAllClubs(req, res) {
 
     // Listar clubes com JOIN da liga
     const clubsQuery = await db.query(`
-      SELECT 
+      SELECT
       c.id_club,
       c.name,
       c.description,
@@ -241,6 +241,7 @@ export async function getAllClubs(req, res) {
       c.primary_color,
       c.secondary_color,
       c.active,
+      c.hidden,
       c.created_at,
       c.location,
       co.id_country,
@@ -248,7 +249,7 @@ export async function getAllClubs(req, res) {
       co.flag_url
 
     FROM clubs c
-    JOIN countries co 
+    JOIN countries co
       ON co.id_country = c.id_country
 
     WHERE c.active = TRUE
@@ -284,7 +285,7 @@ export async function clubsSearch(req, res) {
     const offset = (page - 1) * limit;
 
     const values = [];
-    let whereClause = `WHERE c.active = TRUE`;
+    let whereClause = `WHERE c.active = TRUE AND (c.hidden IS NULL OR c.hidden = FALSE)`;
     let idx = 1;
 
     if (name) {
@@ -318,7 +319,7 @@ export async function clubsSearch(req, res) {
         co.flag_url
 
       FROM clubs c
-      JOIN countries co 
+      JOIN countries co
         ON co.id_country = c.id_country
 
       ${whereClause}
@@ -331,7 +332,7 @@ export async function clubsSearch(req, res) {
     // Contagem total (mesmos filtros)
     const countQuery = await db.query(
       `
-      SELECT COUNT(*) 
+      SELECT COUNT(*)
       FROM clubs c
       ${whereClause};
       `,
@@ -365,9 +366,9 @@ export async function clubsGroupedByCountry(req, res) {
         c.primary_color,
         c.secondary_color
       FROM countries co
-      JOIN clubs c 
+      JOIN clubs c
         ON c.id_country = co.id_country
-      WHERE c.active = TRUE
+      WHERE c.active = TRUE AND (c.hidden IS NULL OR c.hidden = FALSE)
       ORDER BY co.name ASC, c.name ASC;
     `);
 
@@ -498,13 +499,13 @@ export async function getClubById(req, res) {
   try {
     // Buscar o clube + país
     const clubResult = await db.query(`
-      SELECT 
+      SELECT
         c.*,
         co.id_country,
         co.name AS country_name,
         co.flag_url
       FROM clubs c
-      JOIN countries co 
+      LEFT JOIN countries co
         ON co.id_country = c.id_country
       WHERE c.id_club = $1
     `, [id]);
@@ -2896,5 +2897,23 @@ export async function deleteHospitality(req, res) {
   } catch (err) {
     console.error("[deleteHospitality]", err);
     res.status(500).json({ error: "Erro ao remover hospitalidade" });
+  }
+}
+
+export async function createHiddenClub(req, res) {
+  const { name, id_country } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: "Nome obrigatório" });
+  try {
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const result = await db.query(
+      `INSERT INTO clubs (name, slug, hidden, active${id_country ? ", id_country" : ""})
+       VALUES ($1, $2, TRUE, TRUE${id_country ? ", $3" : ""})
+       RETURNING id_club, name`,
+      id_country ? [name.trim(), slug, id_country] : [name.trim(), slug]
+    );
+    res.json({ id_club: result.rows[0].id_club, name: result.rows[0].name });
+  } catch (err) {
+    console.error("[createHiddenClub]", err);
+    res.status(500).json({ error: "Erro ao criar clube oculto" });
   }
 }

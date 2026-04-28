@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { api } from "../../../services/api";
 import {
   Loader2, UploadCloud, Users, ArrowRight, CheckCircle2,
-  AlertTriangle, ChevronRight, XCircle, Plus, Globe, X,
+  AlertTriangle, ChevronRight, XCircle, Plus, Globe, X, EyeOff,
 } from "lucide-react";
 import SearchableSelect from "../../../components/uxui/SearchableSelect";
 
@@ -112,6 +112,8 @@ export default function UploadPlayersPage() {
 
   const [leagueId, setLeagueId]           = useState("");
   const [clubMappings, setClubMappings]   = useState({}); // { csvClubName: dbClubName }
+  const [hiddenClubs, setHiddenClubs]     = useState({}); // { csvClubName: true } — created as hidden
+  const [creatingHidden, setCreatingHidden] = useState({}); // { csvClubName: true } — loading state
   const [natMappings, setNatMappings]     = useState({}); // { csvNat: dbCountryName }
 
   // Lista local de países — cresce quando o usuário cria inline
@@ -130,6 +132,8 @@ export default function UploadPlayersPage() {
     setImportResult(null);
     setLeagueId("");
     setClubMappings({});
+    setHiddenClubs({});
+    setCreatingHidden({});
     setNatMappings({});
   }
 
@@ -236,8 +240,21 @@ export default function UploadPlayersPage() {
   }, [preview]);
 
   const unmappedClubs = preview
-    ? preview.notFoundClubs.filter(c => !clubMappings[c]).length
+    ? preview.notFoundClubs.filter(c => !clubMappings[c] && !hiddenClubs[c]).length
     : 0;
+
+  async function handleCreateHidden(csvName) {
+    setCreatingHidden(prev => ({ ...prev, [csvName]: true }));
+    try {
+      const { data } = await api.post("/admin/clubs/create-hidden", { name: csvName });
+      setClubMappings(prev => ({ ...prev, [csvName]: String(data.id_club) }));
+      setHiddenClubs(prev => ({ ...prev, [csvName]: true }));
+    } catch (err) {
+      alert(err?.response?.data?.error || "Erro ao criar clube oculto.");
+    } finally {
+      setCreatingHidden(prev => ({ ...prev, [csvName]: false }));
+    }
+  }
 
   // ── render ───────────────────────────────────────────────────────────────────
   return (
@@ -356,22 +373,49 @@ export default function UploadPlayersPage() {
                 <p className="text-xs text-gray-400">
                   Selecione o clube correspondente no banco. Sem mapeamento, os jogadores desse clube serão ignorados.
                 </p>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {preview.notFoundClubs.map(csvClub => (
                     <div key={csvClub} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
                       <div className="flex items-center gap-1.5">
-                        {clubMappings[csvClub]
-                          ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
-                          : <XCircle size={13} className="text-amber-400 shrink-0" />}
+                        {hiddenClubs[csvClub]
+                          ? <EyeOff size={13} className="text-purple-400 shrink-0" />
+                          : clubMappings[csvClub]
+                            ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+                            : <XCircle size={13} className="text-amber-400 shrink-0" />}
                         <span className="text-xs font-mono font-semibold text-gray-700 truncate">{csvClub}</span>
+                        {hiddenClubs[csvClub] && (
+                          <span className="ml-1 px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 text-[10px] font-bold shrink-0">oculto</span>
+                        )}
                         <ArrowRight size={11} className="text-gray-300 shrink-0 ml-auto" />
                       </div>
-                      <SearchableSelect
-                        grouped={clubsGrouped}
-                        value={clubMappings[csvClub] || ""}
-                        onChange={val => setClubMappings(prev => ({ ...prev, [csvClub]: val }))}
-                        placeholder="Buscar clube... (vazio = ignorar)"
-                      />
+                      {!hiddenClubs[csvClub] && (
+                        <SearchableSelect
+                          grouped={clubsGrouped}
+                          value={clubMappings[csvClub] || ""}
+                          onChange={val => { setClubMappings(prev => ({ ...prev, [csvClub]: val })); setHiddenClubs(prev => ({ ...prev, [csvClub]: false })); }}
+                          placeholder="Buscar clube... (vazio = ignorar)"
+                        />
+                      )}
+                      {!clubMappings[csvClub] && !hiddenClubs[csvClub] && (
+                        <button
+                          onClick={() => handleCreateHidden(csvClub)}
+                          disabled={creatingHidden[csvClub]}
+                          className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 hover:text-purple-800 disabled:opacity-50 transition-colors"
+                        >
+                          {creatingHidden[csvClub]
+                            ? <Loader2 size={11} className="animate-spin" />
+                            : <EyeOff size={11} />}
+                          Cadastrar como oculto
+                        </button>
+                      )}
+                      {hiddenClubs[csvClub] && (
+                        <button
+                          onClick={() => { setHiddenClubs(p => ({ ...p, [csvClub]: false })); setClubMappings(p => ({ ...p, [csvClub]: "" })); }}
+                          className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          Desfazer
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -519,7 +563,7 @@ export default function UploadPlayersPage() {
 
             <div className="flex justify-center">
               <button
-                onClick={() => { setStep("upload"); setFile(null); setPreview(null); setImportResult(null); setLeagueId(""); setClubMappings({}); setNatMappings({}); setAllCountries([]); }}
+                onClick={() => { setStep("upload"); setFile(null); setPreview(null); setImportResult(null); setLeagueId(""); setClubMappings({}); setHiddenClubs({}); setCreatingHidden({}); setNatMappings({}); setAllCountries([]); }}
                 className="text-sm text-[#7F33D9] font-bold hover:underline"
               >
                 Fazer novo upload

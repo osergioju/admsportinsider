@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { api } from "../../../services/api";
 import {
   Loader2, UploadCloud, Trophy, ArrowRight, CheckCircle2,
-  AlertTriangle, ChevronRight, XCircle,
+  AlertTriangle, ChevronRight, XCircle, EyeOff,
 } from "lucide-react";
 import SearchableSelect from "../../../components/uxui/SearchableSelect";
 
@@ -24,6 +24,8 @@ export default function UploadMatchesPage() {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [league, setLeague]                   = useState("");
   const [clubMappings, setClubMappings]       = useState({}); // { "csvTeamName": clubId }
+  const [hiddenClubs, setHiddenClubs]         = useState({}); // { "csvTeamName": true } — created as hidden
+  const [creatingHidden, setCreatingHidden]   = useState({}); // { "csvTeamName": true } — loading state
   const [importResult, setImportResult]       = useState(null);
 
   function handleFileChange(e) {
@@ -34,6 +36,8 @@ export default function UploadMatchesPage() {
     setLeague("");
     setSelectedCountry("");
     setClubMappings({});
+    setHiddenClubs({});
+    setCreatingHidden({});
   }
 
   async function handleAnalyze() {
@@ -59,6 +63,20 @@ export default function UploadMatchesPage() {
 
   function setClubMap(csvName, clubId) {
     setClubMappings(prev => ({ ...prev, [csvName]: clubId }));
+    setHiddenClubs(prev => ({ ...prev, [csvName]: false }));
+  }
+
+  async function handleCreateHidden(csvName) {
+    setCreatingHidden(prev => ({ ...prev, [csvName]: true }));
+    try {
+      const { data } = await api.post("/admin/clubs/create-hidden", { name: csvName });
+      setClubMappings(prev => ({ ...prev, [csvName]: String(data.id_club) }));
+      setHiddenClubs(prev => ({ ...prev, [csvName]: true }));
+    } catch (err) {
+      alert(err?.response?.data?.error || "Erro ao criar clube oculto.");
+    } finally {
+      setCreatingHidden(prev => ({ ...prev, [csvName]: false }));
+    }
   }
 
   async function handleImport() {
@@ -115,7 +133,7 @@ export default function UploadMatchesPage() {
     : [];
 
   const unmappedCount = preview
-    ? preview.notFoundTeams.filter(n => !clubMappings[n]).length
+    ? preview.notFoundTeams.filter(n => !clubMappings[n] && !hiddenClubs[n]).length
     : 0;
 
   return (
@@ -240,22 +258,49 @@ export default function UploadMatchesPage() {
                 <p className="text-xs text-gray-400">
                   Para cada time do CSV não reconhecido, selecione o clube correspondente no banco. Times sem mapeamento terão as partidas ignoradas.
                 </p>
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {preview.notFoundTeams.map(csvName => (
                     <div key={csvName} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
                       <div className="flex items-center gap-1.5">
-                        {clubMappings[csvName]
-                          ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
-                          : <XCircle size={13} className="text-amber-400 shrink-0" />}
+                        {hiddenClubs[csvName]
+                          ? <EyeOff size={13} className="text-purple-400 shrink-0" />
+                          : clubMappings[csvName]
+                            ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+                            : <XCircle size={13} className="text-amber-400 shrink-0" />}
                         <span className="text-xs font-mono font-semibold text-gray-700 truncate">{csvName}</span>
+                        {hiddenClubs[csvName] && (
+                          <span className="ml-1 px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 text-[10px] font-bold shrink-0">oculto</span>
+                        )}
                         <ArrowRight size={11} className="text-gray-300 shrink-0 ml-auto" />
                       </div>
-                      <SearchableSelect
-                        grouped={clubsGrouped}
-                        value={clubMappings[csvName] || ""}
-                        onChange={val => setClubMap(csvName, val)}
-                        placeholder="Buscar clube... (deixar vazio = ignorar)"
-                      />
+                      {!hiddenClubs[csvName] && (
+                        <SearchableSelect
+                          grouped={clubsGrouped}
+                          value={clubMappings[csvName] || ""}
+                          onChange={val => setClubMap(csvName, val)}
+                          placeholder="Buscar clube... (deixar vazio = ignorar)"
+                        />
+                      )}
+                      {!clubMappings[csvName] && !hiddenClubs[csvName] && (
+                        <button
+                          onClick={() => handleCreateHidden(csvName)}
+                          disabled={creatingHidden[csvName]}
+                          className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 hover:text-purple-800 disabled:opacity-50 transition-colors"
+                        >
+                          {creatingHidden[csvName]
+                            ? <Loader2 size={11} className="animate-spin" />
+                            : <EyeOff size={11} />}
+                          Cadastrar como oculto
+                        </button>
+                      )}
+                      {hiddenClubs[csvName] && (
+                        <button
+                          onClick={() => { setHiddenClubs(p => ({ ...p, [csvName]: false })); setClubMappings(p => ({ ...p, [csvName]: "" })); }}
+                          className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          Desfazer
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -306,7 +351,7 @@ export default function UploadMatchesPage() {
               </div>
             )}
             <div className="flex justify-center">
-              <button onClick={() => { setStep("upload"); setFile(null); setPreview(null); setImportResult(null); setLeague(""); setSelectedCountry(""); setClubMappings({}); }} className="text-sm text-[#7F33D9] font-bold hover:underline">
+              <button onClick={() => { setStep("upload"); setFile(null); setPreview(null); setImportResult(null); setLeague(""); setSelectedCountry(""); setClubMappings({}); setHiddenClubs({}); setCreatingHidden({}); }} className="text-sm text-[#7F33D9] font-bold hover:underline">
                 Fazer novo upload
               </button>
             </div>

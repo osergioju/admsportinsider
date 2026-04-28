@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
-import { TrendingUp, Trophy, Users, ArrowRight, Building2, Landmark, PieChart, Ticket } from "lucide-react";
+import { TrendingUp, Trophy, Users, ArrowRight, Building2, Landmark, PieChart, Ticket, EyeOff } from "lucide-react";
 
 /* ─── Utilitários de cor ───────────────────────────────────────── */
 
@@ -92,6 +92,7 @@ export default function PrePageClubs() {
 
     if (loading || !theClub) return null;
 
+    const isHidden = theClub.club.hidden === true;
     const { primary_color, secondary_color, tertiary_color } = theClub.club;
     const [c1, c2, c3] = resolveColors(primary_color, secondary_color, tertiary_color);
 
@@ -210,6 +211,17 @@ export default function PrePageClubs() {
                     style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}
                 />
 
+                {/* Banner de clube oculto */}
+                {isHidden && (
+                    <div
+                        className="flex items-center gap-2.5 rounded-xl px-4 py-3 mb-5 text-sm font-semibold"
+                        style={{ background: "rgba(0,0,0,0.30)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}
+                    >
+                        <EyeOff size={15} className="shrink-0 opacity-70" />
+                        Este clube está oculto e é usado apenas para marcação de dados. Suas informações detalhadas não estão disponíveis.
+                    </div>
+                )}
+
                 {/* ── Info strip (estádio + proprietários) ── */}
                 {(theClub.club.stadium_name || (theClub.owners?.length > 0)) && (
                     <div className="flex flex-wrap gap-3 mb-6">
@@ -284,6 +296,7 @@ export default function PrePageClubs() {
                 )}
 
                 {/* ── Cards ───────────────────────────────────────── */}
+                {!isHidden && (
                 <div className="grid lg:grid-cols-3 gap-4 sm:gap-5">
                     {cards.map((card, i) => (
                         <div
@@ -353,6 +366,7 @@ export default function PrePageClubs() {
                         </div>
                     ))}
                 </div>
+                )}
             </div>
         </div>
     );
