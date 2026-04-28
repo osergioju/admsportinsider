@@ -221,11 +221,11 @@ export default function PrePageClubs() {
                             >
                                 <Landmark size={15} className="text-white/60 mt-0.5 shrink-0" />
                                 <div>
-                                    <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-0.5">Estádio</p>
+                                    <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-0.5">{t("club.stadium", "Estádio")}</p>
                                     <p className="text-white text-sm font-semibold leading-tight">{theClub.club.stadium_name}</p>
                                     <div className="flex flex-wrap gap-x-3 mt-1">
                                         {theClub.club.stadium_capacity && (
-                                            <span className="text-white/60 text-xs">{Number(theClub.club.stadium_capacity).toLocaleString("pt-BR")} lugares</span>
+                                            <span className="text-white/60 text-xs">{Number(theClub.club.stadium_capacity).toLocaleString("pt-BR")} {t("club.stadium_seats", "lugares")}</span>
                                         )}
                                         {theClub.club.stadium_ownership && (
                                             <span className="text-white/60 text-xs capitalize">{theClub.club.stadium_ownership}</span>

@@ -12,6 +12,7 @@ export default function PayrollLineChart({
   startYear,
   endYear
 }) {
+  const { t } = useTranslation();
   const adapted = useMemo(() => {
     if (!data || Object.keys(data).length === 0) return null;
 
@@ -54,7 +55,7 @@ export default function PayrollLineChart({
   if (!adapted) {
     return (
       <p className="text-sm text-gray-400">
-        Sem dados de folha salarial
+        {t("club.finance.no_payroll_data", "Sem dados de folha salarial")}
       </p>
     );
   }
@@ -159,7 +160,7 @@ export default function PayrollLineChart({
       {
         lenghtData === 0 ? (
           <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+            <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
           </div>
         ) : (
           <ReactECharts

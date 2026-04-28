@@ -12,6 +12,7 @@ export default function RevenueLineChart({
   startYear,
   endYear
 }) {
+  const { t } = useTranslation();
   const adapted = useMemo(() => {
     if (!data || Object.keys(data).length === 0) return null;
 
@@ -46,7 +47,7 @@ export default function RevenueLineChart({
   if (!adapted) {
     return (
       <p className="text-sm text-gray-400">
-        Sem dados de receita para exibição
+        {t("club.finance.no_revenue_data", "Sem dados de receita para exibição")}
       </p>
     );
   }
@@ -148,7 +149,7 @@ export default function RevenueLineChart({
       {
         lenghtData === 0 ? (
           <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+            <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
           </div>
         ) : (
           <ReactECharts

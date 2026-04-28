@@ -21,6 +21,7 @@ export default function ChartFilter({
   onChangeYear,
   availableYears,
 }) {
+  const { t } = useTranslation();
   const [busca, setBusca] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -78,7 +79,7 @@ export default function ChartFilter({
             disabled={atLimite}
             onChange={(e) => { setBusca(e.target.value); setIsOpen(true); }}
             onFocus={() => setIsOpen(true)}
-            placeholder={atLimite ? "Limite atingido" : "Adicionar liga…"}
+            placeholder={atLimite ? t("dashboard.limit_reached", "Limite atingido") : t("dashboard.add_league", "Adicionar liga…")}
             style={{
               fontFamily: "inherit",
               fontSize: 13,
@@ -107,7 +108,7 @@ export default function ChartFilter({
             }}>
               {loading ? (
                 <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa" }}>
-                  Buscando ligas...
+                  {t("dashboard.searching_leagues", "Buscando ligas...")}
                 </div>
               ) : ligasFiltradas.length > 0 ? (
                 <ul style={{ maxHeight: 192, overflowY: "auto", listStyle: "none" }}>
@@ -125,7 +126,7 @@ export default function ChartFilter({
                 </ul>
               ) : (
                 <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa" }}>
-                  Nenhuma liga encontrada
+                  {t("dashboard.no_leagues_found", "Nenhuma liga encontrada")}
                 </div>
               )}
             </div>

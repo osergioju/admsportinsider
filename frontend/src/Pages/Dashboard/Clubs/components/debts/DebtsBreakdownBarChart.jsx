@@ -11,6 +11,7 @@ export default function DebtsBreakdownBarChart({
   clubMap,
   mainClubId
 }) {
+  const { t } = useTranslation();
   const adapted = adaptDebtsBreakdown(
     data,
     clubesSelecionados,
@@ -22,7 +23,7 @@ export default function DebtsBreakdownBarChart({
   const planID = user?.plan_id;
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">Sem dados de dívidas</p>;
+    return <p className="text-sm text-gray-400">{t("club.finance.no_debts_data", "Sem dados de dívidas")}</p>;
   }
 
   const option = {
@@ -59,7 +60,7 @@ export default function DebtsBreakdownBarChart({
       {
         lenghtData === 0 ? (
           <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+            <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
           </div>
         ) : (
           <ReactECharts

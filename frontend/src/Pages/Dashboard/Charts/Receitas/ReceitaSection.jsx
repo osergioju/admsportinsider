@@ -17,6 +17,7 @@ export default function ReceitaSection({
   currency,
   setCurrency,
 }) {
+  const { t } = useTranslation();
   const [selectedYear, setSelectedYear] = useState(null);
 
   function handleAddLeague(league) {
@@ -52,10 +53,10 @@ export default function ReceitaSection({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-[#0A0A0A] font-medium text-lg leading-tight">
-            Receitas das ligas
+            {t("dashboard.league_revenue_title", "Receitas das ligas")}
           </h2>
           <p className="text-xs text-[#AFAFB2] mt-0.5">
-            Receita recorrente por competição
+            {t("dashboard.league_revenue_subtitle", "Receita recorrente por competição")}
             {selectedYear ? <> &middot; <span className="text-[#7f34d9] font-medium">{selectedYear}</span></> : ""}
           </p>
         </div>

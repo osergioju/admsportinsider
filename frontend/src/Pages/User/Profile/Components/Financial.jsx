@@ -197,8 +197,9 @@ export default function SubscriptionManagement() {
           <div className="flex-1">
             <p className="text-sm font-bold">{t("financial.cancel_scheduled_banner", "Cancelamento agendado")}</p>
             <p className="text-xs text-amber-700 mt-0.5">
-              Seu acesso ao <strong>{currentPlan?.name}</strong> será encerrado em{" "}
-              <strong>{expiresAt}</strong>. Até lá, todos os recursos continuam disponíveis.
+              {t("financial.cancel_banner_body", "Seu acesso ao {plan} será encerrado em {date}. Até lá, todos os recursos continuam disponíveis.")
+                .replace("{plan}", currentPlan?.name || "")
+                .replace("{date}", expiresAt || "")}
             </p>
           </div>
           <button

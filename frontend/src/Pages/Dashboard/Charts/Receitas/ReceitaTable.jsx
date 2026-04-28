@@ -1,9 +1,10 @@
 import { useTranslation } from "../../../../context/TranslationContext";
 export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagueColor }) {
+  const { t } = useTranslation();
   if (!data || ligasSelecionadas.length === 0) {
     return (
       <p className="text-sm text-[#AFAFB2] mt-4 py-4 text-center">
-        Sem dados para exibir.
+        {t("dashboard.no_data", "Sem dados para exibir.")}
       </p>
     );
   }
@@ -22,7 +23,7 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
   if (years.length === 0) {
     return (
       <p className="text-sm text-[#AFAFB2] mt-4 py-4 text-center">
-        Nenhum dado encontrado.
+        {t("dashboard.no_data_found", "Nenhum dado encontrado.")}
       </p>
     );
   }

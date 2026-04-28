@@ -61,6 +61,7 @@ export async function getAllLeagues(req, res) {
     SELECT
       l.id_league,
       l.name,
+      l.slug,
       l.description,
       l.logo_url,
       l.format,

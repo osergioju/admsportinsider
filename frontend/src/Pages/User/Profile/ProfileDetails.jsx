@@ -8,6 +8,7 @@ import ProfilePreferences from "./Components/ProfilePreferences";
 import PrivacyDelete from "./Components/PrivacyDelete";
 
 export default function ProfileDetails() {
+  const { t } = useTranslation();
   const { user } = useContext(AuthContext);
   const [openModal, setOpenModal] = useState(false);
   const [modalType, setModalType] = useState(null);
@@ -36,8 +37,8 @@ export default function ProfileDetails() {
     <div className="w-full">
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111]">Perfil</h1>
-        <p className="text-gray-500 text-sm mt-1">Gerencie suas informações pessoais e assinatura.</p>
+        <h1 className="text-2xl font-bold text-[#111]">{t("profile.title", "Perfil")}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t("profile.subtitle", "Gerencie suas informações pessoais e assinatura.")}</p>
       </div>
 
       {/* --- CARD 1: Informações pessoais --- */}
@@ -49,12 +50,12 @@ export default function ProfileDetails() {
               <User size={20} className="text-[#7F33D9]" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#111]">Informações pessoais</h2>
+              <h2 className="text-lg font-semibold text-[#111]">{t("profile.personal_info", "Informações pessoais")}</h2>
             </div>
           </div>
 
           <button onClick={() => open("personal")} className={btnPurpleClass}>
-            Editar
+            {t("profile.edit", "Editar")}
             <ArrowUpRight size={16} className="text-white/70 group-hover:text-white transition-colors" />
           </button>
         </div>
@@ -65,19 +66,19 @@ export default function ProfileDetails() {
 
             {/* Linha */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4">
-              <span className="text-sm text-gray-500 font-medium">Nome completo</span>
+              <span className="text-sm text-gray-500 font-medium">{t("profile.full_name", "Nome completo")}</span>
               <span className="text-sm text-[#111] font-semibold sm:col-span-2">{user.name}</span>
             </div>
 
             {/* Linha */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4">
-              <span className="text-sm text-gray-500 font-medium">E-mail</span>
+              <span className="text-sm text-gray-500 font-medium">{t("profile.email", "E-mail")}</span>
               <span className="text-sm text-[#111] font-semibold sm:col-span-2">{user.email}</span>
             </div>
 
             {/* Linha */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4">
-              <span className="text-sm text-gray-500 font-medium">Senha</span>
+              <span className="text-sm text-gray-500 font-medium">{t("profile.password", "Senha")}</span>
               <span className="text-sm text-[#111] font-bold tracking-widest text-xs mt-1 sm:mt-0 sm:col-span-2">●●●●●●●●●●●●</span>
             </div>
 
@@ -93,11 +94,11 @@ export default function ProfileDetails() {
               <Cog size={20} className="text-[#7F33D9]" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#111]">Preferências</h2>
+              <h2 className="text-lg font-semibold text-[#111]">{t("profile.preferences", "Preferências")}</h2>
             </div>
           </div>
           <button onClick={() => open("preferences")} className={btnPurpleClass}>
-            Editar
+            {t("profile.edit", "Editar")}
             <ArrowUpRight size={16} className="text-white/70 group-hover:text-white transition-colors" />
           </button>
         </div>
@@ -105,11 +106,11 @@ export default function ProfileDetails() {
         <div className="px-6 py-2">
           <div className="divide-y divide-gray-100">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4">
-              <span className="text-sm text-gray-500 font-medium">Moeda padrão</span>
+              <span className="text-sm text-gray-500 font-medium">{t("profile.default_currency", "Moeda padrão")}</span>
               <span className="text-sm text-[#111] font-semibold sm:col-span-2">{user.currency_name || "--"}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4">
-              <span className="text-sm text-gray-500 font-medium">Idioma</span>
+              <span className="text-sm text-gray-500 font-medium">{t("profile.language", "Idioma")}</span>
               <span className="text-sm text-[#111] font-semibold sm:col-span-2">{user.region_name || "--"}</span>
             </div>
           </div>
@@ -124,11 +125,11 @@ export default function ProfileDetails() {
               <CircleDollarSign size={20} className="text-[#7F33D9]" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#111]">Plano e assinatura</h2>
+              <h2 className="text-lg font-semibold text-[#111]">{t("profile.plan_subscription", "Plano e assinatura")}</h2>
             </div>
           </div>
           <button onClick={() => open("subscriptions")} className={btnPurpleClass}>
-            Gerenciar
+            {t("profile.manage", "Gerenciar")}
             <ArrowUpRight size={16} className="text-white/70 group-hover:text-white transition-colors" />
           </button>
         </div>
@@ -136,7 +137,7 @@ export default function ProfileDetails() {
         <div className="px-6 py-2">
           <div className="divide-y divide-gray-100">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4 items-center">
-              <span className="text-sm text-gray-500 font-medium">Plano atual</span>
+              <span className="text-sm text-gray-500 font-medium">{t("profile.current_plan", "Plano atual")}</span>
               <div className="sm:col-span-2">
                 <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-green-50 text-green-700 border border-green-200">
                   {user.plan_name}
@@ -154,7 +155,7 @@ export default function ProfileDetails() {
           className="flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 transition-all hover:border-red-300 w-full sm:w-auto"
         >
           <Trash size={16} />
-          Apagar conta
+          {t("profile.delete_account", "Apagar conta")}
         </button>
       </div>
 

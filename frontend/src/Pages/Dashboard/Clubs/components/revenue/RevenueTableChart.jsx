@@ -12,6 +12,7 @@ export default function RevenueTableChart({
   startYear,
   endYear
 }) {
+  const { t } = useTranslation();
 
   const adapted = useMemo(() => {
     if (!data || Object.keys(data).length === 0) return null;
@@ -59,7 +60,7 @@ export default function RevenueTableChart({
   }
 
   if (!adapted || adapted.series.length === 0) {
-    return <p className="text-sm text-gray-400">Sem dados de receita</p>;
+    return <p className="text-sm text-gray-400">{t("club.finance.no_revenue", "Sem dados de receita")}</p>;
   }
 
   return (

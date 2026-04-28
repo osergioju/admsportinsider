@@ -11,6 +11,7 @@ export default function RevenueBreakdownBarChart({
   startYear,
   endYear
 }) {
+  const { t } = useTranslation();
 
 
 
@@ -55,7 +56,7 @@ export default function RevenueBreakdownBarChart({
 
   if (!adapted) {
     ;
-    return <p className="text-sm text-gray-400">Sem dados de receita</p>;
+    return <p className="text-sm text-gray-400">{t("club.finance.no_revenue", "Sem dados de receita")}</p>;
   }
 
 
@@ -121,7 +122,7 @@ export default function RevenueBreakdownBarChart({
       {
         lenghtData === 0 ? (
           <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+            <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
           </div>
         ) : (
           <ReactECharts

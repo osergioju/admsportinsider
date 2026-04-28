@@ -11,6 +11,7 @@ export default function NetResultLine({
   startYear,
   endYear
 }) {
+  const { t } = useTranslation();
 
 
   const adapted = useMemo(() => {
@@ -57,7 +58,7 @@ export default function NetResultLine({
   if (!adapted) {
     return (
       <p className="text-sm text-gray-400">
-        Sem dados de resultado líquido
+        {t("club.finance.no_net_result_data", "Sem dados de resultado líquido")}
       </p>
     );
   }

@@ -14,6 +14,7 @@ export default function NetResultTable({
   mainClubId,
   clubColorMap
 }) {
+  const { t } = useTranslation();
   const table = adaptNetResultTable(
     data,
     clubesSelecionados,
@@ -24,7 +25,7 @@ export default function NetResultTable({
   if (!table || table.rows.length === 0) {
     return (
       <p className="text-sm text-gray-400">
-        Sem dados de resultado
+        {t("club.finance.no_result", "Sem dados de resultado")}
       </p>
     );
   }

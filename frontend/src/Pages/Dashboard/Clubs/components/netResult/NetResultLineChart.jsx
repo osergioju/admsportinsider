@@ -12,6 +12,7 @@ export default function NetResultLineChart({
   startYear,
   endYear
 }) {
+  const { t } = useTranslation();
 
   const adapted = useMemo(() => {
     if (!data || Object.keys(data).length === 0) return null;
@@ -56,7 +57,7 @@ export default function NetResultLineChart({
   if (!adapted) {
     return (
       <p className="text-sm text-gray-400">
-        Sem dados de resultado líquido
+        {t("club.finance.no_net_result_data", "Sem dados de resultado líquido")}
       </p>
     );
   }
@@ -156,7 +157,7 @@ export default function NetResultLineChart({
         {
           lenghtData === 0 ? (
             <div className="flex items-center justify-center pt-20">
-              <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+              <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
             </div>
           ) : (
             <ReactECharts

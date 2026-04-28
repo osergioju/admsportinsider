@@ -128,10 +128,18 @@ export default function GestaoLigas() {
                         {filteredLeagues.map((league) => (
                             <div key={league.id_league} className="group relative bg-white border border-gray-100 rounded-2xl p-6 hover:border-[#7F33D9]/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center gap-4">
                                 <div
-                                    className="relative w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:bg-white transition-colors cursor-pointer"
+                                    className="relative w-20 h-20 flex items-center justify-center overflow-hidden group-hover:bg-white transition-colors cursor-pointer"
                                     onClick={() => openEditModal(league.id_league)}
                                 >
-                                    {league.logo_url ? <img src={league.logo_url} className="w-full h-full object-contain drop-shadow-sm" alt={league.name} /> : <Trophy size={32} className="text-gray-300" />}
+                                    {(league.logo_url || league.slug) ? (
+                                        <img
+                                            src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
+                                            className="w-full h-full object-contain drop-shadow-sm"
+                                            alt={league.name} Só o
+                                            onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling?.classList.remove("hidden"); }}
+                                        />
+                                    ) : null}
+                                    {(!league.logo_url && !league.slug) && <Trophy size={32} className="text-gray-300" />}
                                 </div>
                                 <div className="flex flex-col gap-1 w-full cursor-pointer" onClick={() => openEditModal(league.id_league)}>
                                     <span className="font-bold text-gray-900 text-base group-hover:text-[#7F33D9] transition-colors truncate w-full">{league.name}</span>

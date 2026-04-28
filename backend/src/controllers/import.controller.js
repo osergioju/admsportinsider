@@ -1763,8 +1763,9 @@ function buildLeagueSuggestion(csvName) {
   };
 }
 
-// Colunas CSV: A=Slug, B=Nível, C=País, D=Continente, E=Confederação,
-//              F=Competição, G=Nome completo, H=Fórmula(ignorada), I=Organizador, J=Nome da entidade(ignorado)
+// Colunas CSV: A=Slug, B=Esfera, C=Nível, D=Escudo, E=País, F=Continente,
+//              G=Confederação, H=Competição, I=Nome completo, J=Fórmula(ignorada),
+//              K=Organizador, L=Nome da entidade(ignorada)
 function parseLeagueCSV(buffer) {
   const text = buffer.toString("utf8");
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
@@ -1772,20 +1773,24 @@ function parseLeagueCSV(buffer) {
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(";");
-    const country_name = cols[2]?.trim();
-    if (!country_name) continue;
+    const slug = cols[0]?.trim() || null;
+    if (!slug) continue;
+
+    const rawCountry = cols[4]?.trim() || null;
 
     rows.push({
-      slug: cols[0]?.trim() || null,
-      tier: cols[1]?.trim() || null,
-      country_name,
-      continent: cols[3]?.trim() || null,
-      confederation: cols[4]?.trim() || null,
-      competition_name: cols[5]?.trim() || null,
-      name: cols[6]?.trim() || null,
-      // cols[7] = Fórmula de disputa → ignorada
-      organizer: cols[8]?.trim() || null,
-      // cols[9] = Nome da entidade → ignorado
+      slug,
+      esfera: cols[1]?.trim() || null,
+      tier: cols[2]?.trim() || null,
+      has_logo: cols[3]?.trim() === "VERDADEIRO",
+      country_name: rawCountry === "N/A" ? null : rawCountry,
+      continent: cols[5]?.trim() || null,
+      confederation: cols[6]?.trim() || null,
+      competition_name: cols[7]?.trim() || null,
+      name: cols[8]?.trim() || null,
+      // cols[9] = Fórmula de disputa → ignorada
+      organizer: cols[10]?.trim() || null,
+      // cols[11] = Nome da entidade → ignorada
     });
   }
   return rows;
@@ -1819,8 +1824,8 @@ export async function previewLeaguesBulk(req, res) {
       leaguesRes.rows.map((l) => `${l.name.toLowerCase().trim()}|${l.id_country}`)
     );
 
-    // Países únicos do CSV + status de resolução + sugestão world-countries para os não encontrados
-    const uniqueCsvCountries = [...new Set(rows.map((r) => r.country_name))];
+    // Países únicos do CSV (exclui null = ligas continentais) + status de resolução
+    const uniqueCsvCountries = [...new Set(rows.map((r) => r.country_name).filter(Boolean))];
     const countriesForMapping = uniqueCsvCountries.map((csvName) => {
       const id_country = resolveCountry(csvName, dbNameMap, overrideMap);
       const autoResolved = !!dbNameMap.get(csvName.toLowerCase().trim());
@@ -1837,8 +1842,10 @@ export async function previewLeaguesBulk(req, res) {
 
     for (const row of rows) {
       if (!row.name) continue;
-      const id_country = resolveCountry(row.country_name, dbNameMap, overrideMap);
-      if (!id_country) { summary.error++; continue; }
+      const id_country = row.country_name
+        ? resolveCountry(row.country_name, dbNameMap, overrideMap)
+        : null;
+      if (row.country_name && !id_country) { summary.error++; continue; }
       if (leagueSet.has(`${row.name.toLowerCase().trim()}|${id_country}`)) { summary.update++; } else { summary.insert++; }
     }
 
@@ -1875,28 +1882,37 @@ export async function importLeaguesBulk(req, res) {
     for (const row of rows) {
       if (!row.name) { results.skipped++; continue; }
 
-      const id_country = resolveCountry(row.country_name, dbNameMap, overrideMap);
-      if (!id_country) {
+      const id_country = row.country_name
+        ? resolveCountry(row.country_name, dbNameMap, overrideMap)
+        : null;
+
+      if (row.country_name && !id_country) {
         results.errors.push({ name: row.name, reason: `País não encontrado: "${row.country_name}"` });
         continue;
       }
 
+      const logo_url = row.has_logo && row.slug
+        ? `https://pro.sportinsider.com.br/uploads/ligas/${row.slug}.png`
+        : null;
+
       const structure_json = JSON.stringify({
+        ...(row.esfera ? { esfera: row.esfera } : {}),
         ...(row.continent ? { continent: row.continent } : {}),
         ...(row.confederation ? { confederation: row.confederation } : {}),
         ...(row.competition_name ? { competition_name: row.competition_name } : {}),
       });
 
       const result = await client.query(
-        `INSERT INTO leagues (id_country, name, organizer, slug, tier, structure_json)
-         VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+        `INSERT INTO leagues (id_country, name, organizer, slug, tier, structure_json, logo_url)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
          ON CONFLICT (name, id_country) DO UPDATE SET
            organizer      = EXCLUDED.organizer,
            slug           = EXCLUDED.slug,
            tier           = EXCLUDED.tier,
-           structure_json = EXCLUDED.structure_json
+           structure_json = EXCLUDED.structure_json,
+           logo_url       = COALESCE(EXCLUDED.logo_url, leagues.logo_url)
          RETURNING (xmax = 0) AS inserted`,
-        [id_country, row.name, row.organizer, row.slug, row.tier, structure_json]
+        [id_country, row.name, row.organizer, row.slug, row.tier, structure_json, logo_url]
       );
 
       if (result.rows[0]?.inserted) { results.inserted++; } else { results.updated++; }

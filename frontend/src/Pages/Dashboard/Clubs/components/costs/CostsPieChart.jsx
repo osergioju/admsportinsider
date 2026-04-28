@@ -10,6 +10,7 @@ export default function CostsPieChart({
   endYear,
   clubColorMap
 }) {
+  const { t } = useTranslation();
 
   const adapted = useMemo(() => {
     if (!data || Object.keys(data).length === 0) return null;
@@ -82,7 +83,7 @@ export default function CostsPieChart({
   ];
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">Dados indisponíveis</p>;
+    return <p className="text-sm text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>;
   }
   const total = adapted.series[0].data.reduce(
     (sum, item) => sum + item.value,
@@ -186,7 +187,7 @@ export default function CostsPieChart({
     <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
       {lenghtData == 0 ? (
         <div className="flex items-center justify-center h-full">
-          <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
+          <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
         </div>
       ) : (
         <ReactECharts

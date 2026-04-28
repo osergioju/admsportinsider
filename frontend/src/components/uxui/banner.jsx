@@ -35,22 +35,9 @@ export default function HomeBanners() {
             />
 
             {/* Desktop */}
-            <div
-              className="hidden md:block w-full bg-cover bg-center bg-gray-900"
-              style={{
-                backgroundImage: `url(${banner.image_desktop_url})`,
-                height: 240,
-              }}
-            />
+            <img src={banner.image_desktop_url} alt="" className="hidden md:block w-full" />
 
-            {/* Mobile */}
-            <div
-              className="md:hidden w-full bg-cover bg-center bg-gray-900"
-              style={{
-                backgroundImage: `url(${banner.image_mobile_url})`,
-                height: 200,
-              }}
-            />
+            <img src={banner.image_mobile_url} alt="" className="block md:hidden w-full" />
           </SwiperSlide>
         ))}
 

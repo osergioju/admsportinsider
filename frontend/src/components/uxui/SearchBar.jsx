@@ -648,7 +648,7 @@ export default function SearchBar() {
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  ↵ selecionar
+                  ↵ {t("search.select_hint", "selecionar")}
                 </span>
               </div>
             )}

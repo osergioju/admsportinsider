@@ -226,7 +226,8 @@ const navigate = useNavigate();
                             </div>
                             
                             <p className="text-center text-xs text-gray-400 mt-4">
-                                Ao enviar, você concorda com nossa <a href="#" className="underline hover:text-[#7F33D9]">{t("contact.privacy", "Política de Privacidade")}</a>.
+                                {t("contact.privacy_consent", "Ao enviar, você concorda com nossa")}{" "}
+                                <a href="#" className="underline hover:text-[#7F33D9]">{t("contact.privacy", "Política de Privacidade")}</a>.
                             </p>
                         </form>
                     </div>
