@@ -79,7 +79,7 @@ export default function ChartFilter({
             disabled={atLimite}
             onChange={(e) => { setBusca(e.target.value); setIsOpen(true); }}
             onFocus={() => setIsOpen(true)}
-            placeholder={atLimite ? t("dashboard.limit_reached", "Limite atingido") : t("dashboard.add_league", "Adicionar liga…")}
+            placeholder={atLimite ? t("dashboard.limit_reached", "Limite atingido") : t("dashboard.add_league", "Adicionar competição…")}
             style={{
               fontFamily: "inherit",
               fontSize: 13,
@@ -108,7 +108,7 @@ export default function ChartFilter({
             }}>
               {loading ? (
                 <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa" }}>
-                  {t("dashboard.searching_leagues", "Buscando ligas...")}
+                  {t("dashboard.searching_leagues", "Buscando competições...")}
                 </div>
               ) : ligasFiltradas.length > 0 ? (
                 <ul style={{ maxHeight: 192, overflowY: "auto", listStyle: "none" }}>

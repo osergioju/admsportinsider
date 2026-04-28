@@ -124,17 +124,17 @@ export default function DashboardLayout() {
                             <button onClick={() => setOpenLigas(!openLigas)} className={menuItemStyle}>
                                 <div className="flex items-center gap-3">
                                     <Trophy strokeWidth={1.5} className={iconStyle} size={18} />
-                                    <span className={textStyle}>{t("menu.leagues", "Ligas")}</span>
+                                    <span className={textStyle}>{t("menu.leagues", "Competições")}</span>
                                 </div>
                                 <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openLigas ? "rotate-180 text-purple-500" : ""}`} />
                             </button>
                             {openLigas && (
                                 <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/leagues" label={t("menu.leagues_all", "Todas as ligas")} />
+                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/competitions" label={t("menu.leagues_all", "Todas as competições")} />
                                     {user && (
                                         <SubItem
                                             onClick={() => setOpenMenu(false)}
-                                            to="/dashboard/leagues/favorites"
+                                            to="/dashboard/competitions/favorites"
                                             label={t("menu.favorites", "Favoritos")}
                                         />
                                     )}
@@ -262,13 +262,13 @@ export default function DashboardLayout() {
     );
 
     return (
-        <div className="lg:flex overflow-y-scroll w-full h-screen bg-[#F6F5FA]">
+        <div className="lg:flex w-full h-screen bg-[#F6F5FA]">
 
             {/* --- SIDEBAR CONTAINER --- */}
-            <div className="lg:border-r lg:relative top-0 lg:w-[260px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
+            <div className="sticky top-0 lg:border-r lg:relative top-0 lg:w-[260px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
 
                 {/* ── HEADER MOBILE ── */}
-                <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm pt-[env(safe-area-inset-top)]">
+                <div className="lg:hidden z-30 bg-white border-b border-gray-100 shadow-sm pt-[env(safe-area-inset-top)]">
 
                     {/* Linha 1: brand + auth/avatar */}
                     <div className="flex items-center justify-between px-4 pt-3 pb-2">
@@ -349,7 +349,7 @@ export default function DashboardLayout() {
             </div>
 
             {/* --- CONTEÚDO PRINCIPAL (HEADER ORIGINAL) --- */}
-            <div className="lg:w-[calc(100%-260px)] bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:px-10 w-full px-4">
+            <div className="overflow-y-auto lg:w-[calc(100%-260px)] bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:px-10 w-full px-4">
 
                 <header className="hidden lg:flex items-center justify-between mb-10 sticky top-0 bg-[#F6F5FA] z-30 py-4">
 

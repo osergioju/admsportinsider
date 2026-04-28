@@ -20,7 +20,7 @@ function EmptyState() {
   );
 }
 
-const TYPE_LABEL = { club: 'Clubes', league: 'Ligas', player: 'Jogadores' };
+const TYPE_LABEL = { club: 'Clubes', league: 'Competições', player: 'Jogadores' };
 
 export default function InsightUso() {
   const { data, isLoading } = useUsoInsights();
@@ -69,8 +69,8 @@ export default function InsightUso() {
           <KpiCard label="Clubes c/ Dados Esportivos" value={kpis?.clubs_with_sports?.toLocaleString('pt-BR')} />
           <KpiCard label="Clubes c/ Dados Financeiros" value={kpis?.clubs_with_financials?.toLocaleString('pt-BR')} />
           <KpiCard label="Total de Jogadores" value={kpis?.total_players?.toLocaleString('pt-BR')} />
-          <KpiCard label="Total de Ligas" value={kpis?.total_leagues?.toLocaleString('pt-BR')} />
-          <KpiCard label="Ligas c/ Dados Financeiros" value={kpis?.leagues_with_financials?.toLocaleString('pt-BR')} />
+          <KpiCard label="Total de Competições" value={kpis?.total_leagues?.toLocaleString('pt-BR')} />
+          <KpiCard label="Competições c/ Dados Financeiros" value={kpis?.leagues_with_financials?.toLocaleString('pt-BR')} />
           <KpiCard label="Total de Partidas" value={kpis?.total_matches?.toLocaleString('pt-BR')} />
           <KpiCard label="Total de Favoritos" value={kpis?.total_favorites?.toLocaleString('pt-BR')} sub="Itens favoritados pelos usuários" />
         </div>
@@ -133,7 +133,7 @@ export default function InsightUso() {
           </div>
 
           <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm text-gray-500 mb-4">Ligas com Mais Clubes (Top 10)</h3>
+            <h3 className="text-sm text-gray-500 mb-4">Competições com Mais Clubes (Top 10)</h3>
             {topLeagueLabels.length === 0 ? <EmptyState /> : (
               <Box sx={{ width: '100%', height: 300 }}>
                 <BarChart
@@ -184,7 +184,7 @@ export default function InsightUso() {
             </div>
 
             <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm text-gray-500 mb-4">Ligas Mais Favoritadas</h3>
+              <h3 className="text-sm text-gray-500 mb-4">Competições Mais Favoritadas</h3>
               {topFavLeagueLabels.length === 0 ? <EmptyState /> : (
                 <Box sx={{ width: '100%', height: 240 }}>
                   <BarChart

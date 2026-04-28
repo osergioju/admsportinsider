@@ -34,7 +34,7 @@ export default function SideMenu() {
             >
               <div className="flex items-center gap-3">
                 <Trophy strokeWidth={1} className="text-gray-400" size={20} />
-                <span className="text-sm font-[400] text-[#0A0A0A]">Ligas</span>
+                <span className="text-sm font-[400] text-[#0A0A0A]">Competições</span>
               </div>
 
               <ChevronDown

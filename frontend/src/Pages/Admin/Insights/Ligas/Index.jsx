@@ -57,14 +57,14 @@ export default function InsightLigas() {
 
       {/* KPIs */}
       <section>
-        <h2 className="text-xl font-semibold mb-4">Visão Geral — Ligas</h2>
+        <h2 className="text-xl font-semibold mb-4">Visão Geral — Competições</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <KpiCard label="Total de Ligas" value={kpis?.total_leagues?.toLocaleString('pt-BR')} />
+          <KpiCard label="Total de Competições" value={kpis?.total_leagues?.toLocaleString('pt-BR')} />
           <KpiCard label="Com Dados Financeiros" value={kpis?.leagues_with_financials?.toLocaleString('pt-BR')} />
           <KpiCard
             label="Cobertura Financeira"
             value={`${kpis?.coverage_pct ?? 0}%`}
-            sub="Ligas com ao menos 1 registro financeiro"
+            sub="Competições com ao menos 1 registro financeiro"
           />
         </div>
       </section>
@@ -76,9 +76,9 @@ export default function InsightLigas() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-            {/* Formato das ligas */}
+            {/* Formato das competições */}
             <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm text-gray-500 mb-4">Formato das Ligas</h3>
+              <h3 className="text-sm text-gray-500 mb-4">Formato das Competições</h3>
               {formatPie.length === 0 ? <EmptyState /> : (
                 <Box sx={{ width: '100%', height: 300 }}>
                   <PieChart
@@ -91,7 +91,7 @@ export default function InsightLigas() {
 
             {/* Ligas mais favoritadas */}
             <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm text-gray-500 mb-4">Ligas Mais Favoritadas</h3>
+              <h3 className="text-sm text-gray-500 mb-4">Competições Mais Favoritadas</h3>
               {favLabels.length === 0 ? <EmptyState /> : (
                 <Box sx={{ width: '100%', height: 300 }}>
                   <BarChart
@@ -109,7 +109,7 @@ export default function InsightLigas() {
 
           {/* Ligas por país */}
           <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm text-gray-500 mb-4">Ligas por País (Top 10)</h3>
+            <h3 className="text-sm text-gray-500 mb-4">Competições por País (Top 10)</h3>
             {countryLabels.length === 0 ? <EmptyState /> : (
               <Box sx={{ width: '100%', height: 300 }}>
                 <BarChart
@@ -126,7 +126,7 @@ export default function InsightLigas() {
 
             {/* Dados financeiros por ano */}
             <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm text-gray-500 mb-4">Ligas com Dados Financeiros por Ano</h3>
+              <h3 className="text-sm text-gray-500 mb-4">Competições com Dados Financeiros por Ano</h3>
               {yearLabels.length === 0 ? <EmptyState /> : (
                 <Box sx={{ width: '100%', height: 280 }}>
                   <BarChart

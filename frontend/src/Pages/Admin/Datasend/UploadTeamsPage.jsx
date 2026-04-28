@@ -95,7 +95,7 @@ export default function UploadTeamsPage() {
   }
 
   async function handleImport() {
-    if (!league) return alert("Selecione uma liga.");
+    if (!league) return alert("Selecione uma competição.");
     const activeMappings = Object.fromEntries(
       Object.entries(clubMappings).filter(([, v]) => v !== "")
     );
@@ -266,19 +266,19 @@ export default function UploadTeamsPage() {
             {/* Liga */}
             <div>
               <label className={labelClass}>
-                Liga
+                Competição
                 {preview.leagues.length === 1 && <span className="text-green-500 normal-case font-normal ml-1">— pré-selecionada</span>}
-                {preview.isMultiCountry && <span className="text-purple-400 normal-case font-normal ml-1">— selecione a liga continental</span>}
+                {preview.isMultiCountry && <span className="text-purple-400 normal-case font-normal ml-1">— selecione a competição continental</span>}
               </label>
               {preview.leagues.length === 0 && !showAllLeagues ? (
                 <div className="space-y-2">
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-sm text-amber-700">
                     <AlertTriangle size={16} className="shrink-0 mt-0.5" />
                     {preview.isMultiCountry
-                      ? <>Nenhuma liga continental cadastrada. Cadastre uma liga sem país associado ou{" "}
-                        <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">ver todas as ligas</button>.</>
-                      : <>Nenhuma liga encontrada para "{preview.csvCountry}". Cadastre uma liga ou{" "}
-                        <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">ver todas as ligas</button>.</>
+                      ? <>Nenhuma competição continental cadastrada. Cadastre uma competição sem país associado ou{" "}
+                        <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">ver todas as competições</button>.</>
+                      : <>Nenhuma competição encontrada para "{preview.csvCountry}". Cadastre uma competição ou{" "}
+                        <button onClick={() => setShowAllLeagues(true)} className="underline font-bold text-amber-800 hover:text-amber-900">ver todas as competições</button>.</>
                     }
                   </div>
                 </div>

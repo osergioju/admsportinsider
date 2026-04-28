@@ -480,7 +480,7 @@ export async function leaguesSearch(req, res) {
 export async function getContinentalLeagues(req, res) {
   try {
     const result = await db.query(`
-      SELECT id_league, name, logo_url, active
+      SELECT id_league, name, logo_url, slug, active, structure_json
       FROM leagues
       WHERE active = TRUE AND id_country IS NULL
       ORDER BY name ASC
@@ -531,10 +531,23 @@ export async function getClubById(req, res) {
       ORDER BY ownership_pct DESC NULLS LAST, name ASC
     `, [id]);
 
+    // Buscar hospitalidade do estádio (se o clube tiver estádio cadastrado)
+    let hospitality = null;
+    if (club.stadium_name) {
+      const hospResult = await db.query(`
+        SELECT id, hospitality_url, description
+        FROM stadium_hospitality
+        WHERE LOWER(stadium_name) = LOWER($1)
+        LIMIT 1
+      `, [club.stadium_name]);
+      if (hospResult.rows.length > 0) hospitality = hospResult.rows[0];
+    }
+
     return res.json({
       club,
       attributes: attrResult.rows,
       owners: ownersResult.rows,
+      hospitality,
     });
 
   } catch (err) {
@@ -2801,5 +2814,87 @@ export async function saveGroupClubs(req, res) {
     res.status(500).json({ error: "Erro ao salvar grupos" });
   } finally {
     client.release();
+  }
+}
+
+// ─── Hospitalidade ────────────────────────────────────────────────────────────
+
+export async function searchStadiums(req, res) {
+  const { q = "" } = req.query;
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        c.stadium_name,
+        COUNT(c.id_club)::int                       AS clubs_count,
+        ARRAY_AGG(c.name ORDER BY c.name)           AS clubs,
+        sh.id                                       AS hospitality_id,
+        sh.hospitality_url,
+        sh.description,
+        sh.active                                   AS hospitality_active
+      FROM clubs c
+      LEFT JOIN stadium_hospitality sh
+             ON LOWER(sh.stadium_name) = LOWER(c.stadium_name)
+      WHERE c.stadium_name IS NOT NULL
+        AND c.active = TRUE
+        AND c.stadium_name ILIKE $1
+      GROUP BY c.stadium_name, sh.id, sh.hospitality_url, sh.description, sh.active
+      ORDER BY c.stadium_name ASC
+      LIMIT 25
+    `, [`%${q}%`]);
+    res.json({ stadiums: rows });
+  } catch (err) {
+    console.error("[searchStadiums]", err);
+    res.status(500).json({ error: "Erro ao buscar estádios" });
+  }
+}
+
+export async function listHospitality(req, res) {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        sh.*,
+        COUNT(c.id_club)::int        AS clubs_count,
+        ARRAY_AGG(c.name ORDER BY c.name) AS clubs
+      FROM stadium_hospitality sh
+      LEFT JOIN clubs c ON LOWER(c.stadium_name) = LOWER(sh.stadium_name) AND c.active = TRUE
+      GROUP BY sh.id
+      ORDER BY sh.stadium_name ASC
+    `);
+    res.json({ records: rows });
+  } catch (err) {
+    console.error("[listHospitality]", err);
+    res.status(500).json({ error: "Erro ao listar hospitalidade" });
+  }
+}
+
+export async function upsertHospitality(req, res) {
+  const { stadium_name, hospitality_url, description } = req.body;
+  if (!stadium_name) return res.status(400).json({ error: "stadium_name obrigatório" });
+  try {
+    const { rows } = await db.query(`
+      INSERT INTO stadium_hospitality (stadium_name, hospitality_url, description)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (LOWER(stadium_name))
+      DO UPDATE SET
+        hospitality_url = EXCLUDED.hospitality_url,
+        description     = EXCLUDED.description,
+        updated_at      = NOW()
+      RETURNING *
+    `, [stadium_name, hospitality_url || null, description || null]);
+    res.json({ record: rows[0] });
+  } catch (err) {
+    console.error("[upsertHospitality]", err);
+    res.status(500).json({ error: "Erro ao salvar hospitalidade" });
+  }
+}
+
+export async function deleteHospitality(req, res) {
+  const { id } = req.params;
+  try {
+    await db.query("DELETE FROM stadium_hospitality WHERE id = $1", [id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[deleteHospitality]", err);
+    res.status(500).json({ error: "Erro ao remover hospitalidade" });
   }
 }

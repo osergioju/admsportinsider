@@ -62,7 +62,7 @@ export default function UploadMatchesPage() {
   }
 
   async function handleImport() {
-    if (!league) return alert("Selecione uma liga.");
+    if (!league) return alert("Selecione uma competição.");
     const activeMappings = Object.fromEntries(
       Object.entries(clubMappings).filter(([, v]) => v !== "")
     );
@@ -193,17 +193,17 @@ export default function UploadMatchesPage() {
             {/* Liga */}
             <div>
               <label className={labelClass}>
-                Liga
+                Competição
                 {preview.isMultiCountry && (
-                  <span className="ml-2 text-purple-400 normal-case font-normal">— selecione a liga continental</span>
+                  <span className="ml-2 text-purple-400 normal-case font-normal">— selecione a competição continental</span>
                 )}
               </label>
               {filteredLeagues.length === 0 ? (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-sm text-amber-700">
                   <AlertTriangle size={16} className="shrink-0 mt-0.5" />
                   {preview.isMultiCountry
-                    ? "Nenhuma liga continental cadastrada. Cadastre uma liga sem país associado."
-                    : "Nenhuma liga encontrada. Cadastre uma liga primeiro."}
+                    ? "Nenhuma competição continental cadastrada. Cadastre uma competição sem país associado."
+                    : "Nenhuma competição encontrada. Cadastre uma competição primeiro."}
                 </div>
               ) : (
                 <select value={league} onChange={e => setLeague(e.target.value)} className={selectClass}>

@@ -44,6 +44,7 @@ import GestaoLigas from "./Pages/Admin/GestaoLigas";
 import GestaoClubes from "./Pages/Admin/GestaoClubes";
 import GestaoJogadores from "./Pages/Admin/GestaoJogadores";
 import GestaoContinent from "./Pages/Admin/GestaoContinent";
+import GestaoHospitalidade from "./Pages/Admin/GestaoHospitalidade";
 
 // ADMIN - Gestão do usuário 
 import AdminUsuarios from "./Pages/Admin/Usuarios/GestaoUsuarios";
@@ -142,13 +143,13 @@ export default function App() {
 
               <Route path="me/profile" element={<ProfileDetails />} />
               <Route path="me/financial" element={<SubscriptionManagement />} />
-              <Route path="me/plans" element={<PlansFinancial/>} />
+              <Route path="me/plans" element={<PlansFinancial />} />
               <Route path="me/subscription" element={<SubscriptionPlan />} />
 
 
               {/* Favoritos */}
               <Route path="/dashboard/clubs/favorites" element={<ClubsFavorites />} />
-              <Route path="/dashboard/leagues/favorites" element={<LeaguesFavorites />} />
+              <Route path="/dashboard/competitions/favorites" element={<LeaguesFavorites />} />
 
               {/* Meu Dashboard */}
               <Route path="/dashboard/meu-dashboard" element={<MeuDashboard />} />
@@ -177,8 +178,8 @@ export default function App() {
           <Route path="/dashboard/countries/:id" element={<CountryDetail />} />
 
           {/* Ligas */}
-          <Route path="/dashboard/leagues" element={<DashLeagues />} />
-          <Route path="/dashboard/league/:id" element={<DashLeagueUniques />} />
+          <Route path="/dashboard/competitions" element={<DashLeagues />} />
+          <Route path="/dashboard/competitions/:id" element={<DashLeagueUniques />} />
 
           {/* Jogadores */}
           <Route path="/dashboard/players" element={<PlayersList />} />
@@ -205,6 +206,11 @@ export default function App() {
                 <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
                 <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
                 <Route path="/admin/gestao-jogadores" element={<GestaoJogadores />} />
+              </Route>
+
+              {/* ── Hospitalidade ── */}
+              <Route element={<AdminPermissionRoute permissionKey="gestao-dados" />}>
+                <Route path="/admin/hospitalidade" element={<GestaoHospitalidade />} />
               </Route>
 
               {/* ── Gestão de usuários ── */}

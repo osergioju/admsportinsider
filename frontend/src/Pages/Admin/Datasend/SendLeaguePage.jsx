@@ -177,12 +177,12 @@ export default function SendLeaguePage() {
                 </div>
                 {selectedSheet && (
                   <div className="animate-in fade-in">
-                    <label className={labelClass}>Vincular à Liga</label>
+                    <label className={labelClass}>Vincular à Competição</label>
                     <select className={selectClass} value={mapping.leagueId} onChange={e => setMapping(m => ({ ...m, leagueId: e.target.value }))} disabled={loadingLeagues}>
                       <option value="">Selecione...</option>
                       {leagues.map(l => <option key={l.id_league} value={l.id_league}>{l.name}</option>)}
                     </select>
-                    {loadingLeagues && <p className="text-xs text-purple-500 mt-1 animate-pulse">Carregando ligas...</p>}
+                    {loadingLeagues && <p className="text-xs text-purple-500 mt-1 animate-pulse">Carregando competições...</p>}
                   </div>
                 )}
               </div>

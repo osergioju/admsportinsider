@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
-import { TrendingUp, Trophy, Users, ArrowRight, Building2, Landmark, PieChart } from "lucide-react";
+import { TrendingUp, Trophy, Users, ArrowRight, Building2, Landmark, PieChart, Ticket } from "lucide-react";
 
 /* ─── Utilitários de cor ───────────────────────────────────────── */
 
@@ -220,7 +220,7 @@ export default function PrePageClubs() {
                                 style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.12)" }}
                             >
                                 <Landmark size={15} className="text-white/60 mt-0.5 shrink-0" />
-                                <div>
+                                <div className="flex-1 min-w-0">
                                     <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-0.5">{t("club.stadium", "Estádio")}</p>
                                     <p className="text-white text-sm font-semibold leading-tight">{theClub.club.stadium_name}</p>
                                     <div className="flex flex-wrap gap-x-3 mt-1">
@@ -231,6 +231,27 @@ export default function PrePageClubs() {
                                             <span className="text-white/60 text-xs capitalize">{theClub.club.stadium_ownership}</span>
                                         )}
                                     </div>
+
+                                    {/* Botão de hospitalidade */}
+                                    {theClub.hospitality?.hospitality_url && (
+                                        <a
+                                            href={theClub.hospitality.hospitality_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 hover:scale-105 active:scale-95"
+                                            style={{
+                                                background: "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08))",
+                                                border: "1px solid rgba(255,255,255,0.30)",
+                                                color: "#fff",
+                                                backdropFilter: "blur(6px)",
+                                                boxShadow: "0 2px 12px rgba(0,0,0,0.25)",
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Ticket size={12} strokeWidth={2} />
+                                            {theClub.hospitality.description || t("club.hospitality", "Clique para comprar pacotes de hospitalidade e camarotes")}
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         )}

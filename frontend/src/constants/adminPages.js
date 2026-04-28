@@ -11,7 +11,7 @@ export const ADMIN_PAGES = [
   // ── Gestão de dados ──────────────────────────────────
   {
     key: "gestao-dados",
-    label: "Gestão (Países, Ligas e Clubes)",
+    label: "Gestão (Países, Competições e Clubes)",
     group: "Gestão",
     routes: ["/admin/gestao-paises", "/admin/gestao-continentes", "/admin/gestao-ligas", "/admin/gestao-clubes"],
   },
@@ -107,7 +107,7 @@ export const ADMIN_PAGES = [
   },
   {
     key: "insights-ligas",
-    label: "Insights — Ligas",
+    label: "Insights — Competições",
     group: "Insights",
     routes: ["/admin/insights/ligas"],
   },

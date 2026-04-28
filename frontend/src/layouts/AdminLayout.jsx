@@ -155,6 +155,7 @@ export default function AdminLayout() {
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-ligas" label="Ligas" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-clubes" label="Clubes" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-jogadores" label="Jogadores" />
+                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/hospitalidade" label="Hospitalidade" />
                                         </ul>
                                     )}
                                 </li>
@@ -292,7 +293,7 @@ export default function AdminLayout() {
     );
 
     return (
-        <div className="lg:flex overflow-y-scroll w-full h-screen bg-[#F6F5FA]">
+        <div className="lg:flex w-full h-screen bg-[#F6F5FA]">
 
             {/* --- SIDEBAR CONTAINER --- */}
             <div className="lg:border-r lg:relative top-0 lg:w-[300px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">

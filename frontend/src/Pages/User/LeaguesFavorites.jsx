@@ -68,13 +68,13 @@ export default function LeaguesFavorites() {
               </span>
             </div>
             <h1 className="text-3xl lg:text-4xl font-bold text-[#0A0A0A] tracking-tight leading-tight">
-              {t("favorites.saved_leagues", "Ligas Salvas")}
+              {t("favorites.saved_leagues", "Competições Salvas")}
             </h1>
             <p className="mt-1 text-sm text-gray-400 font-light">
               {isReady
                 ? leagues.length > 0
-                  ? `${leagues.length} liga${leagues.length > 1 ? "s" : ""} na sua lista`
-                  : t("favorites.no_leagues_yet", "Nenhuma liga favoritada ainda")
+                  ? `${leagues.length} competiç${leagues.length > 1 ? "ões" : "ão"} na sua lista`
+                  : t("favorites.no_leagues_yet", "Nenhuma competição favoritada ainda")
                 : "Carregando..."}
             </p>
           </div>
@@ -88,7 +88,7 @@ export default function LeaguesFavorites() {
         {!isReady && (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Loader2 size={32} className="animate-spin text-[#7F33D9]" />
-            <p className="text-sm text-gray-400 font-light">Carregando ligas favoritas...</p>
+            <p className="text-sm text-gray-400 font-light">Carregando competições favoritas...</p>
           </div>
         )}
 
@@ -99,16 +99,16 @@ export default function LeaguesFavorites() {
               <SearchX size={32} className="text-[#7F33D9] opacity-60" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-700">{t("favorites.no_leagues_yet", "Nenhuma liga favoritada ainda")}</p>
+              <p className="text-lg font-semibold text-gray-700">{t("favorites.no_leagues_yet", "Nenhuma competição favoritada ainda")}</p>
               <p className="text-sm text-gray-400 font-light mt-1">
-                {t("favorites.explore_hint", "Explore as ligas e clique no ❤️ para salvá-las aqui.")}
+                {t("favorites.explore_hint", "Explore as competições e clique no ❤️ para salvá-las aqui.")}
               </p>
             </div>
             <Link
               to="/dashboard/leagues"
               className="mt-2 px-6 py-2.5 bg-[#7F33D9] text-white text-sm rounded-full font-medium hover:bg-[#6a28b8] transition-all shadow-md shadow-purple-200"
             >
-              {t("favorites.explore_leagues", "Explorar ligas")}
+              {t("favorites.explore_leagues", "Explorar competições")}
             </Link>
           </div>
         )}

@@ -85,7 +85,7 @@ export default function GestaoLigas() {
     };
 
     const disableLeague = async (id) => {
-        if (!window.confirm("Desativar esta liga?")) return;
+        if (!window.confirm("Desativar esta competição?")) return;
         setLoading(true);
         try { await api.delete(`/admin/disable-league/${id}`); setModal(false); setLoading(false); loadData(); } catch (err) { alert("Erro"); setLoading(false); }
     };
@@ -101,13 +101,13 @@ export default function GestaoLigas() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#111] tracking-tight">Ligas</h1>
+                    <h1 className="text-2xl font-bold text-[#111] tracking-tight">Competições</h1>
                     <p className="text-gray-500 text-sm mt-1">Gerencie os campeonatos.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                     <div className="relative group w-full sm:w-64">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#7F33D9] transition-colors"><Search size={18} /></div>
-                        <input type="text" placeholder="Filtrar ligas..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        <input type="text" placeholder="Filtrar competições..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"><X size={14} /></button>}
                     </div>
                     <button
@@ -117,7 +117,7 @@ export default function GestaoLigas() {
                         <FileSpreadsheet size={18} className="text-green-600" />
                         <span className="hidden lg:inline">Importar</span>
                     </button>
-                    <button onClick={openCreateModal} className={btnPrimary}><Plus size={18} /> Nova Liga</button>
+                    <button onClick={openCreateModal} className={btnPrimary}><Plus size={18} /> Nova Competição</button>
                 </div>
             </div>
 
@@ -201,7 +201,7 @@ export default function GestaoLigas() {
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4"><Trophy size={32} className="text-gray-300" /></div>
-                        <h3 className="text-lg font-bold text-gray-900">Nenhuma liga encontrada</h3>
+                        <h3 className="text-lg font-bold text-gray-900">Nenhuma competição encontrada</h3>
                         {searchTerm && <p className="text-sm text-gray-500 mt-1">Sem resultados para "{searchTerm}"</p>}
                     </div>
                 )}
@@ -247,13 +247,13 @@ export default function GestaoLigas() {
                     <div className="absolute inset-0 bg-black/40 " />
                     <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                         <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h2 className="text-xl font-bold text-gray-900">{isEditing ? "Editar Liga" : "Nova Liga"}</h2>
+                            <h2 className="text-xl font-bold text-gray-900">{isEditing ? "Editar Competição" : "Nova Competição"}</h2>
                             <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
                         </div>
                         <div className="p-8 space-y-5">
                             {/* Toggle País / Continente */}
                             <div>
-                                <label className={labelClass}>Tipo de liga</label>
+                                <label className={labelClass}>Tipo de competição</label>
                                 <div className="flex rounded-lg border border-gray-200 overflow-hidden">
                                     <button
                                         type="button"

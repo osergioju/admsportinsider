@@ -198,7 +198,7 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
   // 🧠 Mapeamento de labels
   const typeMap = {
     clube: "Clube",
-    liga: "Liga",
+    liga: "Competição",
     pais: "País",
     jogador: "Jogador",
   };
@@ -532,7 +532,7 @@ export default function SearchBar() {
             value={query || ""}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
-            placeholder={t("ui.search_placeholder", "Buscar clubes, ligas, jogadores, países...")}
+            placeholder={t("ui.search_placeholder", "Buscar clubes, competições, jogadores, países...")}
             style={{
               flex: 1,
               border: "none",
@@ -680,7 +680,7 @@ export default function SearchBar() {
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  Tente outro nome de clube ou liga
+                  Tente outro nome de clube ou competição
                 </div>
               </div>
             )}
@@ -688,7 +688,7 @@ export default function SearchBar() {
             {/* Ligas */}
             {results?.ligas.length > 0 && (
               <>
-                <CategoryLabel count={results.ligas.length}>Ligas</CategoryLabel>
+                <CategoryLabel count={results.ligas.length}>Competições</CategoryLabel>
                 {results.ligas.map((liga) => (
                   <ResultItem
                     key={`liga-${liga.id_league}`}
