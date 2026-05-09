@@ -11,6 +11,7 @@ export default function NetResultTableSection({
   leagueMap,
   currency,
   setCurrency,
+  currencies = [],
   setLeagueMap,
   mainLeagueId,
   selectedLeagues,
@@ -88,6 +89,7 @@ export default function NetResultTableSection({
         ligasSelecionadas={selectedLeagues}
         currency={currency}
         onChangeCurrency={setCurrency}
+        currencies={currencies}
         onAddLeague={handleAddLeague}
         startYear={startYear}
         endYear={endYear}

@@ -31,7 +31,8 @@ import {
    getLeagueDebtsBreakdown,
    getLeagueDebtsEvolution,
    getLeagueFinancialIndicators,
-   getLeagueAvailableYears
+   getLeagueAvailableYears,
+   getLeagueAvailableCurrencies
 
 } from "../controllers/dashboard.controller.js";
 import { authGuard, optionalAuth } from "../middlewares/auth.middleware.js";
@@ -133,6 +134,9 @@ router.get("/leagues/:id/financials/indicators", optionalAuth, financialContext,
 
 // Anos disponíveis
 router.get("/leagues/:id/financials/available-years", optionalAuth, financialContext, getLeagueAvailableYears);
+
+// Moedas disponíveis para conversão
+router.get("/leagues/:id/financials/currencies", optionalAuth, getLeagueAvailableCurrencies);
 
 
 /* ===============================

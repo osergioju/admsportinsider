@@ -244,7 +244,14 @@ export async function importMatches(req, res) {
     const STATS_COLS = 18; // 14 base + 4 extended (xG pre, ht goals)
 
     // Separa em dois grupos para usar o conflict target correto
-    const rowsWithGW = matchRows.filter(r => r[10] != null); // game_week = col 10
+    // Deduplica rowsWithGW pela chave de conflito (id_league, id_season, home, away, game_week)
+    // para evitar "ON CONFLICT DO UPDATE cannot affect row a second time"
+    const dedupWithGW = new Map();
+    for (const r of matchRows.filter(r => r[10] != null)) {
+      const key = `${r[0]}_${r[1]}_${r[2]}_${r[3]}_${r[10]}`;
+      dedupWithGW.set(key, r); // última linha ganha
+    }
+    const rowsWithGW = [...dedupWithGW.values()];
     const rowsWithoutGW = matchRows.filter(r => r[10] == null);
 
     const MATCH_UPDATE = `
@@ -326,7 +333,17 @@ export async function importMatches(req, res) {
     }
 
     // Grupo 2: sem game_week (mata-mata/copa) → índice parcial por timestamp
-    for (const chunkRows of chunk(rowsWithoutGW, 100)) {
+    // Deduplica pelo timestamp + clubes para evitar duplicatas dentro do chunk
+    const dedupWithoutGW = new Map();
+    for (const r of rowsWithoutGW) {
+      const key = r[4] != null
+        ? `${r[0]}_${r[1]}_${r[2]}_${r[3]}_${r[4]}`
+        : `${r[0]}_${r[1]}_${r[2]}_${r[3]}_${Math.random()}`; // sem timestamp: trata como única
+      dedupWithoutGW.set(key, r);
+    }
+    const rowsWithoutGWDeduped = [...dedupWithoutGW.values()];
+
+    for (const chunkRows of chunk(rowsWithoutGWDeduped, 100)) {
       // Separa linhas com e sem timestamp (sem timestamp não tem como deduplicar → INSERT simples)
       const withTs = chunkRows.filter(r => r[4] != null); // match_timestamp = col 4
       const withoutTs = chunkRows.filter(r => r[4] == null);
@@ -1044,10 +1061,18 @@ export async function importTeams(req, res) {
       const teamSlug = slugify(teamName, { lower: true, strict: true });
 
       // 1. common_name do CSV → name/slug do DB
-      // 2. team_name do CSV  → description do DB
-      let idClub = clubsByName.get(commonSlug) || clubsByDesc.get(teamSlug) || null;
+      // 2. team_name do CSV  → name/slug do DB (ex: "Real Santa Cruz" bate no name)
+      // 3. team_name do CSV  → description do DB
+      let idClub = clubsByName.get(commonSlug)
+        || clubsByName.get(teamSlug)
+        || clubsByDesc.get(teamSlug)
+        || null;
       let resolvedVia = idClub
-        ? (clubsByName.get(commonSlug) ? "common_name→name" : "team_name→description")
+        ? (clubsByName.get(commonSlug)
+            ? "common_name→name"
+            : clubsByName.get(teamSlug)
+              ? "team_name→name"
+              : "team_name→description")
         : null;
 
       // 3. Mapeamento manual enviado pelo usuário
@@ -1192,7 +1217,7 @@ export async function importTeams(req, res) {
 
     console.log(`[importTeams] ✅ ${resolvedLog.length} clube(s) resolvido(s), ${skipped.length} ignorado(s):`);
     for (const r of resolvedLog) {
-      console.log(`  ${r.via === "manual_mapping" ? "🔧" : "🔍"} "${r.csvKey}" → id_club=${r.idClub} (via ${r.via})`);
+      console.log(`  ${r.via === "manual_mapping" ? "🔧" : "🔍"} "${r.common || r.team}" → id_club=${r.idClub} (via ${r.via})`);
     }
 
     /* ------------------------------------------------------------------
@@ -1209,47 +1234,27 @@ export async function importTeams(req, res) {
     }
 
     /* ------------------------------------------------------------------
-       DETECTA duplicatas antes do INSERT para logar claramente
+       DEDUPLICA antes do INSERT (último row vence, igual ao importMatches)
     ------------------------------------------------------------------ */
 
-    const seenKeys = new Map(); // "compSeason__idClub" → csvName
-    const dupsFound = [];
-
+    const dedupMap = new Map(); // "compSeason__idClub" → row
     for (const row of statsRows) {
       const key = `${row[0]}__${row[1]}`;
-      if (seenKeys.has(key)) {
-        dupsFound.push({ key, first: seenKeys.get(key), second: row[2] ?? "?" });
-      } else {
-        seenKeys.set(key, row[2] ?? "?");
+      if (dedupMap.has(key)) {
+        console.warn(`[importTeams] ⚠️  duplicata detectada (id_competition_season=${row[0]} id_club=${row[1]}), mantendo última ocorrência`);
       }
+      dedupMap.set(key, row);
     }
-
-    console.log(dupsFound);
-
-    if (dupsFound.length > 0) {
-      console.error(`[importTeams] ❌ ${dupsFound.length} linha(s) duplicada(s) detectada(s) antes do INSERT:`);
-      for (const d of dupsFound) {
-        console.error(`  → id_competition_season=${d.key.split("__")[0]} id_club=${d.key.split("__")[1]}`);
-      }
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        success: false,
-        error: "Duplicatas detectadas no arquivo",
-        duplicates: dupsFound.map(d => ({
-          id_competition_season: d.key.split("__")[0],
-          id_club: d.key.split("__")[1],
-        })),
-      });
-    }
+    const dedupedStatsRows = [...dedupMap.values()];
 
     /* ------------------------------------------------------------------
        BULK UPSERT club_competition_stats
     ------------------------------------------------------------------ */
 
-    const COL_COUNT = statsRows[0]?.length ?? 0;
+    const COL_COUNT = dedupedStatsRows[0]?.length ?? 0;
     let inserted = 0;
 
-    for (const chunkRows of chunk(statsRows, 50)) {
+    for (const chunkRows of chunk(dedupedStatsRows, 50)) {
       const values = buildValues(chunkRows.length, COL_COUNT);
       const params = chunkRows.flat();
 
@@ -1464,7 +1469,11 @@ export async function previewTeams(req, res) {
         countryCount.set(found.country_name, (countryCount.get(found.country_name) ?? 0) + 1);
       }
     }
-    const isMultiCountry = countryCount.size > 1;
+    // Só é verdadeiramente multi-país se nenhum país tem ≥60% dos times resolvidos
+    // (evita falso-positivo quando homônimos de outros países contaminam a contagem)
+    const totalResolved = [...countryCount.values()].reduce((a, b) => a + b, 0);
+    const topCount = Math.max(0, ...[...countryCount.values()]);
+    const isMultiCountry = countryCount.size > 1 && (totalResolved === 0 || topCount / totalResolved < 0.6);
 
     // Detecta o país dominante (maior número de times encontrados)
     const uniqueCsvCountries = [...new Set(rows.map(r => r.country).filter(Boolean))];
@@ -1633,7 +1642,9 @@ export async function previewMatches(req, res) {
         countryCount.set(found.country_name, (countryCount.get(found.country_name) ?? 0) + 1);
       }
     }
-    const isMultiCountry = countryCount.size > 1;
+    const totalResolvedM = [...countryCount.values()].reduce((a, b) => a + b, 0);
+    const topCountM = Math.max(0, ...[...countryCount.values()]);
+    const isMultiCountry = countryCount.size > 1 && (totalResolvedM === 0 || topCountM / totalResolvedM < 0.6);
 
     // Detecta o país dominante (maior número de times encontrados)
     const csvCountryFromRows = rows[0]?.country_name || rows[0]?.country || null;
@@ -1763,7 +1774,9 @@ export async function previewPlayers(req, res) {
         countryCount.set(found.country_name, (countryCount.get(found.country_name) ?? 0) + 1);
       }
     }
-    const isMultiCountry = countryCount.size > 1;
+    const totalResolvedP = [...countryCount.values()].reduce((a, b) => a + b, 0);
+    const topCountP = Math.max(0, ...[...countryCount.values()]);
+    const isMultiCountry = countryCount.size > 1 && (totalResolvedP === 0 || topCountP / totalResolvedP < 0.6);
 
     // Detecta o país dominante (maior número de clubes encontrados)
     let detectedCountry = rows[0]?.country_name || rows[0]?.country || null;

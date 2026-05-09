@@ -1487,7 +1487,7 @@
  *         description: Erro interno do servidor
  */
 import { Router } from "express";
-import { previewClubImport, uploadClubXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason, getAllContinents, createContinent, updateContinent, disableContinent, getTournamentSuggestions, bulkAssignPhases, getGroupClubs, saveGroupClubs, searchStadiums, listHospitality, upsertHospitality, deleteHospitality, createHiddenClub } from "../controllers/admin.controller.js";
+import { previewClubImport, uploadClubXlsx, previewLeagueImport, uploadLeagueXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason, getAllContinents, createContinent, updateContinent, disableContinent, getTournamentSuggestions, bulkAssignPhases, getGroupClubs, saveGroupClubs, searchStadiums, listHospitality, upsertHospitality, deleteHospitality, createHiddenClub } from "../controllers/admin.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1560,7 +1560,9 @@ router.put("/clubs/:id/update", adminGuard, updateClub);
 router.delete("/disable-club/:id", adminGuard, disableClub);
 router.get("/attribute-keys", getAttributeKeys);
 router.post("/import-clubs-xlsx", adminGuard, uploadXlsx, uploadClubXlsx);
-router.post("/preview-import", adminGuard, uploadXlsx, previewClubImport)
+router.post("/preview-import", adminGuard, uploadXlsx, previewClubImport);
+router.post("/import-leagues-xlsx", adminGuard, uploadXlsx, uploadLeagueXlsx);
+router.post("/preview-league-import", adminGuard, uploadXlsx, previewLeagueImport);
 router.post("/clubs/search", adminGuard, clubsSearch);
 router.get("/clubs-grouped-by-country", clubsGroupedByCountry);
 

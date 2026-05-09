@@ -234,77 +234,36 @@ export default function DashClubUniques() {
   }
 
   /**
-   * efeitos por gráfico
+   * Efeito único: re-busca todos os gráficos quando moeda OU comparações mudam.
+   * force=true garante que dados existentes também sejam re-buscados com a nova moeda.
    */
-  // ✅ ADICIONAR filtros de ano - evolução temporal
   useEffect(() => {
-    fetchChartData(
-      "revenue",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues?to=${displayCurrency}`,
-      true
-    );
-  }, [chartComparisons.revenue, mainClubId, displayCurrency]);
+    if (!mainClubId) return;
 
-  // ✅ ADICIONAR filtros de ano - evolução temporal
-  useEffect(() => {
-    fetchChartData(
-      "payroll",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/costs/payroll?to=${displayCurrency}`,
-      true
-    );
-  }, [chartComparisons.payroll, mainClubId, displayCurrency]);
+    const builders = {
+      revenue:         (id) => `/dashboard/clubs/${id}/financials/revenues?to=${displayCurrency}`,
+      payroll:         (id) => `/dashboard/clubs/${id}/financials/costs/payroll?to=${displayCurrency}`,
+      costs:           (id) => `/dashboard/clubs/${id}/financials/costs/breakdown?to=${displayCurrency}`,
+      netResult:       (id) => `/dashboard/clubs/${id}/financials/net-result?to=${displayCurrency}`,
+      netEvolution:    (id) => `/dashboard/clubs/${id}/financials/net-result/evolution?to=${displayCurrency}`,
+      debts:           (id) => `/dashboard/clubs/${id}/financials/debts/breakdown?to=${displayCurrency}`,
+      revenueBreakdown:(id) => `/dashboard/clubs/${id}/financials/revenues/breakdown?to=${displayCurrency}`,
+    };
 
-  // ❌ NÃO adicionar - breakdown do último ano apenas
-  useEffect(() => {
-    fetchChartData(
-      "costs",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/costs/breakdown?to=${displayCurrency}`,
-      true
-    );
-  }, [chartComparisons.costs, mainClubId, displayCurrency]);
-
-  // ✅ ADICIONAR filtros de ano - evolução temporal (últimos 3 anos, 12 registros)
-  useEffect(() => {
-    fetchChartData(
-      "netResult",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/net-result?to=${displayCurrency}`,
-      true
-    );
-  }, [chartComparisons.netResult, mainClubId, displayCurrency]);
-
-  // ✅ ADICIONAR filtros de ano - evolução temporal
-  useEffect(() => {
-    fetchChartData(
-      "netEvolution",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/net-result/evolution?to=${displayCurrency}`,
-      true
-    );
-  }, [chartComparisons.netEvolution, mainClubId, displayCurrency]);
-
-  // ❌ NÃO adicionar - breakdown do último ano apenas
-  useEffect(() => {
-    fetchChartData(
-      "debts",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/debts/breakdown?to=${displayCurrency}`,
-      true
-    );
-  }, [chartComparisons.debts, mainClubId, displayCurrency]);
-
-  // ❌ NÃO adicionar - breakdown do último ano apenas
-  useEffect(() => {
-    fetchChartData(
-      "revenueBreakdown",
-      (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?to=${displayCurrency}`,
-      true
-    );
-  }, [chartComparisons.revenueBreakdown, mainClubId, displayCurrency]);
+    Object.entries(builders).forEach(([key, builder]) => {
+      fetchChartData(key, builder, true);
+    });
+  }, [
+    mainClubId,
+    displayCurrency,
+    chartComparisons.revenue,
+    chartComparisons.payroll,
+    chartComparisons.costs,
+    chartComparisons.netResult,
+    chartComparisons.netEvolution,
+    chartComparisons.debts,
+    chartComparisons.revenueBreakdown,
+  ]);
 
   if (loading || !theClub) {
     return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;

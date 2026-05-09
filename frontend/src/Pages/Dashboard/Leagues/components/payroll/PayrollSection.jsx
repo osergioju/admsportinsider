@@ -12,6 +12,7 @@ export default function PayrollSection({
   setLeagueMap,
   currency,
   setCurrency,
+  currencies = [],
   mainLeagueId,
   selectedLeagues,
   setSelectedLeagues,
@@ -87,6 +88,7 @@ export default function PayrollSection({
         ligasSelecionadas={selectedLeagues}
         currency={currency}
         onChangeCurrency={setCurrency}
+        currencies={currencies}
         onAddLeague={handleAddLeague}
         startYear={startYear}
         endYear={endYear}

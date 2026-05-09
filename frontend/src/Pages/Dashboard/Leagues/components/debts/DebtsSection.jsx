@@ -7,6 +7,7 @@ export default function DebtsSection({
   data,
   currency,
   setCurrency,
+  currencies = [],
   leagueMap,
   setLeagueMap,
   mainLeagueId,
@@ -44,6 +45,7 @@ export default function DebtsSection({
         onAddLeague={handleAddLeague}
         currency={currency}
         onChangeCurrency={setCurrency}
+        currencies={currencies}
       />
 
       <DebtsBreakdownBarChart

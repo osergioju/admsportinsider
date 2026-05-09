@@ -1836,8 +1836,10 @@ const normalizeHex = (value) => {
   return /^#[0-9A-F]{6}$/.test(v) ? v : null;
 };
 
-/** Insere um batch de tuples. Retorna rowCount real (pós ON CONFLICT). */
-const insertClubBatch = async (client, batchTuples) => {
+/** Upsert de um batch de tuples.
+ *  updateFields: array de colunas a atualizar em caso de conflito (slug já existe).
+ *  Se vazio → ON CONFLICT DO NOTHING (não insere nem atualiza duplicatas). */
+const insertClubBatch = async (client, batchTuples, updateFields = []) => {
   if (!batchTuples.length) return 0;
 
   const flat = [];
@@ -1850,15 +1852,19 @@ const insertClubBatch = async (client, batchTuples) => {
     flat.push(...tuple);
   }
 
+  const onConflict = updateFields.length
+    ? `ON CONFLICT (slug) DO UPDATE SET ${updateFields.map(f => `${f} = EXCLUDED.${f}`).join(", ")}`
+    : `ON CONFLICT (slug) DO NOTHING`;
+
   const { rowCount } = await client.query(
     `INSERT INTO clubs (
        id_country, name, slug, crest_url,
        description, location, founded_at,
        stadium_name, stadium_capacity, stadium_ownership, ownership_model,
-       primary_color, secondary_color, tertiary_color
+       primary_color, secondary_color, tertiary_color, gender
      )
      VALUES ${phs.join(",")}
-     ON CONFLICT DO NOTHING`,
+     ${onConflict}`,
     flat
   );
 
@@ -1883,6 +1889,17 @@ export async function uploadClubXlsx(req, res) {
   } catch {
     return res.status(400).json({ error: "country_map não é JSON válido" });
   }
+
+  let options = { insertNew: true, updateColors: false, updateGender: false, updateTranslations: false };
+  try {
+    if (req.body.options) options = { ...options, ...JSON.parse(req.body.options) };
+  } catch { /* usa defaults */ }
+
+  // Monta lista de colunas a atualizar em caso de conflito
+  const updateFields = [
+    ...(options.updateColors ? ["primary_color", "secondary_color", "tertiary_color"] : []),
+    ...(options.updateGender ? ["gender"] : []),
+  ];
 
   // ── Leitura XLSX ──────────────────────────────────────────────────────
   let rows;
@@ -1926,27 +1943,33 @@ export async function uploadClubXlsx(req, res) {
   const validTuples = [];
   const errors = [];
 
+  // Coluna map do Excel (Clubes >>):
+  // 0=Slug | 1=Continente | 2=País | 3=Nome(PT) | 4=Nome(EN) | 5=Nome(ES)
+  // 6=Gênero | 7=Status | 8=Nome completo | 9=Cidade | 10=Data fundação
+  // 11=Pré-1900 | 12=Só ano | 13=Estádio | 14=Capacidade
+  // 15=Cor primária(texto) | 16=Código primário(hex) | 17=Cor secundária(texto)
+  // 18=Código secundário(hex) | 19=Cor terciária(texto) | 20=Código terciário(hex)
+  // 21=Estrutura empresarial | 22=Propriedade do estádio
+
+  const translationRows = []; // { slug, pt, en, es }
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
 
-    // Formato planilha: col0=Slug | col1=Escudo | col2=País | col3=Nome | col4=Status
-    //   col5=Nome completo | col6=Cidade | col7=Fundação | col10=Estádio | col11=Capacidade
-    //   col13=Hex primário | col15=Hex secundário | col17=Hex terciário
-    //   col18=Estrutura empresarial | col19=Propriedade do estádio
-    const fullSlug = toStr(row[0]); // ex: "argentina_boca-juniors"
-    const countryRaw = toStr(row[2]); // "Argentina"
-    const name = toStr(row[3]); // "Boca Juniors"
+    const fullSlug   = toStr(row[0]);
+    const countryRaw = toStr(row[2]);
+    const namePt     = toStr(row[3]);
 
-    if (!name) {
+    if (!namePt) {
       errors.push({ row: i + 1, reason: "nome_vazio" });
       continue;
     }
 
-    // Resolve país: tenta coluna 2 primeiro, fallback ao prefixo do slug
+    // Resolve país: tenta coluna 2, fallback ao prefixo do slug
     let countryKey = countryRaw.toLowerCase();
     if (!countryLookup.has(countryKey)) {
-      const idx = fullSlug.indexOf("_");
-      if (idx > 0) countryKey = fullSlug.slice(0, idx).toLowerCase();
+      const sepIdx = fullSlug.indexOf("_");
+      if (sepIdx > 0) countryKey = fullSlug.slice(0, sepIdx).toLowerCase();
     }
 
     const countryId = countryLookup.get(countryKey);
@@ -1955,28 +1978,47 @@ export async function uploadClubXlsx(req, res) {
       continue;
     }
 
-    const clubSlug = fullSlug; // usa o slug completo da planilha (ex: "uruguay_liverpool") — único por design
-    const crestUrl = fullSlug;
+    const nameEn = toStr(row[4]) || namePt;
+    const nameEs = toStr(row[5]) || namePt;
+    const gender = toStr(row[6]) || null;
+
+    const hexPrimary   = normalizeHex(row[16]);
+    const hexSecondary = normalizeHex(row[18]);
+    const hexTertiary  = normalizeHex(row[20]);
 
     validTuples.push([
       countryId,
-      name,
-      clubSlug,                           // slug (só nome, sem país)
-      crestUrl,                           // crest_url (usa slug completo com país)
-      toStr(row[5]) || null,              // description (nome completo)
-      toStr(row[6]) || null,              // location (cidade)
-      parseDate(row[7]),                  // founded_at
-      toStr(row[10]) || null,             // stadium_name
-      row[11] ? (parseInt(String(row[11]).replace(/[.,\s]/g, ""), 10) || null) : null, // stadium_capacity
-      toStr(row[19]) || null,             // stadium_ownership
-      toStr(row[18]) || null,             // ownership_model
-      normalizeHex(row[13]),              // primary_color
-      normalizeHex(row[15]),              // secondary_color
-      normalizeHex(row[17]),              // tertiary_color
+      namePt,
+      fullSlug,                                                                           // slug
+      fullSlug,                                                                           // crest_url
+      toStr(row[8]) || null,                                                              // description
+      toStr(row[9]) || null,                                                              // location
+      parseDate(row[10]),                                                                 // founded_at
+      toStr(row[13]) || null,                                                             // stadium_name
+      row[14] ? (parseInt(String(row[14]).replace(/[.,\s]/g, ""), 10) || null) : null,   // stadium_capacity
+      toStr(row[22]) || null,                                                             // stadium_ownership
+      toStr(row[21]) || null,                                                             // ownership_model
+      hexPrimary,                                                                         // primary_color
+      hexSecondary,                                                                       // secondary_color
+      hexTertiary,                                                                        // tertiary_color
+      gender,                                                                             // gender
     ]);
+
+    translationRows.push({ slug: fullSlug, pt: namePt, en: nameEn, es: nameEs });
   }
 
-  if (!validTuples.length) {
+  // Deduplica por slug — última linha vence (mesmo lote não pode ter slug duplicado)
+  const tupleBySlug = new Map();
+  const translationBySlug = new Map();
+  for (let i = 0; i < validTuples.length; i++) {
+    const slug = validTuples[i][2]; // índice 2 = slug
+    tupleBySlug.set(slug, validTuples[i]);
+    translationBySlug.set(slug, translationRows[i]);
+  }
+  const dedupedTuples = [...tupleBySlug.values()];
+  const dedupedTranslations = [...translationBySlug.values()];
+
+  if (!dedupedTuples.length) {
     return res.json({
       message: "Nenhuma linha válida para importar.",
       inserted: 0,
@@ -1991,12 +2033,57 @@ export async function uploadClubXlsx(req, res) {
   try {
     await client.query("BEGIN");
 
+    // Se insertNew=false, filtra apenas slugs já existentes no banco
+    let tuplesToProcess = dedupedTuples;
+    let translationsToProcess = dedupedTranslations;
+    if (!options.insertNew) {
+      const slugList = dedupedTuples.map(t => t[2]);
+      const { rows: existing } = await client.query(
+        `SELECT slug FROM clubs WHERE slug = ANY($1::text[])`, [slugList]
+      );
+      const existingSet = new Set(existing.map(r => r.slug));
+      const keepIdx = dedupedTuples.map((t, i) => existingSet.has(t[2]) ? i : -1).filter(i => i >= 0);
+      tuplesToProcess = keepIdx.map(i => dedupedTuples[i]);
+      translationsToProcess = keepIdx.map(i => dedupedTranslations[i]);
+    }
+
     let totalInserted = 0;
-    for (let off = 0; off < validTuples.length; off += BATCH_SIZE) {
+    for (let off = 0; off < tuplesToProcess.length; off += BATCH_SIZE) {
       totalInserted += await insertClubBatch(
         client,
-        validTuples.slice(off, off + BATCH_SIZE)
+        tuplesToProcess.slice(off, off + BATCH_SIZE),
+        updateFields
       );
+    }
+
+    // ── Traduções: upsert via unnest (tipos explícitos, sem limite de params) ─
+    if (options.updateTranslations && translationsToProcess.length > 0) {
+      const slugList = translationsToProcess.map(r => r.slug);
+      const { rows: clubRows } = await client.query(
+        `SELECT id_club, slug FROM clubs WHERE slug = ANY($1::text[])`,
+        [slugList]
+      );
+      const slugToId = Object.fromEntries(clubRows.map(r => [r.slug, r.id_club]));
+
+      const ids = [], locales = [], names = [];
+      for (const tr of translationsToProcess) {
+        const idClub = slugToId[tr.slug];
+        if (!idClub) continue;
+        for (const [locale, name] of [["pt", tr.pt], ["en", tr.en], ["es", tr.es]]) {
+          if (!name) continue;
+          ids.push(idClub);
+          locales.push(locale);
+          names.push(name);
+        }
+      }
+      if (ids.length) {
+        await client.query(
+          `INSERT INTO club_translations (id_club, locale, name)
+           SELECT * FROM unnest($1::int[], $2::text[], $3::text[])
+           ON CONFLICT (id_club, locale) DO UPDATE SET name = EXCLUDED.name`,
+          [ids, locales, names]
+        );
+      }
     }
 
     await client.query("COMMIT");
@@ -2007,8 +2094,8 @@ export async function uploadClubXlsx(req, res) {
       console.table(errors);
     }
 
-    if (totalInserted < validTuples.length) {
-      const dupes = validTuples.length - totalInserted;
+    if (totalInserted < dedupedTuples.length) {
+      const dupes = dedupedTuples.length - totalInserted;
       console.log(`\n🔁 ${dupes} linha(s) ignorada(s) por duplicata (ON CONFLICT).`);
     }
 
@@ -2953,5 +3040,222 @@ export async function createHiddenClub(req, res) {
   } catch (err) {
     console.error("[createHiddenClub]", err);
     res.status(500).json({ error: "Erro ao criar clube oculto" });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// LEAGUE XLSX IMPORT
+// col 0=Slug | col 4=País | col 6=Nome(PT) | col 7=Nome(EN) | col 8=Nome(ES)
+// col 9=Gênero | col 10=Nome completo | col 11=Fórmula | col 13=Nome entidade
+// ---------------------------------------------------------------------------
+
+export async function previewLeagueImport(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: "Arquivo não enviado" });
+
+    const { sheetName } = req.body;
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+
+    if (!sheetName) return res.json({ sheets: workbook.SheetNames });
+
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) return res.status(400).json({ error: "Aba inválida" });
+
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    if (!rows.length) return res.status(400).json({ error: "Aba vazia" });
+
+    // Remove header se primeira coluna for "Slug"
+    if (String(rows[0]?.[0] || "").toLowerCase() === "slug") rows.shift();
+
+    const toStr = (v) => (v == null ? "" : String(v).trim());
+
+    // Países únicos na coluna 4 (ignora "N/A" — ligas continentais)
+    const countriesInFile = [...new Set(
+      rows.map(r => toStr(r[4])).filter(v => v && v.toUpperCase() !== "N/A")
+    )];
+
+    const { rows: dbRows } = await db.query(
+      `SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`
+    );
+
+    const result = countriesInFile.map(fileCountry => {
+      const resolved = resolveCountry(fileCountry, dbRows);
+      if (resolved) return { file: fileCountry, resolved, status: "ok", registerSuggestion: null };
+      const registerSuggestion = buildSuggestionPayload(fileCountry);
+      return { file: fileCountry, resolved: null, status: registerSuggestion ? "unregistered" : "unknown", registerSuggestion };
+    });
+
+    return res.json({ countries: result, dbCountries: dbRows });
+  } catch (err) {
+    console.error("Erro preview league:", err);
+    return res.status(500).json({ error: "Erro ao processar preview" });
+  }
+}
+
+export async function uploadLeagueXlsx(req, res) {
+  if (!req.file) return res.status(400).json({ error: "Arquivo XLSX não enviado" });
+
+  const { sheetName } = req.body;
+  if (!sheetName) return res.status(400).json({ error: "Aba não informada" });
+
+  let country_map;
+  try { country_map = JSON.parse(req.body.country_map || "{}"); }
+  catch { return res.status(400).json({ error: "country_map inválido" }); }
+
+  let options = { insertNew: true, updateName: false, updateFullName: false, updateOrganizer: false, updateFormat: false, updateGender: false, updateTranslations: false };
+  try { if (req.body.options) options = { ...options, ...JSON.parse(req.body.options) }; }
+  catch { /* usa defaults */ }
+
+  let rows;
+  try {
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) return res.status(400).json({ error: `Aba "${sheetName}" não encontrada` });
+    rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+  } catch { return res.status(400).json({ error: "Falha ao ler arquivo" }); }
+
+  if (String(rows[0]?.[0] || "").toLowerCase() === "slug") rows.shift();
+  if (!rows.length) return res.status(400).json({ error: "Aba vazia" });
+
+  const toStr = (v) => (v == null ? "" : String(v).trim());
+
+  const countryLookup = new Map();
+  for (const [key, value] of Object.entries(country_map)) {
+    if (key && value) countryLookup.set(key.toLowerCase().trim(), value);
+  }
+
+  // Campos a atualizar no ON CONFLICT
+  const updateFields = [
+    ...(options.updateName      ? ["name"]        : []),
+    ...(options.updateFullName  ? ["description"]  : []),
+    ...(options.updateOrganizer ? ["organizer"]    : []),
+    ...(options.updateFormat    ? ["format"]       : []),
+    ...(options.updateGender    ? ["gender"]       : []),
+  ];
+
+  const validRows = [];
+  const translationRows = [];
+  const errors = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const slug      = toStr(row[0]);
+    const countryRaw = toStr(row[4]);
+    const namePt    = toStr(row[6]);
+
+    if (!slug || !namePt) { errors.push({ row: i + 1, reason: "slug_ou_nome_vazio" }); continue; }
+
+    // País: pode ser N/A (liga continental → sem id_country)
+    let countryId = null;
+    if (countryRaw && countryRaw.toUpperCase() !== "N/A") {
+      countryId = countryLookup.get(countryRaw.toLowerCase()) || null;
+      if (!countryId) { errors.push({ row: i + 1, reason: "pais_nao_encontrado", detail: countryRaw }); continue; }
+    }
+
+    validRows.push({
+      slug,
+      countryId,
+      name:        namePt,
+      description: toStr(row[10]) || null,
+      format:      toStr(row[11]) || null,
+      organizer:   toStr(row[13]) || null,
+      gender:      toStr(row[9])  || null,
+    });
+    translationRows.push({ slug, pt: namePt, en: toStr(row[7]) || namePt, es: toStr(row[8]) || namePt });
+  }
+
+  // Deduplica por slug
+  const bySlug = new Map();
+  const trBySlug = new Map();
+  validRows.forEach((r, i) => { bySlug.set(r.slug, r); trBySlug.set(r.slug, translationRows[i]); });
+  const deduped = [...bySlug.values()];
+  const dedupedTr = [...trBySlug.values()];
+
+  if (!deduped.length) {
+    return res.json({ message: "Nenhuma linha válida.", inserted: 0, updated: 0, skipped: errors.length, sample_errors: errors.slice(0, 50) });
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Se insertNew=false, filtra só slugs existentes
+    let toProcess = deduped;
+    let trToProcess = dedupedTr;
+    if (!options.insertNew) {
+      const { rows: existing } = await client.query(
+        `SELECT slug FROM leagues WHERE slug = ANY($1::text[])`, [deduped.map(r => r.slug)]
+      );
+      const existSet = new Set(existing.map(r => r.slug));
+      const idxs = deduped.map((r, i) => existSet.has(r.slug) ? i : -1).filter(i => i >= 0);
+      toProcess = idxs.map(i => deduped[i]);
+      trToProcess = idxs.map(i => dedupedTr[i]);
+    }
+
+    let totalInserted = 0;
+    const onConflict = updateFields.length
+      ? `ON CONFLICT (slug) DO UPDATE SET ${updateFields.map(f => `${f} = EXCLUDED.${f}`).join(", ")}`
+      : `ON CONFLICT (slug) DO NOTHING`;
+
+    // Batch insert
+    for (let off = 0; off < toProcess.length; off += BATCH_SIZE) {
+      const batch = toProcess.slice(off, off + BATCH_SIZE);
+      if (!batch.length) break;
+      const flat = [], phs = [];
+      let idx = 1;
+      for (const r of batch) {
+        phs.push(`($${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++})`);
+        flat.push(r.slug, r.name, r.description, r.organizer, r.format, r.gender);
+      }
+      const { rowCount } = await client.query(
+        `INSERT INTO leagues (slug, name, description, organizer, format, gender)
+         VALUES ${phs.join(",")}
+         ${onConflict}`,
+        flat
+      );
+      totalInserted += rowCount;
+    }
+
+    // Traduções em batch
+    if (options.updateTranslations && trToProcess.length > 0) {
+      const slugList = trToProcess.map(r => r.slug);
+      const { rows: lgRows } = await client.query(
+        `SELECT id_league, slug FROM leagues WHERE slug = ANY($1::text[])`, [slugList]
+      );
+      const slugToId = Object.fromEntries(lgRows.map(r => [r.slug, r.id_league]));
+
+      const ids = [], locales = [], names = [];
+      for (const tr of trToProcess) {
+        const idLeague = slugToId[tr.slug];
+        if (!idLeague) continue;
+        for (const [locale, name] of [["pt", tr.pt], ["en", tr.en], ["es", tr.es]]) {
+          if (!name) continue;
+          ids.push(idLeague); locales.push(locale); names.push(name);
+        }
+      }
+      if (ids.length) {
+        await client.query(
+          `INSERT INTO league_translations (id_league, locale, name)
+           SELECT * FROM unnest($1::int[], $2::text[], $3::text[])
+           ON CONFLICT (id_league, locale) DO UPDATE SET name = EXCLUDED.name`,
+          [ids, locales, names]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+
+    return res.json({
+      message: "Importação de competições concluída",
+      inserted: totalInserted,
+      skipped: errors.length,
+      ...(errors.length > 0 && { sample_errors: errors.slice(0, 50) }),
+    });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("[uploadLeagueXlsx]", err);
+    return res.status(500).json({ error: "Erro ao importar competições", detail: err.message });
+  } finally {
+    client.release();
   }
 }

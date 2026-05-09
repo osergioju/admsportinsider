@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
+import { formatFinancial } from "../../../utils/formatFinancial";
 import {
     TrendingUp,
     Trophy, Users, ArrowRight, EyeOff,
@@ -95,7 +96,7 @@ export default function PrePageClubs() {
                     netEvolution: netEvoRes.data?.data || [],
                     debts: debtEvRes.data?.data || [],
                     debtsBreakdown: debtBrkRes.data?.data || [],
-                    currency: revRes.data?.toCurrency || "BRL",
+                    currency: revRes.data?.fromCurrency || "BRL",
                 });
             } catch (err) {
                 console.error("Erro ao carregar dashboard:", err);
@@ -110,13 +111,7 @@ export default function PrePageClubs() {
 
     /* ─── Helpers financeiros ──────────────────────────────────── */
     function formatMoney(value, currency) {
-        if (value == null) return "—";
-        return new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: currency || "BRL",
-            notation: "compact",
-            maximumFractionDigits: 1,
-        }).format(value);
+        return formatFinancial(value, currency, "pt-BR");
     }
 
     function getLatestTwo(arr) {
@@ -134,11 +129,11 @@ export default function PrePageClubs() {
     // Receita
     const revData = (financials?.revenues || []).filter(r => r.code === "revenue");
     const [latestRev, prevRev] = getLatestTwo(revData);
-    const revPct = latestRev && prevRev ? calcPct(latestRev.converted_value, prevRev.converted_value) : null;
+    const revPct = latestRev && prevRev ? calcPct(latestRev.value, prevRev.value) : null;
 
     // Dívida
     const [latestDebt, prevDebt] = getLatestTwo(financials?.debts || []);
-    const debtPct = latestDebt && prevDebt ? calcPct(latestDebt.converted_value, prevDebt.converted_value) : null;
+    const debtPct = latestDebt && prevDebt ? calcPct(latestDebt.value, prevDebt.value) : null;
 
     // Resultado líquido
     const netData = (financials?.netResult || []).filter(r => r.code === "net_income");
@@ -152,9 +147,12 @@ export default function PrePageClubs() {
     const chartClubId = Number(id);
     const clubMapLocal = { [chartClubId]: theClub.club.name };
     const clubColorMapLocal = { [chartClubId]: { color_one: c1, color_two: c2 } };
-    const revenueChartData = { [chartClubId]: financials?.revenues || [] };
-    const netChartData = { [chartClubId]: financials?.netEvolution || [] };
-    const debtsChartData = { [chartClubId]: financials?.debtsBreakdown || [] };
+
+    // Gráficos sempre na moeda nativa do clube: sobrescreve converted_value com value
+    const toNative = (arr) => (arr || []).map(item => ({ ...item, converted_value: item.value }));
+    const revenueChartData = { [chartClubId]: toNative(financials?.revenues) };
+    const netChartData = { [chartClubId]: toNative(financials?.netEvolution) };
+    const debtsChartData = { [chartClubId]: toNative(financials?.debtsBreakdown) };
 
     function lighten(hex, amount = 0.2) {
         const rgb = hexToRgb(hex);
@@ -410,12 +408,12 @@ export default function PrePageClubs() {
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.revenues", "Receitas")} <br />{clubName}{latestRev ? ` em ${latestRev.year}` : ""}
+                            {t("clubs.revenues", "Receitas")} {latestRev ? ` em ${latestRev.year}` : ""}
                         </h2>
                         <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl">
+                            className="text-lg font-light lg:text-xl xl:text-2xl">
                             {latestRev
-                                ? `O ${clubName} registrou receita de ${formatMoney(latestRev.converted_value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`
+                                ? `O ${clubName} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`
                                 : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
                         </p>
                     </div>
@@ -440,12 +438,12 @@ export default function PrePageClubs() {
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.debts", "Dívidas")}<br />{clubName}{latestDebt ? ` em ${latestDebt.year}` : ""}
+                            {t("clubs.debts", "Dívidas")} {latestDebt ? ` em ${latestDebt.year}` : ""}
                         </h2>
                         <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl">
+                            className="text-lg font-light lg:text-xl xl:text-2xl">
                             {latestDebt
-                                ? `O ${clubName} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.converted_value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`
+                                ? `O ${clubName} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`
                                 : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
                         </p>
                     </div>
@@ -471,12 +469,12 @@ export default function PrePageClubs() {
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.result", "Resultado")} <br />{clubName}{latestNet ? ` em ${latestNet.year}` : ""}
+                            {t("clubs.result", "Resultado")} {latestNet ? ` em ${latestNet.year}` : ""}
                         </h2>
                         <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl">
+                            className="text-lg font-light lg:text-xl xl:text-2xl">
                             {latestNet
-                                ? `O ${clubName} teve ${latestNet.converted_value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.converted_value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.converted_value >= prevNet.converted_value ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.converted_value), fCurrency)} registrados em ${prevNet.year}` : ""}.`
+                                ? `O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${Math.abs(latestNet.value) >= Math.abs(prevNet.value) ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrados em ${prevNet.year}` : ""}.`
                                 : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
                         </p>
                     </div>

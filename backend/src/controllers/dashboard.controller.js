@@ -92,6 +92,49 @@ async function getClubCurrency(clubId, fallback) {
   return countryRes.rows[0]?.code ?? fallback;
 }
 
+async function getLeagueCurrency(leagueId, fallback) {
+  const res = await db.query(
+    `SELECT currency_code FROM leagues WHERE id_league = $1 AND currency_code IS NOT NULL LIMIT 1`,
+    [leagueId]
+  );
+  if (res.rows[0]?.currency_code) return res.rows[0].currency_code;
+
+  const countryRes = await db.query(
+    `SELECT ccy.code FROM leagues l
+     JOIN currencies ccy ON ccy.id_country = l.id_country
+     WHERE l.id_league = $1 LIMIT 1`,
+    [leagueId]
+  );
+  return countryRes.rows[0]?.code ?? fallback;
+}
+
+export async function getLeagueAvailableCurrencies(req, res) {
+  try {
+    const { id } = req.params;
+    const leagueCurrency = await getLeagueCurrency(id, "BRL");
+
+    const result = await db.query(`
+      SELECT DISTINCT c.id, c.code, c.name, c.symbol
+      FROM currencies c
+      WHERE c.active = true
+        AND (
+          c.code = $1
+          OR EXISTS (
+            SELECT 1 FROM currency_rates cr
+            WHERE (cr.base_currency = $1 AND cr.reference_currency = c.code)
+               OR (cr.reference_currency = $1 AND cr.base_currency = c.code)
+          )
+        )
+      ORDER BY c.code
+    `, [leagueCurrency]);
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error("Erro ao buscar moedas disponíveis (liga):", err);
+    return res.status(500).json({ message: "Erro ao buscar moedas disponíveis" });
+  }
+}
+
 
 export const getClubes = (req, res) => {
   const clubes = [
@@ -629,10 +672,7 @@ export async function getDebtsBreakdown(req, res) {
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
       LEFT JOIN rate_cte r ON true
       WHERE cf.id_club = $1
-        AND fi.code IN (
-          'loans_debt', 'tax_debt', 'payroll_debt', 'other_debt',
-          'liabilities_current', 'liabilities_non-current', 'liabilities'
-        )
+        AND fi.code IN ('loans_debt', 'tax_debt', 'payroll_debt', 'other_debt')
         AND cf.year = (SELECT year FROM latest_year)
       ORDER BY name;
     `, [id, fromCurrency, toCurrency, locale]); // ✅ CORRIGIDO: 4 parâmetros
@@ -681,7 +721,7 @@ export async function getDebtsEvolution(req, res) {
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
       LEFT JOIN rate_cte r ON r.year = cf.year
       WHERE cf.id_club = $1
-        AND fi.code IN ('net_debt', 'liabilities')
+        AND fi.code = 'net_debt'
       ORDER BY cf.year ASC;
     `, [id, fromCurrency, toCurrency]); // ✅ CORRIGIDO: 3 parâmetros
 
@@ -1217,10 +1257,7 @@ export async function getLeagueDebtsBreakdown(req, res) {
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
       LEFT JOIN rate_cte r ON true
       WHERE lf.id_league = $1
-        AND fi.code IN (
-          'loans_debt', 'tax_debt', 'payroll_debt', 'other_debt',
-          'liabilities_current', 'liabilities_non-current', 'liabilities'
-        )
+        AND fi.code IN ('loans_debt', 'tax_debt', 'payroll_debt', 'other_debt')
         AND lf.year = (SELECT year FROM latest_year)
       ORDER BY name;
     `, [id, leagueCurrency, toCurrency, locale]);
@@ -1277,7 +1314,7 @@ export async function getLeagueDebtsEvolution(req, res) {
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
-        AND fi.code IN ('net_debt', 'liabilities')
+        AND fi.code = 'net_debt'
       ORDER BY lf.year ASC;
     `, [id, leagueCurrency, toCurrency]);
 

@@ -59,15 +59,8 @@ export default function DashLeagueFinance() {
   const [leagueColor, setLeagueColor] = useState({});
 
   const defaultCurrency = user?.currency_code ?? "BRL";
-  const [chartCurrencies, setChartCurrencies] = useState({
-    revenue: defaultCurrency,
-    payroll: defaultCurrency,
-    costs: defaultCurrency,
-    netResult: defaultCurrency,
-    netEvolution: defaultCurrency,
-    debts: defaultCurrency,
-    revenueBreakdown: defaultCurrency,
-  });
+  const [displayCurrency, setDisplayCurrency] = useState(defaultCurrency);
+  const [currencies, setCurrencies] = useState([]);
 
   const [chartComparisons, setChartComparisons] = useState({
     revenue: [],
@@ -98,12 +91,14 @@ export default function DashLeagueFinance() {
     async function loadDashboard() {
       try {
         setLoading(true);
-        const [leagueRes] = await Promise.all([
+        const [leagueRes, currenciesRes] = await Promise.all([
           api.get(`/dashboard/leagues/${id}/info`),
+          api.get(`/dashboard/leagues/${id}/financials/currencies`),
         ]);
         setTheLeague(leagueRes.data);
         setLeagueMap({ [mainLeagueId]: leagueRes.data.league.name });
         setLeagueColor({ [mainLeagueId]: { color_one: leagueRes.data.league.primary_color } });
+        setCurrencies(currenciesRes.data || []);
       } catch (err) {
         console.error("Erro ao carregar dashboard da liga:", err);
       } finally {
@@ -131,32 +126,25 @@ export default function DashLeagueFinance() {
   }
 
   useEffect(() => {
-    fetchChartData("revenue", (lid) => `/dashboard/leagues/${lid}/financials/revenues?to=${chartCurrencies.revenue}&fromYear=2018&toYear=2025`, true);
-  }, [chartComparisons.revenue, mainLeagueId, chartCurrencies.revenue]);
-
-  useEffect(() => {
-    fetchChartData("payroll", (lid) => `/dashboard/leagues/${lid}/financials/costs/payroll?to=${chartCurrencies.payroll}&fromYear=2018&toYear=2025`, true);
-  }, [chartComparisons.payroll, mainLeagueId, chartCurrencies.payroll]);
-
-  useEffect(() => {
-    fetchChartData("costs", (lid) => `/dashboard/leagues/${lid}/financials/costs/breakdown?to=${chartCurrencies.costs}`, true);
-  }, [chartComparisons.costs, mainLeagueId, chartCurrencies.costs]);
-
-  useEffect(() => {
-    fetchChartData("netResult", (lid) => `/dashboard/leagues/${lid}/financials/net-result?to=${chartCurrencies.netResult}&fromYear=2021&toYear=2025`, true);
-  }, [chartComparisons.netResult, mainLeagueId, chartCurrencies.netResult]);
-
-  useEffect(() => {
-    fetchChartData("netEvolution", (lid) => `/dashboard/leagues/${lid}/financials/net-result/evolution?to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2025`, true);
-  }, [chartComparisons.netEvolution, mainLeagueId, chartCurrencies.netEvolution]);
-
-  useEffect(() => {
-    fetchChartData("debts", (lid) => `/dashboard/leagues/${lid}/financials/debts/breakdown?to=${chartCurrencies.debts}`, true);
-  }, [chartComparisons.debts, mainLeagueId, chartCurrencies.debts]);
-
-  useEffect(() => {
-    fetchChartData("revenueBreakdown", (lid) => `/dashboard/leagues/${lid}/financials/revenues/breakdown?to=${chartCurrencies.revenueBreakdown}`, true);
-  }, [chartComparisons.revenueBreakdown, mainLeagueId, chartCurrencies.revenueBreakdown]);
+    if (!mainLeagueId) return;
+    const builders = {
+      revenue:          (lid) => `/dashboard/leagues/${lid}/financials/revenues?to=${displayCurrency}&fromYear=2018&toYear=2025`,
+      payroll:          (lid) => `/dashboard/leagues/${lid}/financials/costs/payroll?to=${displayCurrency}&fromYear=2018&toYear=2025`,
+      costs:            (lid) => `/dashboard/leagues/${lid}/financials/costs/breakdown?to=${displayCurrency}`,
+      netResult:        (lid) => `/dashboard/leagues/${lid}/financials/net-result?to=${displayCurrency}&fromYear=2021&toYear=2025`,
+      netEvolution:     (lid) => `/dashboard/leagues/${lid}/financials/net-result/evolution?to=${displayCurrency}&fromYear=2018&toYear=2025`,
+      debts:            (lid) => `/dashboard/leagues/${lid}/financials/debts/breakdown?to=${displayCurrency}`,
+      revenueBreakdown: (lid) => `/dashboard/leagues/${lid}/financials/revenues/breakdown?to=${displayCurrency}`,
+    };
+    Object.entries(builders).forEach(([key, builder]) => {
+      fetchChartData(key, builder, true);
+    });
+  }, [
+    mainLeagueId, displayCurrency,
+    chartComparisons.revenue, chartComparisons.payroll, chartComparisons.costs,
+    chartComparisons.netResult, chartComparisons.netEvolution,
+    chartComparisons.debts, chartComparisons.revenueBreakdown,
+  ]);
 
   if (loading || !theLeague) {
     return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;
@@ -235,8 +223,9 @@ export default function DashLeagueFinance() {
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
               mainLeagueId={mainLeagueId}
-              currency={chartCurrencies.revenue}
-              setCurrency={(value) => setChartCurrencies((prev) => ({ ...prev, revenue: value }))}
+              currency={displayCurrency}
+              setCurrency={setDisplayCurrency}
+              currencies={currencies}
             />
           )}
 
@@ -252,8 +241,9 @@ export default function DashLeagueFinance() {
               mainLeagueId={mainLeagueId}
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.revenueBreakdown}
-              setCurrency={(value) => setChartCurrencies((prev) => ({ ...prev, revenueBreakdown: value }))}
+              currency={displayCurrency}
+              setCurrency={setDisplayCurrency}
+              currencies={currencies}
             />
           )}
         </div>
@@ -271,8 +261,9 @@ export default function DashLeagueFinance() {
               mainLeagueId={mainLeagueId}
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.payroll}
-              setCurrency={(value) => setChartCurrencies((prev) => ({ ...prev, payroll: value }))}
+              currency={displayCurrency}
+              setCurrency={setDisplayCurrency}
+              currencies={currencies}
             />
           )}
         </div>
@@ -290,8 +281,9 @@ export default function DashLeagueFinance() {
               mainLeagueId={mainLeagueId}
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.costs}
-              setCurrency={(value) => setChartCurrencies((prev) => ({ ...prev, costs: value }))}
+              currency={displayCurrency}
+              setCurrency={setDisplayCurrency}
+              currencies={currencies}
             />
           )}
 
@@ -307,8 +299,9 @@ export default function DashLeagueFinance() {
               mainLeagueId={mainLeagueId}
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.netEvolution}
-              setCurrency={(value) => setChartCurrencies((prev) => ({ ...prev, netEvolution: value }))}
+              currency={displayCurrency}
+              setCurrency={setDisplayCurrency}
+              currencies={currencies}
             />
           )}
         </div>
@@ -326,8 +319,9 @@ export default function DashLeagueFinance() {
               mainLeagueId={mainLeagueId}
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.debts}
-              setCurrency={(value) => setChartCurrencies((prev) => ({ ...prev, debts: value }))}
+              currency={displayCurrency}
+              setCurrency={setDisplayCurrency}
+              currencies={currencies}
             />
           )}
 
@@ -343,8 +337,9 @@ export default function DashLeagueFinance() {
               mainLeagueId={mainLeagueId}
               leagueColor={leagueColor}
               setLeagueColor={setLeagueColor}
-              currency={chartCurrencies.netResult}
-              setCurrency={(value) => setChartCurrencies((prev) => ({ ...prev, netResult: value }))}
+              currency={displayCurrency}
+              setCurrency={setDisplayCurrency}
+              currencies={currencies}
             />
           )}
         </div>

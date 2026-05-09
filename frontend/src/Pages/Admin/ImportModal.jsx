@@ -175,12 +175,21 @@ function CountrySelect({ value, onChange, dbCountries }) {
 // ImportModal principal
 // ---------------------------------------------------------------------------
 export default function ImportModal({ countries: initialCountries, onClose, onSuccess }) {
-  const [step, setStep] = useState("upload"); // upload | selectSheet | mapping
+  const [step, setStep] = useState("upload"); // upload | selectSheet | options | mapping
   const [importFile, setImportFile] = useState(null);
   const [sheets, setSheets] = useState([]);
   const [selectedSheet, setSelectedSheet] = useState("");
   const [previewData, setPreviewData] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Opções de importação
+  const [options, setOptions] = useState({
+    insertNew:          true,
+    updateColors:       false,
+    updateGender:       false,
+    updateTranslations: false,
+  });
+  const toggleOption = (key) => setOptions(p => ({ ...p, [key]: !p[key] }));
 
   // Lista de países do banco — pode crescer se o usuário cadastrar inline
   const [dbCountries, setDbCountries] = useState(initialCountries ?? []);
@@ -196,6 +205,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
     setSelectedSheet("");
     setPreviewData([]);
     setRegisterModal(null);
+    setOptions({ insertNew: true, updateColors: false, updateGender: false, updateTranslations: false });
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -219,9 +229,14 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
     }
   };
 
-  // Step 2 → 3
-  const handleSheetContinue = async () => {
+  // Step 2 → 3 (opções)
+  const handleSheetContinue = () => {
     if (!selectedSheet) return;
+    setStep("options");
+  };
+
+  // Step 3 → 4 (mapping)
+  const handleOptionsContinue = async () => {
     setLoading(true);
     try {
       const fd = new FormData();
@@ -229,7 +244,6 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
       fd.append("sheetName", selectedSheet);
       const res = await api.post("/admin/preview-import", fd);
 
-      // ← ATUALIZA a lista de países do banco
       if (res.data.dbCountries?.length) {
         setDbCountries(res.data.dbCountries);
       }
@@ -237,7 +251,6 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
       setPreviewData(
         (res.data.countries ?? []).map((c) => ({
           ...c,
-          // Força string para casar com o value do <option>
           selected: c.resolved?.id_country ? String(c.resolved.id_country) : "",
         }))
       );
@@ -263,6 +276,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
       fd.append("file", importFile);
       fd.append("sheetName", selectedSheet);
       fd.append("country_map", JSON.stringify(country_map));
+      fd.append("options", JSON.stringify(options));
       const res = await api.post("/admin/import-clubs-xlsx", fd);
       alert(`Importação concluída! ${res.data.inserted} inseridos, ${res.data.skipped} ignorados.`);
       reset();
@@ -393,7 +407,55 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
             </div>
           )}
 
-          {/* ===== STEP 3: Mapping ===== */}
+          {/* ===== STEP 3: Opções ===== */}
+          {step === "options" && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">O que fazer com os dados da planilha?</p>
+
+              <div className="space-y-2">
+                {[
+                  { key: "insertNew",          label: "Inserir clubes novos",           desc: "Adiciona clubes que ainda não existem no sistema" },
+                  { key: "updateColors",        label: "Atualizar cores",                desc: "Sobrescreve cor primária, secundária e terciária dos clubes existentes" },
+                  { key: "updateGender",        label: "Atualizar gênero",              desc: "Define o campo gênero (Masculino / Feminino) nos clubes existentes" },
+                  { key: "updateTranslations",  label: "Atualizar traduções (PT/EN/ES)", desc: "Insere ou atualiza os nomes traduzidos dos clubes existentes" },
+                ].map(({ key, label, desc }) => (
+                  <label
+                    key={key}
+                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                      options[key]
+                        ? "border-[#7F33D9] bg-purple-50"
+                        : "border-gray-200 bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 accent-[#7F33D9]"
+                      checked={options[key]}
+                      onChange={() => toggleOption(key)}
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              {!options.insertNew && !options.updateColors && !options.updateGender && !options.updateTranslations && (
+                <p className="text-xs text-red-500 font-medium">Selecione pelo menos uma opção.</p>
+              )}
+
+              <button
+                onClick={handleOptionsContinue}
+                disabled={loading || (!options.insertNew && !options.updateColors && !options.updateGender && !options.updateTranslations)}
+                className={`w-full ${btnPrimary}`}
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : "Continuar"}
+              </button>
+            </div>
+          )}
+
+          {/* ===== STEP 4: Mapping ===== */}
           {step === "mapping" && (
             <div className="space-y-4">
               {/* Sumário */}

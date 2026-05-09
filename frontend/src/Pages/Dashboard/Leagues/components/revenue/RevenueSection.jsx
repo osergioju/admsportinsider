@@ -10,6 +10,7 @@ export default function RevenueSection({
   data,
   currency,
   setCurrency,
+  currencies = [],
   leagueMap,
   setLeagueMap,
   mainLeagueId,
@@ -90,6 +91,7 @@ export default function RevenueSection({
         onAddLeague={handleAddLeague}
         currency={currency}
         onChangeCurrency={setCurrency}
+        currencies={currencies}
         startYear={startYear}
         endYear={endYear}
         onChangeStartYear={setStartYear}

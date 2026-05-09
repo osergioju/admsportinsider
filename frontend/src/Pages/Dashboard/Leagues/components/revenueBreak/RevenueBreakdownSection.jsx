@@ -9,6 +9,7 @@ export default function RevenueBreakdownSection({
   data,
   currency,
   setCurrency,
+  currencies = [],
   leagueMap,
   setLeagueMap,
   mainLeagueId,
@@ -98,6 +99,7 @@ export default function RevenueBreakdownSection({
         onAddLeague={handleAddLeague}
         currency={currency}
         onChangeCurrency={setCurrency}
+        currencies={currencies}
         startYear={startYear}
         endYear={endYear}
         onChangeStartYear={setStartYear}

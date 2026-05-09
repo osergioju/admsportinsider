@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { api } from "../../services/api";
-import { FileSpreadsheet, UploadCloud, X, Loader2, CheckCircle2, AlertTriangle, HelpCircle } from "lucide-react";
+import { FileSpreadsheet, UploadCloud, X, Loader2, CheckCircle2, AlertTriangle, HelpCircle, Plus, Globe } from "lucide-react";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
 
 const btnPrimary = "flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
@@ -13,33 +13,24 @@ function StatusBadge({ status }) {
 }
 
 const IMPORT_OPTIONS = [
-  { key: "insertNew",          label: "Inserir competições novas",       desc: "Adiciona competições que ainda não existem no sistema" },
-  { key: "updateName",         label: "Atualizar nome (PT)",             desc: "Sobrescreve o nome principal da competição" },
-  { key: "updateFullName",     label: "Atualizar nome completo",         desc: "Sobrescreve o nome completo (exibido em parênteses)" },
-  { key: "updateOrganizer",    label: "Atualizar organizador",           desc: "Atualiza o nome da entidade organizadora (ex: CBF)" },
-  { key: "updateFormat",       label: "Atualizar fórmula de disputa",    desc: "Atualiza a fórmula de disputa da competição" },
-  { key: "updateGender",       label: "Atualizar gênero",                desc: "Define o gênero (Masculino / Feminino / Misto)" },
-  { key: "updateTranslations", label: "Atualizar traduções (PT/EN/ES)",  desc: "Insere ou atualiza os nomes traduzidos" },
+  { key: "insertNew",          label: "Inserir competições novas",        desc: "Adiciona competições que ainda não existem no sistema" },
+  { key: "updateName",         label: "Atualizar nome (PT)",              desc: "Sobrescreve o nome principal da competição" },
+  { key: "updateFullName",     label: "Atualizar nome completo",          desc: "Sobrescreve o nome completo (exibido em parênteses)" },
+  { key: "updateOrganizer",    label: "Atualizar organizador",            desc: "Atualiza o nome da entidade organizadora (ex: CBF)" },
+  { key: "updateFormat",       label: "Atualizar fórmula de disputa",     desc: "Atualiza a fórmula de disputa da competição" },
+  { key: "updateGender",       label: "Atualizar gênero",                 desc: "Define o gênero (Masculino / Feminino / Misto)" },
+  { key: "updateTranslations", label: "Atualizar traduções (PT/EN/ES)",   desc: "Insere ou atualiza os nomes traduzidos" },
 ];
 
-export default function ImportLeaguesModal({ onClose, onSuccess }) {
+export default function LeagueImportModal({ countries: initialCountries, onClose, onSuccess }) {
   const [step, setStep] = useState("upload"); // upload | selectSheet | options | mapping
   const [importFile, setImportFile] = useState(null);
   const [sheets, setSheets] = useState([]);
   const [selectedSheet, setSelectedSheet] = useState("");
   const [previewData, setPreviewData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [dbCountries, setDbCountries] = useState([]);
-  const [options, setOptions] = useState({
-    insertNew: true, updateName: false, updateFullName: false,
-    updateOrganizer: false, updateFormat: false, updateGender: false, updateTranslations: false,
-  });
-
-  useEffect(() => {
-    api.get("/admin/countries?onlyActive=true&limit=500")
-      .then(res => setDbCountries(res.data.countries ?? []))
-      .catch(() => {});
-  }, []);
+  const [dbCountries, setDbCountries] = useState(initialCountries ?? []);
+  const [options, setOptions] = useState({ insertNew: true, updateName: false, updateFullName: false, updateOrganizer: false, updateFormat: false, updateGender: false, updateTranslations: false });
 
   const toggleOption = (key) => setOptions(p => ({ ...p, [key]: !p[key] }));
   const anySelected = Object.values(options).some(Boolean);
@@ -151,9 +142,9 @@ export default function ImportLeaguesModal({ onClose, onSuccess }) {
 
         {/* STEP 3: Opções */}
         {step === "options" && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-gray-500">O que fazer com os dados da planilha?</p>
-            <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+            <div className="space-y-2">
               {IMPORT_OPTIONS.map(({ key, label, desc }) => (
                 <label key={key} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${options[key] ? "border-[#7F33D9] bg-purple-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}>
                   <input type="checkbox" className="mt-0.5 accent-[#7F33D9]" checked={options[key]} onChange={() => toggleOption(key)} />
@@ -176,7 +167,7 @@ export default function ImportLeaguesModal({ onClose, onSuccess }) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                {previewData.length === 0 ? "Nenhum país para mapear." : "Mapeie os países do Excel:"}
+                {previewData.length === 0 ? "Nenhum país para mapear (só ligas continentais)." : "Mapeie os países do Excel:"}
               </p>
               {missingCount > 0 && (
                 <span className="text-xs font-bold text-red-500 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
@@ -186,9 +177,9 @@ export default function ImportLeaguesModal({ onClose, onSuccess }) {
             </div>
 
             {previewData.length > 0 && (
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 -mr-1">
+              <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1 -mr-1">
                 {previewData.map((item, i) => (
-                  <div key={i} className={`rounded-xl border p-3 ${item.selected ? "border-gray-100 bg-white" : item.status === "unknown" ? "border-red-200 bg-red-50/40" : "border-amber-200 bg-amber-50/40"}`}>
+                  <div key={i} className={`rounded-xl border p-3 transition-colors ${item.selected ? "border-gray-100 bg-white" : item.status === "unknown" ? "border-red-200 bg-red-50/40" : "border-amber-200 bg-amber-50/40"}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-gray-700 truncate mr-2">{item.file}</span>
                       <StatusBadge status={item.selected ? "ok" : item.status} />
@@ -212,7 +203,7 @@ export default function ImportLeaguesModal({ onClose, onSuccess }) {
             )}
 
             <button onClick={handleFinalImport} disabled={missingCount > 0 || loading} className={`w-full ${btnPrimary}`}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : missingCount > 0 ? `${missingCount} país${missingCount > 1 ? "es" : ""} pendente${missingCount > 1 ? "s" : ""}` : "Importar"}
+              {loading ? <Loader2 size={18} className="animate-spin" /> : missingCount > 0 ? `${missingCount} país pendente` : "Importar"}
             </button>
           </div>
         )}

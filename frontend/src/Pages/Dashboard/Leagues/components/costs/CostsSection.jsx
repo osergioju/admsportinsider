@@ -9,6 +9,7 @@ export default function CostsSection({
   data,
   currency,
   setCurrency,
+  currencies = [],
   leagueMap,
   setLeagueMap,
   mainLeagueId,
@@ -74,6 +75,7 @@ export default function CostsSection({
         ligasSelecionadas={selectedLeagues}
         currency={currency}
         onChangeCurrency={setCurrency}
+        currencies={currencies}
         onAddLeague={handleAddLeague}
         startYear={startYear}
         endYear={endYear}

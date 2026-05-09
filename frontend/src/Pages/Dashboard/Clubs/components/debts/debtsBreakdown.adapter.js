@@ -18,8 +18,8 @@ export function adaptDebtsBreakdown(
     if (!Array.isArray(apiData)) return;
 
     apiData.forEach((item) => {
-      if (item.name_pt) {
-        categorySet.add(item.name_pt);
+      if (item.name) {
+        categorySet.add(item.name);
       }
     });
   });
@@ -31,7 +31,7 @@ export function adaptDebtsBreakdown(
 
     const values = categories.map((category) => {
       const found = Array.isArray(apiData)
-        ? apiData.find((item) => item.name_pt === category)
+        ? apiData.find((item) => item.name === category)
         : null;
 
       return found ? Number(found.converted_value ?? found.value) : 0;

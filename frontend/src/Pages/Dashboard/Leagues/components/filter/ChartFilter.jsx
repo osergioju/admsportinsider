@@ -6,11 +6,11 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 
 const LIMITE_LIGAS = 4;
 
-const CURRENCIES = [
-  { value: "BRL", label: "R$", full: "Real (BRL)" },
-  { value: "USD", label: "US$", full: "Dólar (USD)" },
-  { value: "EUR", label: "€", full: "Euro (EUR)" },
-  { value: "RUB", label: "₽", full: "Rublo (RUB)" },
+const FALLBACK_CURRENCIES = [
+  { code: "BRL", symbol: "R$", name: "Real (BRL)" },
+  { code: "USD", symbol: "US$", name: "Dólar (USD)" },
+  { code: "EUR", symbol: "€", name: "Euro (EUR)" },
+  { code: "RUB", symbol: "₽", name: "Rublo (RUB)" },
 ];
 
 // ─── ChartFilter ───────────────────────────────────────────────────────────
@@ -21,6 +21,7 @@ export default function ChartFilter({
   country = null,
   currency,
   onChangeCurrency,
+  currencies = [],
   startYear,
   endYear,
   onChangeStartYear,
@@ -31,6 +32,7 @@ export default function ChartFilter({
   yearSelectionMode = "multiple",
 }) {
   const { t } = useTranslation();
+  const currencyList = currencies.length > 0 ? currencies : FALLBACK_CURRENCIES;
   const [busca, setBusca] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -234,9 +236,9 @@ export default function ChartFilter({
               cursor: "pointer",
             }}
           >
-            {CURRENCIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label} {c.full}
+            {currencyList.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.symbol} {c.name}
               </option>
             ))}
           </select>

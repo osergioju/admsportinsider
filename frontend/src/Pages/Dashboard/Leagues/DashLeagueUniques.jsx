@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
+import { formatFinancial } from "../../../utils/formatFinancial";
 import { TrendingUp, Trophy, ArrowRight } from "lucide-react";
 import RevenueLineChart from "./components/revenue/RevenueLineChart";
 import NetResultLineChart from "./components/netResult/NetResultLineChart";
@@ -81,7 +82,7 @@ export default function DashLeagueUniques() {
                     netEvolution: netEvoRes.data?.data || [],
                     debts: debtEvRes.data?.data || [],
                     debtsBreakdown: debtBrkRes.data?.data || [],
-                    currency: revRes.data?.toCurrency || "BRL",
+                    currency: revRes.data?.fromCurrency || "BRL",
                 });
             } catch (err) {
                 console.error("Erro ao carregar dashboard da liga:", err);
@@ -96,13 +97,7 @@ export default function DashLeagueUniques() {
 
     /* ─── Helpers financeiros ──────────────────────────────────── */
     function formatMoney(value, currency) {
-        if (value == null) return "—";
-        return new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: currency || "BRL",
-            notation: "compact",
-            maximumFractionDigits: 1,
-        }).format(value);
+        return formatFinancial(value, currency, "pt-BR");
     }
 
     function getLatestTwo(arr) {
@@ -117,8 +112,16 @@ export default function DashLeagueUniques() {
 
     const lg = theLeague.league;
     const sj = lg.structure_json ?? {};
-    const competitionTitle = sj.competition_name ?? lg.name;
-    const metaParts = [lg.organizer, lg.country_name, sj.confederation].filter(Boolean);
+    const shortName = sj.competition_name ?? lg.name;
+    const fullName  = lg.description && lg.description !== shortName ? lg.description : null;
+    const competitionTitle = shortName;
+
+    const FORMAT_LABEL = {
+        pontos_corridos: "Pontos corridos",
+        mata_mata:       "Mata-mata",
+        grupos:          "Grupos + Mata-mata",
+    };
+    const formatLabel = lg.format ? (FORMAT_LABEL[lg.format] ?? lg.format) : null;
 
     const [c1, c2, c3] = resolveColors(lg.primary_color, lg.secondary_color, lg.tertiary_color);
 
@@ -139,11 +142,11 @@ export default function DashLeagueUniques() {
     // Receita
     const revData = (financials?.revenues || []).filter(r => r.code === "revenue" || r.code === "recurring_revenue");
     const [latestRev, prevRev] = getLatestTwo(revData);
-    const revPct = latestRev && prevRev ? calcPct(latestRev.converted_value, prevRev.converted_value) : null;
+    const revPct = latestRev && prevRev ? calcPct(latestRev.value, prevRev.value) : null;
 
     // Dívida
     const [latestDebt, prevDebt] = getLatestTwo(financials?.debts || []);
-    const debtPct = latestDebt && prevDebt ? calcPct(latestDebt.converted_value, prevDebt.converted_value) : null;
+    const debtPct = latestDebt && prevDebt ? calcPct(latestDebt.value, prevDebt.value) : null;
 
     // Resultado líquido
     const netData = (financials?.netResult || []).filter(r => r.code === "net_income");
@@ -153,9 +156,11 @@ export default function DashLeagueUniques() {
     const chartLeagueId = Number(id);
     const leagueMapLocal = { [chartLeagueId]: competitionTitle };
     const leagueColorLocal = { [chartLeagueId]: { color_one: c1 } };
-    const revenueChartData = { [chartLeagueId]: financials?.revenues || [] };
-    const netChartData = { [chartLeagueId]: financials?.netEvolution || [] };
-    const debtsChartData = { [chartLeagueId]: financials?.debtsBreakdown || [] };
+
+    const toNative = (arr) => (arr || []).map(item => ({ ...item, converted_value: item.value }));
+    const revenueChartData = { [chartLeagueId]: toNative(financials?.revenues) };
+    const netChartData = { [chartLeagueId]: toNative(financials?.netEvolution) };
+    const debtsChartData = { [chartLeagueId]: toNative(financials?.debtsBreakdown) };
 
     const navCards = [
         {
@@ -201,13 +206,25 @@ export default function DashLeagueUniques() {
                                 {competitionTitle}
                             </h1>
 
-                            {metaParts.length > 0 && (
-                                <span
-                                    style={{ color: textColor, borderColor: textColor }}
-                                    className="inline-block mt-1 text-white text-xs border border-white/20 px-5 py-2 font-[300] rounded-full"
-                                >
-                                    {metaParts.join(" · ")}
-                                </span>
+                            {fullName && (
+                                <p className="mt-0.5 text-sm font-light opacity-80" style={{ color: textColor }}>
+                                    ({fullName})
+                                </p>
+                            )}
+
+                            {(lg.organizer || formatLabel) && (
+                                <div className="mt-2 flex flex-col gap-0.5">
+                                    {lg.organizer && (
+                                        <p className="text-xs font-light opacity-80" style={{ color: textColor }}>
+                                            Organizador: <span className="font-medium">{lg.organizer}</span>
+                                        </p>
+                                    )}
+                                    {formatLabel && (
+                                        <p className="text-xs font-light opacity-80" style={{ color: textColor }}>
+                                            Fórmula de disputa: <span className="font-medium">{formatLabel}</span>
+                                        </p>
+                                    )}
+                                </div>
                             )}
 
                             {/* Nav cards */}
@@ -278,7 +295,7 @@ export default function DashLeagueUniques() {
                             className="text-lg font-light lg:text-xl"
                         >
                             {latestRev
-                                ? `${competitionTitle} registrou receita de ${formatMoney(latestRev.converted_value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`
+                                ? `${competitionTitle} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`
                                 : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
                         </p>
                     </div>
@@ -311,7 +328,7 @@ export default function DashLeagueUniques() {
                             className="text-lg font-light lg:text-xl"
                         >
                             {latestDebt
-                                ? `${competitionTitle} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.converted_value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`
+                                ? `${competitionTitle} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`
                                 : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
                         </p>
                     </div>
@@ -345,7 +362,7 @@ export default function DashLeagueUniques() {
                             className="text-lg font-light lg:text-xl"
                         >
                             {latestNet
-                                ? `${competitionTitle} teve ${latestNet.converted_value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.converted_value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.converted_value >= prevNet.converted_value ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.converted_value), fCurrency)} registrados em ${prevNet.year}` : ""}.`
+                                ? `${competitionTitle} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${Math.abs(latestNet.value) >= Math.abs(prevNet.value) ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrados em ${prevNet.year}` : ""}.`
                                 : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
                         </p>
                     </div>

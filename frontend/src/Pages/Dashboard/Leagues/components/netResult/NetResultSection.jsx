@@ -9,6 +9,7 @@ export default function NetResultSection({
   data,
   currency,
   setCurrency,
+  currencies = [],
   leagueMap,
   setLeagueMap,
   mainLeagueId,
@@ -86,6 +87,7 @@ export default function NetResultSection({
         ligasSelecionadas={selectedLeagues}
         currency={currency}
         onChangeCurrency={setCurrency}
+        currencies={currencies}
         onAddLeague={handleAddLeague}
         startYear={startYear}
         endYear={endYear}
