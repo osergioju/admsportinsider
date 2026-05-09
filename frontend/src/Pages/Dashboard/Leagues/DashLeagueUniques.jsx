@@ -113,13 +113,13 @@ export default function DashLeagueUniques() {
     const lg = theLeague.league;
     const sj = lg.structure_json ?? {};
     const shortName = sj.competition_name ?? lg.name;
-    const fullName  = lg.description && lg.description !== shortName ? lg.description : null;
+    const fullName = lg.description && lg.description !== shortName ? lg.description : null;
     const competitionTitle = shortName;
 
     const FORMAT_LABEL = {
         pontos_corridos: "Pontos corridos",
-        mata_mata:       "Mata-mata",
-        grupos:          "Grupos + Mata-mata",
+        mata_mata: "Mata-mata",
+        grupos: "Grupos + Mata-mata",
     };
     const formatLabel = lg.format ? (FORMAT_LABEL[lg.format] ?? lg.format) : null;
 
@@ -288,7 +288,7 @@ export default function DashLeagueUniques() {
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
                         >
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.revenues", "Receitas")} <br />{competitionTitle}{latestRev ? ` em ${latestRev.year}` : ""}
+                            {t("clubs.revenues", "Receitas")} <br />{latestRev ? ` em ${latestRev.year}` : ""}
                         </h2>
                         <p
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
@@ -321,7 +321,7 @@ export default function DashLeagueUniques() {
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
                         >
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.debts", "Dívidas")}<br />{competitionTitle}{latestDebt ? ` em ${latestDebt.year}` : ""}
+                            {t("clubs.debts", "Dívidas")}<br /> {latestDebt ? ` em ${latestDebt.year}` : ""}
                         </h2>
                         <p
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
@@ -355,7 +355,7 @@ export default function DashLeagueUniques() {
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
                         >
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.result", "Resultado")} <br />{competitionTitle}{latestNet ? ` em ${latestNet.year}` : ""}
+                            {t("clubs.result", "Resultado")} <br />{latestNet ? ` em ${latestNet.year}` : ""}
                         </h2>
                         <p
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
