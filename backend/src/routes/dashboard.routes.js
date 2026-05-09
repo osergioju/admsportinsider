@@ -19,6 +19,7 @@ import {
    getDebtsEvolution,
    getFinancialIndicators,
    getAvailableYears,
+   getAvailableCurrencies,
 
    // LEAGUES (mesmos dados, outra entidade)
    getLeagueRevenues,
@@ -97,6 +98,9 @@ router.get("/clubs/:id/financials/indicators", optionalAuth, financialContext, g
 
 // Anos disponíveis
 router.get("/clubs/:id/financials/available-years", optionalAuth, financialContext, getAvailableYears);
+
+// Moedas disponíveis para conversão (apenas pares com dados de taxa)
+router.get("/clubs/:id/financials/currencies", optionalAuth, getAvailableCurrencies);
 
 
 router.get("/leagues/continental", getContinentalLeagues);

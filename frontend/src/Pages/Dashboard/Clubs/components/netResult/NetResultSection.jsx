@@ -15,6 +15,7 @@ export default function NetResultSection({
   clubColorMap,
   setClubColorMap,
   currency,
+  currencies = [],
   setCurrency
 }) {
   const { t } = useTranslation();
@@ -83,6 +84,7 @@ export default function NetResultSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+            currencies={currencies}
         startYear={startYear}
         endYear={endYear}
         onChangeStartYear={setStartYear}

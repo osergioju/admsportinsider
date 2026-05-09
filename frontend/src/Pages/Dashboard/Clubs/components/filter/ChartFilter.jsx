@@ -6,13 +6,6 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 
 const LIMITE_CLUBES = 4;
 
-const CURRENCIES = [
-  { value: "BRL", label: "R$", full: "Real (BRL)" },
-  { value: "USD", label: "US$", full: "Dólar (USD)" },
-  { value: "EUR", label: "€", full: "Euro (EUR)" },
-  { value: "RUB", label: "₽", full: "Rublo (RUB)" },
-];
-
 // ─── ChartFilter ───────────────────────────────────────────────────────────
 
 export default function ChartFilter({
@@ -21,6 +14,7 @@ export default function ChartFilter({
   country = null,
   currency,
   onChangeCurrency,
+  currencies = [],
   startYear,
   endYear,
   onChangeStartYear,
@@ -239,11 +233,18 @@ export default function ChartFilter({
               cursor: "pointer",
             }}
           >
-            {CURRENCIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label} {c.full}
-              </option>
-            ))}
+            {currencies.length > 0
+              ? currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.symbol} {c.code} — {c.name}
+                  </option>
+                ))
+              : <>
+                  <option value="BRL">R$ BRL</option>
+                  <option value="USD">US$ USD</option>
+                  <option value="EUR">€ EUR</option>
+                </>
+            }
           </select>
         </div>
       </div>

@@ -371,6 +371,29 @@ export const getCurrencies = async (req, res) => {
 
 
 
+// Atualiza apenas a moeda preferida pelo código (ex: "USD") — usado pelo seletor do dashboard
+export async function updateDisplayCurrency(req, res) {
+  try {
+    const userId = req.user.id;
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: "currency code obrigatório" });
+
+    const result = await db.query(
+      `UPDATE user_preferences SET currency_id = c.id, updated_at = NOW()
+       FROM currencies c
+       WHERE user_preferences.user_id = $1 AND c.code = $2
+       RETURNING c.code, c.name, c.symbol`,
+      [userId, code]
+    );
+
+    if (!result.rows.length) return res.status(404).json({ error: "Moeda não encontrada" });
+    return res.json({ success: true, currency: result.rows[0] });
+  } catch (err) {
+    console.error("Erro ao atualizar moeda:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+}
+
 export async function updatePassword(req, res) {
   const userId = req.user.id;
   const { current_password, new_password } = req.body;

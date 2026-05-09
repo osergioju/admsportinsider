@@ -60,16 +60,21 @@ export default function DashClubUniques() {
   const [clubMap, setClubMap] = useState({});
   const [clubColorMap, setClubColorMap] = useState({});
 
-  const defaultCurrency = user?.currency_code ?? "BRL";
-  const [chartCurrencies, setChartCurrencies] = useState({
-    revenue: defaultCurrency,
-    payroll: defaultCurrency,
-    costs: defaultCurrency,
-    netResult: defaultCurrency,
-    netEvolution: defaultCurrency,
-    debts: defaultCurrency,
-    revenueBreakdown: defaultCurrency,
-  });
+  const [displayCurrency, setDisplayCurrency] = useState(user?.currency_code ?? "BRL");
+  const [currencies, setCurrencies] = useState([]);
+  const [savingCurrency, setSavingCurrency] = useState(false);
+
+  const handleCurrencyChange = async (code) => {
+    setDisplayCurrency(code);
+    setSavingCurrency(true);
+    try {
+      await api.put("/user/currency", { code });
+    } catch (err) {
+      console.error("Erro ao salvar moeda:", err);
+    } finally {
+      setSavingCurrency(false);
+    }
+  };
 
   /**
    * clubes selecionados POR GRÁFICO
@@ -141,7 +146,8 @@ export default function DashClubUniques() {
           debtsBreakdownRes,
           debtsEvolutionRes,
           indicatorsRes,
-          yearsRes
+          yearsRes,
+          currenciesRes,
         ] = await Promise.all([
           api.get(`/dashboard/clubs/${id}/info`),
           api.get(`/dashboard/clubs/${id}/financials/revenues/breakdown`),
@@ -152,7 +158,8 @@ export default function DashClubUniques() {
           api.get(`/dashboard/clubs/${id}/financials/debts/breakdown`),
           api.get(`/dashboard/clubs/${id}/financials/debts/evolution`),
           api.get(`/dashboard/clubs/${id}/financials/indicators`),
-          api.get(`/dashboard/clubs/${id}/financials/available-years`)
+          api.get(`/dashboard/clubs/${id}/financials/available-years`),
+          api.get(`/dashboard/clubs/${id}/financials/currencies`),
         ]);
 
         setTheClub(theclubData.data);
@@ -178,6 +185,7 @@ export default function DashClubUniques() {
         setDebtsEvolution(debtsEvolutionRes.data);
         setIndicators(indicatorsRes.data);
         setAvailableYears(yearsRes.data);
+        setCurrencies(currenciesRes.data || []);
       } catch (err) {
         console.error("Erro ao carregar dashboard:", err);
       } finally {
@@ -233,70 +241,70 @@ export default function DashClubUniques() {
     fetchChartData(
       "revenue",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues?to=${chartCurrencies.revenue}`,
+        `/dashboard/clubs/${clubId}/financials/revenues?to=${displayCurrency}`,
       true
     );
-  }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);
+  }, [chartComparisons.revenue, mainClubId, displayCurrency]);
 
   // ✅ ADICIONAR filtros de ano - evolução temporal
   useEffect(() => {
     fetchChartData(
       "payroll",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/costs/payroll?to=${chartCurrencies.payroll}`,
+        `/dashboard/clubs/${clubId}/financials/costs/payroll?to=${displayCurrency}`,
       true
     );
-  }, [chartComparisons.payroll, mainClubId, chartCurrencies.payroll]);
+  }, [chartComparisons.payroll, mainClubId, displayCurrency]);
 
   // ❌ NÃO adicionar - breakdown do último ano apenas
   useEffect(() => {
     fetchChartData(
       "costs",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/costs/breakdown?to=${chartCurrencies.costs}`,
+        `/dashboard/clubs/${clubId}/financials/costs/breakdown?to=${displayCurrency}`,
       true
     );
-  }, [chartComparisons.costs, mainClubId, chartCurrencies.costs]);
+  }, [chartComparisons.costs, mainClubId, displayCurrency]);
 
   // ✅ ADICIONAR filtros de ano - evolução temporal (últimos 3 anos, 12 registros)
   useEffect(() => {
     fetchChartData(
       "netResult",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/net-result?to=${chartCurrencies.netResult}`,
+        `/dashboard/clubs/${clubId}/financials/net-result?to=${displayCurrency}`,
       true
     );
-  }, [chartComparisons.netResult, mainClubId, chartCurrencies.netResult]);
+  }, [chartComparisons.netResult, mainClubId, displayCurrency]);
 
   // ✅ ADICIONAR filtros de ano - evolução temporal
   useEffect(() => {
     fetchChartData(
       "netEvolution",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/net-result/evolution?to=${chartCurrencies.netEvolution}`,
+        `/dashboard/clubs/${clubId}/financials/net-result/evolution?to=${displayCurrency}`,
       true
     );
-  }, [chartComparisons.netEvolution, mainClubId, chartCurrencies.netEvolution]);
+  }, [chartComparisons.netEvolution, mainClubId, displayCurrency]);
 
   // ❌ NÃO adicionar - breakdown do último ano apenas
   useEffect(() => {
     fetchChartData(
       "debts",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/debts/breakdown?to=${chartCurrencies.debts}`,
+        `/dashboard/clubs/${clubId}/financials/debts/breakdown?to=${displayCurrency}`,
       true
     );
-  }, [chartComparisons.debts, mainClubId, chartCurrencies.debts]);
+  }, [chartComparisons.debts, mainClubId, displayCurrency]);
 
   // ❌ NÃO adicionar - breakdown do último ano apenas
   useEffect(() => {
     fetchChartData(
       "revenueBreakdown",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?to=${chartCurrencies.revenueBreakdown}`,
+        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?to=${displayCurrency}`,
       true
     );
-  }, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);
+  }, [chartComparisons.revenueBreakdown, mainClubId, displayCurrency]);
 
   if (loading || !theClub) {
     return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;
@@ -439,13 +447,9 @@ export default function DashClubUniques() {
               setClubColorMap={setClubColorMap}
               mainClubId={mainClubId}
 
-              currency={chartCurrencies.revenue}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({
-                  ...prev,
-                  revenue: value
-                }))
-              }
+              currency={displayCurrency}
+              setCurrency={handleCurrencyChange}
+              currencies={currencies}
             />
           )
           }
@@ -473,13 +477,9 @@ export default function DashClubUniques() {
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
 
-              currency={chartCurrencies.revenueBreakdown}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({
-                  ...prev,
-                  revenueBreakdown: value
-                }))
-              }
+              currency={displayCurrency}
+              setCurrency={handleCurrencyChange}
+              currencies={currencies}
             />
           )
           }
@@ -510,13 +510,9 @@ export default function DashClubUniques() {
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
 
-              currency={chartCurrencies.payroll}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({
-                  ...prev,
-                  payroll: value
-                }))
-              }
+              currency={displayCurrency}
+              setCurrency={handleCurrencyChange}
+              currencies={currencies}
             />
           )
           }
@@ -546,13 +542,9 @@ export default function DashClubUniques() {
               mainClubId={mainClubId}
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
-              currency={chartCurrencies.costs}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({
-                  ...prev,
-                  costs: value
-                }))
-              }
+              currency={displayCurrency}
+              setCurrency={handleCurrencyChange}
+              currencies={currencies}
             />
           )
           }
@@ -581,13 +573,9 @@ export default function DashClubUniques() {
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
 
-              currency={chartCurrencies.netEvolution}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({
-                  ...prev,
-                  netEvolution: value
-                }))
-              }
+              currency={displayCurrency}
+              setCurrency={handleCurrencyChange}
+              currencies={currencies}
             />
           )
           }
@@ -616,13 +604,9 @@ export default function DashClubUniques() {
               setClubMap={setClubMap}
               mainClubId={mainClubId}
 
-              currency={chartCurrencies.debts}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({
-                  ...prev,
-                  debts: value
-                }))
-              }
+              currency={displayCurrency}
+              setCurrency={handleCurrencyChange}
+              currencies={currencies}
             />
           )
           }
@@ -650,13 +634,9 @@ export default function DashClubUniques() {
               clubColorMap={clubColorMap}
               setClubColorMap={setClubColorMap}
 
-              currency={chartCurrencies.netResult}
-              setCurrency={(value) =>
-                setChartCurrencies((prev) => ({
-                  ...prev,
-                  netResult: value
-                }))
-              }
+              currency={displayCurrency}
+              setCurrency={handleCurrencyChange}
+              currencies={currencies}
             />
           )
           }

@@ -12,6 +12,7 @@ export default function DebtsSection({
   selectedClubs,
   setSelectedClubs,
   currency,
+  currencies = [],
   setCurrency
 }) {
   const { t } = useTranslation();
@@ -47,6 +48,7 @@ export default function DebtsSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+            currencies={currencies}
         yearSelectionMode="multiple"
       />
 

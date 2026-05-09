@@ -15,6 +15,7 @@ export default function PayrollSection({
   clubColorMap,
   setClubColorMap,
   currency,
+  currencies = [],
   setCurrency
 }) {
   const { t } = useTranslation();
@@ -85,6 +86,7 @@ export default function PayrollSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+            currencies={currencies}
         startYear={startYear}
         endYear={endYear}
         onChangeStartYear={setStartYear}

@@ -15,6 +15,7 @@ export default function CostsSection({
   clubColorMap,
   setClubColorMap,
   currency,
+  currencies = [],
   setCurrency
 }) {
   const { t } = useTranslation();
@@ -88,6 +89,7 @@ export default function CostsSection({
           onAddClub={handleAddClub}
           currency={currency}
           onChangeCurrency={setCurrency}
+            currencies={currencies}
           startYear={startYear}
           endYear={endYear}
           onChangeStartYear={setStartYear}

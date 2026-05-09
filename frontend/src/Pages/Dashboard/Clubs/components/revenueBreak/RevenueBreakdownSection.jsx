@@ -17,6 +17,7 @@ export default function RevenueBreakdownSection({
   clubColorMap,
   setClubColorMap,
   currency,
+  currencies = [],
   setCurrency,
   yearSelectionMode
 }) {
@@ -118,6 +119,7 @@ export default function RevenueBreakdownSection({
         onAddClub={handleAddClub}
         currency={currency}
         onChangeCurrency={setCurrency}
+            currencies={currencies}
         startYear={startYear}
         endYear={endYear}
         onChangeStartYear={setStartYear}

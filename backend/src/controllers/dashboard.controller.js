@@ -222,20 +222,40 @@ export async function getAvailableYears(req, res) {
   }
 }
 
+export async function getAvailableCurrencies(req, res) {
+  try {
+    const { id } = req.params;
+    const clubCurrency = await getClubCurrency(id, "BRL");
+
+    const result = await db.query(`
+      SELECT DISTINCT c.id, c.code, c.name, c.symbol
+      FROM currencies c
+      WHERE c.active = true
+        AND (
+          c.code = $1
+          OR EXISTS (
+            SELECT 1 FROM currency_rates cr
+            WHERE (cr.base_currency = $1 AND cr.reference_currency = c.code)
+               OR (cr.reference_currency = $1 AND cr.base_currency = c.code)
+          )
+        )
+      ORDER BY c.code
+    `, [clubCurrency]);
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error("Erro ao buscar moedas disponíveis:", err);
+    return res.status(500).json({ message: "Erro ao buscar moedas disponíveis" });
+  }
+}
+
 export async function getRevenues(req, res) {
   try {
     const { id } = req.params;
     const { fromYear, toYear } = req.query;
     const { locale, fromCurrency: userCurrency, toCurrency: defaultTo } = await getUserFinancialContext(req);
 
-    // Moeda real do clube (source para conversão)
-    const clubCurrRes = await db.query(
-      `SELECT ccy.code FROM clubs c
-       JOIN currencies ccy ON ccy.id_country = c.id_country
-       WHERE c.id_club = $1 LIMIT 1`,
-      [id]
-    );
-    const fromCurrency = clubCurrRes.rows[0]?.code ?? userCurrency;
+    const fromCurrency = await getClubCurrency(id, userCurrency);
     const toCurrency = req.query.to || defaultTo;
 
     const values = [id, locale, fromCurrency, toCurrency];
@@ -256,10 +276,13 @@ export async function getRevenues(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $3
-          AND cr.reference_currency = $4
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $3
+          AND reference_currency = $4
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         cf.year,
@@ -272,7 +295,7 @@ export async function getRevenues(req, res) {
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $2
-      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = cf.year
       WHERE cf.id_club = $1
         AND fi.code IN ('revenue')
         ${yearFilter}
@@ -314,7 +337,8 @@ export async function getRevenuesBreakdown(req, res) {
         FROM currency_rates
         WHERE base_currency = $3
           AND reference_currency = $4
-          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+          AND EXTRACT(YEAR FROM period)::int = (SELECT year FROM latest_year)
+        ORDER BY period DESC
         LIMIT 1
       )
       SELECT
@@ -370,10 +394,13 @@ export async function getPayrollCosts(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         cf.year,
@@ -382,7 +409,7 @@ export async function getPayrollCosts(req, res) {
         (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
-      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = cf.year
       WHERE cf.id_club = $1
         AND fi.code = 'wages'
       ORDER BY cf.year ASC;
@@ -422,7 +449,8 @@ export async function getCostsBreakdown(req, res) {
         FROM currency_rates
         WHERE base_currency = $2
           AND reference_currency = $3
-          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+          AND EXTRACT(YEAR FROM period)::int = (SELECT year FROM latest_year)
+        ORDER BY period DESC
         LIMIT 1
       )
       SELECT
@@ -476,10 +504,13 @@ export async function getNetResult(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         cf.year,
@@ -492,7 +523,7 @@ export async function getNetResult(req, res) {
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
-      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = cf.year
       WHERE cf.id_club = $1
         AND fi.code IN ('ebitda', 'financial_result', 'revenue', 'costs', 'net_income')
       ORDER BY cf.year DESC
@@ -526,10 +557,13 @@ export async function getNetResultEvolution(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         cf.year,
@@ -538,7 +572,7 @@ export async function getNetResultEvolution(req, res) {
         (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
-      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = cf.year
       WHERE cf.id_club = $1
         AND fi.code = 'net_income'
       ORDER BY cf.year ASC;
@@ -578,7 +612,8 @@ export async function getDebtsBreakdown(req, res) {
         FROM currency_rates
         WHERE base_currency = $2
           AND reference_currency = $3
-          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+          AND EXTRACT(YEAR FROM period)::int = (SELECT year FROM latest_year)
+        ORDER BY period DESC
         LIMIT 1
       )
       SELECT
@@ -629,10 +664,13 @@ export async function getDebtsEvolution(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         cf.year,
@@ -641,7 +679,7 @@ export async function getDebtsEvolution(req, res) {
         (cf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM club_financials cf
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
-      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = cf.year
       WHERE cf.id_club = $1
         AND fi.code IN ('net_debt', 'liabilities')
       ORDER BY cf.year ASC;
@@ -672,10 +710,13 @@ export async function getFinancialIndicators(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         cf.year,
@@ -688,7 +729,7 @@ export async function getFinancialIndicators(req, res) {
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
-      LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = cf.year
       WHERE cf.id_club = $1
         AND fi.code IN (
           'ebitda',
@@ -775,10 +816,13 @@ export async function getLeagueRevenues(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $3
-          AND cr.reference_currency = $4
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $3
+          AND reference_currency = $4
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         lf.year,
@@ -791,7 +835,7 @@ export async function getLeagueRevenues(req, res) {
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $2
-      LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
         AND fi.code IN ('revenue', 'recurring_revenue', 'costs')
         ${yearFilter}
@@ -841,7 +885,8 @@ export async function getLeagueRevenuesBreakdown(req, res) {
         FROM currency_rates
         WHERE base_currency = $2
           AND reference_currency = $3
-          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+          AND EXTRACT(YEAR FROM period)::int = (SELECT year FROM latest_year)
+        ORDER BY period DESC
         LIMIT 1
       )
       SELECT
@@ -905,10 +950,13 @@ export async function getLeaguePayrollCosts(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         lf.year,
@@ -917,7 +965,7 @@ export async function getLeaguePayrollCosts(req, res) {
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
-      LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
         AND fi.code = 'wages'
       ORDER BY lf.year ASC;
@@ -965,7 +1013,8 @@ export async function getLeagueCostsBreakdown(req, res) {
         FROM currency_rates
         WHERE base_currency = $2
           AND reference_currency = $3
-          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+          AND EXTRACT(YEAR FROM period)::int = (SELECT year FROM latest_year)
+        ORDER BY period DESC
         LIMIT 1
       )
       SELECT
@@ -1027,10 +1076,13 @@ export async function getLeagueNetResult(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         lf.year,
@@ -1043,7 +1095,7 @@ export async function getLeagueNetResult(req, res) {
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
-      LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
         AND fi.code IN ('revenue', 'costs', 'net_income', 'ebitda', 'financial_result')
       ORDER BY lf.year DESC
@@ -1085,10 +1137,13 @@ export async function getLeagueNetResultEvolution(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         lf.year,
@@ -1097,7 +1152,7 @@ export async function getLeagueNetResultEvolution(req, res) {
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
-      LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
         AND fi.code = 'net_income'
       ORDER BY lf.year ASC;
@@ -1145,7 +1200,8 @@ export async function getLeagueDebtsBreakdown(req, res) {
         FROM currency_rates
         WHERE base_currency = $2
           AND reference_currency = $3
-          AND period = (SELECT (year || '-01-01')::date FROM latest_year)
+          AND EXTRACT(YEAR FROM period)::int = (SELECT year FROM latest_year)
+        ORDER BY period DESC
         LIMIT 1
       )
       SELECT
@@ -1204,10 +1260,13 @@ export async function getLeagueDebtsEvolution(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $2
-          AND cr.reference_currency = $3
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $2
+          AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         lf.year,
@@ -1216,7 +1275,7 @@ export async function getLeagueDebtsEvolution(req, res) {
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
-      LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
         AND fi.code IN ('net_debt', 'liabilities')
       ORDER BY lf.year ASC;
@@ -1338,10 +1397,13 @@ export async function getLeagueRevenues(req, res) {
 
     const result = await db.query(`
       WITH rate_cte AS (
-        SELECT cr.rate, cr.period
-        FROM currency_rates cr
-        WHERE cr.base_currency = $3
-          AND cr.reference_currency = $4
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year,
+          rate
+        FROM currency_rates
+        WHERE base_currency = $3
+          AND reference_currency = $4
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       )
       SELECT
         lf.year,
@@ -1354,7 +1416,7 @@ export async function getLeagueRevenues(req, res) {
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $2
-      LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
+      LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
         AND fi.code IN ('revenue', 'recurring_revenue', 'costs')
         ${yearFilter}

@@ -17,6 +17,7 @@ export default function RevenueSection({
   selectedClubs,
   setSelectedClubs,
   currency,
+  currencies = [],
   setCurrency
 }) {
   const { t } = useTranslation();
@@ -96,6 +97,7 @@ export default function RevenueSection({
             onAddClub={handleAddClub}
             currency={currency}
             onChangeCurrency={setCurrency}
+            currencies={currencies}
             startYear={startYear}
             endYear={endYear}
             onChangeStartYear={setStartYear}
