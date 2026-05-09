@@ -28,7 +28,7 @@ export default function DashboardLayout() {
         location.pathname === "/dashboard-public" ||
         location.pathname.startsWith("/dashboard/clubs") ||
         location.pathname.startsWith("/dashboard/leagues") ||
-        location.pathname.startsWith("/dashboard/league/") ||
+        location.pathname.startsWith("/dashboard/competitions/") ||
         location.pathname.startsWith("/dashboard/players") ||
         location.pathname.startsWith("/dashboard/players/") ||
         location.pathname.startsWith("/dashboard/relatorios") ||

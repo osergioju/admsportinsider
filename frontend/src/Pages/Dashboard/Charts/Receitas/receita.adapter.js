@@ -9,11 +9,11 @@ export function adaptRevenueLineData(
 
   const yearsSet = new Set();
 
+  const isRevenue = (code) => code === "recurring_revenue" || code === "revenue";
+
   ligasSelecionadas.forEach((leagueId) => {
     (dataByLeague[leagueId] || []).forEach((item) => {
-      if (item.code === "recurring_revenue") {
-        yearsSet.add(item.year);
-      }
+      if (isRevenue(item.code)) yearsSet.add(item.year);
     });
   });
 
@@ -29,6 +29,8 @@ export function adaptRevenueLineData(
 
     (dataByLeague[leagueId] || []).forEach((item) => {
       if (item.code === "recurring_revenue") {
+        revenueByYear[item.year] = parseFloat(item.value);
+      } else if (item.code === "revenue" && revenueByYear[item.year] == null) {
         revenueByYear[item.year] = parseFloat(item.value);
       }
     });

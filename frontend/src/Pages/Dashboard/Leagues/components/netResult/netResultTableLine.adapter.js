@@ -4,7 +4,7 @@ export function adaptNetResultEvolutionByLeague(
   leagueMap,
   mainLeagueId,
   leagueColor,
-  metric = "ebitda",
+  metric = "net_income",
   limit = 5
 ) {
   if (!data || Object.keys(data).length === 0) {

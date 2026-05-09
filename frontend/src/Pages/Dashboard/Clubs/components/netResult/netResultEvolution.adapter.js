@@ -29,6 +29,8 @@ export function adaptNetResultEvolution(
     .sort((a, b) => a - b)
     .slice(-limit);
 
+  if (years.length === 0) return null;
+
   // 2) Montar séries
   const series = clubIds.map((clubId) => {
     const apiData = dataByClub[clubId] || [];
@@ -39,9 +41,8 @@ export function adaptNetResultEvolution(
 
     const values = years.map((year) => {
       const found = sorted.find((item) => item.year === year);
-      return found ? Number(found.converted_value) : 0; 
+      return found ? Number(found.converted_value) : 0;
     });
-
 
     return {
       name: clubMap[clubId] || `Clube ${clubId}`,

@@ -26,7 +26,7 @@ export default function FixedMenu() {
       to: "/dashboard/leagues",
       icon: Trophy,
       label: "Ligas",
-      active: isActive("/dashboard/leagues") || isActive("/dashboard/league/"),
+      active: isActive("/dashboard/competitions") || isActive("/dashboard/competitions/"),
     },
     {
       to: "/dashboard/players",

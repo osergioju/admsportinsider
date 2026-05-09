@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import xlsx from "xlsx";
 
 // ---------------------------------------------------------------------------
 // MOEDAS
@@ -51,8 +52,8 @@ export async function createCurrency(req, res) {
   try {
     const { id_country, code, name, symbol } = req.body;
 
-    if (!id_country || !code || !name || !symbol) {
-      return res.status(400).json({ error: "Todos os campos são obrigatórios" });
+    if (!code || !name || !symbol) {
+      return res.status(400).json({ error: "code, name e symbol são obrigatórios" });
     }
 
     // Verifica duplicata de código
@@ -68,7 +69,7 @@ export async function createCurrency(req, res) {
       INSERT INTO currencies (id_country, code, name, symbol, active, created_at)
       VALUES ($1, $2, $3, $4, true, NOW())
       RETURNING *
-    `, [id_country, code.toUpperCase(), name, symbol]);
+    `, [id_country || null, code.toUpperCase(), name, symbol]);
 
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -301,5 +302,174 @@ export async function deletePair(req, res) {
   } catch (err) {
     console.error("Erro ao deletar par:", err);
     res.status(500).json({ error: "Erro ao deletar par" });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// IMPORTAÇÃO EM LOTE DO CÂMBIO.XLSX
+// POST /currency/bulk-import-xlsx
+// Aba "Moedas": [Slug, Moeda, País]  → popula tabela currencies
+// Aba "Câmbio": blocos de taxas      → popula currency_rates
+//   Linha 0: ["NomeMoeda", "BASE_REF1", "BASE_REF2", ...]
+//   Linha 1: ["Data", "descrição1", ...]
+//   Linhas N: ["M/D/YY", taxa1, taxa2, ...]
+//   Linha vazia: separador de bloco
+// ---------------------------------------------------------------------------
+
+const CURRENCY_SYMBOLS = {
+  BRL: "R$", USD: "$", EUR: "€", GBP: "£", RUB: "₽", JPY: "¥",
+  ARS: "$", UYU: "$U", CLP: "$", COP: "$", SAR: "﷼", CHF: "Fr",
+  PYG: "₲", BOB: "Bs", PEN: "S/", VES: "Bs.S", CNY: "¥", KRW: "₩",
+  MXN: "$", CAD: "C$", AUD: "A$", NZD: "NZ$", ZAR: "R",
+};
+
+function parseDateStr(raw) {
+  // Suporta "6/30/20", "12/31/2020", "6/30/2020"
+  if (!raw || typeof raw !== "string") return null;
+  const parts = raw.trim().split("/");
+  if (parts.length !== 3) return null;
+  const [m, d, y] = parts;
+  const year = y.length === 2 ? `20${y}` : y;
+  return `${year}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+export async function bulkImportExchangeRates(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: "Arquivo não enviado" });
+
+    const wb = xlsx.read(req.file.buffer, { type: "buffer" });
+
+    // ── 1. Importa moedas da aba "Moedas" ──────────────────────────────────
+    let currenciesAdded = 0;
+    let currenciesUpdated = 0;
+
+    if (wb.SheetNames.includes("Moedas")) {
+      const moedasWs = wb.Sheets["Moedas"];
+      const moedasRows = xlsx.utils.sheet_to_json(moedasWs, { header: 1, defval: "" });
+
+      for (const row of moedasRows.slice(1)) {
+        const code = String(row[0] || "").trim().toUpperCase();
+        const name = String(row[1] || "").trim();
+        if (!code || !name || code.length > 4) continue;
+
+        const symbol = CURRENCY_SYMBOLS[code] || code;
+
+        // Tenta encontrar o país pelo nome
+        let id_country = null;
+        const countryName = String(row[2] || "").trim();
+        if (countryName) {
+          const { rows: cRows } = await db.query(
+            `SELECT id_country FROM countries WHERE name ILIKE $1 AND active = true LIMIT 1`,
+            [countryName]
+          );
+          id_country = cRows[0]?.id_country || null;
+        }
+
+        // Verifica se já existe (por code)
+        const { rows: existing } = await db.query(
+          `SELECT id, id_country FROM currencies WHERE code = $1`,
+          [code]
+        );
+
+        if (existing.length === 0) {
+          await db.query(
+            `INSERT INTO currencies (code, name, symbol, active, id_country, created_at)
+             VALUES ($1, $2, $3, true, $4, NOW())`,
+            [code, name, symbol, id_country]
+          );
+          currenciesAdded++;
+        } else {
+          // Atualiza nome, símbolo e reativa; preserva id_country existente se já tiver
+          const existingCountry = existing[0].id_country;
+          await db.query(
+            `UPDATE currencies SET name = $1, symbol = $2, active = true,
+              id_country = COALESCE($3::integer, $4::integer)
+             WHERE code = $5`,
+            [name, symbol, existingCountry, id_country, code]
+          );
+          currenciesUpdated++;
+        }
+      }
+    }
+
+    // ── 2. Importa cotações da aba "Câmbio" ────────────────────────────────
+    const sheetName = wb.SheetNames.includes("Câmbio") ? "Câmbio" : wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    const rows = xlsx.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
+
+    const records = [];
+    let i = 0;
+
+    while (i < rows.length) {
+      const headerRow = rows[i];
+      // Detecta início de bloco: célula[1] deve ter padrão "XXX_YYY"
+      if (!headerRow[1] || !/^[A-Z]{2,4}_[A-Z]{2,4}$/.test(String(headerRow[1]).trim())) {
+        i++;
+        continue;
+      }
+
+      // Extrai pares da linha de cabeçalho
+      const pairs = [];
+      for (let col = 1; col < headerRow.length; col++) {
+        const cell = String(headerRow[col]).trim();
+        if (!cell || !/^[A-Z]{2,4}_[A-Z]{2,4}$/.test(cell)) break;
+        const [base, ref] = cell.split("_");
+        pairs.push({ col, base, ref });
+      }
+
+      // Pula linha de labels (i+1)
+      let dataRow = i + 2;
+
+      // Lê linhas de dados até linha vazia ou novo bloco
+      while (dataRow < rows.length) {
+        const row = rows[dataRow];
+        const dateStr = String(row[0]).trim();
+        if (!dateStr) break;
+
+        const period = parseDateStr(dateStr);
+        if (!period) { dataRow++; continue; }
+
+        for (const { col, base, ref } of pairs) {
+          const rawRate = String(row[col]).trim().replace(/,/g, "");
+          const rate = parseFloat(rawRate);
+          if (!isNaN(rate) && rate > 0) {
+            records.push({ base_currency: base, reference_currency: ref, period, rate });
+          }
+        }
+        dataRow++;
+      }
+
+      i = dataRow + 1;
+    }
+
+    // Upsert em lote de cotações
+    let inserted = 0;
+    let updated = 0;
+    for (const r of records) {
+      const result = await db.query(`
+        INSERT INTO currency_rates (base_currency, reference_currency, period, rate, source, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, 'xlsx-import', NOW(), NOW())
+        ON CONFLICT (base_currency, reference_currency, period)
+        DO UPDATE SET rate = EXCLUDED.rate, source = 'xlsx-import', updated_at = NOW()
+        RETURNING (xmax = 0) AS is_insert
+      `, [r.base_currency, r.reference_currency, r.period, r.rate]);
+      if (result.rows[0]?.is_insert) inserted++; else updated++;
+    }
+
+    const parts = [];
+    if (currenciesAdded || currenciesUpdated)
+      parts.push(`${currenciesAdded} moedas adicionadas, ${currenciesUpdated} atualizadas`);
+    if (records.length)
+      parts.push(`${inserted} cotações novas, ${updated} atualizadas`);
+
+    res.json({
+      success: true,
+      currencies: { added: currenciesAdded, updated: currenciesUpdated },
+      rates: { total: records.length, inserted, updated },
+      message: parts.length ? `Importação concluída: ${parts.join(" · ")}.` : "Nenhum dado encontrado no arquivo.",
+    });
+  } catch (err) {
+    console.error("Erro ao importar câmbio:", err);
+    res.status(500).json({ error: "Erro ao processar arquivo de câmbio" });
   }
 }

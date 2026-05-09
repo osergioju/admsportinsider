@@ -45,7 +45,7 @@ async function getUserFinancialContext(req) {
 
   const result = await db.query(
     `
-    SELECT 
+    SELECT
       r.code  AS locale,
       c.code  AS currency
     FROM user_preferences up
@@ -65,6 +65,31 @@ async function getUserFinancialContext(req) {
     fromCurrency: req.query.from || userCurrency,
     toCurrency: req.query.to || userCurrency
   };
+}
+
+// Retorna a moeda nativa do clube: primeiro tenta pela liga mais recente,
+// depois pelo país, e por último usa o fallback.
+async function getClubCurrency(clubId, fallback) {
+  // 1. Liga mais recente do clube (fonte mais confiável — vem da planilha importada)
+  const leagueRes = await db.query(
+    `SELECT l.currency_code
+     FROM club_seasons cs
+     JOIN leagues l ON l.id_league = cs.id_league
+     WHERE cs.id_club = $1 AND l.currency_code IS NOT NULL
+     ORDER BY cs.year DESC
+     LIMIT 1`,
+    [clubId]
+  );
+  if (leagueRes.rows[0]?.currency_code) return leagueRes.rows[0].currency_code;
+
+  // 2. País do clube → tabela currencies
+  const countryRes = await db.query(
+    `SELECT ccy.code FROM clubs c
+     JOIN currencies ccy ON ccy.id_country = c.id_country
+     WHERE c.id_club = $1 LIMIT 1`,
+    [clubId]
+  );
+  return countryRes.rows[0]?.code ?? fallback;
 }
 
 
@@ -201,52 +226,17 @@ export async function getRevenues(req, res) {
   try {
     const { id } = req.params;
     const { fromYear, toYear } = req.query;
-    const userId = req.user?.id ?? null;
+    const { locale, fromCurrency: userCurrency, toCurrency: defaultTo } = await getUserFinancialContext(req);
 
-
-    const clubCurrencyResult = await db.query(
-      `
-      SELECT ccy.code
-      FROM clubs c
-      JOIN currencies ccy ON ccy.id_country = c.id_country
-      WHERE c.id_club = $1
-      LIMIT 1
-      `,
+    // Moeda real do clube (source para conversão)
+    const clubCurrRes = await db.query(
+      `SELECT ccy.code FROM clubs c
+       JOIN currencies ccy ON ccy.id_country = c.id_country
+       WHERE c.id_club = $1 LIMIT 1`,
       [id]
     );
-
-    const clubCurrency = clubCurrencyResult.rows.length
-      ? clubCurrencyResult.rows[0].code
-      : actualCurrency; // fallback
-
-    // 🔎 Busca locale da região do usuário
-    const regionResult = await db.query(
-      `
-      SELECT r.code
-      FROM user_preferences up
-      JOIN regions r ON r.id = up.region_id
-      WHERE up.user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
-
-    // Busca currency do usuário
-    const currencyResult = await db.query(
-      `
-      SELECT c.code
-      FROM user_preferences up
-      JOIN currencies c ON c.id = up.currency_id
-      WHERE up.user_id = $1
-      LIMIT 1
-      `,
-      [userId]
-    );
-
-    const locale = regionResult.rows.length ? regionResult.rows[0].code : "pt-BR";
-    const actualCurrency = currencyResult.rows.length ? currencyResult.rows[0].code : "BRL";
-    const fromCurrency = clubCurrency;
-    const toCurrency = req.query.to || actualCurrency;
+    const fromCurrency = clubCurrRes.rows[0]?.code ?? userCurrency;
+    const toCurrency = req.query.to || defaultTo;
 
     const values = [id, locale, fromCurrency, toCurrency];
     let idx = 5;
@@ -310,7 +300,8 @@ export async function getRevenues(req, res) {
 export async function getRevenuesBreakdown(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH latest_year AS (
@@ -374,7 +365,8 @@ export async function getRevenuesBreakdown(req, res) {
 export async function getPayrollCosts(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH rate_cte AS (
@@ -416,7 +408,8 @@ export async function getPayrollCosts(req, res) {
 export async function getCostsBreakdown(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH latest_year AS (
@@ -478,7 +471,8 @@ export async function getCostsBreakdown(req, res) {
 export async function getNetResult(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH rate_cte AS (
@@ -500,7 +494,7 @@ export async function getNetResult(req, res) {
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
       LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
-        AND fi.code IN ('ebitda', 'revenue', 'costs', 'net_income')
+        AND fi.code IN ('ebitda', 'financial_result', 'revenue', 'costs', 'net_income')
       ORDER BY cf.year DESC
       LIMIT 12;
     `, [id, fromCurrency, toCurrency, locale]); // ✅ CORRIGIDO: 4 parâmetros
@@ -527,7 +521,8 @@ export async function getNetResult(req, res) {
 export async function getNetResultEvolution(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH rate_cte AS (
@@ -569,7 +564,8 @@ export async function getNetResultEvolution(req, res) {
 export async function getDebtsBreakdown(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH latest_year AS (
@@ -599,10 +595,8 @@ export async function getDebtsBreakdown(req, res) {
       LEFT JOIN rate_cte r ON true
       WHERE cf.id_club = $1
         AND fi.code IN (
-          'loans_debt',
-          'tax_debt',
-          'payroll_debt',
-          'other_debt'
+          'loans_debt', 'tax_debt', 'payroll_debt', 'other_debt',
+          'liabilities_current', 'liabilities_non-current', 'liabilities'
         )
         AND cf.year = (SELECT year FROM latest_year)
       ORDER BY name;
@@ -630,7 +624,8 @@ export async function getDebtsBreakdown(req, res) {
 export async function getDebtsEvolution(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH rate_cte AS (
@@ -648,7 +643,7 @@ export async function getDebtsEvolution(req, res) {
       JOIN financial_indicators fi ON fi.id = cf.id_indicator
       LEFT JOIN rate_cte r ON r.period = (cf.year || '-01-01')::date
       WHERE cf.id_club = $1
-        AND fi.code = 'net_debt'
+        AND fi.code IN ('net_debt', 'liabilities')
       ORDER BY cf.year ASC;
     `, [id, fromCurrency, toCurrency]); // ✅ CORRIGIDO: 3 parâmetros
 
@@ -672,7 +667,8 @@ export async function getDebtsEvolution(req, res) {
 export async function getFinancialIndicators(req, res) {
   try {
     const { id } = req.params;
-    const { locale, fromCurrency, toCurrency } = await getUserFinancialContext(req);
+    const { locale, fromCurrency: ctxCurrency, toCurrency } = await getUserFinancialContext(req);
+    const fromCurrency = await getClubCurrency(id, ctxCurrency);
 
     const result = await db.query(`
       WITH rate_cte AS (
@@ -1049,7 +1045,7 @@ export async function getLeagueNetResult(req, res) {
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
       LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
       WHERE lf.id_league = $1
-        AND fi.code IN ('revenue', 'costs', 'net_income', 'ebitda')
+        AND fi.code IN ('revenue', 'costs', 'net_income', 'ebitda', 'financial_result')
       ORDER BY lf.year DESC
       LIMIT 15;
     `, [id, leagueCurrency, toCurrency, locale]);
@@ -1166,10 +1162,8 @@ export async function getLeagueDebtsBreakdown(req, res) {
       LEFT JOIN rate_cte r ON true
       WHERE lf.id_league = $1
         AND fi.code IN (
-          'loans_debt',
-          'tax_debt',
-          'payroll_debt',
-          'other_debt'
+          'loans_debt', 'tax_debt', 'payroll_debt', 'other_debt',
+          'liabilities_current', 'liabilities_non-current', 'liabilities'
         )
         AND lf.year = (SELECT year FROM latest_year)
       ORDER BY name;
@@ -1224,7 +1218,7 @@ export async function getLeagueDebtsEvolution(req, res) {
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN rate_cte r ON r.period = (lf.year || '-01-01')::date
       WHERE lf.id_league = $1
-        AND fi.code = 'net_debt'
+        AND fi.code IN ('net_debt', 'liabilities')
       ORDER BY lf.year ASC;
     `, [id, leagueCurrency, toCurrency]);
 
@@ -1479,7 +1473,7 @@ export async function getLeagueNetResult(req, res) {
       FROM league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
-        AND fi.code IN ('revenue', 'costs', 'net_income', 'ebitda')
+        AND fi.code IN ('revenue', 'costs', 'net_income', 'ebitda', 'financial_result')
       ORDER BY lf.year DESC
       LIMIT 15;
     `, [id]);
@@ -1769,6 +1763,7 @@ export async function getCountryDetail(req, res) {
           l.name        AS name,
           l.logo_url    AS logo_url,
           l.format      AS format,
+          l.slug      AS slug,
           COUNT(DISTINCT cs.id_club) AS clubs_count
         FROM leagues l
         LEFT JOIN club_seasons cs ON cs.id_league = l.id_league

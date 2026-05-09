@@ -88,20 +88,13 @@ function SkeletonCard() {
 
 function LeagueCard({ league, isFavorited, toggleFavorite }) {
   const initials = (league.name || "?").substring(0, 3).toUpperCase();
-
+  console.log(league);
   return (
-    <Link to={`/dashboard/league/${league.id_league}`} className="block group">
+    <Link to={`/dashboard/competitions/${league.id_league}`} className="block group">
       <div className="h-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
 
         {/* Topo */}
-        <div className="h-36 flex items-center justify-center relative bg-[#7F33D9]">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(circle at 30% 50%, #9b5de5 0%, #7F33D9 60%, #5a1fa0 100%)`
-            }}
-          />
-
+        <div className="h-36 flex items-center justify-center relative">
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(league.id_league, "league"); }}
             className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40  transition"
@@ -116,8 +109,10 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
           </button>
 
           <div className="bg-white relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
-            {league.logo_url
-              ? <img src={league.logo_url} alt={league.name} className="w-14 h-14 object-contain drop-shadow-lg" />
+            {league.slug
+              ? <img
+                src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
+                alt={league.name} className="w-14 h-14 lg:w-22 lg:h-22 object-contain drop-shadow-lg" />
               : <span className="text-white font-black text-xl italic">{initials}</span>
             }
           </div>
@@ -154,7 +149,7 @@ function ContinentalLeagueCard({ league, isFavorited, toggleFavorite }) {
   const meta = parseMeta(league.structure_json);
 
   return (
-    <Link to={`/dashboard/league/${league.id_league}`} className="group block">
+    <Link to={`/dashboard/competitions/${league.id_league}`} className="group block">
       <div className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-3 hover:border-[#7F33D9]/40 hover:shadow-sm transition-all duration-200">
         {league.logo_url
           ? <img src={league.logo_url} className="w-10 h-10 object-contain flex-shrink-0" alt={league.name} />

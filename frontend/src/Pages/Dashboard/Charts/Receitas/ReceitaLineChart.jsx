@@ -20,7 +20,7 @@ export default function ReceitaLineChart({
   const values = ligasSelecionadas.map((leagueId) => {
     const leagueData = data[leagueId] || [];
     const item = leagueData.find(
-      (i) => i.code === "recurring_revenue" && Number(i.year) === Number(selectedYear)
+      (i) => (i.code === "recurring_revenue" || i.code === "revenue") && Number(i.year) === Number(selectedYear)
     );
     // Usa converted_value (já convertido para a moeda selecionada pelo backend)
     const baseColor = leagueColor?.[leagueId]?.color_one || "#7f34d9";

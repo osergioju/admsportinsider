@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import RevenueBreakdownBarChart from "./RevenueBreakdownBarChart";
 import ChartFilter from "../filter/ChartFilter";
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "../../../../../context/TranslationContext";
 
 export default function RevenueBreakdownSection({
   data,
@@ -17,6 +18,8 @@ export default function RevenueBreakdownSection({
   setLeagueColor,
   yearSelectionMode
 }) {
+  const { t } = useTranslation();
+
   function handleAddLeague(liga) {
     setSelectedLeagues((prev) =>
       prev.includes(liga.id_league)
@@ -85,9 +88,9 @@ export default function RevenueBreakdownSection({
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas <small className="text-xs">(por origem)</small>
+        {t("club.finance.revenue_by_origin", "Receitas (por origem)")}
       </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 
 
       <ChartFilter

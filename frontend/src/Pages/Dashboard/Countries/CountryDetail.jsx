@@ -25,9 +25,9 @@ function SkeletonCard() {
 function LeagueCard({ league, isFavorited, toggleFavorite }) {
   const initials = (league.name || "?").substring(0, 3).toUpperCase();
   return (
-    <Link to={`/dashboard/league/${league.id}`} className="block group">
+    <Link to={`/dashboard/competitions/${league.id}`} className="block group">
       <div className="h-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-        <div className="h-36 flex items-center justify-center relative" style={{ background: "radial-gradient(circle at 30% 50%, #9b5de5 0%, #7F33D9 60%, #5a1fa0 100%)" }}>
+        <div className="h-36 flex items-center justify-center relative">
           <button
             onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorite(league.id, "league"); }}
             className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 transition"
@@ -36,8 +36,10 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
             <Heart size={13} strokeWidth={2} className="text-white" fill={isFavorited(league.id, "league") ? "white" : "transparent"} />
           </button>
           <div className="relative z-10 w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
-            {league.logo_url
-              ? <img src={league.logo_url} alt={league.name} className="w-14 h-14 object-contain drop-shadow-lg" />
+            {league.slug
+              ? <img
+                src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
+                alt={league.name} className="w-14 h-14 lg:w-22 lg:h-22 object-contain drop-shadow-lg" />
               : <span className="text-white font-black text-xl italic">{initials}</span>
             }
           </div>
@@ -183,6 +185,7 @@ export default function CountryDetail() {
       .then(({ data }) => setData(data))
       .catch(() => navigate("/dashboard/countries"))
       .finally(() => setLoading(false));
+    console.log(data);
   }, [id]);
 
   const filteredLeagues = (data?.leagues ?? []).filter(l =>
@@ -193,6 +196,7 @@ export default function CountryDetail() {
   );
   const items = tab === "leagues" ? filteredLeagues : filteredClubs;
   const total = tab === "leagues" ? (data?.leagues.length ?? 0) : (data?.clubs.length ?? 0);
+  console.log(filteredLeagues);
 
   return (
     <div className="w-full mx-auto pb-16 space-y-6">

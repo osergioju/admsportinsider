@@ -78,7 +78,7 @@ export const getRelatorios = async (req, res) => {
 
 export const getNotas = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const pageSize = parseInt(req.query.pageSize) || 33333;
+  const pageSize = parseInt(req.query.pageSize) || 10; // reduzi (boa prática)
 
   try {
     const fetchCount = page * pageSize;
@@ -87,15 +87,11 @@ export const getNotas = async (req, res) => {
       WORDPRESS_GRAPHQL_URL,
       {
         query: `
-          query GetNotas($first: Int!) {
+          query GetConteudos($first: Int!) {
             notas(
               first: $first
               where: { orderby: { field: DATE, order: DESC }, status: PUBLISH }
             ) {
-              pageInfo {
-                hasNextPage
-                endCursor
-              }
               nodes {
                 id
                 title
@@ -111,6 +107,13 @@ export const getNotas = async (req, res) => {
                 }
               }
             }
+
+            allNewsletter {
+              nodes {
+                title
+                uri
+              }
+            }
           }
         `,
         variables: { first: fetchCount },
@@ -124,32 +127,70 @@ export const getNotas = async (req, res) => {
     if (wpData.errors) {
       console.error("GraphQL errors:", wpData.errors);
       return res.status(400).json({
-        error: "Erro ao buscar notas",
-        details: wpData.errors
+        error: "Erro ao buscar conteúdos",
+        details: wpData.errors,
       });
     }
 
-    const { nodes, pageInfo } = wpData.data.notas;
+    // ------------------------
+    // 🔹 NOTAS
+    // ------------------------
+    const notas = (wpData.data.notas?.nodes || [])
+      .map(n => ({
+        id: n.id,
+        title: n.title,
+        slug: n.slug,
+        date: n.date,
+        image: n.featuredImage?.node?.sourceUrl || null,
+        type: "nota",
+      }));
 
-    // paginação fake (igual você fez)
+    // ------------------------
+    // 🔹 NEWSLETTERS
+    // ------------------------
+    const newsletters = (wpData.data.allNewsletter?.nodes || [])
+      .map(n => ({
+        id: n.uri, // não tem id, usei uri
+        title: n.title,
+        slug: n.uri,
+        date: null, // não veio data (se tiver, adiciona na query)
+        image: null,
+        type: "newsletter",
+      }));
+
+    // ------------------------
+    // 🔥 JUNTA TUDO
+    // ------------------------
+    let tudo = [...notas, ...newsletters];
+
+
+    // ordena (newsletter sem data vai pro final)
+    tudo.sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(b.date) - new Date(a.date);
+    });
+
+
+    // ------------------------
+    // 📄 PAGINAÇÃO
+    // ------------------------
     const offset = (page - 1) * pageSize;
-    const filtradas = nodes.filter(
-      n => n.newsletterGraph?.exibirNoPro
-    );
-
-    const pageItems = filtradas.slice(offset, offset + pageSize);
+    const pageItems = tudo.slice(offset, offset + pageSize);
 
     return res.status(200).json({
-      notas: pageItems,
-      pageInfo: {
-        hasNextPage: pageInfo?.hasNextPage ?? false,
-        endCursor: pageInfo?.endCursor ?? null,
+      conteudos: pageItems,
+      pagination: {
+        page,
+        pageSize,
+        total: tudo.length,
+        hasNextPage: offset + pageSize < tudo.length,
       },
     });
 
   } catch (error) {
-    console.error("Erro ao buscar notas:", error);
-    return res.status(500).json({ error: "Erro ao buscar notas" });
+    console.error("Erro ao buscar conteúdos:", error);
+    return res.status(500).json({ error: "Erro ao buscar conteúdos" });
   }
 };
 

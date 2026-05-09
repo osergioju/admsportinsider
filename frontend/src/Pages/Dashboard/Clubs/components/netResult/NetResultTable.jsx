@@ -86,11 +86,10 @@ export default function NetResultTable({
                 return (
                   <td
                     key={`${clubId}-${row.year}`}
-                    className={`text-xs pr-4 py-2 text-right font-medium ${
-                      cell.ebitda >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
+                    className={`text-xs pr-4 py-2 text-right font-medium ${cell.ebitda >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                      }`}
                   >
                     {formatMoney(cell.ebitda)}
                   </td>

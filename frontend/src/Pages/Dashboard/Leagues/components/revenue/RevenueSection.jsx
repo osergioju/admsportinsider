@@ -4,6 +4,7 @@ import RevenueLineChart from "./RevenueLineChart";
 import RevenueTableChart from "./RevenueTableChart";
 import ChartFilter from "../filter/ChartFilter";
 import { useMemo, useEffect, useState } from "react";
+import { useTranslation } from "../../../../../context/TranslationContext";
 
 export default function RevenueSection({
   data,
@@ -17,6 +18,8 @@ export default function RevenueSection({
   selectedLeagues,
   setSelectedLeagues
 }) {
+  const { t } = useTranslation();
+
   function handleAddLeague(liga) {
     setSelectedLeagues((prev) =>
       prev.includes(liga.id_league)
@@ -53,7 +56,7 @@ export default function RevenueSection({
 
     Object.values(data || {}).forEach((clubData) => {
       clubData.forEach((item) => {
-        if (item.code === "recurring_revenue") {
+        if (item.code === "recurring_revenue" || item.code === "revenue") {
           years.add(item.year);
         }
       });
@@ -78,9 +81,9 @@ export default function RevenueSection({
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Receitas <small className="text-xs">(por ano)</small>
+        {t("club.finance.revenue_by_year", "Receitas (por ano)")}
       </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 
       <ChartFilter
         ligasSelecionadas={selectedLeagues}

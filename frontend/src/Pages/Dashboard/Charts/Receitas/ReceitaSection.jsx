@@ -35,7 +35,7 @@ export default function ReceitaSection({
     const years = new Set();
     Object.values(data || {}).forEach((leagueData) => {
       leagueData.forEach((item) => {
-        if (item.code === "recurring_revenue") years.add(item.year);
+        if (item.code === "recurring_revenue" || item.code === "revenue") years.add(item.year);
       });
     });
     return Array.from(years).sort((a, b) => a - b);

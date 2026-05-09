@@ -133,6 +133,9 @@ export async function importMatches(req, res) {
           FROM clubs c WHERE c.active = true
         `);
 
+    const aliasesResM = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
+    const clubIdSetM = new Set(clubsRes.rows.map(c => c.id_club));
+
     const clubsByName = new Map(); // slug(name) or db slug → id
     const clubsByCommon = new Map(); // slug(common_name) → id
     for (const club of clubsRes.rows) {
@@ -141,6 +144,10 @@ export async function importMatches(req, res) {
       if (club.short_name) {
         clubsByCommon.set(slugify(club.short_name, { lower: true, strict: true }), club.id_club);
       }
+    }
+    // Aliases filtrados ao pool atual (respeita escopo de país)
+    for (const { alias_norm, id_club } of aliasesResM.rows) {
+      if (clubIdSetM.has(id_club) && !clubsByName.has(alias_norm)) clubsByName.set(alias_norm, id_club);
     }
 
     const resolveClub = (csvName) => {
@@ -343,11 +350,19 @@ export async function importMatches(req, res) {
 
     await client.query("COMMIT");
 
+    // Salva aliases para mapeamentos manuais (clubMappings = { csvName: idClub })
+    let aliasResult = { saved: [], conflicts: [] };
+    if (Object.keys(clubMappings).length > 0) {
+      try { aliasResult = await saveClubAliases(clubMappings); }
+      catch (err) { console.error("[importMatches] alias save error:", err); }
+    }
+
     res.json({
       success: true,
       inserted,
       skipped: skippedReasons.length,
       total: rows.length,
+      aliases: { saved: aliasResult.saved.length, conflicts: aliasResult.conflicts },
       skippedDetails: skippedReasons
     });
 
@@ -426,9 +441,16 @@ export async function importPlayers(req, res) {
     ------------------------------------------------------------------ */
 
     const countriesRes = await client.query(`SELECT id_country, name FROM countries`);
+    const countriesTransRes = await client.query(`SELECT id_country, name AS translated_name FROM country_translations`);
+    const clubAliasesRes = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
+    const clubAliasMap = new Map(clubAliasesRes.rows.map(r => [r.alias_norm, r.id_club]));
     const countriesMap = new Map(countriesRes.rows.map(c => [c.name, c.id_country]));
     const normalizeStr = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const countriesMapNorm = new Map(countriesRes.rows.map(c => [normalizeStr(c.name), c.id_country]));
+    for (const tr of countriesTransRes.rows) {
+      const normKey = normalizeStr(tr.translated_name);
+      if (!countriesMapNorm.has(normKey)) countriesMapNorm.set(normKey, tr.id_country);
+    }
 
     /* ------------------------------------------------------------------
        CACHE CLUB SEASONS
@@ -490,6 +512,10 @@ export async function importPlayers(req, res) {
             lkByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
             if (c.slug) lkByName.set(c.slug, c.id_club);
             if (c.description) lkByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
+          }
+          // Aliases também valem para auto-link
+          for (const [aliasNorm, idClub] of clubAliasMap.entries()) {
+            if (!lkByName.has(aliasNorm)) lkByName.set(aliasNorm, idClub);
           }
           const resolveClubForLink = (name) => {
             const s = slugify(name, { lower: true, strict: true });
@@ -866,11 +892,36 @@ export async function importPlayers(req, res) {
 
     await client.query("COMMIT");
 
+    /* ------------------------------------------------------------------
+       SALVAR ALIASES — fora da transação, não bloqueia o import
+       clubMappings para players é { csvName: dbClubName } — converte para { csvName: idClub }
+    ------------------------------------------------------------------ */
+    let aliasResultP = { saved: [], conflicts: [] };
+    if (Object.keys(clubMappings).length > 0) {
+      try {
+        const allClubsForAlias = await db.query(`SELECT id_club, name, slug FROM clubs WHERE active = true`);
+        const clubSlugToId = new Map();
+        for (const c of allClubsForAlias.rows) {
+          clubSlugToId.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+          if (c.slug) clubSlugToId.set(c.slug, c.id_club);
+        }
+        const csvToIdMap = {};
+        for (const [csvName, dbName] of Object.entries(clubMappings)) {
+          const idClub = clubSlugToId.get(slugify(dbName, { lower: true, strict: true }));
+          if (idClub) csvToIdMap[csvName] = idClub;
+        }
+        aliasResultP = await saveClubAliases(csvToIdMap);
+      } catch (err) {
+        console.error("[importPlayers] alias save error:", err);
+      }
+    }
+
     res.json({
       success: true,
       players: playersData.length,
       seasons: dedupedSeasonData.length,
       stats: statsToInsert.length,
+      aliases: { saved: aliasResultP.saved.length, conflicts: aliasResultP.conflicts },
       skipped: {
         noClubSeason: skippedNoClubSeason,
         noPlayer: skippedNoPlayer,
@@ -958,6 +1009,9 @@ export async function importTeams(req, res) {
           WHERE c.active = true
         `);
 
+    const aliasesResT = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
+    const clubIdSetT = new Set(clubsRes.rows.map(c => c.id_club));
+
     // common_name (CSV) → name/slug do DB
     // team_name   (CSV) → description do DB
     const clubsByName = new Map();        // slug(name) ou db slug → id
@@ -968,6 +1022,10 @@ export async function importTeams(req, res) {
       if (c.description) {
         clubsByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
       }
+    }
+    // Aliases filtrados ao pool atual (respeita escopo de país)
+    for (const { alias_norm, id_club } of aliasesResT.rows) {
+      if (clubIdSetT.has(id_club) && !clubsByName.has(alias_norm)) clubsByName.set(alias_norm, id_club);
     }
 
     /* ------------------------------------------------------------------
@@ -1138,6 +1196,19 @@ export async function importTeams(req, res) {
     }
 
     /* ------------------------------------------------------------------
+       Persiste common_name como description quando diferem do team_name.
+       Isso permite que imports de players/matches localizem clubes pelo
+       nome abreviado (ex: "Tokyo" → encontra "FC Tokyo").
+    ------------------------------------------------------------------ */
+    const descUpdates = resolvedLog.filter(r => r.common && r.team && r.common !== r.team);
+    for (const { idClub, common } of descUpdates) {
+      await client.query(
+        `UPDATE clubs SET description = $1 WHERE id_club = $2 AND (description IS NULL OR description = '')`,
+        [common, idClub]
+      );
+    }
+
+    /* ------------------------------------------------------------------
        DETECTA duplicatas antes do INSERT para logar claramente
     ------------------------------------------------------------------ */
 
@@ -1275,11 +1346,19 @@ export async function importTeams(req, res) {
 
     await client.query("COMMIT");
 
+    // Salva aliases para mapeamentos manuais (clubMappings = { csvName: idClub })
+    let aliasResultT = { saved: [], conflicts: [] };
+    if (Object.keys(clubMappings).length > 0) {
+      try { aliasResultT = await saveClubAliases(clubMappings); }
+      catch (err) { console.error("[importTeams] alias save error:", err); }
+    }
+
     res.json({
       success: true,
       inserted,
       skipped: skipped.length,
       skippedTeams: skipped,
+      aliases: { saved: aliasResultT.saved.length, conflicts: aliasResultT.conflicts },
       season: { id: idSeason, year: seasonYear },
       competitionSeason: { id: idCompetitionSeason },
       clubsLinked: matchedClubIds.length
@@ -1298,6 +1377,52 @@ export async function importTeams(req, res) {
 // PREVIEW ENDPOINTS — analisam o CSV antes do import real
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Salva aliases novos após import bem-sucedido (fora de transação, não-fatal)
+// csvToIdMap: { [csvName]: idClub (number) }
+async function saveClubAliases(csvToIdMap) {
+  const saved = [];
+  const conflicts = [];
+  for (const [csvName, idClub] of Object.entries(csvToIdMap)) {
+    if (!idClub) continue;
+    const aliasNorm = slugify(csvName, { lower: true, strict: true });
+    const existing = await db.query(`SELECT id_club FROM club_aliases WHERE alias_norm = $1`, [aliasNorm]);
+    if (existing.rows.length > 0) {
+      if (existing.rows[0].id_club !== Number(idClub)) {
+        conflicts.push({ csvName, idClub: Number(idClub), conflictClubId: existing.rows[0].id_club });
+      }
+      continue;
+    }
+    await db.query(
+      `INSERT INTO club_aliases (id_club, alias_raw, alias_norm) VALUES ($1, $2, $3) ON CONFLICT (alias_norm) DO NOTHING`,
+      [Number(idClub), csvName, aliasNorm]
+    );
+    saved.push({ csvName, idClub: Number(idClub) });
+  }
+  return { saved, conflicts };
+}
+
+// Lookup unificado: slug → name → short_name → description (mesma lógica nos três previews)
+function buildClubLookup(clubs, aliasMap = null) {
+  const clubIdSet = new Set(clubs.map(c => c.id_club));
+  const m = new Map();
+  for (const c of clubs) {
+    if (c.slug) m.set(c.slug, c.id_club);
+    m.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+    if (c.short_name) m.set(slugify(c.short_name, { lower: true, strict: true }), c.id_club);
+    if (c.description) m.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
+  }
+  // Aliases só valem para clubes no pool atual (respeita escopo de país)
+  if (aliasMap) {
+    for (const [aliasNorm, idClub] of aliasMap.entries()) {
+      if (clubIdSet.has(idClub) && !m.has(aliasNorm)) m.set(aliasNorm, idClub);
+    }
+  }
+  return (name) => {
+    if (!name) return null;
+    return m.get(slugify(name, { lower: true, strict: true })) ?? null;
+  };
+}
+
 export async function previewTeams(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: "Arquivo não enviado" });
@@ -1312,26 +1437,29 @@ export async function previewTeams(req, res) {
     const csvSeasonYear = parseSeasonYear(csvSeason);
 
     // Busca todos os clubes primeiro para detectar o país correto no banco via slug
-    const allClubsRes = await db.query(`
-      SELECT c.id_club, c.name, c.description, c.slug, c.crest_url, co.name AS country_name
-      FROM clubs c
-      LEFT JOIN countries co ON co.id_country = c.id_country
-      WHERE c.active = true
-      ORDER BY co.name ASC, c.name ASC
-    `);
+    const [allClubsRes, aliasesResPT] = await Promise.all([
+      db.query(`
+        SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, co.name AS country_name
+        FROM clubs c
+        LEFT JOIN countries co ON co.id_country = c.id_country
+        WHERE c.active = true
+        ORDER BY co.name ASC, c.name ASC
+      `),
+      db.query(`SELECT alias_norm, id_club FROM club_aliases`),
+    ]);
+    const clubAliasMapPT = new Map(aliasesResPT.rows.map(r => [r.alias_norm, r.id_club]));
 
-    // Detecta países dos times via slug matching (por contagem para achar o dominante)
+    const resolveAll = buildClubLookup(allClubsRes.rows, clubAliasMapPT);
+    const clubById   = new Map(allClubsRes.rows.map(c => [c.id_club, c]));
+
+    // Etapa 1: detecta país usando TODOS os clubes (votação por maioria)
     const allTeamNames = [...new Set(
       rows.map(r => r.common_name || r.team_name).filter(Boolean)
     )];
     const countryCount = new Map();
     for (const name of allTeamNames) {
-      const s = slugify(name, { lower: true, strict: true });
-      const found = allClubsRes.rows.find(c =>
-        slugify(c.name, { lower: true, strict: true }) === s ||
-        (c.slug && c.slug === s) ||
-        (c.description && slugify(c.description, { lower: true, strict: true }) === s)
-      );
+      const id = resolveAll(name);
+      const found = id ? clubById.get(id) : null;
       if (found?.country_name) {
         countryCount.set(found.country_name, (countryCount.get(found.country_name) ?? 0) + 1);
       }
@@ -1379,20 +1507,11 @@ export async function previewTeams(req, res) {
 
     const allClubs = allClubsRes.rows;
 
-    // Para verificar found/notFound: usa todos os clubes (país dominante detectado automaticamente)
-    const checkPool = allClubs;
-
-    // common_name (CSV) → name/slug do DB
-    // team_name   (CSV) → description do DB
-    const poolByName = new Map();
-    const poolByDesc = new Map();
-    for (const c of checkPool) {
-      if (c.slug) poolByName.set(c.slug, c.id_club);
-      poolByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
-      if (c.description) {
-        poolByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
-      }
-    }
+    // Etapa 2: lookup restrito ao país detectado — evita homônimos de outros países
+    const matchPool  = (detectedCountry && !isMultiCountry)
+      ? allClubs.filter(c => c.country_name === detectedCountry)
+      : allClubs;
+    const resolveClub = buildClubLookup(matchPool, clubAliasMapPT);
 
     const foundTeams = [];
     const notFoundTeams = [];
@@ -1405,11 +1524,8 @@ export async function previewTeams(req, res) {
 
     for (const displayName of teamNames) {
       const srcRow = rows.find(r => (r.common_name || r.team_name) === displayName) ?? {};
-      const commonName = srcRow.common_name || "";
-      const teamName = srcRow.team_name || "";
-      const commonSlug = slugify(commonName, { lower: true, strict: true });
-      const teamSlug = slugify(teamName, { lower: true, strict: true });
-      const idClub = poolByName.get(commonSlug) || poolByDesc.get(teamSlug) || null;
+      // Tenta common_name primeiro; se não achar, tenta team_name (dois campos do CSV)
+      const idClub = resolveClub(srcRow.common_name) ?? resolveClub(srcRow.team_name) ?? null;
       if (idClub) {
         foundTeams.push(displayName);
         nameToClubId.set(displayName, idClub);
@@ -1492,45 +1608,26 @@ export async function previewMatches(req, res) {
       ...rows.map(r => r.away_team_name).filter(Boolean),
     ])];
 
-    const allClubsRes = await db.query(`
-      SELECT c.id_club, c.name, c.short_name, c.slug, c.crest_url, co.name AS country_name
-      FROM clubs c
-      LEFT JOIN countries co ON co.id_country = c.id_country
-      WHERE c.active = true
-      ORDER BY co.name ASC, c.name ASC
-    `);
+    const [allClubsRes, aliasesResPM] = await Promise.all([
+      db.query(`
+        SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, co.name AS country_name
+        FROM clubs c
+        LEFT JOIN countries co ON co.id_country = c.id_country
+        WHERE c.active = true
+        ORDER BY co.name ASC, c.name ASC
+      `),
+      db.query(`SELECT alias_norm, id_club FROM club_aliases`),
+    ]);
+    const clubAliasMapPM = new Map(aliasesResPM.rows.map(r => [r.alias_norm, r.id_club]));
 
-    const buildLookup = (clubs) => {
-      const byName = new Map();
-      const byCommon = new Map();
-      for (const c of clubs) {
-        if (c.slug) byName.set(c.slug, c.id_club);
-        byName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
-        if (c.short_name) byCommon.set(slugify(c.short_name, { lower: true, strict: true }), c.id_club);
-      }
-      return (name) => {
-        const s = slugify(name, { lower: true, strict: true });
-        return byName.get(s) || byCommon.get(s) || null;
-      };
-    };
+    const resolveAll = buildClubLookup(allClubsRes.rows, clubAliasMapPM);
+    const clubById   = new Map(allClubsRes.rows.map(c => [c.id_club, c]));
 
-    const resolveAny = buildLookup(allClubsRes.rows);
-
-    const foundTeams = [];
-    const notFoundTeams = [];
-    for (const name of uniqueTeamNames) {
-      if (resolveAny(name)) foundTeams.push(name);
-      else notFoundTeams.push(name);
-    }
-
-    // Detecta países dos times encontrados (por contagem para achar o dominante)
+    // Etapa 1: detecta país usando TODOS os clubes (votação por maioria)
     const countryCount = new Map();
-    for (const name of foundTeams) {
-      const s = slugify(name, { lower: true, strict: true });
-      const found = allClubsRes.rows.find(c =>
-        c.slug === s || slugify(c.name, { lower: true, strict: true }) === s ||
-        (c.short_name && slugify(c.short_name, { lower: true, strict: true }) === s)
-      );
+    for (const name of uniqueTeamNames) {
+      const id = resolveAll(name);
+      const found = id ? clubById.get(id) : null;
       if (found?.country_name) {
         countryCount.set(found.country_name, (countryCount.get(found.country_name) ?? 0) + 1);
       }
@@ -1570,6 +1667,19 @@ export async function previewMatches(req, res) {
         WHERE l.active = true
         ORDER BY c.name ASC NULLS LAST, l.name ASC
       `);
+    }
+
+    // Etapa 2: lookup restrito ao país detectado — evita homônimos de outros países
+    const matchPool = (detectedCountry && !isMultiCountry)
+      ? allClubsRes.rows.filter(c => c.country_name === detectedCountry)
+      : allClubsRes.rows;
+    const resolveClub = buildClubLookup(matchPool, clubAliasMapPM);
+
+    const foundTeams = [];
+    const notFoundTeams = [];
+    for (const name of uniqueTeamNames) {
+      if (resolveClub(name)) foundTeams.push(name);
+      else notFoundTeams.push(name);
     }
 
     res.json({
@@ -1626,40 +1736,27 @@ export async function previewPlayers(req, res) {
     const csvClubs = [...new Set(rows.map(r => r["Current Club"]).filter(Boolean))].sort();
     const csvNationalities = [...new Set(rows.map(r => r.nationality).filter(Boolean))].sort();
 
-    // Clubes — inclui escudo, país, slug e description para matching correto
-    const clubsRes = await db.query(`
-      SELECT c.id_club, c.name, c.slug, c.description, c.crest_url, co.name AS country_name
-      FROM clubs c
-      LEFT JOIN countries co ON co.id_country = c.id_country
-      WHERE c.active = true
-      ORDER BY c.name ASC
-    `);
+    // Clubes — inclui todos os campos de matching
+    const [clubsRes, aliasesRes] = await Promise.all([
+      db.query(`
+        SELECT c.id_club, c.name, c.short_name, c.slug, c.description, c.crest_url, co.name AS country_name
+        FROM clubs c
+        LEFT JOIN countries co ON co.id_country = c.id_country
+        WHERE c.active = true
+        ORDER BY c.name ASC
+      `),
+      db.query(`SELECT alias_norm, id_club FROM club_aliases`),
+    ]);
+    const clubAliasMap = new Map(aliasesRes.rows.map(r => [r.alias_norm, r.id_club]));
 
-    // Two-map lookup: name/slug → id, description → id
-    const clubsByName = new Map();
-    const clubsByDesc = new Map();
-    for (const c of clubsRes.rows) {
-      clubsByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
-      if (c.slug) clubsByName.set(c.slug, c.id_club);
-      if (c.description) clubsByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
-    }
-    const resolveClubId = (name) => {
-      const s = slugify(name, { lower: true, strict: true });
-      return clubsByName.get(s) || clubsByDesc.get(s) || null;
-    };
+    const resolveAll = buildClubLookup(clubsRes.rows, clubAliasMap);
+    const clubById   = new Map(clubsRes.rows.map(c => [c.id_club, c]));
 
-    const foundClubs = csvClubs.filter(n => resolveClubId(n));
-    const notFoundClubs = csvClubs.filter(n => !resolveClubId(n));
-
-    // Detecta países dos clubes encontrados (por contagem para achar o dominante)
+    // Etapa 1: detecta país usando TODOS os clubes (votação por maioria)
     const countryCount = new Map();
-    for (const clubName of foundClubs) {
-      const s = slugify(clubName, { lower: true, strict: true });
-      const found = clubsRes.rows.find(c =>
-        slugify(c.name, { lower: true, strict: true }) === s ||
-        (c.slug && c.slug === s) ||
-        (c.description && slugify(c.description, { lower: true, strict: true }) === s)
-      );
+    for (const clubName of csvClubs) {
+      const id = resolveAll(clubName);
+      const found = id ? clubById.get(id) : null;
       if (found?.country_name) {
         countryCount.set(found.country_name, (countryCount.get(found.country_name) ?? 0) + 1);
       }
@@ -1678,12 +1775,30 @@ export async function previewPlayers(req, res) {
       detectedCountry = [...countryCount.keys()][0];
     }
 
+    // Etapa 2: lookup restrito ao país detectado — evita homônimos de outros países
+    const matchPool = (detectedCountry && !isMultiCountry)
+      ? clubsRes.rows.filter(c => c.country_name === detectedCountry)
+      : clubsRes.rows;
+    const resolveClubId = buildClubLookup(matchPool, clubAliasMap);
+
+    const foundClubs    = csvClubs.filter(n => resolveClubId(n));
+    const notFoundClubs = csvClubs.filter(n => !resolveClubId(n));
+
     // Países — inclui flag_url para o SearchableSelect com bandeiras
-    const countriesRes = await db.query(
-      `SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`
-    );
+    const [countriesRes, natTransRes] = await Promise.all([
+      db.query(`SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`),
+      db.query(`SELECT id_country, name AS translated_name FROM country_translations`),
+    ]);
     const normalize = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const countryNameById = new Map(countriesRes.rows.map(c => [c.id_country, c.name]));
     const dbCountryByNorm = new Map(countriesRes.rows.map(c => [normalize(c.name), c.name]));
+    for (const tr of natTransRes.rows) {
+      const normKey = normalize(tr.translated_name);
+      if (!dbCountryByNorm.has(normKey)) {
+        const canonical = countryNameById.get(tr.id_country);
+        if (canonical) dbCountryByNorm.set(normKey, canonical);
+      }
+    }
 
     const foundNationalities = csvNationalities.filter(n => dbCountryByNorm.has(normalize(n)));
     const notFoundNationalities = csvNationalities.filter(n => !dbCountryByNorm.has(normalize(n)));

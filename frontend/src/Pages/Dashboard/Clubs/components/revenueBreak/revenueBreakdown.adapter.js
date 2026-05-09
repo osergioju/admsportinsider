@@ -30,7 +30,9 @@ export function adaptRevenueBreakdown(
   
 
   const categories = Array.from(categorySet);
-  
+
+  if (categories.length === 0) return null;
+
   const series = clubIds.map((clubId) => {
     
     const apiData = dataByClub[clubId];

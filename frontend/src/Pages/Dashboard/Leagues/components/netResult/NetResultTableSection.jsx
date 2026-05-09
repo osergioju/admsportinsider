@@ -4,6 +4,7 @@ import NetResultTable from "./NetResultTable";
 import NetResultLine from "./NetResultLine";
 import ChartFilter from "../filter/ChartFilter";
 import { useMemo, useEffect, useState } from "react";
+import { useTranslation } from "../../../../../context/TranslationContext";
 
 export default function NetResultTableSection({
   data,
@@ -17,6 +18,8 @@ export default function NetResultTableSection({
   leagueColor,
   setLeagueColor
 }) {
+  const { t } = useTranslation();
+
   function handleAddLeague(liga) {
     setSelectedLeagues((prev) =>
       prev.includes(liga.id_league)
@@ -73,12 +76,13 @@ export default function NetResultTableSection({
 
   }, [availableYears]);
 
+
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Resultado financeiro
+        {t("club.finance.financial_result", "Resultado financeiro")}
       </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 
       <ChartFilter
         ligasSelecionadas={selectedLeagues}

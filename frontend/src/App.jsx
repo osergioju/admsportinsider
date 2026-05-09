@@ -102,6 +102,8 @@ import DashClubs from "./Pages/Dashboard/Clubs/Index";
 import DashClubUniques from "./Pages/Dashboard/Clubs/DashClubUniques";
 import DashLeagues from "./Pages/Dashboard/Leagues/Index";
 import DashLeagueUniques from "./Pages/Dashboard/Leagues/DashLeagueUniques";
+import DashLeagueFinance from "./Pages/Dashboard/Leagues/DashLeagueFinance";
+import DashLeagueSports from "./Pages/Dashboard/Leagues/DashLeagueSports";
 import CompetitionsClubs from "./Pages/Dashboard/Clubs/CompetitionsClubs";
 import ClubPlayers from "./Pages/Dashboard/Clubs/ClubPlayers";
 import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
@@ -179,6 +181,8 @@ export default function App() {
 
           {/* Ligas */}
           <Route path="/dashboard/competitions" element={<DashLeagues />} />
+          <Route path="/dashboard/competitions/finance/:id" element={<DashLeagueFinance />} />
+          <Route path="/dashboard/competitions/sports/:id" element={<DashLeagueSports />} />
           <Route path="/dashboard/competitions/:id" element={<DashLeagueUniques />} />
 
           {/* Jogadores */}

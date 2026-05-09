@@ -25,15 +25,15 @@ export default function NetResultLineChart({
 
     const filteredData = hasYearFilter
       ? Object.fromEntries(
-          Object.entries(data).map(([clubId, items]) => [
-            clubId,
-            items.filter((item) => {
-              if (startYear && item.year < startYear) return false;
-              if (endYear && item.year > endYear) return false;
-              return true;
-            })
-          ])
-        )
+        Object.entries(data).map(([clubId, items]) => [
+          clubId,
+          items.filter((item) => {
+            if (startYear && item.year < startYear) return false;
+            if (endYear && item.year > endYear) return false;
+            return true;
+          })
+        ])
+      )
       : data;
 
     return adaptNetResultEvolution(
@@ -52,7 +52,7 @@ export default function NetResultLineChart({
     startYear,
     endYear
   ]);
-  
+
 
   if (!adapted) {
     return (
@@ -150,25 +150,15 @@ export default function NetResultLineChart({
     }))
   };
 
-  const lenghtData = option.series[0].data.length;
-    
   return (
-      <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
-        {
-          lenghtData === 0 ? (
-            <div className="flex items-center justify-center pt-20">
-              <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
-            </div>
-          ) : (
-            <ReactECharts
-              option={option}
-              style={{ height: "100%", width: "100%" }}
-              notMerge
-              lazyUpdate
-            />
-          )
-        }
-      </div>
-    );
+    <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
+      <ReactECharts
+        option={option}
+        style={{ height: "100%", width: "100%" }}
+        notMerge
+        lazyUpdate
+      />
+    </div>
+  );
 }
-  
+

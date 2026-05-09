@@ -29,6 +29,8 @@ export function adaptNetResultEvolution(
     .sort((a, b) => a - b)
     .slice(-limit);
 
+  if (years.length === 0) return null;
+
   // 2) Montar séries
   const series = leagueIds.map((leagueId) => {
     const apiData = dataByLeague[leagueId] || [];

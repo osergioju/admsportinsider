@@ -1,4 +1,5 @@
 import { useTranslation } from "../../../../../context/TranslationContext";
+import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueBreakdown } from "./revenueBreakdown.adapter";
 
@@ -115,22 +116,13 @@ export default function RevenueBreakdownBarChart({
 
 
 
-  const lenghtData = option.series[0].data.length;
-
   return (
     <div className="w-full max-w-full h-[250px] lg:h-[460px] overflow-hidden">
-      {
-        lenghtData === 0 ? (
-          <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
-          </div>
-        ) : (
-          <ReactECharts
-            option={option}
-            style={{ height: "100%", width: "100%" }}
-          />
-        )
-      }
+      <ReactECharts
+        option={option}
+        style={{ height: "100%", width: "100%" }}
+        notMerge
+      />
     </div>
   );
 }

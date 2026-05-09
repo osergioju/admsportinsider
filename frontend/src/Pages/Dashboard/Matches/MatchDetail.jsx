@@ -75,7 +75,7 @@ export default function MatchDetail() {
         {/* Liga / rodada */}
         <div className="flex items-center justify-center gap-2 px-6 py-3 border-b border-gray-100 bg-gray-50">
           <span className="text-xs font-semibold text-gray-500">
-            <Link to={`/dashboard/league/${league.id}`} className="hover:text-violet-600 transition-colors">{league.name}</Link>
+            <Link to={`/dashboard/competitions/${league.id}`} className="hover:text-violet-600 transition-colors">{league.name}</Link>
             {game_week ? ` · Rodada ${game_week}` : ""}
             {season ? ` · ${season}` : ""}
           </span>
@@ -85,8 +85,8 @@ export default function MatchDetail() {
         <div className="flex items-center justify-between px-8 py-6 gap-4">
           {/* Home */}
           <Link to={clubUrl(home.id, home.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
-            {home.crest
-              ? <img src={home.crest} alt={home.name} className="w-16 h-16 object-contain" />
+            {home.slug
+              ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + home.slug + `.webp`} alt={home.name} className="w-16 h-16 object-contain" />
               : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
             }
             <span className="text-xs font-bold text-gray-800 text-center leading-tight">{home.name}</span>
@@ -106,8 +106,8 @@ export default function MatchDetail() {
 
           {/* Away */}
           <Link to={clubUrl(away.id, away.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
-            {away.crest
-              ? <img src={away.crest} alt={away.name} className="w-16 h-16 object-contain" />
+            {away.slug
+              ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + away.slug + `.webp`} alt={away.name} className="w-16 h-16 object-contain" />
               : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
             }
             <span className="text-xs font-bold text-gray-800 text-center leading-tight">{away.name}</span>

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus, Trash2, Coins, Globe, TrendingUp, ChevronRight,
-  ArrowLeft, Loader2, X, Calendar, AlertTriangle
+  ArrowLeft, Loader2, X, Calendar, AlertTriangle, Upload, CheckCircle
 } from "lucide-react";
 import { api } from "../../../services/api";
 import SearchableSelect from "../../../components/uxui/SearchableSelect";
@@ -193,17 +193,25 @@ function PairRatesView({ currency, pair, onBack }) {
           <table className="w-full text-left">
             <thead>
               <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50/50 border-b border-gray-100">
-                <th className="px-6 py-3">Ano</th>
+                <th className="px-6 py-3">Período</th>
                 <th className="px-6 py-3">Taxa</th>
                 <th className="px-6 py-3">Fonte</th>
                 <th className="px-6 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {rates.map((r) => (
+              {rates.map((r) => {
+                const d = new Date(r.period);
+                const month = d.getUTCMonth() + 1; // 1-based
+                const periodLabel = month <= 6
+                  ? `${d.getUTCFullYear()} H1`
+                  : month <= 12
+                  ? `${d.getUTCFullYear()} H2`
+                  : `${d.getUTCFullYear()}`;
+                return (
                 <tr key={r.id} className="group hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-3 font-bold text-gray-900">
-                    {new Date(r.period).getFullYear()}
+                    {periodLabel}
                   </td>
                   <td className="px-6 py-3 font-mono text-sm text-[#7F33D9] font-bold">
                     {Number(r.rate).toFixed(6)}
@@ -222,7 +230,8 @@ function PairRatesView({ currency, pair, onBack }) {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -450,7 +459,7 @@ function CurrencyPairsView({ currency, onBack }) {
                       {pair.base_currency} → {pair.reference_currency}
                     </span>
                     <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                      {pair.total_rates} ano{pair.total_rates > 1 ? "s" : ""}
+                      {pair.total_rates} período{pair.total_rates > 1 ? "s" : ""}
                     </span>
                   </div>
                   <p className="text-xs text-gray-400 mt-0.5">{pair.to_currency_name} · {pair.to_country_name}</p>
@@ -512,6 +521,11 @@ export default function Currencies() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Importação xlsx
+  const importInputRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+
   async function fetchCurrencies() {
     setLoading(true);
     try {
@@ -536,7 +550,7 @@ export default function Currencies() {
   useEffect(() => { fetchCurrencies(); }, []);
 
   async function handleCreate() {
-    if (!formData.id_country || !formData.code || !formData.name || !formData.symbol) return;
+    if (!formData.code || !formData.name || !formData.symbol) return;
     setSaving(true);
     try {
       await api.post("/currency/currencies", formData);
@@ -561,6 +575,27 @@ export default function Currencies() {
       alert("Erro ao desativar moeda");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleImportXlsx(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await api.post("/currency/bulk-import-xlsx", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImportResult({ success: true, message: res.data.message, total: res.data.rates?.total });
+      fetchCurrencies();
+    } catch (err) {
+      setImportResult({ success: false, message: err.response?.data?.error || "Erro ao importar arquivo" });
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -595,10 +630,36 @@ export default function Currencies() {
             Cadastre moedas, vincule países e configure taxas de câmbio por ano.
           </p>
         </div>
-        <button onClick={openNewModal} className={btnPrimary}>
-          <Plus size={18} /> Nova Moeda
-        </button>
+        <div className="flex items-center gap-3">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={handleImportXlsx}
+          />
+          <button
+            onClick={() => importInputRef.current?.click()}
+            disabled={importing}
+            className={btnSecondary}
+          >
+            {importing ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+            Importar Câmbio.xlsx
+          </button>
+          <button onClick={openNewModal} className={btnPrimary}>
+            <Plus size={18} /> Nova Moeda
+          </button>
+        </div>
       </div>
+
+      {/* Resultado da importação */}
+      {importResult && (
+        <div className={`mb-6 flex items-start gap-3 p-4 rounded-2xl border text-sm ${importResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+          {importResult.success ? <CheckCircle size={18} className="shrink-0 mt-0.5" /> : <AlertTriangle size={18} className="shrink-0 mt-0.5" />}
+          <span className="flex-1">{importResult.message}</span>
+          <button onClick={() => setImportResult(null)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+        </div>
+      )}
 
       {/* Grid de moedas */}
       {loading ? (
@@ -689,7 +750,7 @@ export default function Currencies() {
 
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>País</label>
+                <label className={labelClass}>País <span className="font-normal text-gray-400 normal-case">(opcional)</span></label>
                 <SearchableSelect
                   options={availableCountries.map((c) => ({
                     value: c.id_country,
@@ -699,13 +760,7 @@ export default function Currencies() {
                   value={formData.id_country}
                   onChange={(val) => setFormData((p) => ({ ...p, id_country: val }))}
                   placeholder="Buscar país..."
-                  disabled={availableCountries.length === 0}
                 />
-                {availableCountries.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                    <AlertTriangle size={11} /> Todos os países já têm moeda cadastrada.
-                  </p>
-                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -746,7 +801,7 @@ export default function Currencies() {
               <button onClick={() => setShowNewModal(false)} className={btnSecondary}>Cancelar</button>
               <button
                 onClick={handleCreate}
-                disabled={saving || !formData.id_country || !formData.code || !formData.name || !formData.symbol}
+                disabled={saving || !formData.code || !formData.name || !formData.symbol}
                 className={`flex-1 ${btnPrimary} justify-center`}
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : "Cadastrar"}

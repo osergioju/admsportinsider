@@ -122,7 +122,7 @@ export default function LeaguesFavorites() {
                 className="animate-fadein"
                 style={{ animationDelay: `${i * 40}ms`, animationFillMode: "both" }}
               >
-                <Link to={`/dashboard/league/${league.id_league}`} className="block group/card h-full">
+                <Link to={`/dashboard/competitions/${league.id_league}`} className="block group/card h-full">
                   <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out h-full">
 
                     {/* Topo colorido */}

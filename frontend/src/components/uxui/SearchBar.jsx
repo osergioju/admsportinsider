@@ -100,7 +100,7 @@ function LigaAvatar({ logoUrl, name }) {
         }}
       >
         <img
-          src={logoUrl}
+          src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${logoUrl}.webp`}
           alt={name}
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
           onError={(e) => {
@@ -210,7 +210,7 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
   const country = item.country_name || item.country || "";
   const crestUrl = item.crest_url || null;
   const flagUrl = item.flag_url || null;
-  const logoUrl = item.logo_url || null;
+  const logoUrl = item.slug || null;
 
   // 🧩 Avatar por tipo
   const avatarMap = {
@@ -477,7 +477,7 @@ export default function SearchBar() {
     setFocused(false);
 
     if (item.id_league !== undefined) {
-      navigate(`/dashboard/league/${item.id_league}`);
+      navigate(`/dashboard/competitions/${item.id_league}`);
     } else if (item.id_club !== undefined) {
       navigate(clubUrl(item.id_club, item.slug));
     } else if (item.id_country !== undefined) {

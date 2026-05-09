@@ -23,7 +23,7 @@ function DisciplinaryTable({ rows, t }) {
         <thead>
           <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b border-gray-100">
             <th className="py-3 px-3 text-left font-semibold w-10">#</th>
-            <th className="py-3 px-3 text-left font-semibold">Clube</th>
+            <th className="py-3 px-3 text-left font-semibold">Clubex</th>
             <th className="py-3 px-3 text-center font-semibold">J</th>
             <th className="py-3 px-3 text-center font-semibold">Faltas</th>
             <th className="py-3 px-3 text-center font-semibold">
@@ -46,7 +46,8 @@ function DisciplinaryTable({ rows, t }) {
               <td className="px-3 py-3 text-center font-semibold text-gray-400">{i + 1}</td>
               <td className="px-3 py-3">
                 <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700">
-                  {row.crest ? <img src={row.crest} alt="" className="w-5 h-5 object-contain shrink-0" /> : <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />}
+                  {row.slug ?
+                    <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" /> : <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />}
                   {row.name}
                 </Link>
               </td>
@@ -153,8 +154,8 @@ function StandingsTable({ rows, t, seasonConfig, legendContLabel }) {
                     to={clubUrl(row.id, row.slug)}
                     className={`flex items-center gap-2.5 hover:text-violet-700 transition-colors ${pos === 1 ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}
                   >
-                    {row.crest
-                      ? <img src={row.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+                    {row.slug
+                      ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
                       : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />
                     }
                     <span className="truncate">{row.name}</span>
@@ -288,8 +289,8 @@ function ConfrontoCard({ confronto }) {
       const aggScore = agg[team.id] ?? null;
       return (
         <div className={`flex items-center gap-1.5 px-3 py-2.5 ${isLoser ? "opacity-100" : ""}`}>
-          {team.crest
-            ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+          {team.slug
+            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + team.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
             : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
           <Link to={clubUrl(team.id, team.slug)}
             className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
@@ -330,8 +331,8 @@ function ConfrontoCard({ confronto }) {
 
   const SingleRow = ({ team, score, isWinner, isLoser }) => (
     <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-35" : ""}`}>
-      {team.crest
-        ? <img src={team.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+      {team.slug
+        ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + team.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
         : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
       <Link to={clubUrl(team.id, team.slug)}
         className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
@@ -668,8 +669,8 @@ function GroupPhaseView({ phase, t, adminGroups }) {
                       </td>
                       <td className="px-2 py-2 max-w-[120px]">
                         <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
-                          {row.crest
-                            ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
+                          {row.slug
+                            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
                             : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
                           <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>
                             {row.name}
@@ -854,8 +855,8 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
                     </td>
                     <td className="px-3 py-2">
                       <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
-                        {row.crest
-                          ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
+                        {row.slug
+                          ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
                           : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
                         <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>{row.name}</span>
                       </Link>
@@ -942,8 +943,8 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
                             </td>
                             <td className="px-2 py-2">
                               <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
-                                {row.crest
-                                  ? <img src={row.crest} alt="" className="w-4 h-4 object-contain shrink-0" />
+                                {row.slug
+                                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
                                   : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
                                 <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>
                                   {row.name}
@@ -1106,8 +1107,8 @@ function BracketView({ matches, structure_json, season, t, fasesOverride, groupC
           </div>
           <div className="w-full bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 shadow-sm">
             <div className="w-1 self-stretch rounded-full bg-gray-900 shrink-0" />
-            {champion.crest && (
-              <img src={champion.crest} alt="" className="w-10 h-10 object-contain shrink-0" />
+            {champion.slug && (
+              <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + champion.slug + `.webp`} alt="" className="w-10 h-10 object-contain shrink-0" />
             )}
             <div className="min-w-0">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Campeão</p>
@@ -1132,7 +1133,7 @@ function MatchCard({ m }) {
       className="flex items-center gap-2 py-3 px-4 hover:bg-gray-50 transition-colors group">
       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
         <span className="text-sm font-medium text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.home.name}</span>
-        {m.home.crest && <img src={m.home.crest} alt="" className="w-5 h-5 object-contain shrink-0" />}
+        {m.home.slug && <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + m.home.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />}
       </div>
       <div className="flex flex-col items-center shrink-0 min-w-[64px]">
         {finished
@@ -1146,7 +1147,7 @@ function MatchCard({ m }) {
         )}
       </div>
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {m.away.crest && <img src={m.away.crest} alt="" className="w-5 h-5 object-contain shrink-0" />}
+        {m.away.slug && <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + m.away.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />}
         <span className="text-sm font-medium text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.away.name}</span>
       </div>
     </Link>
@@ -1246,13 +1247,13 @@ export default function LeagueSportsSection({ leagueId }) {
   const acTorneios = seasonConfig?.torneios ?? null;
   const acSplitOptions = isAperturaClausura
     ? (acTorneios
-        ? acTorneios.map(t => ({ key: t.key, label: t.nome }))
-        : [{ key: "apertura", label: "Apertura" }, { key: "clausura", label: "Clausura" }])
+      ? acTorneios.map(t => ({ key: t.key, label: t.nome }))
+      : [{ key: "apertura", label: "Apertura" }, { key: "clausura", label: "Clausura" }])
     : [
-        { key: "total", label: t("sports.total", "Total") },
-        { key: "home",  label: t("sports.home",  "Casa")  },
-        { key: "away",  label: t("sports.away",  "Fora")  },
-      ];
+      { key: "total", label: t("sports.total", "Total") },
+      { key: "home", label: t("sports.home", "Casa") },
+      { key: "away", label: t("sports.away", "Fora") },
+    ];
 
   const splitKeys = acSplitOptions.map(o => o.key);
   const activeSplit = splitKeys.includes(split) ? split : splitKeys[0];
@@ -1261,8 +1262,8 @@ export default function LeagueSportsSection({ leagueId }) {
   // Filtra também os jogos dentro de cada rodada para não misturar apertura/clausura
   const matchesForPhase = isAperturaClausura
     ? (matches ?? [])
-        .map(w => ({ ...w, games: w.games.filter(g => g.phase === activeSplit) }))
-        .filter(w => w.games.length > 0)
+      .map(w => ({ ...w, games: w.games.filter(g => g.phase === activeSplit) }))
+      .filter(w => w.games.length > 0)
     : (matches ?? []);
 
   // Líder da fase ativa
@@ -1345,13 +1346,13 @@ export default function LeagueSportsSection({ leagueId }) {
           {loading
             ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
             : <TorneioPanelView
-                matchesForPhase={matchesForPhase}
-                adminGroups={activeGroupClubs}
-                activeStandings={activeStandings}
-                grupoFaseConfig={grupoFaseConfig}
-                activeTorneioConfig={activeTorneioConfig}
-                t={t}
-              />
+              matchesForPhase={matchesForPhase}
+              adminGroups={activeGroupClubs}
+              activeStandings={activeStandings}
+              grupoFaseConfig={grupoFaseConfig}
+              activeTorneioConfig={activeTorneioConfig}
+              t={t}
+            />
           }
         </>
       )}
@@ -1364,8 +1365,8 @@ export default function LeagueSportsSection({ leagueId }) {
               <Link to={clubUrl(leader.id, leader.slug)}
                 className="flex items-center gap-2 min-w-0 group">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0 hidden lg:block">CAMPEÃO</span>
-                {leader.crest
-                  ? <img src={leader.crest} alt="" className="w-5 h-5 object-contain shrink-0" />
+                {leader.slug
+                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + leader.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
                   : <Trophy size={16} className="text-gray-300 shrink-0" />
                 }
                 <span className="text-sm font-bold text-gray-900 group-hover:text-violet-700 transition-colors truncate">

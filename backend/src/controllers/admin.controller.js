@@ -132,7 +132,7 @@ export async function getLeagueById(req, res) {
 }
 
 export async function createLeague(req, res) {
-  const { id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color } = req.body;
+  const { id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nome é obrigatório." });
@@ -143,9 +143,9 @@ export async function createLeague(req, res) {
 
   try {
     await db.query(`
-      INSERT INTO leagues (id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [id_country || null, id_continent || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null]);
+      INSERT INTO leagues (id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color, currency_code)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [id_country || null, id_continent || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null]);
 
     return res.status(201).json({ message: "Liga cadastrada com sucesso!" });
 
@@ -157,7 +157,7 @@ export async function createLeague(req, res) {
 
 export async function updateLeague(req, res) {
   const { id } = req.params;
-  const { id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color } = req.body;
+  const { id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
 
   try {
     await db.query(`
@@ -170,9 +170,10 @@ export async function updateLeague(req, res) {
         logo_url = $5,
         format = $6,
         primary_color = $7,
-        secondary_color = $8
-      WHERE id_league = $9
-    `, [id_country || null, id_continent || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, id]);
+        secondary_color = $8,
+        currency_code = $9
+      WHERE id_league = $10
+    `, [id_country || null, id_continent || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, id]);
 
     return res.json({ message: "Liga atualizada com sucesso!" });
 
@@ -289,7 +290,11 @@ export async function clubsSearch(req, res) {
     let idx = 1;
 
     if (name) {
-      whereClause += ` AND unaccent(c.name) ILIKE unaccent($${idx})`;
+      whereClause += ` AND (
+        unaccent(c.name) ILIKE unaccent($${idx})
+        OR unaccent(c.short_name) ILIKE unaccent($${idx})
+        OR unaccent(c.description) ILIKE unaccent($${idx})
+      )`;
       values.push(`%${name}%`);
       idx++;
     }
@@ -415,7 +420,10 @@ export async function leaguesSearch(req, res) {
     let idx = 1;
 
     if (name) {
-      whereClause += ` AND unaccent(l.name) ILIKE unaccent($${idx})`;
+      whereClause += ` AND (
+        unaccent(l.name) ILIKE unaccent($${idx})
+        OR unaccent(l.description) ILIKE unaccent($${idx})
+      )`;
       values.push(`%${name}%`);
       idx++;
     }
@@ -436,7 +444,7 @@ export async function leaguesSearch(req, res) {
         l.logo_url,
         l.active,
         l.created_at,
-
+        l.slug,
         co.id_country,
         co.name AS country_name,
         co.flag_url
@@ -872,9 +880,20 @@ export async function getAllCountriesById(req, res) {
       [id]
     );
 
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "País não encontrado" });
+    }
+
+    const transResult = await db.query(
+      "SELECT locale, name FROM country_translations WHERE id_country = $1",
+      [id]
+    );
+    const translations = {};
+    transResult.rows.forEach((r) => { translations[r.locale] = r.name; });
+
     res.json({
       success: true,
-      countries: result.rows,
+      country: { ...result.rows[0], translations },
     });
   } catch (error) {
     console.error("Erro ao buscar país:", error);
@@ -908,7 +927,7 @@ export async function createCountry(req, res) {
 // Editar país
 export async function updateCountry(req, res) {
   const { id } = req.params;
-  const { name, flag_url } = req.body;
+  const { name, flag_url, translations } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: "Nome é obrigatório." });
@@ -919,6 +938,25 @@ export async function updateCountry(req, res) {
       "UPDATE countries SET name = $1, flag_url = $2 WHERE id_country = $3",
       [name, flag_url, id]
     );
+
+    if (translations && typeof translations === "object") {
+      for (const [locale, transName] of Object.entries(translations)) {
+        if (!transName?.trim()) {
+          await db.query(
+            "DELETE FROM country_translations WHERE id_country = $1 AND locale = $2",
+            [id, locale]
+          );
+        } else {
+          await db.query(
+            `INSERT INTO country_translations (id_country, locale, name)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (id_country, locale) DO UPDATE SET name = EXCLUDED.name`,
+            [id, locale, transName.trim()]
+          );
+        }
+      }
+    }
+
     return res.json({ success: true, message: "País atualizado com sucesso!" });
   } catch (error) {
     console.error("Erro ao atualizar país:", error);
@@ -1613,12 +1651,12 @@ function resolveCountry(fileNamePtBr, dbCountries) {
 
   // 2. Procura no world-countries (PT-BR, inglês ou oficial)
   const wcEntry = allCountries.find((wc) => {
-    const ptbr    = wc.translations?.por?.common?.toLowerCase()     ?? "";
-    const ptbrOff = wc.translations?.por?.official?.toLowerCase()   ?? "";
-    const common  = wc.name.common?.toLowerCase()                   ?? "";
-    const official= wc.name.official?.toLowerCase()                 ?? "";
+    const ptbr = wc.translations?.por?.common?.toLowerCase() ?? "";
+    const ptbrOff = wc.translations?.por?.official?.toLowerCase() ?? "";
+    const common = wc.name.common?.toLowerCase() ?? "";
+    const official = wc.name.official?.toLowerCase() ?? "";
     return ptbr === normalized || ptbrOff === normalized
-        || common === normalized || official === normalized;
+      || common === normalized || official === normalized;
   });
 
   if (!wcEntry) return null;
@@ -1895,9 +1933,9 @@ export async function uploadClubXlsx(req, res) {
     //   col5=Nome completo | col6=Cidade | col7=Fundação | col10=Estádio | col11=Capacidade
     //   col13=Hex primário | col15=Hex secundário | col17=Hex terciário
     //   col18=Estrutura empresarial | col19=Propriedade do estádio
-    const fullSlug   = toStr(row[0]); // ex: "argentina_boca-juniors"
+    const fullSlug = toStr(row[0]); // ex: "argentina_boca-juniors"
     const countryRaw = toStr(row[2]); // "Argentina"
-    const name       = toStr(row[3]); // "Boca Juniors"
+    const name = toStr(row[3]); // "Boca Juniors"
 
     if (!name) {
       errors.push({ row: i + 1, reason: "nome_vazio" });
@@ -2015,16 +2053,16 @@ export async function fetchTeamFromSportsDB(req, res) {
     if (!team) return res.json({ found: false });
 
     res.json({
-      found:             true,
-      crest_url:         team.strBadge   || null,
-      logo_url:          team.strLogo    || null,
-      primary_color:     team.strColour1 || null,
-      secondary_color:   team.strColour2 || null,
-      stadium_name:      team.strStadium || null,
-      stadium_capacity:  team.intStadiumCapacity ? Number(team.intStadiumCapacity) : null,
-      short_name:        team.strTeamShort || null,
-      country:           team.strCountry  || null,
-      founded:           team.intFormedYear || null,
+      found: true,
+      crest_url: team.strBadge || null,
+      logo_url: team.strLogo || null,
+      primary_color: team.strColour1 || null,
+      secondary_color: team.strColour2 || null,
+      stadium_name: team.strStadium || null,
+      stadium_capacity: team.intStadiumCapacity ? Number(team.intStadiumCapacity) : null,
+      short_name: team.strTeamShort || null,
+      country: team.strCountry || null,
+      founded: team.intFormedYear || null,
     });
   } catch (err) {
     console.error("[fetchTeamFromSportsDB]", err);
@@ -2050,14 +2088,14 @@ export async function fetchPlayerFromSportsDB(req, res) {
     if (!player) return res.json({ found: false });
 
     res.json({
-      found:       true,
-      photo_url:   player.strThumb  || player.strCutout || null,
-      cutout_url:  player.strCutout || null,
+      found: true,
+      photo_url: player.strThumb || player.strCutout || null,
+      cutout_url: player.strCutout || null,
       nationality: player.strNationality || null,
-      position:    player.strPosition   || null,
-      born:        player.dateBorn      || null,
-      team:        player.strTeam       || null,
-      name:        player.strPlayer     || null,
+      position: player.strPosition || null,
+      born: player.dateBorn || null,
+      team: player.strTeam || null,
+      name: player.strPlayer || null,
     });
   } catch (err) {
     console.error("[fetchPlayerFromSportsDB]", err);
@@ -2071,8 +2109,8 @@ export async function fetchPlayerFromSportsDB(req, res) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function adminGetPlayers(req, res) {
   const search = (req.query.search || "").trim();
-  const page   = Math.max(1, parseInt(req.query.page) || 1);
-  const limit  = 30;
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = 30;
   const offset = (page - 1) * limit;
 
   try {
@@ -2095,8 +2133,8 @@ export async function adminGetPlayers(req, res) {
     ]);
 
     res.json({
-      players:    dataRes.rows,
-      total:      parseInt(countRes.rows[0].count),
+      players: dataRes.rows,
+      total: parseInt(countRes.rows[0].count),
       page,
       totalPages: Math.ceil(parseInt(countRes.rows[0].count) / limit),
     });
@@ -2147,7 +2185,7 @@ async function ensureSeason(client, year) {
 export async function addClubToSeason(req, res) {
   const { id, year } = req.params;
   const idLeague = Number(id);
-  const idClub   = Number(req.body.id_club);
+  const idClub = Number(req.body.id_club);
   if (!idClub) return res.status(400).json({ error: "id_club obrigatório" });
 
   const client = await db.connect();
@@ -2194,7 +2232,7 @@ export async function addClubToSeason(req, res) {
 export async function removeClubFromSeason(req, res) {
   const { id, year, clubId } = req.params;
   const idLeague = Number(id);
-  const idClub   = Number(clubId);
+  const idClub = Number(clubId);
 
   const client = await db.connect();
   try {
@@ -2281,9 +2319,9 @@ export async function getCustomEditorData(req, res) {
 
     res.json({
       idSeason,
-      clubs:    clubsRes.rows,
-      groups:   groupsRes.rows,
-      matches:  matchesRes.rows,
+      clubs: clubsRes.rows,
+      groups: groupsRes.rows,
+      matches: matchesRes.rows,
       allClubs: allClubsRes.rows,
     });
   } catch (err) {
@@ -2581,7 +2619,7 @@ export async function getTournamentSuggestions(req, res) {
     const allMatches = matchesRes.rows;
     // Cluster ALL matches that have a date (assigned or not)
     const withDate = allMatches.filter(m => m.match_date);
-    const noDate   = allMatches.filter(m => !m.match_date);
+    const noDate = allMatches.filter(m => !m.match_date);
 
     // Clustering temporal: gap > GAP_DAYS entre partidas consecutivas = novo cluster
     const GAP_DAYS = 14;

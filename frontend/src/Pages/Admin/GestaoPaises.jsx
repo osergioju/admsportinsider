@@ -23,7 +23,9 @@ export default function GestaoPaises() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [currentCountry, setCurrentCountry] = useState(null);
-    const [editForm, setEditForm] = useState({ name: "", flag_url: "" });
+    const [editForm, setEditForm] = useState({ name: "", flag_url: "", translations: {} });
+    const [activeRegions, setActiveRegions] = useState([]);
+    const [loadingTranslations, setLoadingTranslations] = useState(false);
 
     // --- BUSCA CLIENT-SIDE ---
     const [searchTerm, setSearchTerm] = useState("");
@@ -49,10 +51,25 @@ export default function GestaoPaises() {
         setModalMode("create");
     };
 
-    const handleOpenEditModal = (country) => {
+    const handleOpenEditModal = async (country) => {
         setCurrentCountry(country);
-        setEditForm({ name: country.name, flag_url: country.flag_url || "" });
+        setEditForm({ name: country.name, flag_url: country.flag_url || "", translations: {} });
         setModalMode("edit");
+        setLoadingTranslations(true);
+        try {
+            const [regionsRes, countryRes] = await Promise.all([
+                api.get("/admin/regions"),
+                api.get(`/admin/countries/${country.id_country}`),
+            ]);
+            const regions = (regionsRes.data?.regions || regionsRes.data || []).filter(r => r.active);
+            setActiveRegions(regions.filter(r => r.code !== "pt-BR"));
+            const translations = countryRes.data?.country?.translations || {};
+            setEditForm({ name: country.name, flag_url: country.flag_url || "", translations });
+        } catch (err) {
+            console.error("Erro ao carregar traduções:", err);
+        } finally {
+            setLoadingTranslations(false);
+        }
     };
 
     const handleOpenDeleteModal = (country) => {
@@ -81,7 +98,11 @@ export default function GestaoPaises() {
         if (!editForm.name.trim()) return;
         setLoading(true);
         try {
-            await api.put(`/admin/countries/${currentCountry.id_country}/update`, editForm);
+            await api.put(`/admin/countries/${currentCountry.id_country}/update`, {
+                name: editForm.name,
+                flag_url: editForm.flag_url,
+                translations: editForm.translations,
+            });
             setSuccess(true);
             setTimeout(() => { closeModal(); loadCountries(); }, 700);
         } catch (error) { setLoading(false); alert("Erro ao atualizar país."); }
@@ -193,9 +214,38 @@ export default function GestaoPaises() {
                                         <span className="text-sm text-gray-400">Pré-visualização da bandeira</span>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Nome</label>
+                                        <label className={labelClass}>Nome <span className="font-normal text-gray-400 normal-case">(pt-BR)</span></label>
                                         <input type="text" className={inputClass} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
                                     </div>
+
+                                    {/* Traduções por idioma ativo */}
+                                    {loadingTranslations ? (
+                                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                                            <Loader2 size={14} className="animate-spin" /> Carregando idiomas...
+                                        </div>
+                                    ) : activeRegions.length > 0 && (
+                                        <div className="border-t border-gray-100 pt-4 space-y-4">
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Traduções</p>
+                                            {activeRegions.map((region) => (
+                                                <div key={region.id}>
+                                                    <label className={labelClass}>
+                                                        {region.name} <span className="font-normal text-gray-400 normal-case">({region.code})</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={inputClass}
+                                                        placeholder={`Nome em ${region.name}...`}
+                                                        value={editForm.translations[region.code] || ""}
+                                                        onChange={(e) => setEditForm((prev) => ({
+                                                            ...prev,
+                                                            translations: { ...prev.translations, [region.code]: e.target.value },
+                                                        }))}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <div>
                                         <label className={labelClass}>URL da Bandeira</label>
                                         <input type="text" className={inputClass} placeholder="https://flagcdn.com/w40/br.png" value={editForm.flag_url} onChange={(e) => setEditForm({ ...editForm, flag_url: e.target.value })} />

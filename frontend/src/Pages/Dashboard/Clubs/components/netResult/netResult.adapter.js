@@ -49,6 +49,7 @@ export function adaptNetResultTable(
           if (item.code === "costs") map.costs = item.converted_value;
           if (item.code === "net_income") map.net = item.converted_value;
           if (item.code === "ebitda") map.ebitda = item.converted_value;
+          if (item.code === "financial_result" && map.ebitda == null) map.ebitda = item.converted_value;
         });
       }
 

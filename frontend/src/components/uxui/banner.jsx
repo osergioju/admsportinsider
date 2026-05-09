@@ -20,7 +20,7 @@ export default function HomeBanners() {
         modules={[Pagination, Autoplay]}
         slidesPerView={1}
         loop
-        autoplay={{ delay: 3500, disableOnInteraction: false }}
+        autoplay={{ delay: 13500, disableOnInteraction: false }}
         pagination={{ clickable: true, el: ".banner-pagination" }}
         className="relative rounded-2xl overflow-hidden"
       >

@@ -12,7 +12,7 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
   const yearsSet = new Set();
   ligasSelecionadas.forEach((leagueId) => {
     (data[leagueId] || []).forEach((item) => {
-      if (item.code === "recurring_revenue" || item.code === "costs") {
+      if (item.code === "recurring_revenue" || item.code === "revenue" || item.code === "costs") {
         yearsSet.add(Number(item.year));
       }
     });
@@ -35,6 +35,7 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
       if (!map[year]) map[year] = {};
       // Usa converted_value (já convertido pelo backend para a moeda selecionada)
       if (item.code === "recurring_revenue") map[year].revenue = Number(item.converted_value ?? item.value);
+      if (item.code === "revenue" && map[year].revenue == null) map[year].revenue = Number(item.converted_value ?? item.value);
       if (item.code === "costs") map[year].costs = Number(item.converted_value ?? item.value);
     });
     return map;

@@ -59,7 +59,9 @@ export default function ChartFilter({
         );
         setLeagues(data.leagues || []);
       } catch (err) {
-        if (err.name !== "AbortError") console.error("Erro ao buscar ligas:", err);
+        if (err.name !== "AbortError" && err.name !== "CanceledError" && err.code !== "ERR_CANCELED") {
+          console.error("Erro ao buscar ligas:", err);
+        }
       } finally {
         setLoading(false);
       }

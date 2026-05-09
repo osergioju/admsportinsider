@@ -110,13 +110,6 @@ export default function RevenueBreakdownSection({
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="text-[#0A0A0A] font-[400] text-xl">
         {t("club.finance.revenue_by_origin", "Receitas (por origem)")}
-        {selectedClubs.length > 0 && (
-          <button
-            className="cursor-pointer border rounded-full w-10 h-10 flex items-center justify-center text-[#d9337e] hover:bg-[#d9337e] hover:text-white transition-all"
-            onClick={handleFavorite}>
-            <Heart className="w-4" />
-          </button>
-        )}
       </h2>
       <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 

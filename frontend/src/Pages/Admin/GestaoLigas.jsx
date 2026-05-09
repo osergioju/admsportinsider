@@ -15,7 +15,8 @@ export default function GestaoLigas() {
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
     const [leagueScope, setLeagueScope] = useState("country"); // "country" | "continent"
-    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
+    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
+    const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [setupLeague, setSetupLeague] = useState(null); // liga sendo configurada
@@ -28,14 +29,16 @@ export default function GestaoLigas() {
 
     async function loadData() {
         try {
-            const [respLeagues, respCountries, respContinents] = await Promise.all([
+            const [respLeagues, respCountries, respContinents, respCurrencies] = await Promise.all([
                 api.get(`/admin/leagues?limit=1000`),
                 api.get(`/admin/countries?onlyActive=true&limit=1000`),
                 api.get(`/admin/continents`),
+                api.get(`/currency/currencies`),
             ]);
             setLeagues(respLeagues.data.leagues);
             setCountries(respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name, image: c.flag_url })));
             setContinents(respContinents.data.continents.map(c => ({ value: c.id_continent, label: c.name, image: c.logo_url })));
+            setCurrencies(respCurrencies.data);
         } catch (err) { console.error("Erro dados:", err); }
     }
 
@@ -49,7 +52,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "" });
+        setNewLeague({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
         setLeagueScope("country");
         setIsEditing(false); setModal(true);
     };
@@ -333,6 +336,16 @@ export default function GestaoLigas() {
                                     <AlertTriangle size={11} className="shrink-0" />
                                     O formato configurado em <strong>Estrutura</strong> (por edição) tem prioridade sobre este campo.
                                 </p>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Moeda padrão</label>
+                                <select className={inputClass} value={newLeague.currency_code || ""} onChange={(e) => setNewLeague({ ...newLeague, currency_code: e.target.value })}>
+                                    <option value="">Sem moeda definida</option>
+                                    {currencies.map(c => (
+                                        <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                                    ))}
+                                </select>
+                                <p className="mt-1.5 text-xs text-gray-400">Todos os clubes vinculados a esta liga herdam esta moeda como padrão.</p>
                             </div>
                             <div className="pt-4 flex items-center justify-between gap-4">
                                 {isEditing && <button onClick={() => disableLeague(currentLeague.id_league)} className="text-red-500 text-xs font-bold uppercase tracking-wide hover:bg-red-50 px-3 py-2 rounded-lg"><Trash2 size={14} className="inline mr-1" /> Desativar</button>}

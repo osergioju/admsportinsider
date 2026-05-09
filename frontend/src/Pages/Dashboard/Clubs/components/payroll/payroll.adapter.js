@@ -25,6 +25,8 @@ export function adaptPayrollLineData(
 
   const years = Array.from(yearsSet).sort((a, b) => a - b);
 
+  if (years.length === 0) return null;
+
   const DEFAULT_COLOR = "#999999";
 
   const series = clubIds.map((clubId) => {

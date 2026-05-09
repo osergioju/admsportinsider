@@ -12,7 +12,8 @@ import { Search, ChevronDown, X } from "lucide-react";
  *   onChange    – (value) => void
  *   placeholder – string
  *   disabled    – boolean
- *   grouped     – [{ groupLabel, options: [{value, label, image?}] }]
+ *   imageClass  – string (classe CSS da imagem na opção e no trigger; default landscape p/ bandeiras)
+ *   grouped     – [{ groupLabel, groupImage?, options: [{value, label, image?}] }]
  *                 Se fornecido, ignora `options` e usa grupos.
  */
 export default function SearchableSelect({
@@ -22,6 +23,7 @@ export default function SearchableSelect({
   onChange,
   placeholder = "Selecione...",
   disabled = false,
+  imageClass = "w-6 h-4 object-cover rounded shadow-sm flex-shrink-0",
 }) {
   const [open, setOpen]           = useState(false);
   const [query, setQuery]         = useState("");
@@ -169,7 +171,7 @@ export default function SearchableSelect({
           <img
             src={opt.image}
             alt={opt.label}
-            className="w-6 h-4 object-cover rounded shadow-sm flex-shrink-0"
+            className={imageClass}
             loading="lazy"
           />
         )}
@@ -217,7 +219,10 @@ export default function SearchableSelect({
         ) : filteredGrouped ? (
           filteredGrouped.map(group => (
             <li key={group.groupLabel}>
-              <div className="px-4 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-y border-gray-100 sticky top-0">
+              <div className="px-4 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-y border-gray-100 sticky top-0 flex items-center gap-2">
+                {group.groupImage && (
+                  <img src={group.groupImage} alt="" className="w-5 h-3.5 object-cover rounded shadow-sm flex-shrink-0" loading="lazy" />
+                )}
                 {group.groupLabel}
               </div>
               <ul>{group.options.map(renderOption)}</ul>
@@ -261,7 +266,7 @@ export default function SearchableSelect({
               <img
                 src={selectedOption.image}
                 alt={selectedOption.label}
-                className="w-6 h-4 object-cover rounded shadow-sm flex-shrink-0"
+                className={imageClass}
               />
             )}
             <span className="flex-1 text-left font-medium text-gray-900 truncate">

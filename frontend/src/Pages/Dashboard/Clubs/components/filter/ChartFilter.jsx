@@ -60,7 +60,9 @@ export default function ChartFilter({
         );
         setClubs(data.clubs || []);
       } catch (err) {
-        if (err.name !== "AbortError") console.error("Erro ao buscar clubes:", err);
+        if (err.name !== "AbortError" && err.name !== "CanceledError" && err.code !== "ERR_CANCELED") {
+          console.error("Erro ao buscar clubes:", err);
+        }
       } finally {
         setLoading(false);
       }

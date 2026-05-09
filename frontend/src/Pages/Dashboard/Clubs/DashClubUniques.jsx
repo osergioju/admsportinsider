@@ -39,11 +39,11 @@ export default function DashClubUniques() {
   const chartPermissions = {
     revenue: [1, 2, 3],
     payroll: [1, 2, 3],
-    costs: [2, 3],
+    costs: [1, 2, 3],
     netResult: [1, 2, 3],
     netEvolution: [1, 2, 3],
-    debts: [2, 3],
-    revenueBreakdown: [2, 3]
+    debts: [1, 2, 3],
+    revenueBreakdown: [1, 2, 3]
   };
 
   // Não-logados veem tudo. Logados: verificar plano.
@@ -233,7 +233,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "revenue",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues?to=${chartCurrencies.revenue}&fromYear=2018&toYear=2024`,
+        `/dashboard/clubs/${clubId}/financials/revenues?to=${chartCurrencies.revenue}`,
       true
     );
   }, [chartComparisons.revenue, mainClubId, chartCurrencies.revenue]);
@@ -243,7 +243,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "payroll",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/costs/payroll?from=RUB&to=${chartCurrencies.payroll}&fromYear=2018&toYear=2024`,
+        `/dashboard/clubs/${clubId}/financials/costs/payroll?to=${chartCurrencies.payroll}`,
       true
     );
   }, [chartComparisons.payroll, mainClubId, chartCurrencies.payroll]);
@@ -253,7 +253,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "costs",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/costs/breakdown?from=RUB&to=${chartCurrencies.costs}`,
+        `/dashboard/clubs/${clubId}/financials/costs/breakdown?to=${chartCurrencies.costs}`,
       true
     );
   }, [chartComparisons.costs, mainClubId, chartCurrencies.costs]);
@@ -263,7 +263,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "netResult",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/net-result?from=RUB&to=${chartCurrencies.netResult}&fromYear=2021&toYear=2024`,
+        `/dashboard/clubs/${clubId}/financials/net-result?to=${chartCurrencies.netResult}`,
       true
     );
   }, [chartComparisons.netResult, mainClubId, chartCurrencies.netResult]);
@@ -273,7 +273,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "netEvolution",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/net-result/evolution?from=RUB&to=${chartCurrencies.netEvolution}&fromYear=2018&toYear=2024`,
+        `/dashboard/clubs/${clubId}/financials/net-result/evolution?to=${chartCurrencies.netEvolution}`,
       true
     );
   }, [chartComparisons.netEvolution, mainClubId, chartCurrencies.netEvolution]);
@@ -283,7 +283,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "debts",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/debts/breakdown?from=RUB&to=${chartCurrencies.debts}`,
+        `/dashboard/clubs/${clubId}/financials/debts/breakdown?to=${chartCurrencies.debts}`,
       true
     );
   }, [chartComparisons.debts, mainClubId, chartCurrencies.debts]);
@@ -293,7 +293,7 @@ export default function DashClubUniques() {
     fetchChartData(
       "revenueBreakdown",
       (clubId) =>
-        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?from=RUB&to=${chartCurrencies.revenueBreakdown}`,
+        `/dashboard/clubs/${clubId}/financials/revenues/breakdown?to=${chartCurrencies.revenueBreakdown}`,
       true
     );
   }, [chartComparisons.revenueBreakdown, mainClubId, chartCurrencies.revenueBreakdown]);

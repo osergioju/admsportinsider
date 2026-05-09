@@ -166,7 +166,7 @@ function CompetitionTabs({ comp }) {
               <Link to={clubUrl(comp.club.id, comp.club.slug)} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.club.name}</Link>
             } />
             <StatPill wide label={t("player.stat.league", "Liga")} value={
-              <Link to={`/dashboard/league/${comp.league.id}`} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.league.name}</Link>
+              <Link to={`/dashboard/competitions/${comp.league.id}`} className="text-violet-600 hover:underline font-bold text-[11px]">{comp.league.name}</Link>
             } />
             <StatPill label={t("player.stat.jersey", "Camisa")} value={comp.shirt_number ?? "—"} />
             <StatPill label={t("player.stat.market_value", "Valor mercado")}

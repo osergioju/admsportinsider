@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import PayrollLineChart from "./PayrollLineChart";
 import ChartFilter from "../filter/ChartFilter";
 import { useMemo, useEffect, useState } from "react";
+import { useTranslation } from "../../../../../context/TranslationContext";
 
 
 export default function PayrollSection({
@@ -17,6 +18,8 @@ export default function PayrollSection({
   leagueColor,
   setLeagueColor
 }) {
+  const { t } = useTranslation();
+
   function handleAddLeague(liga) {
     setSelectedLeagues((prev) =>
       prev.includes(liga.id_league)
@@ -76,9 +79,9 @@ export default function PayrollSection({
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        Folha salarial
+        {t("club.finance.payroll", "Folha salarial")}
       </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">em milhões</span>
+      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
 
       <ChartFilter
         ligasSelecionadas={selectedLeagues}

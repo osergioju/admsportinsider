@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueLineData } from "./revenueLeague.adapter";
 
@@ -20,7 +21,7 @@ export default function RevenueLineChart({
 
       Object.keys(data).forEach((leagueId) => {
         filteredData[leagueId] = data[leagueId].filter((item) => {
-          if (item.code !== "recurring_revenue") return true;
+          if (item.code !== "recurring_revenue" && item.code !== "revenue") return true;
 
           if (startYear && item.year < startYear) return false;
           if (endYear && item.year > endYear) return false;
@@ -135,22 +136,13 @@ export default function RevenueLineChart({
 
 
 
-  const lenghtData = option.series[0].data.length;
-
   return (
     <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
-      {
-        lenghtData === 0 ? (
-          <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
-          </div>
-        ) : (
-          <ReactECharts
-            option={option}
-            style={{ width: "100%", height: "100%" }}
-          />
-        )
-      }
+      <ReactECharts
+        option={option}
+        style={{ width: "100%", height: "100%" }}
+        notMerge
+      />
     </div>
   );
 }

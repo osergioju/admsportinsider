@@ -30,6 +30,8 @@ export function adaptRevenueBreakdown(
 
   const categories = Array.from(categorySet);
 
+  if (categories.length === 0) return null;
+
   const series = leagueIds.map((leagueId) => {
     const entry = dataByLeague[leagueId];
     const apiData = entry?.data || entry; // extrai o array de dentro da resposta

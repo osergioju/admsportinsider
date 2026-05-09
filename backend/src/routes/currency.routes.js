@@ -11,8 +11,10 @@ import {
   createOrUpdateRate,
   deleteRate,
   deletePair,
+  bulkImportExchangeRates,
 } from "../controllers/currency.controller.js";
 import { adminGuard } from "../middlewares/auth.middleware.js";
+import { uploadXlsx } from "../middlewares/uploadXlsx.js";
 
 const router = Router();
 
@@ -34,5 +36,8 @@ router.delete("/currency-pairs/:base/:reference", adminGuard, deletePair);
 router.get("/currency-rates/:baseCurrencyCode/:referenceCurrencyCode", getRatesByPair);
 router.post("/currency-rates", adminGuard, createOrUpdateRate);
 router.delete("/currency-rates/:id", adminGuard, deleteRate);
+
+// Importação em lote via XLSX
+router.post("/bulk-import-xlsx", adminGuard, uploadXlsx, bulkImportExchangeRates);
 
 export default router;

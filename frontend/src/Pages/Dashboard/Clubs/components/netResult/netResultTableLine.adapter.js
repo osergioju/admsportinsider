@@ -4,7 +4,7 @@ export function adaptNetResultEvolution(
   mainClubId,
   clubMap,
   clubColorMap,
-  metric = "ebitda", // 👈 métrica desejada
+  metric = "net_income",
   limit = 5
 ) {
   if (!dataByClub || Object.keys(dataByClub).length === 0) {
