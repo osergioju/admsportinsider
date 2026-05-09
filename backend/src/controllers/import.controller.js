@@ -1563,6 +1563,7 @@ export async function previewTeams(req, res) {
       allClubs: allClubs.map(c => ({
         id_club: c.id_club,
         name: c.name,
+        slug: c.slug,
         crest_url: c.crest_url,
         country_name: c.country_name ?? "—",
       })),
@@ -1689,6 +1690,7 @@ export async function previewMatches(req, res) {
       allClubs: allClubsRes.rows.map(c => ({
         id_club: c.id_club,
         name: c.name,
+        slug: c.slug,
         crest_url: c.crest_url,
         country_name: c.country_name ?? "—",
       })),

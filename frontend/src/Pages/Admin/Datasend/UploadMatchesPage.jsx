@@ -120,6 +120,7 @@ export default function UploadMatchesPage() {
       byCountry.get(key).push({
         value: String(c.id_club),
         label: c.name,
+        slug: c.slug || undefined,
         image: c.crest_url || undefined,
       });
     }

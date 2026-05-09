@@ -42,8 +42,8 @@ export default function CountryCombobox({
 
   const filtered = query.trim()
     ? sorted.filter((o) =>
-        o.name.common.toLowerCase().includes(query.toLowerCase())
-      )
+      o.name.common.toLowerCase().includes(query.toLowerCase())
+    )
     : sorted;
 
   const handleOpen = () => {
@@ -108,11 +108,10 @@ export default function CountryCombobox({
       <button
         type="button"
         onClick={open ? () => { setOpen(false); setQuery(""); } : handleOpen}
-        className={`w-full flex items-center gap-3 px-4 py-3 bg-white border rounded-xl text-sm transition-all focus:outline-none ${
-          open
-            ? "border-[#7F33D9] ring-1 ring-[#7F33D9]"
-            : "border-gray-200 hover:border-gray-300"
-        }`}
+        className={`w-full flex items-center gap-3 px-4 py-3 bg-white border rounded-xl text-sm transition-all focus:outline-none ${open
+          ? "border-[#7F33D9] ring-1 ring-[#7F33D9]"
+          : "border-gray-200 hover:border-gray-300"
+          }`}
       >
         {value ? (
           <>
@@ -197,9 +196,8 @@ export default function CountryCombobox({
                     key={option.cca2}
                     onClick={() => handleSelect(option)}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors text-sm ${
-                      isActive ? "bg-purple-50" : "hover:bg-gray-50"
-                    } ${isSelected ? "text-[#7F33D9] font-semibold" : "text-gray-800"}`}
+                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors text-sm ${isActive ? "bg-purple-50" : "hover:bg-gray-50"
+                      } ${isSelected ? "text-[#7F33D9] font-semibold" : "text-gray-800"}`}
                   >
                     <img
                       src={flagUrl}

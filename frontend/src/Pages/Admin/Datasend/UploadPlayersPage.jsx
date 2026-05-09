@@ -214,6 +214,7 @@ export default function UploadPlayersPage() {
       byCountry.get(key).push({
         value: c.name,                         // import usa nome, não id
         label: c.name,
+        slug: c.slug || undefined,
         image: c.crest_url || undefined,
       });
     }

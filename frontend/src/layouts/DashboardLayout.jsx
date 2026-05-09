@@ -265,7 +265,7 @@ export default function DashboardLayout() {
         <div className="lg:flex w-full h-screen bg-[#F6F5FA]">
 
             {/* --- SIDEBAR CONTAINER --- */}
-            <div className="sticky top-0 lg:border-r lg:relative top-0 lg:w-[260px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
+            <div className="z-50 sticky top-0 lg:border-r lg:relative top-0 lg:w-[260px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
 
                 {/* ── HEADER MOBILE ── */}
                 <div className="lg:hidden z-30 bg-white border-b border-gray-100 shadow-sm pt-[env(safe-area-inset-top)]">

@@ -25,15 +25,15 @@ export default function SearchableSelect({
   disabled = false,
   imageClass = "w-6 h-4 object-cover rounded shadow-sm flex-shrink-0",
 }) {
-  const [open, setOpen]           = useState(false);
-  const [query, setQuery]         = useState("");
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [dropdownStyle, setDropdownStyle] = useState({});
 
-  const triggerRef   = useRef(null);
+  const triggerRef = useRef(null);
   const containerRef = useRef(null);
-  const inputRef     = useRef(null);
-  const listRef      = useRef(null);
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
 
   // Calcula posição do dropdown relativo ao trigger
   const updatePosition = useCallback(() => {
@@ -47,9 +47,9 @@ export default function SearchableSelect({
 
     setDropdownStyle({
       position: "fixed",
-      left:     rect.left,
-      width:    rect.width,
-      zIndex:   9999,
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
       maxHeight: dropHeight,
       ...(openDown
         ? { top: rect.bottom + 4 }
@@ -60,8 +60,8 @@ export default function SearchableSelect({
   useEffect(() => {
     if (!open) return;
     updatePosition();
-    window.addEventListener("scroll",  updatePosition, true);
-    window.addEventListener("resize",  updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
     return () => {
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
@@ -94,8 +94,8 @@ export default function SearchableSelect({
 
   const filteredGrouped = grouped
     ? grouped
-        .map(g => ({ ...g, options: query.trim() ? g.options.filter(filterFn) : g.options }))
-        .filter(g => g.options.length > 0)
+      .map(g => ({ ...g, options: query.trim() ? g.options.filter(filterFn) : g.options }))
+      .filter(g => g.options.length > 0)
     : null;
 
   const selectedOption = allOptions.find(o => String(o.value) === String(value));
@@ -149,13 +149,19 @@ export default function SearchableSelect({
     }
   };
 
+  const getImage = (opt) => {
+    if (opt.slug) return `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${opt.slug}.webp`;
+    return opt.image || null;
+  };
+
   let globalIdx = -1;
 
   const renderOption = (opt) => {
     globalIdx++;
     const idx = globalIdx;
-    const isActive   = idx === activeIndex;
+    const isActive = idx === activeIndex;
     const isSelected = String(opt.value) === String(value);
+    const imgSrc = getImage(opt);
 
     return (
       <li
@@ -163,17 +169,20 @@ export default function SearchableSelect({
         data-option
         onClick={() => handleSelect(opt)}
         onMouseEnter={() => setActiveIndex(idx)}
-        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm transition-colors ${
-          isActive ? "bg-purple-50" : "hover:bg-gray-50"
-        } ${isSelected ? "text-[#7F33D9] font-semibold" : "text-gray-800"}`}
+        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm transition-colors ${isActive ? "bg-purple-50" : "hover:bg-gray-50"
+          } ${isSelected ? "text-[#7F33D9] font-semibold" : "text-gray-800"}`}
       >
-        {opt.image && (
-          <img
-            src={opt.image}
-            alt={opt.label}
-            className={imageClass}
-            loading="lazy"
-          />
+        {imgSrc && (
+          <div>
+            {/* 
+            <img
+              src={imgSrc}
+              alt={opt.label}
+              className={imageClass}
+              loading="lazy"
+            />
+            */}
+          </div>
         )}
         <span className="truncate">{opt.label}</span>
         {isSelected && <span className="ml-auto text-[#7F33D9] flex-shrink-0">✓</span>}
@@ -221,7 +230,9 @@ export default function SearchableSelect({
             <li key={group.groupLabel}>
               <div className="px-4 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-y border-gray-100 sticky top-0 flex items-center gap-2">
                 {group.groupImage && (
-                  <img src={group.groupImage} alt="" className="w-5 h-3.5 object-cover rounded shadow-sm flex-shrink-0" loading="lazy" />
+                  <div>
+                    {/* <img src={group.groupImage} alt="" className="w-5 h-3.5 object-cover rounded shadow-sm flex-shrink-0" loading="lazy" /> */}
+                  </div>
                 )}
                 {group.groupLabel}
               </div>
@@ -252,22 +263,25 @@ export default function SearchableSelect({
         type="button"
         onClick={open ? () => { setOpen(false); setQuery(""); } : handleOpen}
         disabled={disabled}
-        className={`w-full flex items-center gap-3 px-4 py-2.5 bg-white border rounded-xl text-sm transition-all focus:outline-none ${
-          disabled
-            ? "opacity-50 cursor-not-allowed border-gray-200"
-            : open
+        className={`w-full flex items-center gap-3 px-4 py-2.5 bg-white border rounded-xl text-sm transition-all focus:outline-none ${disabled
+          ? "opacity-50 cursor-not-allowed border-gray-200"
+          : open
             ? "border-[#7F33D9] ring-1 ring-[#7F33D9]"
             : "border-gray-200 hover:border-gray-300"
-        }`}
+          }`}
       >
         {selectedOption ? (
           <>
-            {selectedOption.image && (
-              <img
-                src={selectedOption.image}
-                alt={selectedOption.label}
-                className={imageClass}
-              />
+            {getImage(selectedOption) && (
+              <div>
+                {/* 
+                <img
+                  src={getImage(selectedOption)}
+                  alt={selectedOption.label}
+                  className={imageClass}
+                />
+                */}
+              </div>
             )}
             <span className="flex-1 text-left font-medium text-gray-900 truncate">
               {selectedOption.label}
