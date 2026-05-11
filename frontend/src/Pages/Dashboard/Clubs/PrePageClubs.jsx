@@ -115,7 +115,9 @@ export default function PrePageClubs() {
     }
 
     function getLatestTwo(arr) {
-        const sorted = [...arr].sort((a, b) => b.year - a.year);
+        const sorted = [...arr]
+            .filter(r => r.value != null && Number(r.value) !== 0)
+            .sort((a, b) => b.year - a.year);
         return [sorted[0] || null, sorted[1] || null];
     }
 
@@ -149,7 +151,7 @@ export default function PrePageClubs() {
     const clubColorMapLocal = { [chartClubId]: { color_one: c1, color_two: c2 } };
 
     // Gráficos sempre na moeda nativa do clube: sobrescreve converted_value com value
-    const toNative = (arr) => (arr || []).map(item => ({ ...item, converted_value: item.value }));
+    const toNative = (arr) => (arr || []).filter(item => item.value != null && Number(item.value) !== 0).map(item => ({ ...item, converted_value: item.value }));
     const revenueChartData = { [chartClubId]: toNative(financials?.revenues) };
     const netChartData = { [chartClubId]: toNative(financials?.netEvolution) };
     const debtsChartData = { [chartClubId]: toNative(financials?.debtsBreakdown) };
@@ -403,7 +405,7 @@ export default function PrePageClubs() {
                             />
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-4 lg:pl-10">
+                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                         <h2
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
@@ -433,7 +435,7 @@ export default function PrePageClubs() {
                             />
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-4 lg:pl-10">
+                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                         <h2
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
@@ -464,7 +466,7 @@ export default function PrePageClubs() {
                             />
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-4 lg:pl-10">
+                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                         <h2
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">

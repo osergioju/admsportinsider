@@ -123,23 +123,22 @@ export default function ChartFilter({
         <div className="flex items-center gap-2">
 
           {/* Busca de clube */}
-          <div className="relative" data-club-search>
+          <div className="relative w-1/2" data-club-search>
             <input
               type="text"
               value={busca}
               disabled={atLimite}
               onChange={(e) => { setBusca(e.target.value); setIsOpen(true); }}
               onFocus={() => setIsOpen(true)}
+              className="w-full"
               placeholder={atLimite ? t("clubs.limit_reached", "Limite atingido") : t("clubs.compare_placeholder", "Comparar clube…")}
               style={{
-                fontFamily: "inherit",
                 fontSize: 13,
                 padding: "7px 12px 7px 30px",
                 borderRadius: 24,
                 border: "1px solid #e8e8e4",
                 background: atLimite ? "#fafaf8" : "#fafaf8",
                 color: atLimite ? "#bbb" : "#333",
-                width: 175,
                 outline: "none",
                 cursor: atLimite ? "not-allowed" : "text",
               }}
@@ -221,29 +220,30 @@ export default function ChartFilter({
           <select
             value={currency}
             onChange={(e) => onChangeCurrency(e.target.value)}
+            className="w-1/2"
             style={{
               fontFamily: "inherit",
               fontSize: 13,
-              padding: "7px 10px",
+              padding: "7px 12px 7px 30px",
               borderRadius: 24,
               border: "1px solid #e8e8e4",
-              background: "#fafaf8",
-              color: "#666",
+              background: atLimite ? "#fafaf8" : "#fafaf8",
+              color: atLimite ? "#bbb" : "#333",
               outline: "none",
-              cursor: "pointer",
+              cursor: atLimite ? "not-allowed" : "text",
             }}
           >
             {currencies.length > 0
               ? currencies.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.symbol} {c.code} — {c.name}
-                  </option>
-                ))
+                <option key={c.code} value={c.code}>
+                  {c.symbol} {c.code} — {c.name}
+                </option>
+              ))
               : <>
-                  <option value="BRL">R$ BRL</option>
-                  <option value="USD">US$ USD</option>
-                  <option value="EUR">€ EUR</option>
-                </>
+                <option value="BRL">R$ BRL</option>
+                <option value="USD">US$ USD</option>
+                <option value="EUR">€ EUR</option>
+              </>
             }
           </select>
         </div>

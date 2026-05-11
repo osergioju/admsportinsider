@@ -79,12 +79,15 @@ export default function NetResultLineChart({
         fontWeight: "normal"
       },
       formatter: (params) => {
-        return params
-          .map(
-            (p) =>
-              `${p.marker} ${p.seriesName}: ${Number(p.value).toLocaleString("pt-BR")}`
-          )
-          .join("<br/>");
+        return params.map((p) => {
+          const v = Number(p.value);
+          const abs = Math.abs(v);
+          const sign = v < 0 ? "-" : "";
+          const fmt = abs >= 1000
+            ? `${sign}${(abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}B`
+            : `${sign}${abs.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`;
+          return `${p.marker} ${p.seriesName}: ${fmt}`;
+        }).join("<br/>");
       }
     },
     legend: {
@@ -126,7 +129,14 @@ export default function NetResultLineChart({
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        formatter: (value) => `${(value / 1000).toFixed(0)}M`,
+        formatter: (value) => {
+          const abs = Math.abs(value);
+          const sign = value < 0 ? "-" : "";
+          if (abs >= 1000) {
+            return `${sign}${(abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}B`;
+          }
+          return `${sign}${abs.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`;
+        },
         color: "#666",
         fontFamily: "Effra Trial"
       },
