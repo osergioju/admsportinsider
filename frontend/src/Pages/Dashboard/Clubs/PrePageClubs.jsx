@@ -177,20 +177,12 @@ export default function PrePageClubs() {
         linear-gradient(to bottom, ${c1}, ${c3}, ${c2}, transparent)
     `.trim();
 
-    const colors = [c1, c2, c3];
-
-    const lightCount = colors.filter(c => {
-        const rgb = hexToRgb(c);
-        if (!rgb) return false;
-
-        const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-        return lum > 0.6;
-    }).length;
-
-    const textColor = lightCount >= 5 ? "#0A0A0A" : "#FFFFFF";
-
     const rgb1 = hexToRgb(c1);
     const rgb2 = hexToRgb(c2);
+
+    const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
+    const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
+    const borderColor = lum1 > 0.5 ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.4)";
     const glowPrimary = rgb1 ? `rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.6)` : "rgba(0,0,0,0.3)";
     const glowSecondary = rgb2 ? `rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.45)` : glowPrimary;
 
@@ -236,7 +228,7 @@ export default function PrePageClubs() {
                             />
                         </div>
 
-                        <div className="flex-1 min-w-0 border-b border-white/40 pb-4 pl-2">
+                        <div className="flex-1 min-w-0 border-b pb-4 pl-2" style={{ borderColor }}>
                             <h1 className="text-white font-light drop-shadow-md leading-tight truncate text-xl sm:text-2xl"
                                 style={{
                                     color: textColor
