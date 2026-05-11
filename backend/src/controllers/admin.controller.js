@@ -1786,7 +1786,13 @@ export async function previewClubImport(req, res) {
       };
     });
 
-    return res.json({ countries: result, dbCountries: dbRows });
+    // Mudanças de nome: col 21 = "Mudou de nome?", col 22 = "Nome novo", col 23 = "Nome antigo"
+    const toStr = (val) => (val == null ? "" : String(val).trim());
+    const nameChanges = rows
+      .filter(r => toStr(r[21]) && toStr(r[22]))
+      .map(r => ({ slug: toStr(r[0]), newName: toStr(r[22]), oldName: toStr(r[23]) }));
+
+    return res.json({ countries: result, dbCountries: dbRows, nameChanges });
   } catch (err) {
     console.error("Erro preview:", err);
     return res.status(500).json({ error: "Erro ao processar preview" });
@@ -1856,15 +1862,21 @@ const insertClubBatch = async (client, batchTuples, updateFields = []) => {
     ? `ON CONFLICT (slug) DO UPDATE SET ${updateFields.map(f => `${f} = EXCLUDED.${f}`).join(", ")}`
     : `ON CONFLICT (slug) DO NOTHING`;
 
+  const nameCoalesce = `new_name = COALESCE(EXCLUDED.new_name, clubs.new_name), old_name = COALESCE(EXCLUDED.old_name, clubs.old_name)`;
+  const finalConflict = onConflict === `ON CONFLICT (slug) DO NOTHING`
+    ? `ON CONFLICT (slug) DO UPDATE SET ${nameCoalesce}`
+    : `${onConflict}, ${nameCoalesce}`;
+
   const { rowCount } = await client.query(
     `INSERT INTO clubs (
        id_country, name, slug, crest_url,
        description, location, founded_at,
        stadium_name, stadium_capacity, stadium_ownership, ownership_model,
-       primary_color, secondary_color, tertiary_color, gender
+       primary_color, secondary_color, tertiary_color, gender,
+       new_name, old_name
      )
      VALUES ${phs.join(",")}
-     ${onConflict}`,
+     ${finalConflict}`,
     flat
   );
 
@@ -1949,7 +1961,7 @@ export async function uploadClubXlsx(req, res) {
   // 11=Pré-1900 | 12=Só ano | 13=Estádio | 14=Capacidade
   // 15=Cor primária(texto) | 16=Código primário(hex) | 17=Cor secundária(texto)
   // 18=Código secundário(hex) | 19=Cor terciária(texto) | 20=Código terciário(hex)
-  // 21=Estrutura empresarial | 22=Propriedade do estádio
+  // 21=Mudou de nome? (V) | 22=Nome novo (W) | 23=Nome antigo (X)
 
   const translationRows = []; // { slug, pt, en, es }
 
@@ -1996,12 +2008,14 @@ export async function uploadClubXlsx(req, res) {
       parseDate(row[10]),                                                                 // founded_at
       toStr(row[13]) || null,                                                             // stadium_name
       row[14] ? (parseInt(String(row[14]).replace(/[.,\s]/g, ""), 10) || null) : null,   // stadium_capacity
-      toStr(row[22]) || null,                                                             // stadium_ownership
-      toStr(row[21]) || null,                                                             // ownership_model
+      null,                                                                                // stadium_ownership (removido do Excel)
+      null,                                                                                // ownership_model (removido do Excel)
       hexPrimary,                                                                         // primary_color
       hexSecondary,                                                                       // secondary_color
       hexTertiary,                                                                        // tertiary_color
       gender,                                                                             // gender
+      toStr(row[22]) || null,                                                             // new_name (col W)
+      toStr(row[23]) || null,                                                             // old_name (col X)
     ]);
 
     translationRows.push({ slug: fullSlug, pt: namePt, en: nameEn, es: nameEs });

@@ -175,10 +175,11 @@ export default function DashboardLayout() {
                             <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.5} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.countries", "Países")}</span>} className={menuItemStyle} />
                         </div>
 
-                        {/* Outros itens */}
+                        {/* Outros itens 
                         <div className="group">
                             <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} />
                         </div>
+                        */}
                         <div className="group">
                             <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} />
                         </div>

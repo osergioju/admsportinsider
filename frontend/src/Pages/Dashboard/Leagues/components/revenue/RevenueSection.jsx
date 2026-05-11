@@ -5,6 +5,7 @@ import RevenueTableChart from "./RevenueTableChart";
 import ChartFilter from "../filter/ChartFilter";
 import { useMemo, useEffect, useState } from "react";
 import { useTranslation } from "../../../../../context/TranslationContext";
+import NoFinancialData from "../NoFinancialData";
 
 export default function RevenueSection({
   data,
@@ -57,7 +58,7 @@ export default function RevenueSection({
 
     Object.values(data || {}).forEach((clubData) => {
       clubData.forEach((item) => {
-        if (item.code === "recurring_revenue" || item.code === "revenue") {
+        if ((item.code === "recurring_revenue" || item.code === "revenue") && Number(item.converted_value) !== 0) {
           years.add(item.year);
         }
       });
@@ -79,62 +80,58 @@ export default function RevenueSection({
 
   }, [availableYears]);
 
+  const mainData = data?.[mainLeagueId];
+
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
-      <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-        {t("club.finance.revenue_by_year", "Receitas (por ano)")}
-      </h2>
-      <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
-
-      <ChartFilter
-        ligasSelecionadas={selectedLeagues}
-        onAddLeague={handleAddLeague}
-        currency={currency}
-        onChangeCurrency={setCurrency}
-        currencies={currencies}
-        startYear={startYear}
-        endYear={endYear}
-        onChangeStartYear={setStartYear}
-        onChangeEndYear={setEndYear}
-        availableYears={availableYears}
-        yearSelectionMode="multiple"
-      />
-
-      <RevenueLineChart
-        data={data}
-        ligasSelecionadas={selectedLeagues}
-        leagueMap={leagueMap}
-        mainLeagueId={mainLeagueId}
-        leagueColor={leagueColor}
-        startYear={startYear}
-        endYear={endYear}
-      />
-
-      <div className="h-6"></div>
-
-      <RevenueTableChart
-        data={data}
-        ligasSelecionadas={selectedLeagues}
-        leagueMap={leagueMap}
-        mainLeagueId={mainLeagueId}
-        leagueColor={leagueColor}
-        startYear={startYear}
-        endYear={endYear}
-      />
-
-      {selectedLeagues.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {selectedLeagues.map((leagueId) => (
-            <button
-              key={leagueId}
-              onClick={() => handleRemoveLeague(leagueId)}
-              className="cursor-pointer hover:bg-[#7f34d9] hover:text-white transition-all bg-[#EDE6F6] flex items-center gap-2 px-4 py-1 rounded-lg text-sm text-[#8D6C6C]"
-            >
-              {leagueMap[leagueId] || `Liga ${leagueId}`}
-              <X className="w-4" />
-            </button>
-          ))}
-        </div>
+      {mainData !== undefined && !mainData.length ? (
+        <NoFinancialData title={t("club.finance.revenue_by_year", "Receitas (por ano)")} />
+      ) : mainData?.length > 0 && (
+        <>
+          <ChartFilter
+            ligasSelecionadas={selectedLeagues}
+            onAddLeague={handleAddLeague}
+            currency={currency}
+            onChangeCurrency={setCurrency}
+            currencies={currencies}
+            startYear={startYear}
+            endYear={endYear}
+            onChangeStartYear={setStartYear}
+            onChangeEndYear={setEndYear}
+            availableYears={availableYears}
+            yearSelectionMode="multiple"
+          />
+          <RevenueLineChart
+            data={data}
+            ligasSelecionadas={selectedLeagues}
+            leagueMap={leagueMap}
+            mainLeagueId={mainLeagueId}
+            leagueColor={leagueColor}
+            startYear={startYear}
+            endYear={endYear}
+          />
+          <div className="h-6"></div>
+          <RevenueTableChart
+            data={data}
+            ligasSelecionadas={selectedLeagues}
+            leagueMap={leagueMap}
+            mainLeagueId={mainLeagueId}
+            leagueColor={leagueColor}
+            startYear={startYear}
+            endYear={endYear}
+          />
+          {selectedLeagues.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selectedLeagues.map((leagueId) => (
+                <button key={leagueId} onClick={() => handleRemoveLeague(leagueId)}
+                  className="cursor-pointer hover:bg-[#7f34d9] hover:text-white transition-all bg-[#EDE6F6] flex items-center gap-2 px-4 py-1 rounded-lg text-sm text-[#8D6C6C]">
+                  {leagueMap[leagueId] || `Liga ${leagueId}`}
+                  <X className="w-4" />
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

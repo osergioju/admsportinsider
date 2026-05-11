@@ -155,7 +155,9 @@ export default function CostsPieChart({
         left: "center",
         top: "34%",
         style: {
-          text: Number(total).toLocaleString("pt-BR").split(",")[0],
+          text: total < 1
+            ? Number(total).toLocaleString("pt-BR", { maximumFractionDigits: 2 })
+            : Number(total).toLocaleString("pt-BR").split(",")[0],
           fontSize: 62,
           fontSpacing: 130,
           fill: "#0A0A0A",

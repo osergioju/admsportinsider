@@ -19,7 +19,7 @@ export function adaptPayrollLineData(
     if (!Array.isArray(apiData)) return;
 
     apiData.forEach((item) => {
-      yearsSet.add(item.year);
+      if (Number(item.converted_value) !== 0) yearsSet.add(item.year);
     });
   });
 

@@ -334,6 +334,9 @@ export async function importLeagueCountry(req, res) {
       cellDates: true
     });
 
+    console.log(`[import] sheetName="${sheetName}" leagueId=${leagueId} selectedYears=${JSON.stringify(selectedYears)}`);
+    console.log(`[import] abas no arquivo: ${workbook.SheetNames.join(", ")}`);
+
     const leagueSheet = workbook.Sheets[sheetName];
     if (!leagueSheet) {
       return res.status(400).json({
@@ -348,17 +351,23 @@ export async function importLeagueCountry(req, res) {
 
     const headerRow = leagueRows[0];
 
-    // Lê linhas de metadados: Exercício (ano fiscal) e Moeda
-    // col 3 = label/name, col 4+ = year values
-    const exercicioRow = leagueRows.find(r => r[3] === "Exercício");
-    const moedaRow     = leagueRows.find(r => r[3] === "Moeda");
+    // Detecta offset de colunas: Suíça tem code em col 0, Colômbia tem null extra em col 0
+    const headerRow1 = leagueRows[1] || [];
+    const colOffset = (headerRow1[0] == null) ? 1 : 0;
+    console.log(`[import] aba liga "${sheetName}": colOffset=${colOffset}`);
+
+    // Lê linhas de metadados: label na col (3+offset), valores a partir de (4+offset)
+    const exercicioRow = leagueRows.find(r => r[3 + colOffset] === "Exercício");
+    const moedaRow     = leagueRows.find(r => r[3 + colOffset] === "Moeda");
 
     const leagueYears = (exercicioRow ?? headerRow)
-      .slice(4)
+      .slice(4 + colOffset)
       .filter(v => typeof v === "number" && Number.isInteger(v));
 
+    console.log(`[import] aba liga "${sheetName}": ${leagueRows.length} linhas, anos detectados: ${JSON.stringify(leagueYears)}`);
+
     const currencyCode = moedaRow
-      ? (moedaRow.slice(4).find(v => v && typeof v === "string") ?? null)
+      ? (moedaRow.slice(4 + colOffset).find(v => v && typeof v === "string") ?? null)
       : null;
 
     await client.query("BEGIN");
@@ -383,11 +392,12 @@ export async function importLeagueCountry(req, res) {
 
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
-      // col0=code, col1=level, col2=plans, col3=name_pt, col4+=values
-      const code    = row[0];
-      const level   = row[1];
-      const plans   = parsePlans(row[2]);
-      const name_pt = row[3];
+      // colOffset=0 (Suíça): col0=code, col1=level, col2=plans, col3=name_pt, col4+=values
+      // colOffset=1 (Colômbia): col0=null, col1=code, col2=level, col3=plans, col4=name_pt, col5+=values
+      const code    = row[colOffset];
+      const level   = row[colOffset + 1];
+      const plans   = parsePlans(row[colOffset + 2]);
+      const name_pt = row[colOffset + 3];
 
       // Linhas de metadados (sem código): mapear pelo label
       if (!code && name_pt && LEAGUE_META_CODES[name_pt]) {
@@ -407,6 +417,7 @@ export async function importLeagueCountry(req, res) {
       leagueIndicatorRows.push([code, name_pt, level, plans]);
     }
 
+    console.log(`[import] indicadores da liga: ${leagueIndicatorRows.length}`);
     if (leagueIndicatorRows.length > 0) {
       const values = leagueIndicatorRows
         .map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`)
@@ -436,11 +447,11 @@ export async function importLeagueCountry(req, res) {
 
     for (let i = 1; i < leagueRows.length; i++) {
       const row = leagueRows[i];
-      let code = row[0]; // col0 = code
+      let code = row[colOffset];
 
       // Linhas de metadados sem código próprio
-      if (!code && row[3] && LEAGUE_META_CODES[row[3]]) {
-        code = LEAGUE_META_CODES[row[3]].code;
+      if (!code && row[3 + colOffset] && LEAGUE_META_CODES[row[3 + colOffset]]) {
+        code = LEAGUE_META_CODES[row[3 + colOffset]].code;
       }
 
       if (!code || typeof code !== "string") continue;
@@ -450,7 +461,7 @@ export async function importLeagueCountry(req, res) {
 
       for (let idx = 0; idx < leagueYears.length; idx++) {
         const year = leagueYears[idx];
-        const value = row[4 + idx]; // col4+ = year values
+        const value = row[4 + colOffset + idx]; // valores a partir de col (4+offset)
         if (value == null || typeof value === "string" && !value.trim()) continue;
         const numVal = typeof value === "number" ? value : Number(String(value).replace(/[%.]/g, "").replace(",", "."));
         if (isNaN(numVal)) continue;
@@ -463,6 +474,7 @@ export async function importLeagueCountry(req, res) {
       }
     }
 
+    console.log(`[import] linhas financeiras da liga: ${leagueFinancialRows.length}`);
     if (leagueFinancialRows.length > 0) {
       const values = leagueFinancialRows
         .map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`)
@@ -488,10 +500,12 @@ export async function importLeagueCountry(req, res) {
     // HELPER — upsert indicador de clube (usa cache compartilhado)
     // ======================================================
     async function resolveClubIndicator(dbClient, row, cache) {
-      const name_pt = row[0];
-      const code = row[1];
-      const level = row[2] ?? 1;
-      const plan = row[3];
+      // Colômbia: code em col 0; Suíça: null em col 0, code em col 1
+      const off = (row[0] != null && typeof row[0] === "string") ? 0 : 1;
+      const code    = row[off];
+      const level   = row[off + 1] ?? 1;
+      const plan    = row[off + 2];
+      const name_pt = row[off + 3] || row[off];
 
       if (!code || typeof code !== "string") return null;
       if (cache[code]) return cache[code];
@@ -520,7 +534,9 @@ export async function importLeagueCountry(req, res) {
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
 
     for (const year of selectedYears) {
-      const sheet = workbook.Sheets[String(year)] ?? workbook.Sheets[`${year - 1}/${year}`];
+      const sheetKey = workbook.SheetNames.find(n => n === String(year) || n === `${year - 1}/${year}`);
+      console.log(`[import] ano ${year}: procurando aba "${year}" ou "${year - 1}/${year}" → ${sheetKey ? `encontrada ("${sheetKey}")` : "NÃO ENCONTRADA"}`);
+      const sheet = sheetKey ? workbook.Sheets[sheetKey] : null;
       if (!sheet) continue;
 
       const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: null });
@@ -535,6 +551,11 @@ export async function importLeagueCountry(req, res) {
         }
       }
       const clubSlugs = Object.values(colToSlug);
+      console.log(`[import] ano ${year}: ${clubSlugs.length} slugs na aba → ${JSON.stringify(clubSlugs.slice(0, 5))}${clubSlugs.length > 5 ? "..." : ""}`);
+      console.log(`[import] ano ${year}: primeiras linhas a partir de DATA_START_ROW (cols 0-4):`);
+      for (let i = DATA_START_ROW; i < Math.min(DATA_START_ROW + 4, rows.length); i++) {
+        console.log(`  row[${i}]:`, JSON.stringify(rows[i]?.slice(0, 5)));
+      }
 
       // --- Resolve clubs: slug exato → nome normalizado → mapeamento manual → skip
       const allClubsRes = await client.query(
@@ -544,11 +565,14 @@ export async function importLeagueCountry(req, res) {
       const byNorm = new Map(allClubsRes.rows.map(c => [normalizeStr(c.name), c.id_club]));
 
       const clubIdBySlug = {};
+      const notFound = [];
       for (const slug of clubSlugs) {
         const normSlug = normalizeStr(slug.replace(/_/g, " "));
         const id = bySlug.get(slug) || byNorm.get(normSlug) || (clubMappings[slug] ? Number(clubMappings[slug]) : null);
         if (id) clubIdBySlug[slug] = id;
+        else notFound.push(slug);
       }
+      console.log(`[import] ano ${year}: ${Object.keys(clubIdBySlug).length} clubes resolvidos, ${notFound.length} não encontrados${notFound.length ? ` → ${JSON.stringify(notFound.slice(0, 5))}` : ""}`);
 
       // --- Bulk upsert club_seasons ---
       const divisionRow = rows[3];
@@ -574,6 +598,8 @@ export async function importLeagueCountry(req, res) {
           clubSeasonRows.flat()
         );
       }
+
+      console.log(`[import] ano ${year}: ${clubSeasonRows.length} club_seasons para gravar`);
 
       // --- Bulk upsert club_financials ---
       const clubFinancialRows = [];
@@ -604,6 +630,7 @@ export async function importLeagueCountry(req, res) {
         }
       }
 
+      console.log(`[import] ano ${year}: ${clubFinancialRows.length} linhas de club_financials coletadas`);
       if (clubFinancialRows.length > 0) {
         // deduplicate: keep last value for each (id_club, id_indicator, year)
         const dedupMap = new Map();

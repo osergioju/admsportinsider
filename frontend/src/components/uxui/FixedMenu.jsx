@@ -29,12 +29,6 @@ export default function FixedMenu() {
       active: isActive("/dashboard/competitions") || isActive("/dashboard/competitions/"),
     },
     {
-      to: "/dashboard/players",
-      icon: PersonStanding,
-      label: "Jogadores",
-      active: isActive("/dashboard/players") || isActive("/dashboard/players/"),
-    },
-    {
       to: "/dashboard/countries",
       icon: Globe,
       label: "Países",

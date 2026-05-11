@@ -19,8 +19,8 @@ export function adaptNetResultEvolution(
     const apiData = dataByLeague[leagueId];
     if (!Array.isArray(apiData)) return;
 
-    apiData.forEach(({ year }) => {
-      if (year) yearsSet.add(year);
+    apiData.forEach((item) => {
+      if (item.year && Number(item.converted_value) !== 0) yearsSet.add(item.year);
     });
   });
 

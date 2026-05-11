@@ -19,7 +19,7 @@ export function adaptNetResultTable(
     if (!Array.isArray(apiData)) return;
 
     apiData.forEach((item) => {
-      yearSet.add(item.year);
+      if (Number(item.converted_value) !== 0) yearSet.add(item.year);
     });
   });
 

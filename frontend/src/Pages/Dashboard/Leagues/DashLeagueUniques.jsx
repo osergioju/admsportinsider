@@ -7,6 +7,7 @@ import { TrendingUp, Trophy, ArrowRight } from "lucide-react";
 import RevenueLineChart from "./components/revenue/RevenueLineChart";
 import NetResultLineChart from "./components/netResult/NetResultLineChart";
 import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
+import NoFinancialData from "./components/NoFinancialData";
 
 /* ─── Utilitários de cor ───────────────────────────────────────── */
 
@@ -272,103 +273,109 @@ export default function DashLeagueUniques() {
 
             {/* ── Card Receita ──────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                <div className="flex flex-wrap w-full items-center">
-                    <div className="w-full lg:w-1/2">
-                        <div className="w-full">
-                            <RevenueLineChart
-                                data={revenueChartData}
-                                ligasSelecionadas={[]}
-                                leagueMap={leagueMapLocal}
-                                mainLeagueId={chartLeagueId}
-                                leagueColor={leagueColorLocal}
-                            />
+                {!latestRev ? (
+                    <NoFinancialData title={t("clubs.revenues", "Receitas")} />
+                ) : (
+                    <div className="flex flex-wrap w-full items-center">
+                        <div className="w-full lg:w-1/2">
+                            <div className="w-full">
+                                <RevenueLineChart
+                                    data={revenueChartData}
+                                    ligasSelecionadas={[]}
+                                    leagueMap={leagueMapLocal}
+                                    mainLeagueId={chartLeagueId}
+                                    leagueColor={leagueColorLocal}
+                                />
+                            </div>
+                        </div>
+                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                            <h2
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                            >
+                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                                {t("clubs.revenues", "Receitas")} <br /> em {latestRev.year}
+                            </h2>
+                            <p
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="text-lg font-light lg:text-xl"
+                            >
+                                {`${competitionTitle} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`}
+                            </p>
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                        <h2
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
-                        >
-                            <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.revenues", "Receitas")} <br />{latestRev ? ` em ${latestRev.year}` : ""}
-                        </h2>
-                        <p
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl"
-                        >
-                            {latestRev
-                                ? `${competitionTitle} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`
-                                : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* ── Card Dívidas ──────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                <div className="flex flex-wrap w-full items-center">
-                    <div className="w-full lg:w-1/2">
-                        <div className="w-full">
-                            <DebtsBreakdownBarChart
-                                data={debtsChartData}
-                                ligasSelecionadas={[]}
-                                leagueMap={leagueMapLocal}
-                                mainLeagueId={chartLeagueId}
-                            />
+                {!latestDebt ? (
+                    <NoFinancialData title={t("clubs.debts", "Dívidas")} />
+                ) : (
+                    <div className="flex flex-wrap w-full items-center">
+                        <div className="w-full lg:w-1/2">
+                            <div className="w-full">
+                                <DebtsBreakdownBarChart
+                                    data={debtsChartData}
+                                    ligasSelecionadas={[]}
+                                    leagueMap={leagueMapLocal}
+                                    mainLeagueId={chartLeagueId}
+                                />
+                            </div>
+                        </div>
+                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                            <h2
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                            >
+                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                                {t("clubs.debts", "Dívidas")}<br /> em {latestDebt.year}
+                            </h2>
+                            <p
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="text-lg font-light lg:text-xl"
+                            >
+                                {`${competitionTitle} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`}
+                            </p>
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                        <h2
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
-                        >
-                            <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.debts", "Dívidas")}<br /> {latestDebt ? ` em ${latestDebt.year}` : ""}
-                        </h2>
-                        <p
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl"
-                        >
-                            {latestDebt
-                                ? `${competitionTitle} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`
-                                : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* ── Card Resultado ────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                <div className="flex flex-wrap w-full items-center">
-                    <div className="w-full lg:w-1/2">
-                        <div className="w-full">
-                            <NetResultLineChart
-                                data={netChartData}
-                                ligasSelecionadas={[]}
-                                leagueMap={leagueMapLocal}
-                                mainLeagueId={chartLeagueId}
-                                leagueColor={leagueColorLocal}
-                            />
+                {!latestNet ? (
+                    <NoFinancialData title={t("clubs.result", "Resultado")} />
+                ) : (
+                    <div className="flex flex-wrap w-full items-center">
+                        <div className="w-full lg:w-1/2">
+                            <div className="w-full">
+                                <NetResultLineChart
+                                    data={netChartData}
+                                    ligasSelecionadas={[]}
+                                    leagueMap={leagueMapLocal}
+                                    mainLeagueId={chartLeagueId}
+                                    leagueColor={leagueColorLocal}
+                                />
+                            </div>
+                        </div>
+                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                            <h2
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                            >
+                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                                {t("clubs.result", "Resultado")} <br /> em {latestNet.year}
+                            </h2>
+                            <p
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="text-lg font-light lg:text-xl"
+                            >
+                                {`${competitionTitle} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${Math.abs(latestNet.value) >= Math.abs(prevNet.value) ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrados em ${prevNet.year}` : ""}.`}
+                            </p>
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                        <h2
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
-                        >
-                            <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.result", "Resultado")} <br />{latestNet ? ` em ${latestNet.year}` : ""}
-                        </h2>
-                        <p
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl"
-                        >
-                            {latestNet
-                                ? `${competitionTitle} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${Math.abs(latestNet.value) >= Math.abs(prevNet.value) ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrados em ${prevNet.year}` : ""}.`
-                                : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
 
         </div>

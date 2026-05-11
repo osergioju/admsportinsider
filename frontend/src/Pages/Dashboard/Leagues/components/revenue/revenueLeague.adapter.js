@@ -32,7 +32,7 @@ export function adaptRevenueLineData(
 
   ligasNoGrafico.forEach((leagueId) => {
     (dataByLeague[leagueId] || []).forEach((item) => {
-      if (isRevenue(item.code)) yearsSet.add(item.year);
+      if (isRevenue(item.code) && Number(item.converted_value) !== 0) yearsSet.add(item.year);
     });
   });
 
