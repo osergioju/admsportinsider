@@ -476,7 +476,7 @@ export default function PrePageClubs() {
                         <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="text-lg font-light lg:text-xl xl:text-2xl">
                             {latestNet
-                                ? `O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${Math.abs(latestNet.value) >= Math.abs(prevNet.value) ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrados em ${prevNet.year}` : ""}.`
+                                ? `O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.value >= prevNet.value ? "acima" : "abaixo"} ${prevNet.value >= 0 ? "do lucro" : "do prejuízo"} de ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrado em ${prevNet.year}` : ""}.`
                                 : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
                         </p>
                     </div>
