@@ -1,5 +1,20 @@
 import ReactECharts from "echarts-for-react";
 import { adaptDebtsBreakdown } from "./debtsBreakdownLeague.adapter";
+import { useTranslation } from "../../../../../context/TranslationContext";
+
+function NoDebtsData() {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <p className="font-semibold text-[#0A0A0A] text-lg">
+        {t("debts.no_data_title", "Ah, não!")}
+      </p>
+      <p className="text-sm text-gray-400 max-w-xs mt-2">
+        {t("debts.no_data_desc_league", "Esses dados não estão disponíveis no documento publicado pela liga.")}
+      </p>
+    </div>
+  );
+}
 
 export default function DebtsBreakdownBarChart({
   data,
@@ -15,7 +30,7 @@ export default function DebtsBreakdownBarChart({
   );
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">Sem dados de dívidas</p>;
+    return <NoDebtsData />;
   }
 
   const option = {
@@ -52,9 +67,7 @@ export default function DebtsBreakdownBarChart({
     <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
       {
         lenghtData === 0 ? (
-          <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">Dados indisponíveis</p>
-          </div>
+          <NoDebtsData />
         ) : (
           <ReactECharts
             option={option}

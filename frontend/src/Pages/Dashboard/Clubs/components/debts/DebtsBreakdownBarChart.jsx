@@ -1,5 +1,19 @@
 import { useTranslation } from "../../../../../context/TranslationContext";
 import ReactECharts from "echarts-for-react";
+
+function NoDebtsData() {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <p className="font-semibold text-[#0A0A0A] text-lg">
+        {t("debts.no_data_title", "Ah, não!")}
+      </p>
+      <p className="text-sm text-gray-400 max-w-xs mt-2">
+        {t("debts.no_data_desc", "Esses dados não estão disponíveis no documento publicado pelo clube.")}
+      </p>
+    </div>
+  );
+}
 import { adaptDebtsBreakdown } from "./debtsBreakdown.adapter";
 import { useContext } from "react";
 import { AuthContext } from "../../../../../context/AuthContext"
@@ -23,7 +37,7 @@ export default function DebtsBreakdownBarChart({
   const planID = user?.plan_id;
 
   if (!adapted) {
-    return <p className="text-sm text-gray-400">{t("club.finance.no_debts_data", "Sem dados de dívidas")}</p>;
+    return <NoDebtsData />;
   }
 
   const option = {
@@ -59,9 +73,7 @@ export default function DebtsBreakdownBarChart({
     <div className="w-full max-w-full overflow-hidden">
       {
         lenghtData === 0 ? (
-          <div className="flex items-center justify-center pt-20">
-            <p className="text-sm lg:text-xl text-gray-400">{t("club.finance.no_data", "Dados indisponíveis")}</p>
-          </div>
+          <NoDebtsData />
         ) : (
           <ReactECharts
             option={option}

@@ -11,6 +11,21 @@ import RevenueLineChart from "./components/revenue/RevenueLineChart";
 import NetResultLineChart from "./components/netResult/NetResultLineChart";
 import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
 
+function NoFinancialData({ title }) {
+    const { t } = useTranslation();
+    return (
+        <div className="flex flex-col items-center justify-center py-14 text-center">
+            {title && <p className="text-base font-semibold text-gray-500 mb-3">{title}</p>}
+            <p className="font-semibold text-[#0A0A0A] text-lg">
+                {t("finance.no_data_title", "Ah, não!")}
+            </p>
+            <p className="text-sm text-gray-400 max-w-xs mt-2">
+                {t("finance.no_data_desc", "Esses dados não estão disponíveis no documento publicado pelo clube.")}
+            </p>
+        </div>
+    );
+}
+
 /* ─── Utilitários de cor ───────────────────────────────────────── */
 
 function hexToRgb(hex) {
@@ -385,6 +400,7 @@ export default function PrePageClubs() {
 
             {/* ── Card Receita ─────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
+                {!latestRev ? <NoFinancialData title={t("clubs.revenues", "Receitas")} /> : (
                 <div className="flex flex-wrap w-full items-center">
                     <div className="w-full lg:w-1/2">
                         <div className="w-full">
@@ -402,20 +418,20 @@ export default function PrePageClubs() {
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.revenues", "Receitas")} {latestRev ? ` em ${latestRev.year}` : ""}
+                            {t("clubs.revenues", "Receitas")} {` em ${latestRev.year}`}
                         </h2>
                         <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="text-lg font-light lg:text-xl xl:text-2xl">
-                            {latestRev
-                                ? `O ${clubName} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`
-                                : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
+                            {`O ${clubName} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`}
                         </p>
                     </div>
                 </div>
+                )}
             </div>
 
             {/* ── Card Dívidas ──────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
+                {!latestDebt ? <NoFinancialData title={t("clubs.debts", "Dívidas")} /> : (
                 <div className="flex flex-wrap w-full items-center">
                     <div className="w-full lg:w-1/2">
                         <div className="w-full">
@@ -432,20 +448,20 @@ export default function PrePageClubs() {
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.debts", "Dívidas")} {latestDebt ? ` em ${latestDebt.year}` : ""}
+                            {t("clubs.debts", "Dívidas")} {` em ${latestDebt.year}`}
                         </h2>
                         <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="text-lg font-light lg:text-xl xl:text-2xl">
-                            {latestDebt
-                                ? `O ${clubName} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`
-                                : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
+                            {`O ${clubName} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`}
                         </p>
                     </div>
                 </div>
+                )}
             </div>
 
             {/* ── Card Resultado ────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
+                {!latestNet ? <NoFinancialData title={t("clubs.result", "Resultado")} /> : (
                 <div className="flex flex-wrap w-full items-center">
                     <div className="w-full lg:w-1/2">
                         <div className="w-full">
@@ -463,16 +479,15 @@ export default function PrePageClubs() {
                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
                             <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.result", "Resultado")} {latestNet ? ` em ${latestNet.year}` : ""}
+                            {t("clubs.result", "Resultado")} {` em ${latestNet.year}`}
                         </h2>
                         <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                             className="text-lg font-light lg:text-xl xl:text-2xl">
-                            {latestNet
-                                ? `O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.value >= prevNet.value ? "acima" : "abaixo"} ${prevNet.value >= 0 ? "do lucro" : "do prejuízo"} de ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrado em ${prevNet.year}` : ""}.`
-                                : t("clubs.no_financial_data", "Dados financeiros não disponíveis.")}
+                            {`O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.value >= prevNet.value ? "acima" : "abaixo"} ${prevNet.value >= 0 ? "do lucro" : "do prejuízo"} de ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrado em ${prevNet.year}` : ""}.`}
                         </p>
                     </div>
                 </div>
+                )}
             </div>
 
 
