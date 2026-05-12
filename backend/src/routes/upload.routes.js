@@ -5,6 +5,8 @@ import {
   importMatches, importPlayers, importTeams,
   previewTeams, previewMatches, previewPlayers,
   previewLeaguesBulk, importLeaguesBulk,
+  deleteTeamStats,
+  deleteMatches,
 } from "../controllers/import.controller.js";
 import { adminGuard } from "../middlewares/auth.middleware.js";
 
@@ -37,5 +39,11 @@ router.post("/import/matches", uploadXlsx, importMatches);
 // Bulk leagues (CSV ponto-e-vírgula)
 router.post("/import/leagues/preview", uploadXlsx, previewLeaguesBulk);
 router.post("/import/leagues",         uploadXlsx, importLeaguesBulk);
+
+// Apaga stats de times de uma liga+temporada
+router.delete("/import/teams/:leagueId/seasons/:year", deleteTeamStats);
+
+// Apaga partidas de uma liga+temporada
+router.delete("/import/matches/:leagueId/seasons/:year", deleteMatches);
 
 export default router;

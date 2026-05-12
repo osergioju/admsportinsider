@@ -125,25 +125,24 @@ export async function importMatches(req, res) {
 
     const clubsRes = matchesLeagueCountry
       ? await client.query(`
-          SELECT c.id_club, c.name, c.short_name, c.slug
+          SELECT c.id_club, c.name, c.short_name, c.description, c.slug
           FROM clubs c WHERE c.id_country = $1
         `, [matchesLeagueCountry])
       : await client.query(`
-          SELECT c.id_club, c.name, c.short_name, c.slug
+          SELECT c.id_club, c.name, c.short_name, c.description, c.slug
           FROM clubs c WHERE c.active = true
         `);
 
     const aliasesResM = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
     const clubIdSetM = new Set(clubsRes.rows.map(c => c.id_club));
 
-    const clubsByName = new Map(); // slug(name) or db slug → id
-    const clubsByCommon = new Map(); // slug(common_name) → id
+    const clubsByName = new Map(); // slug, name, short_name → id
+    const clubsByDesc = new Map(); // description → id
     for (const club of clubsRes.rows) {
       if (club.slug) clubsByName.set(club.slug, club.id_club);
       clubsByName.set(slugify(club.name, { lower: true, strict: true }), club.id_club);
-      if (club.short_name) {
-        clubsByCommon.set(slugify(club.short_name, { lower: true, strict: true }), club.id_club);
-      }
+      if (club.short_name) clubsByName.set(slugify(club.short_name, { lower: true, strict: true }), club.id_club);
+      if (club.description) clubsByDesc.set(slugify(club.description, { lower: true, strict: true }), club.id_club);
     }
     // Aliases filtrados ao pool atual (respeita escopo de país)
     for (const { alias_norm, id_club } of aliasesResM.rows) {
@@ -153,7 +152,7 @@ export async function importMatches(req, res) {
     const resolveClub = (csvName) => {
       if (!csvName) return null;
       const s = slugify(csvName, { lower: true, strict: true });
-      return clubsByName.get(s) || clubsByCommon.get(s) || null;
+      return clubsByName.get(s) || clubsByDesc.get(s) || null;
     };
 
     /* ------------------------------------------------------------------
@@ -1016,12 +1015,12 @@ export async function importTeams(req, res) {
 
     const clubsRes = leagueCountry
       ? await client.query(`
-          SELECT c.id_club, c.name, c.description, c.slug
+          SELECT c.id_club, c.name, c.short_name, c.description, c.slug
           FROM clubs c
           WHERE c.id_country = $1
         `, [leagueCountry])
       : await client.query(`
-          SELECT c.id_club, c.name, c.description, c.slug
+          SELECT c.id_club, c.name, c.short_name, c.description, c.slug
           FROM clubs c
           WHERE c.active = true
         `);
@@ -1029,13 +1028,14 @@ export async function importTeams(req, res) {
     const aliasesResT = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
     const clubIdSetT = new Set(clubsRes.rows.map(c => c.id_club));
 
-    // common_name (CSV) → name/slug do DB
+    // common_name (CSV) → name/slug/short_name do DB
     // team_name   (CSV) → description do DB
-    const clubsByName = new Map();        // slug(name) ou db slug → id
+    const clubsByName = new Map();        // slug(name), db slug, slug(short_name) → id
     const clubsByDesc = new Map();        // slug(description) → id
     for (const c of clubsRes.rows) {
       if (c.slug) clubsByName.set(c.slug, c.id_club);
       clubsByName.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
+      if (c.short_name) clubsByName.set(slugify(c.short_name, { lower: true, strict: true }), c.id_club);
       if (c.description) {
         clubsByDesc.set(slugify(c.description, { lower: true, strict: true }), c.id_club);
       }
@@ -1062,9 +1062,10 @@ export async function importTeams(req, res) {
 
       // 1. common_name do CSV → name/slug do DB
       // 2. team_name do CSV  → name/slug do DB (ex: "Real Santa Cruz" bate no name)
-      // 3. team_name do CSV  → description do DB
+      // 3. common_name/team_name do CSV → description do DB
       let idClub = clubsByName.get(commonSlug)
         || clubsByName.get(teamSlug)
+        || clubsByDesc.get(commonSlug)
         || clubsByDesc.get(teamSlug)
         || null;
       let resolvedVia = idClub
@@ -1072,7 +1073,9 @@ export async function importTeams(req, res) {
             ? "common_name→name"
             : clubsByName.get(teamSlug)
               ? "team_name→name"
-              : "team_name→description")
+              : clubsByDesc.get(commonSlug)
+                ? "common_name→description"
+                : "team_name→description")
         : null;
 
       // 3. Mapeamento manual enviado pelo usuário
@@ -2056,5 +2059,63 @@ export async function importLeaguesBulk(req, res) {
     return res.status(500).json({ error: "Erro na importação em massa." });
   } finally {
     client.release();
+  }
+}
+
+export async function deleteMatches(req, res) {
+  const idLeague = Number(req.params.leagueId);
+  const seasonYear = Number(req.params.year);
+  if (!idLeague || !seasonYear) return res.status(400).json({ error: "Liga e ano são obrigatórios" });
+
+  try {
+    const seasonRes = await db.query(
+      `SELECT id_season FROM seasons WHERE year = $1`,
+      [seasonYear]
+    );
+    if (!seasonRes.rows.length) return res.status(404).json({ error: "Temporada não encontrada" });
+
+    const idSeason = seasonRes.rows[0].id_season;
+
+    const matchIds = await db.query(
+      `SELECT id_match FROM matches WHERE id_league = $1 AND id_season = $2`,
+      [idLeague, idSeason]
+    );
+    if (!matchIds.rows.length) return res.status(404).json({ error: "Nenhuma partida encontrada para essa liga/ano" });
+
+    const ids = matchIds.rows.map(r => r.id_match);
+    await db.query(`DELETE FROM match_stats WHERE id_match = ANY($1)`, [ids]);
+    const del = await db.query(`DELETE FROM matches WHERE id_match = ANY($1)`, [ids]);
+
+    return res.json({ deleted: del.rowCount });
+  } catch (err) {
+    console.error("[deleteMatches]", err);
+    return res.status(500).json({ error: "Erro ao apagar partidas" });
+  }
+}
+
+export async function deleteTeamStats(req, res) {
+  const idLeague = Number(req.params.leagueId);
+  const seasonYear = Number(req.params.year);
+  if (!idLeague || !seasonYear) return res.status(400).json({ error: "Liga e ano são obrigatórios" });
+
+  try {
+    const csRes = await db.query(
+      `SELECT cs.id_competition_season
+       FROM competition_seasons cs
+       JOIN seasons s ON s.id_season = cs.id_season
+       WHERE cs.id_league = $1 AND s.year = $2`,
+      [idLeague, seasonYear]
+    );
+    if (!csRes.rows.length) return res.status(404).json({ error: "Nenhuma temporada encontrada para essa liga/ano" });
+
+    const idCS = csRes.rows[0].id_competition_season;
+    const del = await db.query(
+      `DELETE FROM club_competition_stats WHERE id_competition_season = $1`,
+      [idCS]
+    );
+    return res.json({ deleted: del.rowCount, id_competition_season: idCS });
+  } catch (err) {
+    console.error("[deleteTeamStats]", err);
+    return res.status(500).json({ error: "Erro ao apagar stats" });
   }
 }

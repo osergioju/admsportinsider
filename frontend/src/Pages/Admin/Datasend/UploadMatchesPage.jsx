@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { api } from "../../../services/api";
 import {
   Loader2, UploadCloud, Trophy, ArrowRight, CheckCircle2,
-  AlertTriangle, ChevronRight, XCircle, EyeOff,
+  AlertTriangle, ChevronRight, XCircle, EyeOff, Trash2,
 } from "lucide-react";
 import SearchableSelect from "../../../components/uxui/SearchableSelect";
 
@@ -27,6 +27,34 @@ export default function UploadMatchesPage() {
   const [hiddenClubs, setHiddenClubs]         = useState({}); // { "csvTeamName": true } — created as hidden
   const [creatingHidden, setCreatingHidden]   = useState({}); // { "csvTeamName": true } — loading state
   const [importResult, setImportResult]       = useState(null);
+  const [seasonOverride, setSeasonOverride]   = useState("");
+
+  const [allLeaguesList, setAllLeaguesList]   = useState([]);
+  const [deleteLeague, setDeleteLeague]       = useState("");
+  const [deleteYear, setDeleteYear]           = useState("");
+  const [deleting, setDeleting]               = useState(false);
+  const [deleteResult, setDeleteResult]       = useState(null);
+
+  useEffect(() => {
+    api.get("/admin/leagues?limit=500")
+      .then(({ data }) => setAllLeaguesList(data.leagues ?? []))
+      .catch(() => {});
+  }, []);
+
+  async function handleDeleteMatches() {
+    if (!deleteLeague || !deleteYear) return alert("Selecione a liga e informe o ano.");
+    if (!window.confirm(`Apagar todas as partidas da liga selecionada na temporada ${deleteYear}?`)) return;
+    try {
+      setDeleting(true);
+      setDeleteResult(null);
+      const { data } = await api.delete(`/upload/import/matches/${deleteLeague}/seasons/${deleteYear}`);
+      setDeleteResult(data);
+    } catch (err) {
+      alert(err?.response?.data?.error || "Erro ao apagar partidas.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   function handleFileChange(e) {
     setFile(e.target.files[0] || null);
@@ -38,6 +66,7 @@ export default function UploadMatchesPage() {
     setClubMappings({});
     setHiddenClubs({});
     setCreatingHidden({});
+    setSeasonOverride("");
   }
 
   async function handleAnalyze() {
@@ -50,6 +79,7 @@ export default function UploadMatchesPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setPreview(data);
+      setSeasonOverride(String(data.detectedYear ?? ""));
       const init = {};
       for (const name of data.notFoundTeams) init[name] = "";
       setClubMappings(init);
@@ -87,7 +117,7 @@ export default function UploadMatchesPage() {
     const form = new FormData();
     form.append("file", file);
     form.append("league", league);
-    form.append("season", preview.detectedYear);
+    form.append("season", seasonOverride || preview.detectedYear);
     if (Object.keys(activeMappings).length > 0)
       form.append("clubMappings", JSON.stringify(activeMappings));
     try {
@@ -189,8 +219,19 @@ export default function UploadMatchesPage() {
             {/* Info */}
             <div className="flex gap-3">
               <div className="flex-1 p-3 bg-purple-50 rounded-2xl border border-purple-100">
-                <p className="text-[10px] uppercase font-black text-purple-400 mb-1">Ano detectado</p>
-                <p className="text-sm font-bold text-purple-700">{preview.detectedYear ?? "—"}</p>
+                <p className="text-[10px] uppercase font-black text-purple-400 mb-1">
+                  Ano da temporada
+                  {seasonOverride && String(seasonOverride) !== String(preview.detectedYear) && (
+                    <span className="ml-1 normal-case font-normal text-amber-500">(detectado: {preview.detectedYear})</span>
+                  )}
+                </p>
+                <input
+                  type="number"
+                  value={seasonOverride}
+                  onChange={e => setSeasonOverride(e.target.value)}
+                  className="w-full bg-transparent text-sm font-bold text-purple-700 focus:outline-none focus:ring-1 focus:ring-[#7F33D9] rounded px-1 -mx-1"
+                  placeholder={String(preview.detectedYear ?? "")}
+                />
               </div>
               <div className="flex-1 p-3 bg-purple-50 rounded-2xl border border-purple-100">
                 <p className="text-[10px] uppercase font-black text-purple-400 mb-1">Partidas no arquivo</p>
@@ -358,6 +399,50 @@ export default function UploadMatchesPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Apagar partidas de uma temporada */}
+      <div className="bg-white rounded-3xl border border-red-100 shadow-xl p-8 space-y-5 mt-6 animate-in fade-in">
+        <div className="flex items-center gap-2">
+          <Trash2 size={16} className="text-red-400" />
+          <p className="text-sm font-bold text-red-500 uppercase tracking-widest">Apagar Partidas</p>
+        </div>
+        <p className="text-xs text-gray-400">Remove todas as partidas (e suas estatísticas) de uma liga em uma temporada específica. Ação irreversível.</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelClass}>Liga</label>
+            <select value={deleteLeague} onChange={e => { setDeleteLeague(e.target.value); setDeleteResult(null); }} className={selectClass}>
+              <option value="">Selecione a liga</option>
+              {allLeaguesList.map(l => (
+                <option key={l.id_league} value={l.id_league}>{l.name}{l.country_name ? ` — ${l.country_name}` : ""}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Ano</label>
+            <input
+              type="number"
+              placeholder="ex: 2021"
+              value={deleteYear}
+              onChange={e => { setDeleteYear(e.target.value); setDeleteResult(null); }}
+              className={selectClass}
+            />
+          </div>
+        </div>
+        {deleteResult && (
+          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-2xl text-sm text-green-700 font-semibold">
+            <CheckCircle2 size={14} /> {deleteResult.deleted} partida(s) apagada(s).
+          </div>
+        )}
+        <div className="flex justify-center">
+          <button
+            onClick={handleDeleteMatches}
+            disabled={deleting || !deleteLeague || !deleteYear}
+            className="flex items-center justify-center gap-2 px-8 py-3.5 bg-red-500 text-white rounded-full text-sm font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {deleting ? <><Loader2 className="animate-spin w-4 h-4" /> Apagando...</> : <><Trash2 size={16} /> Apagar Partidas</>}
+          </button>
+        </div>
       </div>
     </div>
   );
