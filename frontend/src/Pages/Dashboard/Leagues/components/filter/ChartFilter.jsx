@@ -7,10 +7,10 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 const LIMITE_LIGAS = 4;
 
 const FALLBACK_CURRENCIES = [
-  { code: "BRL", symbol: "R$", name: "Real (BRL)" },
   { code: "USD", symbol: "US$", name: "Dólar (USD)" },
+  { code: "BRL", symbol: "R$", name: "Real (BRL)" },
   { code: "EUR", symbol: "€", name: "Euro (EUR)" },
-  { code: "RUB", symbol: "₽", name: "Rublo (RUB)" },
+  { code: "GBP", symbol: "£", name: "Libra (GBP)" },
 ];
 
 // ─── ChartFilter ───────────────────────────────────────────────────────────
@@ -198,16 +198,22 @@ export default function ChartFilter({
                       <li
                         key={liga.id_league}
                         onClick={() => handleAdd(liga)}
-                        style={{
-                          padding: "10px 14px",
-                          fontSize: 13,
-                          cursor: "pointer",
-                          transition: "background 0.12s",
-                        }}
+                        style={{ padding: "8px 14px", fontSize: 13, cursor: "pointer", transition: "background 0.12s", display: "flex", alignItems: "center", gap: 8 }}
                         onMouseEnter={(e) => e.currentTarget.style.background = "#f5f0fc"}
                         onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                       >
-                        {liga.name}
+                        {liga.logo_url && (
+                          <img src={liga.logo_url} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
+                        )}
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: "block", fontWeight: 500, color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{liga.name}</span>
+                          {liga.country_name && (
+                            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", marginTop: 1 }}>
+                              {liga.flag_url && <img src={liga.flag_url} alt="" style={{ width: 13, height: 10, objectFit: "cover", borderRadius: 1 }} />}
+                              {liga.country_name}
+                            </span>
+                          )}
+                        </span>
                       </li>
                     ))}
                   </ul>

@@ -423,6 +423,7 @@ export async function leaguesSearch(req, res) {
       whereClause += ` AND (
         unaccent(l.name) ILIKE unaccent($${idx})
         OR unaccent(l.description) ILIKE unaccent($${idx})
+        OR unaccent(co.name) ILIKE unaccent($${idx})
       )`;
       values.push(`%${name}%`);
       idx++;

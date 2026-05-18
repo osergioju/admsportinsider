@@ -37,6 +37,7 @@ import AdminProfileDetails from "./Pages/Admin/AdminProfileDetails";
 import UploadTeamsPage from "./Pages/Admin/Datasend/UploadTeamsPage";
 import UploadPlayersPage from "./Pages/Admin/Datasend/UploadPlayersPage";
 import UploadMatchesPage from "./Pages/Admin/Datasend/UploadMatchesPage";
+import UploadSuperPage from "./Pages/Admin/Datasend/UploadSuperPage";
 
 // ADMIN - Gestão de ligas, países e clubes
 import GestaoPaises from "./Pages/Admin/GestaoPaises";
@@ -269,6 +270,9 @@ export default function App() {
               </Route>
               <Route element={<AdminPermissionRoute permissionKey="upload-partidas" />}>
                 <Route path="/admin/upload/matches" element={<UploadMatchesPage />} />
+              </Route>
+              <Route element={<AdminPermissionRoute permissionKey="upload-times" />}>
+                <Route path="/admin/upload/super" element={<UploadSuperPage />} />
               </Route>
 
               {/* ── Notificações ── */}

@@ -1,5 +1,9 @@
 import { useTranslation } from "../../../../context/TranslationContext";
-export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagueColor }) {
+
+const CURRENCY_SYMBOLS = { USD: "US$", BRL: "R$", EUR: "€", GBP: "£" };
+
+export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagueColor, leagueMetaMap = {}, currency = "USD" }) {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
   const { t } = useTranslation();
   if (!data || ligasSelecionadas.length === 0) {
     return (
@@ -44,10 +48,11 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
   function formatValue(val) {
     if (val === undefined || val === null) return "—";
     const n = Number(val);
-    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-    return n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+    if (!n) return "—";
+    if (n >= 1_000_000_000) return `${symbol} ${(n / 1_000_000_000).toFixed(2)}B`;
+    if (n >= 1_000_000) return `${symbol} ${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${symbol} ${(n / 1_000).toFixed(1)}K`;
+    return `${symbol} ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
   }
 
   return (
@@ -75,6 +80,7 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
             const color = leagueColor?.[leagueId]?.color_one || "#7f34d9";
             const name = leagueMap?.[leagueId] || `Liga ${leagueId}`;
 
+            const meta = leagueMetaMap[leagueId] || {};
             return (
               <tr
                 key={leagueId}
@@ -82,13 +88,24 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
               >
                 <td className="py-3.5 pr-6 whitespace-nowrap">
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="font-medium text-[#0A0A0A] truncate max-w-[160px]" title={name}>
-                      {name}
-                    </span>
+                    {meta.slug ? (
+                      <img src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${meta.slug}.webp`} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
+                    ) : (
+                      <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    )}
+                    <div className="min-w-0">
+                      <span className="font-medium text-[#0A0A0A] truncate max-w-[160px] block" title={name}>
+                        {name}
+                      </span>
+                      {meta.country_name && (
+                        <span className="flex items-center gap-1 text-[11px] text-[#AFAFB2] mt-0.5">
+                          {meta.flag_url && (
+                            <img src={meta.flag_url} alt="" className="w-3.5 h-2.5 object-cover rounded-sm flex-shrink-0" />
+                          )}
+                          {meta.country_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </td>
 

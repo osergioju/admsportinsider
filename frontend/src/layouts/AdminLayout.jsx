@@ -184,6 +184,7 @@ export default function AdminLayout() {
                                                 {canAccess("upload-times") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/teams" label="Times" />}
                                                 {canAccess("upload-jogadores") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/players" label="Jogadores" />}
                                                 {canAccess("upload-partidas") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/matches" label="Partidas" />}
+                                                {canAccess("upload-times") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/super" label="Esportivo 2.0" />}
                                             </ul>
                                         )}
                                     </li>

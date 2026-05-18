@@ -5,10 +5,10 @@ import { api } from "../../../services/api";
 const LIMITE_LIGAS = 4;
 
 const CURRENCIES = [
-  { value: "BRL", label: "R$", full: "Real (BRL)" },
   { value: "USD", label: "US$", full: "Dólar (USD)" },
+  { value: "BRL", label: "R$", full: "Real (BRL)" },
   { value: "EUR", label: "€", full: "Euro (EUR)" },
-  { value: "RUB", label: "₽", full: "Rublo (RUB)" },
+  { value: "GBP", label: "£", full: "Libra (GBP)" },
 ];
 
 export default function ChartFilter({
@@ -116,11 +116,22 @@ export default function ChartFilter({
                     <li
                       key={l.id_league}
                       onClick={() => handleAdd(l)}
-                      style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", transition: "background 0.12s" }}
+                      style={{ padding: "8px 14px", fontSize: 13, cursor: "pointer", transition: "background 0.12s", display: "flex", alignItems: "center", gap: 8 }}
                       onMouseEnter={(e) => e.currentTarget.style.background = "#f5f0fc"}
                       onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                     >
-                      {l.name}
+                      {l.logo_url && (
+                        <img src={l.logo_url} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
+                      )}
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: "block", fontWeight: 500, color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</span>
+                        {l.country_name && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", marginTop: 1 }}>
+                            {l.flag_url && <img src={l.flag_url} alt="" style={{ width: 13, height: 10, objectFit: "cover", borderRadius: 1 }} />}
+                            {l.country_name}
+                          </span>
+                        )}
+                      </span>
                     </li>
                   ))}
                 </ul>

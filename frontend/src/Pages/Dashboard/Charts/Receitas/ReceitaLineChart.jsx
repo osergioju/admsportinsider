@@ -1,13 +1,25 @@
 import ReactECharts from "echarts-for-react";
 import * as echarts from "echarts";
 
+const CURRENCY_SYMBOLS = { USD: "US$", BRL: "R$", EUR: "€", GBP: "£" };
+
+function fmtCompact(v, symbol) {
+  if (!v) return "—";
+  if (v >= 1_000_000_000) return `${symbol} ${(v / 1_000_000_000).toFixed(2)}B`;
+  if (v >= 1_000_000) return `${symbol} ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `${symbol} ${(v / 1_000).toFixed(1)}K`;
+  return `${symbol} ${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+}
+
 export default function ReceitaLineChart({
   data,
   ligasSelecionadas,
   leagueMap,
   leagueColor,
   selectedYear,
+  currency = "USD",
 }) {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
   if (!data || ligasSelecionadas.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-52 text-[#AFAFB2] text-sm gap-2">
@@ -53,10 +65,11 @@ export default function ReceitaLineChart({
       textStyle: { color: "#333", fontSize: 13 },
       formatter: (params) => {
         const p = params[0];
+        const v = Number(p.value);
         return `
           <div style="font-size:12px;color:#999;margin-bottom:4px">${p.name}</div>
           <div style="font-size:15px;font-weight:500;color:#111">
-            ${Number(p.value).toLocaleString("pt-BR")}
+            ${fmtCompact(v, symbol)}
           </div>
         `;
       },
@@ -86,6 +99,7 @@ export default function ReceitaLineChart({
         color: "#bbb",
         fontSize: 11,
         formatter: (v) => {
+          if (!v) return "0";
           if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
           if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(0)}M`;
           if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
@@ -106,13 +120,7 @@ export default function ReceitaLineChart({
           position: "top",
           fontSize: 11,
           color: "#555",
-          formatter: (p) => {
-            const v = Number(p.value);
-            if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
-            if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(0)}M`;
-            if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
-            return v || "—";
-          },
+          formatter: (p) => fmtCompact(Number(p.value), symbol),
         },
       },
     ],

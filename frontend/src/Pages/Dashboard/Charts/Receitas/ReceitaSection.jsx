@@ -12,6 +12,8 @@ export default function ReceitaSection({
   setLeagueMap,
   leagueColor,
   setLeagueColor,
+  leagueMetaMap = {},
+  setLeagueMetaMap,
   selectedLeagues,
   setSelectedLeagues,
   currency,
@@ -25,6 +27,17 @@ export default function ReceitaSection({
       prev.includes(league.id_league) ? prev : [...prev, league.id_league]
     );
     setLeagueMap((prev) => ({ ...prev, [league.id_league]: league.name }));
+    if (setLeagueMetaMap) {
+      setLeagueMetaMap((prev) => ({
+        ...prev,
+        [league.id_league]: {
+          slug: league.slug,
+          logo_url: league.logo_url,
+          flag_url: league.flag_url,
+          country_name: league.country_name,
+        },
+      }));
+    }
   }
 
   function handleRemoveLeague(leagueId) {
@@ -39,6 +52,22 @@ export default function ReceitaSection({
       });
     });
     return Array.from(years).sort((a, b) => a - b);
+  }, [data]);
+
+  const scaleLabel = useMemo(() => {
+    let max = 0;
+    Object.values(data || {}).forEach((leagueData) => {
+      leagueData.forEach((item) => {
+        if (item.code === "recurring_revenue" || item.code === "revenue") {
+          const v = Number(item.converted_value ?? item.value ?? 0);
+          if (v > max) max = v;
+        }
+      });
+    });
+    if (max >= 1_000_000_000) return "em bilhões";
+    if (max >= 1_000_000)     return "em milhões";
+    if (max >= 1_000)         return "em milhares";
+    return null;
   }, [data]);
 
   useEffect(() => {
@@ -58,34 +87,9 @@ export default function ReceitaSection({
           <p className="text-xs text-[#AFAFB2] mt-0.5">
             {t("dashboard.league_revenue_subtitle", "Receita recorrente por competição")}
             {selectedYear ? <> &middot; <span className="text-[#7f34d9] font-medium">{selectedYear}</span></> : ""}
+            {scaleLabel ? <> &middot; <span className="opacity-50">{scaleLabel}</span></> : ""}
           </p>
         </div>
-
-        {/* Chips das ligas selecionadas */}
-        {selectedLeagues.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {selectedLeagues.map((leagueId) => {
-              const color = leagueColor?.[leagueId]?.color_one || "#7f34d9";
-              return (
-                <button
-                  key={leagueId}
-                  onClick={() => handleRemoveLeague(leagueId)}
-                  title="Remover liga"
-                  className="cursor-pointer flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all hover:opacity-80"
-                  style={{
-                    background: color + "18",
-                    color: color,
-                    border: `1px solid ${color}30`,
-                  }}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                  <span className="max-w-[140px] truncate">{leagueMap[leagueId] || `Liga ${leagueId}`}</span>
-                  <X className="w-3 h-3 opacity-60 flex-shrink-0" />
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* Filtro */}
@@ -108,6 +112,7 @@ export default function ReceitaSection({
         leagueMap={leagueMap}
         leagueColor={leagueColor}
         selectedYear={selectedYear}
+        currency={currency}
       />
 
       <div className="border-t border-gray-100 mt-7 mb-1" />
@@ -118,7 +123,34 @@ export default function ReceitaSection({
         ligasSelecionadas={selectedLeagues}
         leagueMap={leagueMap}
         leagueColor={leagueColor}
+        leagueMetaMap={leagueMetaMap}
+        currency={currency}
       />
+
+      {/* Badges das ligas selecionadas */}
+      {selectedLeagues.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {selectedLeagues.map((leagueId) => {
+            const meta = leagueMetaMap[leagueId] || {};
+            return (
+              <button
+                key={leagueId}
+                onClick={() => handleRemoveLeague(leagueId)}
+                className="cursor-pointer hover:bg-[#7f34d9] hover:text-white transition-all bg-[#EDE6F6] flex items-center gap-2 px-3 py-1 rounded-lg text-sm text-[#8D6C6C]"
+              >
+                {meta.slug && (
+                  <img src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${meta.slug}.webp`} alt="" className="w-4 h-4 object-contain flex-shrink-0" />
+                )}
+                {meta.flag_url && (
+                  <img src={meta.flag_url} alt="" className="w-4 h-3 object-cover rounded-sm flex-shrink-0" />
+                )}
+                {leagueMap[leagueId] || `Liga ${leagueId}`}
+                <X className="w-4" />
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
