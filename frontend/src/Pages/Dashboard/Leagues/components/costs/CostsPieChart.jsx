@@ -145,7 +145,7 @@ export default function CostsPieChart({
         top: "34%",
         style: {
           text: Number(total).toLocaleString("pt-BR").split(",")[0],
-          fontSize: 62,
+          fontSize: window.innerWidth < 768 ? 32 : 62,
           fontSpacing: 130,
           fill: "#0A0A0A",
           fontWeight: 300,
@@ -158,7 +158,7 @@ export default function CostsPieChart({
         top: "50%",
         style: {
           text: "Milhões",
-          fontSize: 18,
+          fontSize: window.innerWidth < 768 ? 13 : 18,
           fontFamily: "Effra Trial",
           fontWeight: 300,
           fill: "#0A0A0A"
