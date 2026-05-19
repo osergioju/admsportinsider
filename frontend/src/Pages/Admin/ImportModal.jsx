@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api } from "../../services/api";
 import {
   FileSpreadsheet, UploadCloud, X, Loader2,
-  CheckCircle2, AlertTriangle, HelpCircle, Plus, Globe
+  CheckCircle2, AlertTriangle, HelpCircle, Plus, Globe, ShieldOff, Shield
 } from "lucide-react";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
 
@@ -175,12 +175,13 @@ function CountrySelect({ value, onChange, dbCountries }) {
 // ImportModal principal
 // ---------------------------------------------------------------------------
 export default function ImportModal({ countries: initialCountries, onClose, onSuccess }) {
-  const [step, setStep] = useState("upload"); // upload | selectSheet | options | mapping
+  const [step, setStep] = useState("upload"); // upload | selectSheet | options | mapping | confirmDisable
   const [importFile, setImportFile] = useState(null);
   const [sheets, setSheets] = useState([]);
   const [selectedSheet, setSelectedSheet] = useState("");
   const [previewData, setPreviewData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [clubsToDisable, setClubsToDisable] = useState([]);
 
   // Opções de importação
   const [options, setOptions] = useState({
@@ -188,6 +189,8 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
     updateColors:       false,
     updateGender:       false,
     updateTranslations: false,
+    updateSlug:         false,
+    disableMissing:     false,
   });
   const toggleOption = (key) => setOptions(p => ({ ...p, [key]: !p[key] }));
 
@@ -204,8 +207,9 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
     setSheets([]);
     setSelectedSheet("");
     setPreviewData([]);
+    setClubsToDisable([]);
     setRegisterModal(null);
-    setOptions({ insertNew: true, updateColors: false, updateGender: false, updateTranslations: false });
+    setOptions({ insertNew: true, updateColors: false, updateGender: false, updateTranslations: false, updateSlug: false, disableMissing: false });
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -262,7 +266,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
     }
   };
 
-  // Step 3: importação final
+  // Step 4: importação final
   const handleFinalImport = async () => {
     const hasMissing = previewData.some((p) => !p.selected);
     if (hasMissing) return alert("Existem países não mapeados");
@@ -278,12 +282,36 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
       fd.append("country_map", JSON.stringify(country_map));
       fd.append("options", JSON.stringify(options));
       const res = await api.post("/admin/import-clubs-xlsx", fd);
-      alert(`Importação concluída! ${res.data.inserted} inseridos, ${res.data.skipped} ignorados.`);
-      reset();
-      onSuccess();
-      onClose();
+
+      const toDisable = res.data.clubs_to_disable ?? [];
+      if (options.disableMissing && toDisable.length > 0) {
+        setClubsToDisable(toDisable);
+        setStep("confirmDisable");
+        onSuccess();
+      } else {
+        alert(`Importação concluída! ${res.data.inserted} inseridos, ${res.data.skipped} ignorados.`);
+        reset();
+        onSuccess();
+        onClose();
+      }
     } catch {
       alert("Erro na importação");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 5: confirmar desativação em massa
+  const handleConfirmDisable = async () => {
+    setLoading(true);
+    try {
+      const ids = clubsToDisable.map(c => c.id_club);
+      await api.post("/admin/clubs/bulk-disable", { ids });
+      alert(`${ids.length} clube${ids.length !== 1 ? "s" : ""} desativado${ids.length !== 1 ? "s" : ""}.`);
+      reset();
+      onClose();
+    } catch {
+      alert("Erro ao desativar clubes");
     } finally {
       setLoading(false);
     }
@@ -416,8 +444,9 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
                 {[
                   { key: "insertNew",          label: "Inserir clubes novos",           desc: "Adiciona clubes que ainda não existem no sistema" },
                   { key: "updateColors",        label: "Atualizar cores",                desc: "Sobrescreve cor primária, secundária e terciária dos clubes existentes" },
-                  { key: "updateGender",        label: "Atualizar gênero",              desc: "Define o campo gênero (Masculino / Feminino) nos clubes existentes" },
+                  { key: "updateGender",        label: "Atualizar gênero",               desc: "Define o campo gênero (Masculino / Feminino) nos clubes existentes" },
                   { key: "updateTranslations",  label: "Atualizar traduções (PT/EN/ES)", desc: "Insere ou atualiza os nomes traduzidos dos clubes existentes" },
+                  { key: "updateSlug",          label: "Atualizar slug",                 desc: "Atualiza o slug (e crest_url) dos clubes existentes buscando por nome + país" },
                 ].map(({ key, label, desc }) => (
                   <label
                     key={key}
@@ -441,13 +470,39 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
                 ))}
               </div>
 
-              {!options.insertNew && !options.updateColors && !options.updateGender && !options.updateTranslations && (
+              {/* Opção destrutiva — separada visualmente */}
+              <div className="pt-1 border-t border-gray-100">
+                <label
+                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                    options.disableMissing
+                      ? "border-red-400 bg-red-50"
+                      : "border-gray-200 bg-white hover:bg-red-50/40"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 accent-red-500"
+                    checked={options.disableMissing}
+                    onChange={() => toggleOption("disableMissing")}
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-red-700 flex items-center gap-1.5">
+                      <ShieldOff size={13} /> Desabilitar clubes ausentes do CSV
+                    </p>
+                    <p className="text-xs text-red-500 mt-0.5">
+                      Após importar, mostra uma prévia dos clubes ativos nos mesmos países que não estão no arquivo. Você confirma antes de qualquer desativação.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {!options.insertNew && !options.updateColors && !options.updateGender && !options.updateTranslations && !options.updateSlug && !options.disableMissing && (
                 <p className="text-xs text-red-500 font-medium">Selecione pelo menos uma opção.</p>
               )}
 
               <button
                 onClick={handleOptionsContinue}
-                disabled={loading || (!options.insertNew && !options.updateColors && !options.updateGender && !options.updateTranslations)}
+                disabled={loading || (!options.insertNew && !options.updateColors && !options.updateGender && !options.updateTranslations && !options.updateSlug && !options.disableMissing)}
                 className={`w-full ${btnPrimary}`}
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : "Continuar"}
@@ -543,6 +598,58 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
                     ? `${missingCount} país${missingCount > 1 ? "es" : ""} pendente${missingCount > 1 ? "s" : ""}`
                     : "Importar"}
               </button>
+            </div>
+          )}
+
+          {/* ===== STEP 5: Confirmar desativação ===== */}
+          {step === "confirmDisable" && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-red-700">Atenção: ação irreversível</p>
+                  <p className="text-xs text-red-600 mt-0.5">
+                    Os <strong>{clubsToDisable.length} clube{clubsToDisable.length !== 1 ? "s" : ""}</strong> abaixo estão ativos no sistema mas não constam no CSV. Confirme para desativá-los.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 max-h-[360px] overflow-y-auto pr-1 -mr-1">
+                {clubsToDisable.map((club) => (
+                  <div key={club.id_club} className="flex items-center gap-2.5 px-3 py-2 bg-white border border-gray-100 rounded-xl">
+                    <div className="w-7 h-7 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                      {club.crest_url
+                        ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${club.crest_url}.webp`} className="w-full h-full object-contain" alt="" />
+                        : <Shield size={13} className="text-gray-300" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{club.name}</p>
+                      {club.country_name && (
+                        <p className="text-[11px] text-gray-400">{club.country_name}</p>
+                      )}
+                    </div>
+                    <ShieldOff size={13} className="text-red-300 shrink-0" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => { reset(); onClose(); }}
+                  className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar (não desabilitar)
+                </button>
+                <button
+                  onClick={handleConfirmDisable}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 text-white rounded-full text-sm font-bold hover:bg-red-600 transition-all disabled:opacity-70"
+                >
+                  {loading
+                    ? <Loader2 size={16} className="animate-spin" />
+                    : <><ShieldOff size={15} /> Desabilitar {clubsToDisable.length}</>}
+                </button>
+              </div>
             </div>
           )}
         </div>

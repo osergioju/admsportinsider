@@ -314,11 +314,14 @@ export async function importLeagueCountry(req, res) {
     const selectedYears = req.body.years
       ? JSON.parse(req.body.years)
       : [];
+    // onlyClubs=true → pula leitura/importação da aba de liga, importa só club_financials dos anos
+    const onlyClubs = req.body.onlyClubs === "true" || req.body.onlyClubs === true;
 
-    if (!sheetName || !leagueId) {
-      return res.status(400).json({
-        message: "sheetName e leagueId são obrigatórios"
-      });
+    if (!leagueId) {
+      return res.status(400).json({ message: "leagueId é obrigatório" });
+    }
+    if (!onlyClubs && !sheetName) {
+      return res.status(400).json({ message: "sheetName é obrigatório quando onlyClubs não está ativo" });
     }
 
     // selectedYears vazio = importar apenas dados da liga (sem abas de temporada)
@@ -334,37 +337,37 @@ export async function importLeagueCountry(req, res) {
       cellDates: true
     });
 
-    console.log(`[import] sheetName="${sheetName}" leagueId=${leagueId} selectedYears=${JSON.stringify(selectedYears)}`);
+    console.log(`[import] sheetName="${sheetName}" leagueId=${leagueId} selectedYears=${JSON.stringify(selectedYears)} onlyClubs=${onlyClubs}`);
     console.log(`[import] abas no arquivo: ${workbook.SheetNames.join(", ")}`);
 
-    const leagueSheet = workbook.Sheets[sheetName];
-    if (!leagueSheet) {
+    // Quando onlyClubs=true, pulamos toda a leitura da aba de liga
+    const leagueSheet = onlyClubs ? null : workbook.Sheets[sheetName];
+    if (!onlyClubs && !leagueSheet) {
       return res.status(400).json({
         message: `Sheet '${sheetName}' não encontrada`
       });
     }
 
-    const leagueRows = xlsx.utils.sheet_to_json(leagueSheet, {
-      header: 1,
-      defval: null
-    });
+    const leagueRows = leagueSheet
+      ? xlsx.utils.sheet_to_json(leagueSheet, { header: 1, defval: null })
+      : [];
 
-    const headerRow = leagueRows[0];
+    const headerRow = leagueRows[0] ?? [];
 
-    // Detecta offset de colunas: Suíça tem code em col 0, Colômbia tem null extra em col 0
+    // Detecta offset de colunas (só relevante quando há aba de liga)
     const headerRow1 = leagueRows[1] || [];
     const colOffset = (headerRow1[0] == null) ? 1 : 0;
-    console.log(`[import] aba liga "${sheetName}": colOffset=${colOffset}`);
+    if (!onlyClubs) console.log(`[import] aba liga "${sheetName}": colOffset=${colOffset}`);
 
     // Lê linhas de metadados: label na col (3+offset), valores a partir de (4+offset)
     const exercicioRow = leagueRows.find(r => r[3 + colOffset] === "Exercício");
     const moedaRow     = leagueRows.find(r => r[3 + colOffset] === "Moeda");
 
-    const leagueYears = (exercicioRow ?? headerRow)
-      .slice(4 + colOffset)
-      .filter(v => typeof v === "number" && Number.isInteger(v));
+    const leagueYears = leagueRows.length
+      ? ((exercicioRow ?? headerRow) ?? []).slice(4 + colOffset).filter(v => typeof v === "number" && Number.isInteger(v))
+      : [];
 
-    console.log(`[import] aba liga "${sheetName}": ${leagueRows.length} linhas, anos detectados: ${JSON.stringify(leagueYears)}`);
+    if (!onlyClubs) console.log(`[import] aba liga "${sheetName}": ${leagueRows.length} linhas, anos detectados: ${JSON.stringify(leagueYears)}`);
 
     const currencyCode = moedaRow
       ? (moedaRow.slice(4 + colOffset).find(v => v && typeof v === "string") ?? null)

@@ -33,6 +33,7 @@ export default function SendLeaguePage() {
   // Part 2: club year-sheet imports
   const [clubYears, setClubYears] = useState([]);
   const [skipClubs, setSkipClubs] = useState(false);
+  const [clubOnlyLeagueId, setClubOnlyLeagueId] = useState("");
 
   // Club preview
   const [clubPreview, setClubPreview]   = useState(null);
@@ -87,7 +88,7 @@ export default function SendLeaguePage() {
     if (isFiscalYear(name)) return Number(name.split("/")[1]);
     return null;
   }
-  const leagueSheets = analysis?.sheets.filter(s => canonicalYear(s.sheetName) === null) ?? [];
+  const leagueSheets = analysis?.sheets ?? [];
   const yearSheets   = analysis?.sheets
     .map(s => canonicalYear(s.sheetName))
     .filter(y => y !== null)
@@ -95,7 +96,8 @@ export default function SendLeaguePage() {
     .sort((a, b) => a - b) ?? [];
 
   const validMappings  = leagueMappings.filter(m => m.sheetName && m.leagueId);
-  const canAdvance     = validMappings.length > 0;
+  const onlyClubsMode  = validMappings.length === 0;
+  const canAdvance     = validMappings.length > 0 || (!skipClubs && clubYears.length > 0 && !!clubOnlyLeagueId);
   const unmappedCount  = clubPreview?.notFoundSlugs.filter(s => !clubMappings[s]).length ?? 0;
 
   // ── handlers ──────────────────────────────────────────────────────────────
@@ -156,15 +158,23 @@ export default function SendLeaguePage() {
         await api.post("/upload/xlsx/import-country", form, { headers: { "Content-Type": "multipart/form-data" } });
       }
 
-      // Part 2: import club data from year-named sheets (use first league as reference)
-      if (!skipClubs && clubYears.length > 0 && validMappings.length > 0) {
-        const ref = validMappings[0];
+      // Part 2: import club data from year-named sheets
+      if (!skipClubs && clubYears.length > 0) {
         const form = new FormData();
         form.append("file", file);
-        form.append("sheetName", ref.sheetName);
-        form.append("leagueId", ref.leagueId);
         form.append("years", JSON.stringify(clubYears));
         if (Object.keys(activeMappings).length) form.append("clubMappings", JSON.stringify(activeMappings));
+
+        if (validMappings.length > 0) {
+          const ref = validMappings[0];
+          form.append("sheetName", ref.sheetName);
+          form.append("leagueId", ref.leagueId);
+        } else {
+          // onlyClubs mode — no league sheet, use reference league
+          form.append("onlyClubs", "true");
+          form.append("leagueId", clubOnlyLeagueId);
+        }
+
         await api.post("/upload/xlsx/import-country", form, { headers: { "Content-Type": "multipart/form-data" } });
       }
 
@@ -200,7 +210,7 @@ export default function SendLeaguePage() {
   function reset() {
     setFile(null); setStep("upload"); setAnalysis(null);
     setLeagueMappings([{ id: mkId(), sheetName: "", leagueId: "" }]);
-    setClubYears([]); setSkipClubs(false);
+    setClubYears([]); setSkipClubs(false); setClubOnlyLeagueId("");
     setClubPreview(null); setClubMappings({});
     setDoneInfo({ leagues: [], clubYears: [] });
   }
@@ -287,7 +297,7 @@ export default function SendLeaguePage() {
               <div>
                 <p className="text-sm font-bold text-gray-900">Arquivo carregado</p>
                 <p className="text-xs text-gray-500">
-                  {file?.name} — {leagueSheets.length} aba(s) de competição · {yearSheets.length} aba(s) de temporada
+                  {file?.name} — {leagueSheets.length} aba(s) disponível(is) · {yearSheets.length} aba(s) com ano
                 </p>
               </div>
             </div>
@@ -398,29 +408,56 @@ export default function SendLeaguePage() {
 
                 {!skipClubs && (
                   yearSheets.length > 0 ? (
-                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                      <p className="text-xs text-gray-400 mb-3">
-                        Abas de temporada encontradas — selecione as que deseja importar:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {yearSheets.map(year => {
-                          const sel = clubYears.includes(year);
-                          return (
-                            <label
-                              key={year}
-                              className={`flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer border transition-all select-none ${
-                                sel
-                                  ? "bg-[#7F33D9] border-[#7F33D9] text-white shadow-md shadow-purple-500/20"
-                                  : "bg-white border-gray-200 text-gray-600 hover:border-purple-300 hover:bg-purple-50"
-                              }`}
-                            >
-                              <input type="checkbox" className="hidden" checked={sel} onChange={() => toggleClubYear(year)} />
-                              <span className="font-medium text-sm">{year}</span>
-                              {sel && <CheckCircle2 size={13} />}
-                            </label>
-                          );
-                        })}
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                        <p className="text-xs text-gray-400 mb-3">
+                          Abas de temporada encontradas — selecione as que deseja importar:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {yearSheets.map(year => {
+                            const sel = clubYears.includes(year);
+                            return (
+                              <label
+                                key={year}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer border transition-all select-none ${
+                                  sel
+                                    ? "bg-[#7F33D9] border-[#7F33D9] text-white shadow-md shadow-purple-500/20"
+                                    : "bg-white border-gray-200 text-gray-600 hover:border-purple-300 hover:bg-purple-50"
+                                }`}
+                              >
+                                <input type="checkbox" className="hidden" checked={sel} onChange={() => toggleClubYear(year)} />
+                                <span className="font-medium text-sm">{year}</span>
+                                {sel && <CheckCircle2 size={13} />}
+                              </label>
+                            );
+                          })}
+                        </div>
                       </div>
+
+                      {/* Reference league picker — only shown when Parte 1 has no mappings */}
+                      {onlyClubsMode && clubYears.length > 0 && (
+                        <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
+                          <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1">
+                            Competição de referência
+                          </p>
+                          <p className="text-xs text-blue-400 mb-3">
+                            Nenhuma competição configurada na Parte 1. Selecione a qual competição estes dados de clubes pertencem.
+                          </p>
+                          {loadingDbLeagues ? (
+                            <div className="w-full px-4 py-2.5 bg-white border border-blue-200 rounded-xl text-sm text-blue-400 animate-pulse">
+                              Carregando competições...
+                            </div>
+                          ) : (
+                            <SearchableSelect
+                              grouped={leaguesGrouped}
+                              value={clubOnlyLeagueId}
+                              onChange={setClubOnlyLeagueId}
+                              placeholder="Buscar competição..."
+                              imageClass="w-6 h-6 object-contain rounded flex-shrink-0"
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-sm text-gray-400">

@@ -23,7 +23,7 @@ function DisciplinaryTable({ rows, t }) {
         <thead>
           <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b border-gray-100">
             <th className="py-3 px-3 text-left font-semibold w-10">#</th>
-            <th className="py-3 px-3 text-left font-semibold">Clubex</th>
+            <th className="py-3 px-3 text-left font-semibold">Clube</th>
             <th className="py-3 px-3 text-center font-semibold">J</th>
             <th className="py-3 px-3 text-center font-semibold">Faltas</th>
             <th className="py-3 px-3 text-center font-semibold">
@@ -45,9 +45,20 @@ function DisciplinaryTable({ rows, t }) {
             <tr key={row.id ?? i} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
               <td className="px-3 py-3 text-center font-semibold text-gray-400">{i + 1}</td>
               <td className="px-3 py-3">
-                <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700">
-                  {row.slug ?
-                    <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" /> : <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />}
+                <Link
+                  to={clubUrl(row.id, row.slug)}
+                  className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700"
+                >
+                  {row.crest ? (
+                    <img
+                      src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${row.crest}.webp`}
+                      alt=""
+                      className="w-5 h-5 object-contain shrink-0"
+                    />
+                  ) : (
+                    <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />
+                  )}
+
                   {row.name}
                 </Link>
               </td>
@@ -289,8 +300,8 @@ function ConfrontoCard({ confronto }) {
       const aggScore = agg[team.id] ?? null;
       return (
         <div className={`flex items-center gap-1.5 px-3 py-2.5 ${isLoser ? "opacity-100" : ""}`}>
-          {team.slug
-            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + team.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
+          {team.crest
+            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + team.crest + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
             : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
           <Link to={clubUrl(team.id, team.slug)}
             className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
@@ -331,8 +342,8 @@ function ConfrontoCard({ confronto }) {
 
   const SingleRow = ({ team, score, isWinner, isLoser }) => (
     <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-35" : ""}`}>
-      {team.slug
-        ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + team.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
+      {team.crest
+        ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + team.crest + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
         : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
       <Link to={clubUrl(team.id, team.slug)}
         className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
@@ -344,8 +355,9 @@ function ConfrontoCard({ confronto }) {
           ${isWinner ? "text-gray-900" : "text-gray-400"}`}>
           {score}
         </span>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 
   return (
@@ -634,7 +646,7 @@ function GroupPhaseView({ phase, t, adminGroups }) {
     ? "grid-cols-1 sm:grid-cols-2"
     : groups.length <= 4
       ? "grid-cols-1 sm:grid-cols-2"
-      : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4";
+      : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-2";
 
   return (
     <div className={`grid gap-4 w-full ${cols}`}>
@@ -669,8 +681,8 @@ function GroupPhaseView({ phase, t, adminGroups }) {
                       </td>
                       <td className="px-2 py-2 max-w-[120px]">
                         <Link to={clubUrl(row.id, row.slug)} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
-                          {row.slug
-                            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
+                          {row.crest
+                            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + row.crest + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
                             : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
                           <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>
                             {row.name}
@@ -1004,6 +1016,7 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
 const phaseColumns = (n) => {
   if (n === 1) return "grid-cols-1";
   if (n === 2) return "grid-cols-2";
+  if (n === 3) return "grid-cols-3";
   return "grid-cols-2 sm:grid-cols-4";
 };
 
@@ -1107,8 +1120,8 @@ function BracketView({ matches, structure_json, season, t, fasesOverride, groupC
           </div>
           <div className="w-full bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 shadow-sm">
             <div className="w-1 self-stretch rounded-full bg-gray-900 shrink-0" />
-            {champion.slug && (
-              <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + champion.slug + `.webp`} alt="" className="w-10 h-10 object-contain shrink-0" />
+            {champion.crest && (
+              <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + champion.crest + `.webp`} alt="" className="w-10 h-10 object-contain shrink-0" />
             )}
             <div className="min-w-0">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Campeão</p>

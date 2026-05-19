@@ -813,6 +813,23 @@ export async function disableClub(req, res) {
 
 
 
+export async function bulkDisableClubs(req, res) {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "ids deve ser um array não-vazio" });
+  }
+  try {
+    const { rowCount } = await db.query(
+      `UPDATE clubs SET active = FALSE WHERE id_club = ANY($1::int[]) AND active = TRUE`,
+      [ids]
+    );
+    return res.json({ message: "Clubes desativados", count: rowCount });
+  } catch (err) {
+    console.error("[bulkDisableClubs]", err);
+    return res.status(500).json({ error: "Erro ao desativar clubes" });
+  }
+}
+
 // ─── CONTINENTES ─────────────────────────────────────────────────────────────
 
 export async function getAllContinents(req, res) {
@@ -1903,7 +1920,7 @@ export async function uploadClubXlsx(req, res) {
     return res.status(400).json({ error: "country_map não é JSON válido" });
   }
 
-  let options = { insertNew: true, updateColors: false, updateGender: false, updateTranslations: false };
+  let options = { insertNew: true, updateColors: false, updateGender: false, updateTranslations: false, updateSlug: false, disableMissing: false };
   try {
     if (req.body.options) options = { ...options, ...JSON.parse(req.body.options) };
   } catch { /* usa defaults */ }
@@ -2101,6 +2118,26 @@ export async function uploadClubXlsx(req, res) {
       }
     }
 
+    // ── Atualizar slug por nome+país ───────────────────────────────────────
+    if (options.updateSlug && tuplesToProcess.length > 0) {
+      const names      = tuplesToProcess.map(t => t[1]);   // namePt
+      const countryIds = tuplesToProcess.map(t => t[0]);   // id_country
+      const newSlugs   = tuplesToProcess.map(t => t[2]);   // slug
+      await client.query(
+        `UPDATE clubs SET slug = data.new_slug, crest_url = data.new_slug
+         FROM (
+           SELECT
+             unnest($1::text[])  AS name,
+             unnest($2::int[])   AS id_country,
+             unnest($3::text[])  AS new_slug
+         ) AS data
+         WHERE clubs.name = data.name
+           AND clubs.id_country = data.id_country
+           AND clubs.slug IS DISTINCT FROM data.new_slug`,
+        [names, countryIds, newSlugs]
+      );
+    }
+
     await client.query("COMMIT");
 
     // ── Log dos ignorados no console ────────────────────────────────
@@ -2114,12 +2151,31 @@ export async function uploadClubXlsx(req, res) {
       console.log(`\n🔁 ${dupes} linha(s) ignorada(s) por duplicata (ON CONFLICT).`);
     }
 
+    // ── Clubs ausentes do CSV (para confirmação de desativação) ─────
+    let clubs_to_disable = [];
+    if (options.disableMissing && dedupedTuples.length > 0) {
+      const csvCountryIds = [...new Set(dedupedTuples.map(t => Number(t[0])))];
+      const csvSlugs      = dedupedTuples.map(t => t[2]);
+      const { rows: missing } = await db.query(
+        `SELECT c.id_club, c.name, c.crest_url, co.name AS country_name
+         FROM clubs c
+         JOIN countries co ON co.id_country = c.id_country
+         WHERE c.id_country = ANY($1::int[])
+           AND c.active = TRUE
+           AND c.slug NOT IN (SELECT unnest($2::text[]))
+         ORDER BY co.name, c.name`,
+        [csvCountryIds, csvSlugs]
+      );
+      clubs_to_disable = missing;
+    }
+
     return res.json({
       message: "Importação em massa concluída 🚀",
       total_processadas: rows.length,
       inserted: totalInserted,
       duplicatas_ignoradas: validTuples.length - totalInserted,
       skipped: errors.length,
+      clubs_to_disable,
       ...(errors.length > 0 && {
         sample_errors: errors.slice(0, 50),
         total_errors: errors.length,
