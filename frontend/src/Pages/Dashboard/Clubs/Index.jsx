@@ -156,7 +156,7 @@ function ClubCard({ club, isFavorited, toggleFavorite }) {
           >
             {club.crest_url ? (
               <img
-                src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${club.crest_url}.webp`}
+                src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${club.crest_url}.webp`}
                 alt={club.name}
                 className="w-12 h-12 object-contain"
               />

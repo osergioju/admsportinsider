@@ -205,21 +205,21 @@ export default function PrePageClubs() {
 
     const navCards = [
         {
-            title: t("clubs.finances", "Finanças"),
-            desc: t("clubs.finances_desc", "Receitas, custos, folha salarial, dívidas e resultado financeiro líquido."),
+            title: t("clubs.finances", "Finançasx"),
+            desc: t("clubs.finances_desc", "Receitas, custos, EBITDA, endividamento e mais."),
             route: `/dashboard/clubs/finance/${id}`,
             Icon: TrendingUp,
         },
         {
             title: t("clubs.sports_results", "Resultados esportivos"),
-            desc: t("clubs.sports_desc", "Desempenho nas competições, histórico de partidas e estatísticas por temporada."),
+            desc: t("clubs.sports_desc", "Histórico de partidas e resultados por temporada."),
 
             route: `/dashboard/clubs/competitions/${id}`,
             Icon: Trophy,
         },
         {
-            title: t("clubs.main_squad", "Elenco principal"),
-            desc: t("clubs.squad_desc", "Jogadores do elenco, posições, idades e perfis individuais detalhados."),
+            title: t("clubs.main_squad", "Elenco"),
+            desc: t("clubs.squad_desc", "Características de atletas e estratégia no mercado."),
             route: `/dashboard/clubs/club-players/${id}`,
             Icon: Users,
         },
@@ -310,21 +310,27 @@ export default function PrePageClubs() {
                                                 >
                                                     {theClub.hospitality.description || t("club.hospitality", "Hospitalidade e camarotes")}
                                                 </a>
-                                                <svg class="ml-6 w-[150px]" viewBox="0 0 125 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.3575 5.02226C12.4873 5.12219 13.7711 5.04724 14.9265 5.39698C17.4684 6.19637 18.213 8.61953 16.7238 10.7929C15.2346 12.9662 11.8197 13.9655 9.3548 12.9163C7.89127 12.2917 7.14666 11.1676 7.19802 9.54382C7.19802 9.26903 7.19802 8.99424 7.19802 8.56956C6.83855 8.84436 6.60747 9.09417 6.29936 9.21907C6.0426 9.34398 5.63178 9.41892 5.42637 9.29401C5.22096 9.16911 5.04123 8.74443 5.06691 8.49462C5.19529 7.49538 5.73448 6.72097 6.58179 6.17139C7.17234 5.79667 7.71154 6.09644 7.78857 6.77093C7.81424 6.97078 7.78857 7.17063 7.78857 7.42044C8.6102 6.77093 9.38048 6.14641 10.3305 5.39698C9.86832 5.47192 9.58589 5.59682 9.30345 5.57184C9.02102 5.54686 8.68723 5.42196 8.48182 5.22211C8.37911 5.12219 8.50749 4.69751 8.66155 4.54762C9.56021 3.67329 10.6386 3.17367 11.9224 3.19865C12.513 3.19865 12.7184 3.67329 12.3332 4.12295C11.9994 4.52264 11.5886 4.82241 11.3575 5.02226Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M19.0869 10.8179C20.7302 10.8179 21.5518 12.0419 20.8072 13.5158C20.0369 15.0147 18.7531 15.964 16.9558 16.0139C15.2098 16.0639 14.6193 14.9647 15.1585 13.4159C15.6463 11.992 17.5207 10.8179 19.0869 10.8179Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.7297 9.89353C19.2405 9.89353 17.9054 8.56954 17.931 7.07068C17.931 5.97151 18.727 5.17212 19.7797 5.17212C21.2432 5.17212 22.7838 6.67098 22.7581 8.0949C22.7324 9.21904 21.9622 9.91851 20.7297 9.89353Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.9211 17.3128C10.2279 17.1379 9.50895 16.988 8.86705 16.7382C8.22515 16.4884 7.7373 15.9638 7.7373 15.2393C7.7373 14.5149 8.25083 14.0902 8.9184 13.8904C10.2022 13.4657 11.486 13.4907 12.6928 14.0902C13.3604 14.415 13.8996 14.9396 13.7455 15.7889C13.5914 16.6383 12.8468 16.9131 12.1279 17.1379C11.7684 17.2378 11.3833 17.2128 10.9982 17.2378C10.9468 17.2378 10.9468 17.2628 10.9211 17.3128Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M24.2727 11.6172C25.7619 11.6172 26.4038 12.6414 25.7876 13.7905C25.2227 14.8148 23.8362 15.4393 22.8349 15.1145C21.8849 14.7898 21.5254 13.9654 21.9876 13.0911C22.4754 12.1418 23.3227 11.6921 24.2727 11.6172Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M13.5148 20.4356C12.9242 20.2857 12.462 20.2108 12.0512 20.0359C11.1782 19.6112 11.1269 18.6869 11.9229 18.1373C12.8985 17.4878 13.9769 17.4629 15.0297 17.8625C15.954 18.2123 16.0567 19.1865 15.2351 19.7361C14.7472 20.0859 14.054 20.2108 13.5148 20.4356Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M16.3901 5.27209C15.6969 5.04726 14.9266 4.92235 14.2333 4.5976C13.4631 4.22288 13.5144 3.57338 14.259 3.17368C15.209 2.6241 17.5199 2.749 18.3672 3.37353C19.0091 3.84817 18.9834 4.47269 18.2645 4.79745C17.7253 5.02228 17.1091 5.09722 16.3901 5.27209Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M7.55801 12.7413C7.60936 13.4158 7.3526 13.9654 6.7107 14.2152C6.04313 14.49 5.47825 14.1403 5.06744 13.6656C4.55392 13.0411 4.19445 12.3167 4.45121 11.4923C4.785 10.3931 5.88907 10.0684 6.68503 10.8927C7.14719 11.3924 7.40395 12.0668 7.73774 12.6414C7.68639 12.6664 7.60936 12.6914 7.55801 12.7413Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M21.0124 2.39917C21.6029 2.67396 22.1421 2.84883 22.5273 3.1486C22.7584 3.34845 22.9381 3.82309 22.8611 4.09788C22.7584 4.34769 22.2962 4.64746 22.0138 4.64746C21.5002 4.62248 20.9354 4.47259 20.5245 4.17282C20.2421 3.97297 19.934 3.42339 20.011 3.17358C20.0881 2.84883 20.6016 2.67396 21.0124 2.39917Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.88892 16.0638C5.63216 16.4135 5.47811 16.8881 5.19567 16.9631C4.91323 17.038 4.42539 16.8132 4.21998 16.5384C3.96322 16.2137 3.75781 15.739 3.75781 15.3393C3.75781 15.0146 4.04025 14.5649 4.32269 14.415C4.52809 14.3151 5.06729 14.5399 5.24702 14.7648C5.52946 15.0895 5.65784 15.5392 5.88892 16.0638Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M13.2321 2.74893C12.9496 2.57407 12.6672 2.3992 12.3848 2.22433C12.6672 2.02448 12.924 1.72471 13.2321 1.62479C13.6686 1.52486 14.1307 1.52486 14.5672 1.59981C15.0037 1.67475 15.0807 2.02448 14.6699 2.24931C14.2848 2.47414 13.8226 2.57407 13.2321 2.74893Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.34845 8.91925C4.32277 9.71864 3.7579 10.518 3.34708 10.4681C3.19303 10.4431 2.93627 10.1433 2.93627 9.96845C2.91059 9.3689 3.57817 8.49457 3.98898 8.54453C4.14304 8.59449 4.2971 8.86928 4.34845 8.91925Z" fill="white" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6.58196 5.62165C6.4279 5.24693 6.3252 5.07206 6.3252 4.8972C6.3252 4.77229 6.47925 4.59743 6.63331 4.54746C7.09548 4.32263 7.58332 4.17275 8.07117 3.9729C8.09684 4.12279 8.19955 4.34762 8.14819 4.3726C7.68603 4.74731 7.19818 5.12203 6.58196 5.62165Z" fill="white" />
-                                                    <path d="M41.7731 11.013C41.7731 13.5831 39.9368 15.4951 37.2952 15.4951C34.4925 15.4951 32.5273 13.4891 32.5273 11.013C32.5273 8.59956 34.428 6.56226 37.2952 6.56226C38.9382 6.56226 40.2268 7.22046 40.9999 8.34882L39.518 9.5712C38.9382 8.85031 38.1972 8.4115 37.263 8.4115C35.7167 8.4115 34.5569 9.50852 34.5569 11.107C34.5569 12.6115 35.6522 13.7398 37.2308 13.7398C38.4227 13.7398 39.1959 13.1757 39.518 12.2354H37.1663V10.5428H41.7409V11.013H41.7731ZM47.0886 15.5264C44.5114 15.5264 42.4174 13.6145 42.4174 11.0757C42.4174 8.50553 44.5114 6.56226 47.0886 6.56226C49.7303 6.56226 51.7598 8.47419 51.7598 11.013C51.7598 13.5831 49.7303 15.5264 47.0886 15.5264ZM47.0886 13.7085C48.5705 13.7085 49.7303 12.5488 49.7303 11.0443C49.7303 9.53986 48.5705 8.38016 47.0886 8.38016C45.6067 8.38016 44.447 9.53986 44.447 11.0443C44.447 12.5488 45.5745 13.7085 47.0886 13.7085ZM52.6296 15.3383V6.75031H54.627V13.5518H58.7183V15.3383H52.6296ZM59.6526 15.3383V6.75031H63.2607C65.9667 6.75031 67.7708 8.63091 67.7708 11.013C67.7708 13.4264 65.9023 15.3383 63.164 15.3383H59.6526ZM63.164 8.53688H61.6499V13.5518H63.2285C64.6459 13.5518 65.7412 12.4861 65.7412 11.013C65.7412 9.60255 64.6459 8.53688 63.164 8.53688ZM68.6406 15.3383V6.75031H75.0836V8.50553H70.638V10.1354H74.7615V11.8279H70.638V13.5831H75.1159V15.3383H68.6406ZM81.4623 15.3383L77.9186 9.88463V15.3383H75.9857V6.75031H78.1763L81.72 12.204V6.75031H83.6529V15.3383H81.4623ZM96.2813 11.013C96.2813 13.5831 94.445 15.4951 91.8034 15.4951C89.0006 15.4951 87.0355 13.4891 87.0355 11.013C87.0355 8.56822 88.9362 6.56226 91.8034 6.56226C93.4463 6.56226 94.7349 7.22046 95.5403 8.31747L94.0584 9.53986C93.4785 8.81897 92.7376 8.38016 91.8034 8.38016C90.257 8.38016 89.0973 9.47717 89.0973 11.0757C89.0973 12.5801 90.1926 13.7085 91.7711 13.7085C92.9631 13.7085 93.7363 13.1443 94.0584 12.204H91.7067V10.5115H96.2813V11.013ZM101.597 15.5264C99.0196 15.5264 96.9256 13.6145 96.9256 11.0757C96.9256 8.50553 99.0196 6.5936 101.597 6.5936C104.238 6.5936 106.268 8.50553 106.268 11.0443C106.268 13.5831 104.238 15.5264 101.597 15.5264ZM101.597 13.7085C103.079 13.7085 104.238 12.5488 104.238 11.0443C104.238 9.53986 103.079 8.38016 101.597 8.38016C100.115 8.38016 98.9551 9.53986 98.9551 11.0443C98.9551 12.5488 100.115 13.7085 101.597 13.7085ZM112.131 12.1413L110.971 8.78762L109.812 12.1413H112.131ZM113.226 15.3383L112.711 13.8652H109.232L108.716 15.3383H106.655L109.812 6.75031H112.26L115.353 15.3383H113.226ZM115.997 15.3383V6.75031H117.994V13.5518H122.086V15.3383H115.997Z" fill="white" />
+                                                <svg class="ml-6 w-[150px] invert" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1000 244.92">
+                                                    <g>
+                                                        <path class="st0" d="M72.8,151.71c-7.46,0-14.14-1.78-20.05-5.34-5.91-3.56-10.58-8.46-14.03-14.71-3.44-6.25-5.16-13.28-5.16-21.08s1.69-14.77,5.08-20.91c3.38-6.14,8.06-11.01,14.03-14.63,5.96-3.61,12.62-5.42,19.96-5.42,6.42,0,12.13,1.26,17.12,3.79,4.99,2.53,8.92,6.05,11.79,10.58,2.87,4.53,4.47,9.84,4.82,15.92v21.68c-.34,5.97-1.98,11.22-4.9,15.75-2.93,4.53-6.86,8.06-11.79,10.58-4.93,2.53-10.56,3.79-16.87,3.79ZM72.8,189.06c-8.49,0-15.95-1.55-22.37-4.65-6.43-3.1-11.65-7.46-15.66-13.08l10.15-10.15c3.33,4.24,7.28,7.49,11.88,9.72,4.59,2.24,10.04,3.36,16.35,3.36,8.26,0,14.86-2.21,19.79-6.63,4.93-4.42,7.4-10.36,7.4-17.81v-20.31l2.75-18.41-2.75-18.24v-21.51h15.49v78.48c0,7.8-1.81,14.66-5.42,20.57-3.61,5.91-8.66,10.5-15.14,13.77-6.48,3.27-13.97,4.91-22.46,4.91ZM75.72,137.08c5.16,0,9.64-1.09,13.42-3.27,3.79-2.18,6.74-5.25,8.86-9.21,2.12-3.96,3.18-8.58,3.18-13.85s-1.06-9.9-3.18-13.85c-2.12-3.96-5.11-7.06-8.95-9.29-3.85-2.24-8.29-3.36-13.34-3.36s-9.7,1.12-13.6,3.36c-3.9,2.24-6.97,5.34-9.21,9.29s-3.36,8.52-3.36,13.68,1.12,9.75,3.36,13.77c2.24,4.02,5.34,7.14,9.29,9.38,3.96,2.24,8.46,3.36,13.51,3.36Z" />
+                                                        <path class="st0" d="M168.14,154.81c-7.92,0-15.09-1.89-21.51-5.68-6.43-3.79-11.53-8.92-15.32-15.4-3.79-6.48-5.68-13.74-5.68-21.77s1.89-15.06,5.68-21.43,8.89-11.44,15.32-15.23c6.42-3.79,13.6-5.68,21.51-5.68s15.29,1.87,21.77,5.59c6.48,3.73,11.62,8.81,15.4,15.23,3.79,6.43,5.68,13.6,5.68,21.51s-1.89,15.29-5.68,21.77c-3.79,6.48-8.92,11.62-15.4,15.4-6.48,3.79-13.74,5.68-21.77,5.68ZM168.14,139.83c5.28,0,9.92-1.2,13.94-3.61,4.02-2.41,7.17-5.71,9.47-9.9,2.29-4.19,3.44-8.98,3.44-14.37s-1.18-9.98-3.53-14.11c-2.35-4.13-5.51-7.37-9.47-9.72-3.96-2.35-8.58-3.53-13.85-3.53s-9.58,1.18-13.6,3.53c-4.02,2.35-7.17,5.59-9.47,9.72-2.3,4.13-3.44,8.84-3.44,14.11s1.15,10.18,3.44,14.37c2.29,4.19,5.45,7.49,9.47,9.9,4.01,2.41,8.55,3.61,13.6,3.61Z" />
+                                                        <path class="st0" d="M220.8,153.09V50.05h15.49v103.03h-15.49Z" />
+                                                        <path class="st0" d="M286.03,154.81c-7.46,0-14.17-1.86-20.14-5.59-5.97-3.73-10.7-8.8-14.2-15.23-3.5-6.42-5.25-13.65-5.25-21.68s1.75-15.26,5.25-21.68c3.5-6.42,8.23-11.53,14.2-15.32,5.96-3.79,12.68-5.68,20.14-5.68,6.2,0,11.76,1.29,16.69,3.87,4.93,2.58,8.92,6.14,11.96,10.67,3.04,4.53,4.73,9.78,5.08,15.75v24.61c-.34,5.85-2.01,11.07-4.99,15.66-2.99,4.59-6.94,8.17-11.87,10.76-4.93,2.58-10.56,3.87-16.87,3.87ZM288.61,140.18c5.16,0,9.69-1.2,13.6-3.61,3.9-2.41,6.94-5.71,9.12-9.9,2.18-4.19,3.27-8.98,3.27-14.37s-1.09-10.35-3.27-14.54c-2.18-4.19-5.22-7.49-9.12-9.9-3.9-2.41-8.43-3.61-13.6-3.61s-9.7,1.18-13.6,3.53c-3.9,2.35-6.97,5.62-9.21,9.81-2.24,4.19-3.36,9.04-3.36,14.54s1.12,10.39,3.36,14.63c2.24,4.25,5.34,7.55,9.29,9.9,3.96,2.35,8.46,3.53,13.51,3.53ZM329.22,153.09h-15.66v-18.47l2.93-16.74-2.93-16.59v-51.23h15.66v103.03Z" />
+                                                        <path class="st0" d="M382.23,154.81c-8.26,0-15.63-1.86-22.11-5.59-6.48-3.73-11.62-8.8-15.4-15.23-3.79-6.42-5.68-13.71-5.68-21.86s1.86-15.26,5.59-21.68c3.73-6.42,8.78-11.5,15.15-15.23,6.37-3.73,13.51-5.59,21.43-5.59,7.46,0,14.11,1.72,19.96,5.16,5.85,3.44,10.41,8.2,13.68,14.28,3.27,6.08,4.9,13.02,4.9,20.82,0,1.15-.06,2.38-.17,3.7-.12,1.32-.34,2.78-.69,4.39h-69.01v-12.91h60.75l-5.68,4.99c0-5.51-.98-10.18-2.93-14.03-1.95-3.84-4.71-6.82-8.26-8.95-3.56-2.12-7.86-3.18-12.91-3.18s-9.93,1.15-13.94,3.44c-4.02,2.3-7.12,5.51-9.29,9.64-2.18,4.13-3.27,9.01-3.27,14.63s1.15,10.76,3.44,15.06c2.29,4.3,5.56,7.63,9.81,9.98,4.24,2.35,9.12,3.53,14.63,3.53,4.59,0,8.8-.8,12.65-2.41,3.84-1.61,7.14-4.01,9.9-7.23l9.98,10.15c-4.02,4.59-8.84,8.09-14.46,10.5-5.62,2.41-11.65,3.61-18.07,3.61Z" />
+                                                        <path class="st0" d="M429.21,153.09v-81.75h15.49v81.75h-15.49ZM486.86,153.09v-47.67c0-6.2-1.92-11.3-5.77-15.32-3.85-4.01-8.86-6.02-15.06-6.02-4.13,0-7.8.92-11.02,2.75-3.21,1.84-5.74,4.36-7.57,7.57-1.84,3.21-2.75,6.88-2.75,11.01l-6.37-3.61c0-6.2,1.38-11.7,4.13-16.52,2.75-4.82,6.6-8.63,11.53-11.45,4.93-2.81,10.5-4.22,16.69-4.22s11.67,1.55,16.44,4.65c4.76,3.1,8.52,7.14,11.27,12.13s4.13,10.3,4.13,15.92v50.77h-15.66Z" />
+                                                    </g>
+                                                    <g>
+                                                        <path class="st0" d="M711.62,154.79c-7.5,0-14.21-1.79-20.15-5.36-5.94-3.57-10.64-8.5-14.09-14.78-3.46-6.28-5.19-13.34-5.19-21.18s1.7-14.84,5.1-21.01c3.4-6.17,8.1-11.07,14.09-14.7,5.99-3.63,12.68-5.45,20.06-5.45,6.45,0,12.19,1.27,17.21,3.8,5.01,2.54,8.96,6.08,11.85,10.64,2.88,4.55,4.5,9.89,4.84,16v21.79c-.35,6-1.99,11.27-4.93,15.82-2.94,4.55-6.89,8.1-11.85,10.63-4.96,2.54-10.61,3.8-16.95,3.8ZM711.62,192.32c-8.53,0-16.03-1.56-22.48-4.67-6.46-3.11-11.7-7.49-15.74-13.14l10.2-10.2c3.34,4.26,7.32,7.52,11.93,9.77,4.61,2.25,10.09,3.37,16.43,3.37,8.3,0,14.93-2.22,19.89-6.66,4.96-4.44,7.44-10.4,7.44-17.9v-20.41l2.77-18.5-2.77-18.33v-21.62h15.56v78.85c0,7.84-1.82,14.73-5.45,20.66-3.63,5.94-8.71,10.55-15.22,13.83-6.51,3.29-14.04,4.93-22.57,4.93ZM714.56,140.1c5.19,0,9.68-1.09,13.49-3.29,3.8-2.19,6.77-5.27,8.91-9.25,2.13-3.98,3.2-8.62,3.2-13.92s-1.07-9.94-3.2-13.92c-2.13-3.98-5.13-7.09-8.99-9.34-3.86-2.25-8.33-3.37-13.4-3.37s-9.74,1.12-13.66,3.37c-3.92,2.25-7,5.36-9.25,9.34-2.25,3.98-3.37,8.56-3.37,13.75s1.12,9.8,3.37,13.83c2.25,4.04,5.36,7.18,9.34,9.42s8.5,3.37,13.57,3.37Z" />
+                                                        <path class="st0" d="M807.42,157.91c-7.95,0-15.16-1.9-21.62-5.71-6.46-3.8-11.59-8.96-15.39-15.48-3.8-6.51-5.71-13.8-5.71-21.87s1.9-15.13,5.71-21.53c3.8-6.4,8.93-11.5,15.39-15.3,6.46-3.8,13.66-5.71,21.62-5.71s15.36,1.88,21.88,5.62c6.51,3.75,11.67,8.85,15.48,15.3,3.8,6.46,5.71,13.66,5.71,21.62s-1.9,15.36-5.71,21.87c-3.8,6.52-8.97,11.67-15.48,15.48-6.51,3.8-13.81,5.71-21.88,5.71ZM807.42,142.86c5.3,0,9.97-1.21,14.01-3.63,4.03-2.42,7.2-5.73,9.51-9.94,2.3-4.21,3.46-9.02,3.46-14.44s-1.18-10.03-3.54-14.18c-2.36-4.15-5.53-7.41-9.51-9.77-3.98-2.36-8.62-3.55-13.92-3.55s-9.63,1.18-13.66,3.55c-4.04,2.36-7.21,5.62-9.51,9.77-2.31,4.15-3.46,8.88-3.46,14.18s1.15,10.23,3.46,14.44c2.3,4.21,5.47,7.52,9.51,9.94,4.03,2.42,8.59,3.63,13.66,3.63Z" />
+                                                        <path class="st0" d="M895.26,157.91c-7.61,0-14.44-1.87-20.49-5.62-6.05-3.74-10.84-8.85-14.35-15.3-3.52-6.46-5.27-13.72-5.27-21.79s1.76-15.33,5.27-21.79c3.52-6.45,8.3-11.59,14.35-15.39,6.05-3.8,12.88-5.71,20.49-5.71,6.23,0,11.79,1.3,16.69,3.89,4.9,2.59,8.85,6.17,11.85,10.72,3,4.55,4.67,9.83,5.02,15.82v24.73c-.35,5.88-1.99,11.13-4.93,15.74-2.94,4.61-6.89,8.21-11.85,10.81-4.96,2.59-10.55,3.89-16.77,3.89ZM897.86,143.21c7.72,0,13.95-2.62,18.68-7.87,4.73-5.24,7.09-11.96,7.09-20.15,0-5.53-1.1-10.43-3.29-14.7-2.19-4.26-5.22-7.58-9.08-9.94-3.86-2.36-8.39-3.55-13.57-3.55s-9.77,1.21-13.75,3.63-7.09,5.74-9.34,9.94c-2.25,4.21-3.37,9.02-3.37,14.44s1.12,10.41,3.37,14.61c2.25,4.21,5.39,7.52,9.42,9.94,4.03,2.42,8.65,3.63,13.83,3.63ZM922.58,156.18v-22.14l2.94-20.06-2.94-19.89v-20.06h15.74v82.14h-15.74Z" />
+                                                        <path class="st0" d="M953.54,156.18V52.65h15.56v103.53h-15.56Z" />
+                                                    </g>
+                                                    <g>
+                                                        <g id="lChx2i.tif">
+                                                            <path class="st0" d="M592.46,173.59l-7.45,16.96c-2.71,5.79-5.59,11.42-8.57,17.02-.91,1.71,1.47,3.24,2.64,1.69,21.36-28.22,45.86-65.99,56.78-94.38,1.73-4.49,2.76-8.84,3.36-13.61.8-6.36.16-12.63-1.63-18.85-2.56-8.87-7.63-16.53-14.4-22.77-9.88-9.1-23.51-14.72-36.47-17.88-10.06-2.46-20.12-3.45-30.49-4.29-.04,0-.09,0-.13,0h-33.68s-.08,0-.12,0c-6.19.49-12.26.92-18.36,1.52-1.86.18-1.89,2.9-.03,3.12,5.95.72,11.87,1.55,17.83,2.62,6.9,1.28,13.45,2.76,20.22,4.55,27.39,7.75,53.09,21.32,60.74,51,4.1,15.92,2.42,32.09-1.7,47.92-2.27,8.7-4.87,17.04-8.54,25.38Z" />
+                                                        </g>
+                                                        <path class="st0" d="M597.22,103.17c-4.5-17.48-15.27-29.36-28.95-37.77-2.03-1.25-4.65-.89-6.3.84-7.13,7.5-11.51,17.63-11.51,28.8,0,23.09,18.72,41.81,41.81,41.81.67,0,1.34-.02,2.01-.05,2.49-.12,4.5-2.04,4.76-4.51,1.02-9.71.66-19.46-1.83-29.12Z" />
+                                                    </g>
                                                 </svg>
                                             </div>
                                         )}
@@ -401,92 +407,92 @@ export default function PrePageClubs() {
             {/* ── Card Receita ─────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
                 {!latestRev ? <NoFinancialData title={t("clubs.revenues", "Receitas")} /> : (
-                <div className="flex flex-wrap w-full items-center">
-                    <div className="w-full lg:w-1/2">
-                        <div className="w-full">
-                            <RevenueLineChart
-                                data={revenueChartData}
-                                clubesSelecionados={[]}
-                                clubMap={clubMapLocal}
-                                mainClubId={chartClubId}
-                                clubColorMap={clubColorMapLocal}
-                            />
+                    <div className="flex flex-wrap w-full items-center">
+                        <div className="w-full lg:w-1/2">
+                            <div className="w-full">
+                                <RevenueLineChart
+                                    data={revenueChartData}
+                                    clubesSelecionados={[]}
+                                    clubMap={clubMapLocal}
+                                    mainClubId={chartClubId}
+                                    clubColorMap={clubColorMapLocal}
+                                />
+                            </div>
+                        </div>
+                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                            <h2
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
+                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                                {t("clubs.revenues", "Receitas")} {` em ${latestRev.year}`}
+                            </h2>
+                            <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="text-lg font-light lg:text-xl xl:text-2xl">
+                                {`O ${clubName} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`}
+                            </p>
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                        <h2
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
-                            <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.revenues", "Receitas")} {` em ${latestRev.year}`}
-                        </h2>
-                        <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl xl:text-2xl">
-                            {`O ${clubName} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`}
-                        </p>
-                    </div>
-                </div>
                 )}
             </div>
 
             {/* ── Card Dívidas ──────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
                 {!latestDebt ? <NoFinancialData title={t("clubs.debts", "Dívidas")} /> : (
-                <div className="flex flex-wrap w-full items-center">
-                    <div className="w-full lg:w-1/2">
-                        <div className="w-full">
-                            <DebtsBreakdownBarChart
-                                data={debtsChartData}
-                                clubesSelecionados={[]}
-                                clubMap={clubMapLocal}
-                                mainClubId={chartClubId}
-                            />
+                    <div className="flex flex-wrap w-full items-center">
+                        <div className="w-full lg:w-1/2">
+                            <div className="w-full">
+                                <DebtsBreakdownBarChart
+                                    data={debtsChartData}
+                                    clubesSelecionados={[]}
+                                    clubMap={clubMapLocal}
+                                    mainClubId={chartClubId}
+                                />
+                            </div>
+                        </div>
+                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                            <h2
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
+                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                                {t("clubs.debts", "Dívidas")} {` em ${latestDebt.year}`}
+                            </h2>
+                            <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="text-lg font-light lg:text-xl xl:text-2xl">
+                                {`O ${clubName} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`}
+                            </p>
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                        <h2
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
-                            <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.debts", "Dívidas")} {` em ${latestDebt.year}`}
-                        </h2>
-                        <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl xl:text-2xl">
-                            {`O ${clubName} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`}
-                        </p>
-                    </div>
-                </div>
                 )}
             </div>
 
             {/* ── Card Resultado ────────────────────────────────── */}
             <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
                 {!latestNet ? <NoFinancialData title={t("clubs.result", "Resultado")} /> : (
-                <div className="flex flex-wrap w-full items-center">
-                    <div className="w-full lg:w-1/2">
-                        <div className="w-full">
-                            <NetResultLineChart
-                                data={netChartData}
-                                clubesSelecionados={[]}
-                                clubMap={clubMapLocal}
-                                mainClubId={chartClubId}
-                                clubColorMap={clubColorMapLocal}
-                            />
+                    <div className="flex flex-wrap w-full items-center">
+                        <div className="w-full lg:w-1/2">
+                            <div className="w-full">
+                                <NetResultLineChart
+                                    data={netChartData}
+                                    clubesSelecionados={[]}
+                                    clubMap={clubMapLocal}
+                                    mainClubId={chartClubId}
+                                    clubColorMap={clubColorMapLocal}
+                                />
+                            </div>
+                        </div>
+                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                            <h2
+                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
+                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                                {t("clubs.result", "Resultado")} {` em ${latestNet.year}`}
+                            </h2>
+                            <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                                className="text-lg font-light lg:text-xl xl:text-2xl">
+                                {`O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.value >= prevNet.value ? "acima" : "abaixo"} ${prevNet.value >= 0 ? "do lucro" : "do prejuízo"} de ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrado em ${prevNet.year}` : ""}.`}
+                            </p>
                         </div>
                     </div>
-                    <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                        <h2
-                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
-                            <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                            {t("clubs.result", "Resultado")} {` em ${latestNet.year}`}
-                        </h2>
-                        <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                            className="text-lg font-light lg:text-xl xl:text-2xl">
-                            {`O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.value >= prevNet.value ? "acima" : "abaixo"} ${prevNet.value >= 0 ? "do lucro" : "do prejuízo"} de ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrado em ${prevNet.year}` : ""}.`}
-                        </p>
-                    </div>
-                </div>
                 )}
             </div>
 

@@ -155,7 +155,7 @@ function StandingsTable({ rows, t, seasonConfig, legendContLabel }) {
                     className={`flex items-center gap-2.5 hover:text-violet-700 transition-colors ${pos === 1 ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}
                   >
                     {row.slug
-                      ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
+                      ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + row.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
                       : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />
                     }
                     <span className="truncate">{row.name}</span>

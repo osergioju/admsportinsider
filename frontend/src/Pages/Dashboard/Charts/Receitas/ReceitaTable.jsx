@@ -49,10 +49,11 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
     if (val === undefined || val === null) return "—";
     const n = Number(val);
     if (!n) return "—";
-    if (n >= 1_000_000_000) return `${symbol} ${(n / 1_000_000_000).toFixed(2)}B`;
-    if (n >= 1_000_000) return `${symbol} ${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${symbol} ${(n / 1_000).toFixed(1)}K`;
-    return `${symbol} ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+    if (n >= 1_000) {
+      const bi = (n / 1_000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      return `${symbol} ${bi} bi`;
+    }
+    return `${symbol} ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mi`;
   }
 
   return (

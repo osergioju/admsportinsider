@@ -5,10 +5,11 @@ const CURRENCY_SYMBOLS = { USD: "US$", BRL: "R$", EUR: "€", GBP: "£" };
 
 function fmtCompact(v, symbol) {
   if (!v) return "—";
-  if (v >= 1_000_000_000) return `${symbol} ${(v / 1_000_000_000).toFixed(2)}B`;
-  if (v >= 1_000_000) return `${symbol} ${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `${symbol} ${(v / 1_000).toFixed(1)}K`;
-  return `${symbol} ${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+  if (v >= 1_000) {
+    const bi = (v / 1_000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return `${symbol} ${bi} bi`;
+  }
+  return `${symbol} ${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mi`;
 }
 
 export default function ReceitaLineChart({
@@ -100,10 +101,8 @@ export default function ReceitaLineChart({
         fontSize: 11,
         formatter: (v) => {
           if (!v) return "0";
-          if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
-          if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(0)}M`;
-          if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
-          return v;
+          if (v >= 1_000) return `${(v / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} bi`;
+          return `${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mi`;
         },
       },
       splitLine: { lineStyle: { color: "#f3f3f3", type: "dashed" } },

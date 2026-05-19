@@ -99,7 +99,7 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
 }
 
 // ── ClubMappingRow ────────────────────────────────────────────────────────────
-function ClubMappingRow({ csvName, clubMappings, hiddenClubs, creatingHidden, clubsGrouped, onMap, onCreateHidden, onUndoHidden }) {
+function ClubMappingRow({ csvName, countryName, clubMappings, hiddenClubs, creatingHidden, clubsGrouped, onMap, onCreateHidden, onUndoHidden }) {
   return (
     <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
       <div className="flex items-center gap-1.5">
@@ -107,6 +107,7 @@ function ClubMappingRow({ csvName, clubMappings, hiddenClubs, creatingHidden, cl
           : clubMappings[csvName] ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
           : <XCircle size={13} className="text-amber-400 shrink-0" />}
         <span className="text-xs font-mono font-semibold text-gray-700 truncate">{csvName}</span>
+        {countryName && <span className="text-[10px] text-gray-400 shrink-0">{countryName}</span>}
         {hiddenClubs[csvName] && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 text-[10px] font-bold shrink-0">oculto</span>}
         <ArrowRight size={11} className="text-gray-300 shrink-0 ml-auto" />
       </div>
@@ -551,6 +552,27 @@ export default function UploadSuperPage() {
   const playersClubsGrouped = useMemo(() => buildGrouped(playersPreviews[0]?.allClubs, null, false), [playersPreviews]);
   const matchesClubsGrouped = useMemo(() => buildGrouped(matchesPreviews[0]?.allClubs, null, true),  [matchesPreviews]);
 
+  // Mapa csvName → country_name para clubes não encontrados e conflitos duplicados
+  const teamsCountryMap = useMemo(() => {
+    const map = {};
+    for (const p of teamsPreviews) {
+      for (const item of (p.notFoundTeamsData ?? []))
+        if (item.country_name && !map[item.name]) map[item.name] = item.country_name;
+      for (const conflict of (p.duplicateConflicts ?? []))
+        for (const item of (conflict.csv_names_data ?? []))
+          if (item.country_name && !map[item.name]) map[item.name] = item.country_name;
+    }
+    return map;
+  }, [teamsPreviews]);
+
+  const matchesCountryMap = useMemo(() => {
+    const map = {};
+    for (const p of matchesPreviews)
+      for (const item of (p.notFoundTeamsData ?? []))
+        if (item.country_name && !map[item.name]) map[item.name] = item.country_name;
+    return map;
+  }, [matchesPreviews]);
+
   // ── Lookup helpers ────────────────────────────────────────────────────────────
   // Dada uma lista de allClubs, retorna nome a partir do id ou id a partir do nome
   function clubNameById(id) {
@@ -603,27 +625,30 @@ export default function UploadSuperPage() {
     });
   }, [playersPreviews]);
 
-  const countriesForSelect = useMemo(() =>
-    allCountries.map((c) => ({ value: c.name, label: c.name, image: c.flag_url })),
-    [allCountries]
-  );
+  const countriesForSelect = useMemo(() => [
+    { groupLabel: "Tipo", options: [{ value: "__international__", label: "Internacional / Continentais" }] },
+    { groupLabel: "Países", options: allCountries.map((c) => ({ value: c.name, label: c.name, image: c.flag_url })) },
+  ], [allCountries]);
 
-  const filteredLeagues = useMemo(() =>
-    selectedCountry ? allLeagues.filter((l) => l.country_name === selectedCountry) : allLeagues,
-    [allLeagues, selectedCountry]
-  );
+  const filteredLeagues = useMemo(() => {
+    if (selectedCountry === "__international__") return allLeagues.filter((l) => !l.country_name);
+    return selectedCountry ? allLeagues.filter((l) => l.country_name === selectedCountry) : allLeagues;
+  }, [allLeagues, selectedCountry]);
 
   const matchesCountries = useMemo(() => {
     const all = matchesPreviews.flatMap((p) => p.leagues ?? []);
     return [...new Map(all.map((l) => [l.id_country, l.country_name])).entries()]
+      .filter(([id, name]) => id != null && name != null)
       .map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [matchesPreviews]);
 
   const matchesLeaguesList = useMemo(() => {
     const all = matchesPreviews.flatMap((p) => p.leagues ?? []);
     const dedup = [...new Map(all.map((l) => [l.id_league, l])).values()];
-    return matchesCountry ? dedup.filter((l) => String(l.id_country) === matchesCountry) : dedup;
-  }, [matchesPreviews, matchesCountry]);
+    if (selectedCountry === "__international__") return dedup.filter((l) => !l.country_name);
+    if (matchesCountry) return dedup.filter((l) => String(l.id_country) === matchesCountry);
+    return dedup;
+  }, [matchesPreviews, matchesCountry, selectedCountry]);
 
   // total counts for summary cards
   const teamsTotalFound    = teamsPreviews.reduce((s, p) => s + (p.foundTeams?.length ?? 0), 0);
@@ -686,7 +711,7 @@ export default function UploadSuperPage() {
             <div>
               <label className={labelClass}>País <span className="normal-case font-normal text-gray-400">(opcional)</span></label>
               <SearchableSelect
-                grouped={[{ groupLabel: "Países", options: countriesForSelect }]}
+                grouped={countriesForSelect}
                 value={selectedCountry}
                 onChange={(val) => { setSelectedCountry(val); setSelectedLeague(""); }}
                 placeholder="Filtrar por país..."
@@ -698,7 +723,9 @@ export default function UploadSuperPage() {
                 <option value="">Selecione a liga</option>
                 {filteredLeagues.map((l) => (
                   <option key={l.id_league} value={String(l.id_league)}>
-                    {l.name}{l.country_name && !selectedCountry ? ` — ${l.country_name}` : ""}
+                    {l.name}
+                    {l.country_name && selectedCountry !== l.country_name ? ` — ${l.country_name}` : ""}
+                    {!l.country_name && l.continent_name ? ` — ${l.continent_name}` : ""}
                   </option>
                 ))}
               </select>
@@ -839,15 +866,25 @@ export default function UploadSuperPage() {
           {/* Liga */}
           <div>
             <label className={labelClass}>Competição</label>
-            <select value={teamsLeague} onChange={(e) => setTeamsLeague(e.target.value)} className={selectClass}>
-              <option value="">Selecione a liga</option>
-              {(teamsShowAllLeagues ? teamsPreviews[0].allLeagues ?? teamsPreviews[0].leagues : teamsPreviews[0].leagues).map((l) => (
-                <option key={l.id_league} value={String(l.id_league)}>{l.name}{l.country_name ? ` (${l.country_name})` : ""}</option>
-              ))}
-            </select>
-            {!teamsShowAllLeagues && (
-              <button onClick={() => setTeamsShowAllLeagues(true)} className="text-[11px] text-gray-400 hover:text-[#7F33D9] ml-1 mt-1 underline underline-offset-2">Ver todas as ligas</button>
-            )}
+            {(() => {
+              const pool = teamsShowAllLeagues ? (teamsPreviews[0].allLeagues ?? teamsPreviews[0].leagues) : teamsPreviews[0].leagues;
+              const filtered = selectedCountry === "__international__" ? pool.filter((l) => !l.country_name) : pool;
+              return (
+                <>
+                  <select value={teamsLeague} onChange={(e) => setTeamsLeague(e.target.value)} className={selectClass}>
+                    <option value="">Selecione a liga</option>
+                    {filtered.map((l) => (
+                      <option key={l.id_league} value={String(l.id_league)}>
+                        {l.name}{l.country_name ? ` (${l.country_name})` : l.continent_name ? ` (${l.continent_name})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {!teamsShowAllLeagues && selectedCountry !== "__international__" && (
+                    <button onClick={() => setTeamsShowAllLeagues(true)} className="text-[11px] text-gray-400 hover:text-[#7F33D9] ml-1 mt-1 underline underline-offset-2">Ver todas as ligas</button>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Stats cards (aggregated) */}
@@ -876,6 +913,7 @@ export default function UploadSuperPage() {
                   <ClubMappingRow
                     key={csvName}
                     csvName={csvName}
+                    countryName={teamsCountryMap[csvName] ?? null}
                     clubMappings={teamsClubMappings}
                     hiddenClubs={teamsHiddenClubs}
                     creatingHidden={teamsCreatingHidden}
@@ -928,8 +966,13 @@ export default function UploadSuperPage() {
             </label>
             <select value={playersLeagueId} onChange={(e) => setPlayersLeagueId(e.target.value)} className={selectClass}>
               <option value="">Selecione a liga</option>
-              {playersPreviews[0].allLeagues.map((l) => (
-                <option key={l.id_league} value={String(l.id_league)}>{l.name}{l.country_name ? ` (${l.country_name})` : ""}</option>
+              {(selectedCountry === "__international__"
+                ? playersPreviews[0].allLeagues.filter((l) => !l.country_name)
+                : playersPreviews[0].allLeagues
+              ).map((l) => (
+                <option key={l.id_league} value={String(l.id_league)}>
+                  {l.name}{l.country_name ? ` (${l.country_name})` : l.continent_name ? ` (${l.continent_name})` : ""}
+                </option>
               ))}
             </select>
           </div>
@@ -1066,7 +1109,9 @@ export default function UploadSuperPage() {
               <select value={matchesLeague} onChange={(e) => setMatchesLeague(e.target.value)} className={selectClass}>
                 <option value="">Selecione a liga</option>
                 {matchesLeaguesList.map((l) => (
-                  <option key={l.id_league} value={String(l.id_league)}>{l.name}{l.country_name ? ` — ${l.country_name}` : ""}</option>
+                  <option key={l.id_league} value={String(l.id_league)}>
+                    {l.name}{l.country_name ? ` — ${l.country_name}` : l.continent_name ? ` — ${l.continent_name}` : ""}
+                  </option>
                 ))}
               </select>
             )}
@@ -1092,6 +1137,7 @@ export default function UploadSuperPage() {
                   <ClubMappingRow
                     key={csvName}
                     csvName={csvName}
+                    countryName={matchesCountryMap[csvName] ?? null}
                     clubMappings={matchesClubMappings}
                     hiddenClubs={matchesHiddenClubs}
                     creatingHidden={matchesCreatingHidden}
