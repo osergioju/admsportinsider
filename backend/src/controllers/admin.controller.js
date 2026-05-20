@@ -2595,23 +2595,75 @@ export async function createCustomMatch(req, res) {
   }
 }
 
+// GET /admin/leagues/:id/matches?season=:year
+export async function getLeagueMatches(req, res) {
+  const idLeague = Number(req.params.id);
+  const { season } = req.query;
+
+  try {
+    const seasonsRes = await db.query(`
+      SELECT DISTINCT s.year
+      FROM matches m
+      JOIN seasons s ON s.id_season = m.id_season
+      WHERE m.id_league = $1
+      ORDER BY s.year DESC
+    `, [idLeague]);
+
+    const seasons = seasonsRes.rows.map(r => r.year);
+
+    if (!season) return res.json({ seasons, matches: [] });
+
+    const seasonRes = await db.query(`SELECT id_season FROM seasons WHERE year = $1`, [Number(season)]);
+    if (!seasonRes.rows.length) return res.json({ seasons, matches: [] });
+    const idSeason = seasonRes.rows[0].id_season;
+
+    const matchesRes = await db.query(`
+      SELECT
+        m.id_match,
+        m.match_date,
+        m.game_week,
+        m.home_goals,
+        m.away_goals,
+        m.status,
+        m.winner_club_id,
+        m.home_club_id,
+        hc.name AS home_name,
+        hc.crest_url AS home_crest,
+        m.away_club_id,
+        ac.name AS away_name,
+        ac.crest_url AS away_crest
+      FROM matches m
+      JOIN clubs hc ON hc.id_club = m.home_club_id
+      JOIN clubs ac ON ac.id_club = m.away_club_id
+      WHERE m.id_league = $1 AND m.id_season = $2
+      ORDER BY m.match_date NULLS LAST, m.game_week NULLS LAST, m.id_match
+    `, [idLeague, idSeason]);
+
+    res.json({ seasons, matches: matchesRes.rows });
+  } catch (err) {
+    console.error("[getLeagueMatches]", err);
+    res.status(500).json({ error: "Erro ao carregar partidas" });
+  }
+}
+
 // PUT /admin/matches/:id
-// Body: { match_date?, home_goals?, away_goals?, status?, phase_key?, group_key?, game_week? }
+// Body: { match_date?, home_goals?, away_goals?, status?, phase_key?, group_key?, game_week?, winner_club_id? }
 export async function updateCustomMatch(req, res) {
   const idMatch = Number(req.params.id);
-  const { match_date, home_goals, away_goals, status, phase_key, group_key, game_week } = req.body;
+  const { match_date, home_goals, away_goals, status, phase_key, group_key, game_week, winner_club_id } = req.body;
 
   try {
     await db.query(`
       UPDATE matches SET
-        match_date  = COALESCE($1, match_date),
-        home_goals  = $2,
-        away_goals  = $3,
-        status      = COALESCE($4, status),
-        phase_key   = $5,
-        group_key   = $6,
-        game_week   = $7
-      WHERE id_match = $8
+        match_date     = COALESCE($1, match_date),
+        home_goals     = $2,
+        away_goals     = $3,
+        status         = COALESCE($4, status),
+        phase_key      = $5,
+        group_key      = $6,
+        game_week      = $7,
+        winner_club_id = $8
+      WHERE id_match = $9
     `, [
       match_date ?? null,
       home_goals != null ? Number(home_goals) : null,
@@ -2620,6 +2672,7 @@ export async function updateCustomMatch(req, res) {
       phase_key ?? null,
       group_key ?? null,
       game_week != null ? Number(game_week) : null,
+      winner_club_id != null ? Number(winner_club_id) : null,
       idMatch,
     ]);
 

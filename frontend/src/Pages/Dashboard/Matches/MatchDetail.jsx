@@ -84,13 +84,22 @@ export default function MatchDetail() {
         {/* Score */}
         <div className="flex items-center justify-between px-8 py-6 gap-4">
           {/* Home */}
-          <Link to={clubUrl(home.id, home.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
-            {home.slug
-              ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + home.slug + `.webp`} alt={home.name} className="w-16 h-16 object-contain" />
-              : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
-            }
-            <span className="text-xs font-bold text-gray-800 text-center leading-tight">{home.name}</span>
-          </Link>
+          {home.hidden
+            ? <div className="flex flex-col items-center gap-2 flex-1">
+                {home.slug
+                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + home.slug + `.webp`} alt={home.name} className="w-16 h-16 object-contain" />
+                  : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                }
+                <span className="text-xs font-bold text-gray-800 text-center leading-tight">{home.name}</span>
+              </div>
+            : <Link to={clubUrl(home.id, home.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
+                {home.slug
+                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + home.slug + `.webp`} alt={home.name} className="w-16 h-16 object-contain" />
+                  : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                }
+                <span className="text-xs font-bold text-gray-800 text-center leading-tight">{home.name}</span>
+              </Link>
+          }
 
           {/* Score center */}
           <div className="flex flex-col items-center gap-1 shrink-0">
@@ -105,13 +114,22 @@ export default function MatchDetail() {
           </div>
 
           {/* Away */}
-          <Link to={clubUrl(away.id, away.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
-            {away.slug
-              ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + away.slug + `.webp`} alt={away.name} className="w-16 h-16 object-contain" />
-              : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
-            }
-            <span className="text-xs font-bold text-gray-800 text-center leading-tight">{away.name}</span>
-          </Link>
+          {away.hidden
+            ? <div className="flex flex-col items-center gap-2 flex-1">
+                {away.slug
+                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + away.slug + `.webp`} alt={away.name} className="w-16 h-16 object-contain" />
+                  : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                }
+                <span className="text-xs font-bold text-gray-800 text-center leading-tight">{away.name}</span>
+              </div>
+            : <Link to={clubUrl(away.id, away.slug)} className="flex flex-col items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
+                {away.slug
+                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + away.slug + `.webp`} alt={away.name} className="w-16 h-16 object-contain" />
+                  : <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                }
+                <span className="text-xs font-bold text-gray-800 text-center leading-tight">{away.name}</span>
+              </Link>
+          }
         </div>
 
         {/* Info bar */}

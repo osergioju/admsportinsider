@@ -19,8 +19,8 @@ const btnPrimary =
 // Mini-modal: cadastrar país inline (para nacionalidades não encontradas)
 // ─────────────────────────────────────────────────────────────────────────────
 function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
-  const [name, setName]     = useState(suggestion?.namePtBr ?? csvNat ?? "");
-  const [flag, setFlag]     = useState(suggestion?.flag ?? "");
+  const [name, setName] = useState(suggestion?.namePtBr ?? csvNat ?? "");
+  const [flag, setFlag] = useState(suggestion?.flag ?? "");
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
@@ -29,7 +29,7 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
     try {
       await api.post("/admin/send-countries", {
         value: name.trim(),
-        flag:  flag.trim() || null,
+        flag: flag.trim() || null,
         codigo: suggestion?.cca2 ?? null,
       });
       const res = await api.get("/admin/countries?onlyActive=true&limit=500");
@@ -38,8 +38,8 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
       );
       onCreated({
         id_country: created?.id_country,
-        name:       name.trim(),
-        flag_url:   created?.flag_url || flag.trim() || null,
+        name: name.trim(),
+        flag_url: created?.flag_url || flag.trim() || null,
       });
     } catch {
       alert("Erro ao cadastrar país");
@@ -50,7 +50,7 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50" />
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 p-6 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-5">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
@@ -104,25 +104,25 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
 // Página principal
 // ─────────────────────────────────────────────────────────────────────────────
 export default function UploadPlayersPage() {
-  const [file, setFile]         = useState(null);
-  const [step, setStep]         = useState("upload");
+  const [file, setFile] = useState(null);
+  const [step, setStep] = useState("upload");
   const [analyzing, setAnalyzing] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [preview, setPreview]   = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
 
-  const [leagueId, setLeagueId]           = useState("");
-  const [clubMappings, setClubMappings]   = useState({}); // { csvClubName: dbClubName }
-  const [hiddenClubs, setHiddenClubs]     = useState({}); // { csvClubName: true } — created as hidden
+  const [leagueId, setLeagueId] = useState("");
+  const [clubMappings, setClubMappings] = useState({}); // { csvClubName: dbClubName }
+  const [hiddenClubs, setHiddenClubs] = useState({}); // { csvClubName: true } — created as hidden
   const [creatingHidden, setCreatingHidden] = useState({}); // { csvClubName: true } — loading state
-  const [natMappings, setNatMappings]     = useState({}); // { csvNat: dbCountryName }
+  const [natMappings, setNatMappings] = useState({}); // { csvNat: dbCountryName }
 
   // Lista local de países — cresce quando o usuário cria inline
-  const [allCountries, setAllCountries]   = useState([]);
+  const [allCountries, setAllCountries] = useState([]);
 
   // Mini-modal de criação de país
   const [registerModal, setRegisterModal] = useState(null); // { csvNat, suggestion }
 
-  const [importResult, setImportResult]   = useState(null);
+  const [importResult, setImportResult] = useState(null);
 
   // ── handlers ────────────────────────────────────────────────────────────────
   function handleFileChange(e) {
@@ -169,12 +169,12 @@ export default function UploadPlayersPage() {
   async function handleImport() {
     if (!leagueId) return alert("Selecione (ou confirme) a liga.");
     const activeClub = Object.fromEntries(Object.entries(clubMappings).filter(([, v]) => v !== ""));
-    const activeNat  = Object.fromEntries(Object.entries(natMappings).filter(([, v]) => v !== ""));
+    const activeNat = Object.fromEntries(Object.entries(natMappings).filter(([, v]) => v !== ""));
     const form = new FormData();
     form.append("file", file);
     form.append("leagueId", leagueId);
-    if (Object.keys(activeClub).length) form.append("clubMappings",        JSON.stringify(activeClub));
-    if (Object.keys(activeNat).length)  form.append("nationalityMappings", JSON.stringify(activeNat));
+    if (Object.keys(activeClub).length) form.append("clubMappings", JSON.stringify(activeClub));
+    if (Object.keys(activeNat).length) form.append("nationalityMappings", JSON.stringify(activeNat));
     try {
       setLoading(true);
       const { data } = await api.post("/upload/import/players", form, {

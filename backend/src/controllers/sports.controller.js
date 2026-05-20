@@ -81,7 +81,7 @@ export async function getClubCompetitions(req, res) {
     for (const comp of compRes.rows) {
       // Full standings with home/away splits
       const standingsRes = await db.query(`
-        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug,
+        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug, c.hidden AS club_hidden,
           ccs.position_total, ccs.position_home, ccs.position_away,
           ccs.points,
           ccs.matches_total, ccs.matches_home, ccs.matches_away,
@@ -119,8 +119,8 @@ export async function getClubCompetitions(req, res) {
       // All matches of this club in this competition
       const matchesRes = await db.query(`
         SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
-               hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
-               ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug,
+               hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
+               ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden,
                ms.home_goals_ht, ms.away_goals_ht
         FROM matches m
         JOIN clubs hc ON hc.id_club = m.home_club_id
@@ -138,8 +138,8 @@ export async function getClubCompetitions(req, res) {
         matchesByWeek[w].push({
           id: m.id_match,
           date: m.match_date,
-          home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug },
-          away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug },
+          home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug, hidden: m.home_hidden ?? false },
+          away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug, hidden: m.away_hidden ?? false },
           home_goals: m.home_goals,
           away_goals: m.away_goals,
           home_goals_ht: m.home_goals_ht,
@@ -162,8 +162,8 @@ export async function getClubCompetitions(req, res) {
       if (isKnockoutComp) {
         const allMatchRes = await db.query(`
           SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals,
-                 hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
-                 ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug
+                 hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
+                 ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden
           FROM matches m
           JOIN clubs hc ON hc.id_club = m.home_club_id
           JOIN clubs ac ON ac.id_club = m.away_club_id
@@ -178,8 +178,8 @@ export async function getClubCompetitions(req, res) {
           allByWeek[w].push({
             id: m.id_match,
             date: m.match_date,
-            home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug },
-            away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug },
+            home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug, hidden: m.home_hidden ?? false },
+            away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug, hidden: m.away_hidden ?? false },
             home_goals: m.home_goals,
             away_goals: m.away_goals,
           });
@@ -194,6 +194,7 @@ export async function getClubCompetitions(req, res) {
         name: r.club_name,
         crest: r.crest_url,
         slug: r.club_slug ?? null,
+        hidden: r.club_hidden ?? false,
         pos: r[posF],
         pts: posF === 'position_total' ? (r.points ?? r[wF] * 3 + r[dF]) : (r[wF] * 3 + r[dF]),
         j: r[mF],
@@ -754,8 +755,8 @@ export async function getLeagueSports(req, res) {
     const matchesRes = await db.query(`
       SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
              m.phase_key,
-             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
-             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug,
+             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
+             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden,
              ms.home_goals_ht, ms.away_goals_ht
       FROM matches m
       JOIN clubs hc ON hc.id_club = m.home_club_id
@@ -884,7 +885,7 @@ export async function getLeagueSports(req, res) {
       }
     } else {
       const standingsRes = await db.query(`
-        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug,
+        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug, c.hidden AS club_hidden,
           ccs.position_total, ccs.position_home, ccs.position_away,
           ccs.points,
           ccs.matches_total, ccs.matches_home, ccs.matches_away,
@@ -906,7 +907,7 @@ export async function getLeagueSports(req, res) {
       `, [idCS]);
 
       const mkRow = (r, posF, wF, dF, lF, gpF, gcF, mF) => ({
-        id: r.id_club, name: r.club_name, crest: r.crest_url, slug: r.club_slug ?? null,
+        id: r.id_club, name: r.club_name, crest: r.crest_url, slug: r.club_slug ?? null, hidden: r.club_hidden ?? false,
         pos: r[posF] || null,
         pts: r[wF] * 3 + r[dF],
         j: r[mF], v: r[wF], e: r[dF], d: r[lF],
@@ -932,8 +933,8 @@ export async function getLeagueSports(req, res) {
       byWeek[w].push({
         id: m.id_match, date: m.match_date, status: m.status,
         phase: resolvePhase(m),
-        home: { id: m.home_id, name: m.home_name, crest: m.home_crest },
-        away: { id: m.away_id, name: m.away_name, crest: m.away_crest },
+        home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug ?? null, hidden: m.home_hidden ?? false },
+        away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug ?? null, hidden: m.away_hidden ?? false },
         home_goals: m.home_goals, away_goals: m.away_goals,
         home_goals_ht: m.home_goals_ht, away_goals_ht: m.away_goals_ht,
       });
@@ -1019,8 +1020,8 @@ export async function getMatchDetail(req, res) {
     const r = (await db.query(`
       SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
              m.attendance, m.referee, m.stadium_name,
-             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug,
-             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug,
+             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
+             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden,
              l.id_league, l.name AS league_name, s.year AS season,
              ms.home_shots, ms.away_shots,
              ms.home_shots_on_target, ms.away_shots_on_target,
@@ -1045,8 +1046,8 @@ export async function getMatchDetail(req, res) {
     res.json({
       id: r.id_match, game_week: r.game_week, date: r.match_date, status: r.status,
       league: { id: r.id_league, name: r.league_name }, season: r.season,
-      home: { id: r.home_id, name: r.home_name, crest: r.home_crest, slug: r.home_slug ?? null },
-      away: { id: r.away_id, name: r.away_name, crest: r.away_crest, slug: r.away_slug ?? null },
+      home: { id: r.home_id, name: r.home_name, crest: r.home_crest, slug: r.home_slug ?? null, hidden: r.home_hidden ?? false },
+      away: { id: r.away_id, name: r.away_name, crest: r.away_crest, slug: r.away_slug ?? null, hidden: r.away_hidden ?? false },
       score: { home: r.home_goals, away: r.away_goals },
       score_ht: { home: r.home_goals_ht, away: r.away_goals_ht },
       info: { attendance: r.attendance, referee: r.referee, stadium: r.stadium_name },

@@ -63,7 +63,7 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
   };
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50" />
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 p-6 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-5">
           <h3 className="font-bold text-gray-900 flex items-center gap-2"><Globe size={18} className="text-[#7F33D9]" /> Cadastrar País</h3>
@@ -105,7 +105,7 @@ function ClubMappingRow({ csvName, countryName, clubMappings, hiddenClubs, creat
       <div className="flex items-center gap-1.5">
         {hiddenClubs[csvName] ? <EyeOff size={13} className="text-purple-400 shrink-0" />
           : clubMappings[csvName] ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
-          : <XCircle size={13} className="text-amber-400 shrink-0" />}
+            : <XCircle size={13} className="text-amber-400 shrink-0" />}
         <span className="text-xs font-mono font-semibold text-gray-700 truncate">{csvName}</span>
         {countryName && <span className="text-[10px] text-gray-400 shrink-0">{countryName}</span>}
         {hiddenClubs[csvName] && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 text-[10px] font-bold shrink-0">oculto</span>}
@@ -229,7 +229,7 @@ export default function UploadSuperPage() {
   }, []);
 
   // ── Derived file lists ──────────────────────────────────────────────────────
-  const teamsFiles  = useMemo(() => fileItems.filter((f) => f.type === "teams").map((f) => f.file),   [fileItems]);
+  const teamsFiles = useMemo(() => fileItems.filter((f) => f.type === "teams").map((f) => f.file), [fileItems]);
   const playersFiles = useMemo(() => fileItems.filter((f) => f.type === "players").map((f) => f.file), [fileItems]);
   const matchesFiles = useMemo(() => fileItems.filter((f) => f.type === "matches").map((f) => f.file), [fileItems]);
 
@@ -242,7 +242,7 @@ export default function UploadSuperPage() {
   }
   function nextPhaseAfter(current) {
     const queue = [
-      { phase: "teams_mapping",   has: teamsFiles.length > 0 },
+      { phase: "teams_mapping", has: teamsFiles.length > 0 },
       { phase: "players_mapping", has: playersFiles.length > 0 },
       { phase: "matches_mapping", has: matchesFiles.length > 0 },
     ];
@@ -548,9 +548,9 @@ export default function UploadSuperPage() {
       .sort((a, b) => (b._det ? 1 : 0) - (a._det ? 1 : 0));
   }
 
-  const teamsClubsGrouped  = useMemo(() => buildGrouped(teamsPreviews[0]?.allClubs,   teamsPreviews[0]?.csvCountry, true),  [teamsPreviews]);
+  const teamsClubsGrouped = useMemo(() => buildGrouped(teamsPreviews[0]?.allClubs, teamsPreviews[0]?.csvCountry, true), [teamsPreviews]);
   const playersClubsGrouped = useMemo(() => buildGrouped(playersPreviews[0]?.allClubs, null, false), [playersPreviews]);
-  const matchesClubsGrouped = useMemo(() => buildGrouped(matchesPreviews[0]?.allClubs, null, true),  [matchesPreviews]);
+  const matchesClubsGrouped = useMemo(() => buildGrouped(matchesPreviews[0]?.allClubs, null, true), [matchesPreviews]);
 
   // Mapa csvName → country_name para clubes não encontrados e conflitos duplicados
   const teamsCountryMap = useMemo(() => {
@@ -651,11 +651,11 @@ export default function UploadSuperPage() {
   }, [matchesPreviews, matchesCountry, selectedCountry]);
 
   // total counts for summary cards
-  const teamsTotalFound    = teamsPreviews.reduce((s, p) => s + (p.foundTeams?.length ?? 0), 0);
+  const teamsTotalFound = teamsPreviews.reduce((s, p) => s + (p.foundTeams?.length ?? 0), 0);
   const teamsTotalNotFound = [...new Set(teamsPreviews.flatMap((p) => p.notFoundTeams ?? []))].length;
-  const playersTotalFound  = playersPreviews.reduce((s, p) => s + (p.foundClubs?.length ?? 0), 0);
+  const playersTotalFound = playersPreviews.reduce((s, p) => s + (p.foundClubs?.length ?? 0), 0);
   const playersTotalNotFound = Object.keys(playersClubMappings).length;
-  const matchesTotalFound  = matchesPreviews.reduce((s, p) => s + (p.foundTeams?.length ?? 0), 0);
+  const matchesTotalFound = matchesPreviews.reduce((s, p) => s + (p.foundTeams?.length ?? 0), 0);
   const matchesTotalNotFound = Object.keys(matchesClubMappings).length;
 
   function handleReset() {
@@ -687,14 +687,13 @@ export default function UploadSuperPage() {
       {configDone && (
         <div className="flex items-center gap-1.5 mb-6 justify-center text-[11px] font-bold flex-wrap">
           {[
-            { phase: "teams_mapping",   icon: <Shield size={11} />,  label: `Times (${teamsFiles.length})`,   has: teamsFiles.length > 0,   done: teamsResults.length > 0 },
-            { phase: "players_mapping", icon: <Users size={11} />,   label: `Jogadores (${playersFiles.length})`, has: playersFiles.length > 0, done: playersResults.length > 0 },
-            { phase: "matches_mapping", icon: <Trophy size={11} />,  label: `Partidas (${matchesFiles.length})`,  has: matchesFiles.length > 0, done: matchesResults.length > 0 },
+            { phase: "teams_mapping", icon: <Shield size={11} />, label: `Times (${teamsFiles.length})`, has: teamsFiles.length > 0, done: teamsResults.length > 0 },
+            { phase: "players_mapping", icon: <Users size={11} />, label: `Jogadores (${playersFiles.length})`, has: playersFiles.length > 0, done: playersResults.length > 0 },
+            { phase: "matches_mapping", icon: <Trophy size={11} />, label: `Partidas (${matchesFiles.length})`, has: matchesFiles.length > 0, done: matchesResults.length > 0 },
           ].filter((p) => p.has).map((p, i, arr) => (
             <div key={p.phase} className="flex items-center gap-1.5">
-              <span className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all ${
-                p.done ? "bg-green-100 text-green-600" : phase === p.phase ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"
-              }`}>
+              <span className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all ${p.done ? "bg-green-100 text-green-600" : phase === p.phase ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"
+                }`}>
                 {p.done ? <CheckCircle2 size={11} /> : p.icon} {p.label}
               </span>
               {i < arr.length - 1 && <ChevronRight size={12} className="text-gray-300" />}
@@ -775,7 +774,7 @@ export default function UploadSuperPage() {
                           <div className="w-8 h-8 rounded-xl bg-white border border-gray-200 flex items-center justify-center shrink-0">
                             {item.detecting ? <Loader2 size={14} className="animate-spin text-gray-400" />
                               : item.type ? TYPE_ICONS[item.type]
-                              : <AlertTriangle size={14} className="text-amber-400" />}
+                                : <AlertTriangle size={14} className="text-amber-400" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-semibold text-gray-700 truncate">{item.file.name}</p>
@@ -805,9 +804,9 @@ export default function UploadSuperPage() {
             <div className="pt-2 space-y-3">
               {/* Summary of what will be processed */}
               <div className="flex gap-2 justify-center flex-wrap text-[11px]">
-                {[["teams","Times","text-purple-600 bg-purple-50 border-purple-100"],
-                  ["players","Jogadores","text-blue-600 bg-blue-50 border-blue-100"],
-                  ["matches","Partidas","text-amber-600 bg-amber-50 border-amber-100"]].map(([type, label, cls]) => {
+                {[["teams", "Times", "text-purple-600 bg-purple-50 border-purple-100"],
+                ["players", "Jogadores", "text-blue-600 bg-blue-50 border-blue-100"],
+                ["matches", "Partidas", "text-amber-600 bg-amber-50 border-amber-100"]].map(([type, label, cls]) => {
                   const count = fileItems.filter((f) => f.type === type).length;
                   if (!count) return null;
                   return (

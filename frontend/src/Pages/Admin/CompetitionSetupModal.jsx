@@ -1,8 +1,8 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, useRef } from "react";
 import { api } from "../../services/api";
 import {
   X, ChevronRight, ChevronLeft, Check, Loader2,
-  Trophy, AlertTriangle, Plus, Trash2, Info, Calendar, Pencil, Copy
+  Trophy, AlertTriangle, Plus, Trash2, Info, Calendar, Pencil, Copy, GripVertical
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,15 +135,25 @@ function ProgressBar({ stepIdx }) {
 // FaseCard
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FaseCard({ fase, index, onChange, onRemove, total }) {
+function FaseCard({ fase, index, onChange, onRemove, total, dragHandleProps, isDragging, isOver }) {
   const update = (key, val) => onChange(index, { ...fase, [key]: val });
-  const isMata  = fase.tipo === "mata_mata";
-  const isGrupo = fase.tipo === "grupo";
+  const isMata        = fase.tipo === "mata_mata";
+  const isGrupo       = fase.tipo === "grupo";
+  const isPontosCorr  = fase.tipo === "pontos_corridos";
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/60 space-y-3">
+    <div className={`border rounded-xl p-4 bg-gray-50/60 space-y-3 transition-all ${
+      isDragging ? "opacity-40" : ""
+    } ${isOver ? "border-[#7F33D9] ring-2 ring-[#7F33D9]/20" : "border-gray-200"}`}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-[#7F33D9] uppercase tracking-wide">Fase {index + 1}</span>
+        <div className="flex items-center gap-2">
+          {total > 1 && (
+            <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 touch-none">
+              <GripVertical size={15} />
+            </div>
+          )}
+          <span className="text-xs font-bold text-[#7F33D9] uppercase tracking-wide">Fase {index + 1}</span>
+        </div>
         {total > 1 && (
           <button onClick={() => onRemove(index)} className="text-gray-300 hover:text-red-400 transition-colors">
             <Trash2 size={14} />
@@ -219,6 +229,72 @@ function FaseCard({ fase, index, onChange, onRemove, total }) {
           </div>
         </>
       )}
+
+      {isPontosCorr && (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelClass}>Classificados <span className="normal-case font-normal text-gray-400">(avançam)</span></label>
+            <input type="number" min={0} className={inputClass} value={fase.classificados ?? 0} onChange={e => update("classificados", Number(e.target.value))} placeholder="0" />
+          </div>
+          <div>
+            <label className={labelClass}>Rebaixados</label>
+            <input type="number" min={0} className={inputClass} value={fase.rebaixados ?? 0} onChange={e => update("rebaixados", Number(e.target.value))} placeholder="0" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DraggableFaseList — lista de fases com drag & drop nativo
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DraggableFaseList({ fases, onFasesChange, onFaseChange, onAddFase, onRemoveFase }) {
+  const dragIdx = useRef(null);
+  const [overIdx, setOverIdx] = useState(null);
+
+  const handleDragStart = (i) => { dragIdx.current = i; };
+  const handleDragOver  = (e, i) => { e.preventDefault(); setOverIdx(i); };
+  const handleDrop      = (i) => {
+    const from = dragIdx.current;
+    if (from === null || from === i) { dragIdx.current = null; setOverIdx(null); return; }
+    const reordered = [...fases];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(i, 0, moved);
+    onFasesChange(reordered);
+    dragIdx.current = null;
+    setOverIdx(null);
+  };
+  const handleDragEnd = () => { dragIdx.current = null; setOverIdx(null); };
+
+  return (
+    <div className="space-y-3">
+      {fases.map((fase, i) => (
+        <div
+          key={i}
+          draggable={fases.length > 1}
+          onDragStart={() => handleDragStart(i)}
+          onDragOver={(e) => handleDragOver(e, i)}
+          onDrop={() => handleDrop(i)}
+          onDragEnd={handleDragEnd}
+        >
+          <FaseCard
+            fase={fase}
+            index={i}
+            onChange={onFaseChange}
+            onRemove={onRemoveFase}
+            total={fases.length}
+            isDragging={dragIdx.current === i}
+            isOver={overIdx === i && dragIdx.current !== i}
+            dragHandleProps={{}}
+          />
+        </div>
+      ))}
+      <button onClick={onAddFase}
+        className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-[#7F33D9] hover:text-[#7F33D9] transition-colors">
+        <Plus size={16} /> Adicionar fase
+      </button>
     </div>
   );
 }
@@ -228,24 +304,38 @@ function FaseCard({ fase, index, onChange, onRemove, total }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TorneioPanel({ torneio, color, onChange }) {
+  const dragIdx = useRef(null);
+  const [overIdx, setOverIdx] = useState(null);
+
   const updateFase = (i, updated) => {
-    const fases = [...torneio.fases];
-    fases[i] = updated;
+    const fases = [...torneio.fases]; fases[i] = updated;
     onChange({ ...torneio, fases });
   };
-  const removeFase = (i) => onChange({ ...torneio, fases: torneio.fases.filter((_, idx) => idx !== i) });
-  const addFase    = ()   => onChange({ ...torneio, fases: [...torneio.fases, faseVazia()] });
+  const removeFase    = (i) => onChange({ ...torneio, fases: torneio.fases.filter((_, idx) => idx !== i) });
+  const addFase       = ()   => onChange({ ...torneio, fases: [...torneio.fases, faseVazia()] });
+  const reorderFases  = (reordered) => onChange({ ...torneio, fases: reordered });
+
+  const handleDragStart = (i) => { dragIdx.current = i; };
+  const handleDragOver  = (e, i) => { e.preventDefault(); setOverIdx(i); };
+  const handleDrop      = (i) => {
+    const from = dragIdx.current;
+    if (from === null || from === i) { dragIdx.current = null; setOverIdx(null); return; }
+    const reordered = [...torneio.fases];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(i, 0, moved);
+    reorderFases(reordered);
+    dragIdx.current = null; setOverIdx(null);
+  };
+  const handleDragEnd = () => { dragIdx.current = null; setOverIdx(null); };
 
   return (
     <div className={`flex-1 min-w-0 border rounded-2xl p-4 space-y-3 ${color.border} ${color.bg}`}>
-      {/* Título do torneio */}
       <div className="flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${color.dot}`} />
         <span className={`text-sm font-bold ${color.text}`}>{torneio.nome}</span>
         <span className="ml-auto text-[11px] text-gray-400">{torneio.fases.length} fase{torneio.fases.length !== 1 ? "s" : ""}</span>
       </div>
 
-      {/* Data de início do torneio */}
       <div>
         <label className={labelClass}>
           Início do torneio <span className="normal-case font-normal text-gray-400">(opcional)</span>
@@ -263,14 +353,25 @@ function TorneioPanel({ torneio, color, onChange }) {
 
       <div className="space-y-3">
         {torneio.fases.map((fase, i) => (
-          <FaseCard
+          <div
             key={i}
-            fase={fase}
-            index={i}
-            onChange={updateFase}
-            onRemove={removeFase}
-            total={torneio.fases.length}
-          />
+            draggable={torneio.fases.length > 1}
+            onDragStart={() => handleDragStart(i)}
+            onDragOver={(e) => handleDragOver(e, i)}
+            onDrop={() => handleDrop(i)}
+            onDragEnd={handleDragEnd}
+          >
+            <FaseCard
+              fase={fase}
+              index={i}
+              onChange={updateFase}
+              onRemove={removeFase}
+              total={torneio.fases.length}
+              isDragging={dragIdx.current === i}
+              isOver={overIdx === i && dragIdx.current !== i}
+              dragHandleProps={{}}
+            />
+          </div>
         ))}
       </div>
 
@@ -634,17 +735,13 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
                   ))}
                 </div>
               ) : (
-                /* Outros tipos: lista simples */
-                <div className="space-y-3">
-                  {fases.map((fase, i) => (
-                    <FaseCard key={i} fase={fase} index={i}
-                      onChange={handleFaseChange} onRemove={handleRemoveFase} total={fases.length} />
-                  ))}
-                  <button onClick={handleAddFase}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-[#7F33D9] hover:text-[#7F33D9] transition-colors">
-                    <Plus size={16} /> Adicionar fase
-                  </button>
-                </div>
+                <DraggableFaseList
+                  fases={fases}
+                  onFasesChange={setFases}
+                  onFaseChange={handleFaseChange}
+                  onAddFase={handleAddFase}
+                  onRemoveFase={handleRemoveFase}
+                />
               )}
             </div>
           )}

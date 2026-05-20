@@ -55,7 +55,7 @@ const NotaCard = ({ item }) => {
             href={link}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center w-full py-2.5 rounded-full bg-white/15 border border-white/25 text-white text-xs font-semibold hover:bg-white hover:text-[#7f34d9] transition-all duration-200 backdrop-blur-sm"
+            className="block text-center w-full py-2.5 rounded-full bg-white/15 border border-white/25 text-white text-xs font-semibold hover:bg-white hover:text-[#7f34d9] transition-all duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {isNewsletter

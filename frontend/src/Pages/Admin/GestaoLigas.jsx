@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
-import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2, FileSpreadsheet, AlertTriangle, Shuffle } from "lucide-react";
+import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2, FileSpreadsheet, AlertTriangle, Shuffle, TableProperties } from "lucide-react";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
 import CompetitionSetupModal from "./CompetitionSetupModal";
 import ImportLeaguesModal from "./ImportLeaguesModal";
 import CustomLeagueEditor from "./CustomLeagueEditor";
 import TeamGroupAssignment from "./TeamGroupAssignment";
+import LeagueMatchesModal from "./LeagueMatchesModal";
 
 export default function GestaoLigas() {
     const [leagues, setLeagues] = useState([]);
@@ -23,6 +24,7 @@ export default function GestaoLigas() {
     const [importModalOpen, setImportModalOpen] = useState(false);
     const [customEditor, setCustomEditor] = useState(null); // { league, year }
     const [phaseMapper, setPhaseMapper] = useState(null); // { league }
+    const [matchesLeague, setMatchesLeague] = useState(null); // liga cujas partidas estão abertas
 
     // --- BUSCA ---
     const [searchTerm, setSearchTerm] = useState("");
@@ -150,14 +152,23 @@ export default function GestaoLigas() {
                                         {league.continent_name ? `🌍 ${league.continent_name}` : (league.country_name || "Internacional")}
                                     </span>
                                 </div>
-                                {/* Botão configurar estrutura */}
-                                <button
-                                    onClick={() => setSetupLeague(league)}
-                                    title="Configurar estrutura da competição"
-                                    className="absolute bottom-3 right-3 w-7 h-7 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-[#7F33D9]/10 hover:text-[#7F33D9] hover:border-[#7F33D9]/30 transition-all opacity-0 group-hover:opacity-100"
-                                >
-                                    <Settings2 size={13} />
-                                </button>
+                                {/* Botões direita: configurar estrutura + editar partidas */}
+                                <div className="absolute bottom-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                                    <button
+                                        onClick={() => setMatchesLeague(league)}
+                                        title="Editar partidas"
+                                        className="w-7 h-7 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all"
+                                    >
+                                        <TableProperties size={13} />
+                                    </button>
+                                    <button
+                                        onClick={() => setSetupLeague(league)}
+                                        title="Configurar estrutura da competição"
+                                        className="w-7 h-7 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-[#7F33D9]/10 hover:text-[#7F33D9] hover:border-[#7F33D9]/30 transition-all"
+                                    >
+                                        <Settings2 size={13} />
+                                    </button>
+                                </div>
                                 {/* Botões inferiores esquerda */}
                                 {(() => {
                                     const anos = Object.keys(league.structure_json ?? {}).filter(k => /^\d{4}$/.test(k));
@@ -241,6 +252,13 @@ export default function GestaoLigas() {
                     league={phaseMapper.league}
                     onClose={() => setPhaseMapper(null)}
                     onSaved={() => setPhaseMapper(null)}
+                />
+            )}
+
+            {matchesLeague && (
+                <LeagueMatchesModal
+                    league={matchesLeague}
+                    onClose={() => setMatchesLeague(null)}
                 />
             )}
 

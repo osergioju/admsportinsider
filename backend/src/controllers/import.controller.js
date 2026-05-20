@@ -1480,7 +1480,7 @@ export async function previewTeams(req, res) {
     // Busca todos os clubes primeiro para detectar o país correto no banco via slug
     const [allClubsRes, aliasesResPT] = await Promise.all([
       db.query(`
-        SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, co.name AS country_name
+        SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, c.hidden, co.name AS country_name
         FROM clubs c
         LEFT JOIN countries co ON co.id_country = c.id_country
         WHERE c.active = true
@@ -1555,8 +1555,9 @@ export async function previewTeams(req, res) {
     const allClubs = allClubsRes.rows;
 
     // Etapa 2: lookup restrito ao país detectado — evita homônimos de outros países
+    // Clubes ocultos (sem país) entram sempre, independente do país detectado
     const matchPool  = (detectedCountry && !isMultiCountry)
-      ? allClubs.filter(c => c.country_name === detectedCountry)
+      ? allClubs.filter(c => c.country_name === detectedCountry || c.hidden)
       : allClubs;
     const resolveClub = buildClubLookup(matchPool, clubAliasMapPT);
 
@@ -1697,7 +1698,7 @@ export async function previewMatches(req, res) {
 
     const [allClubsRes, aliasesResPM] = await Promise.all([
       db.query(`
-        SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, co.name AS country_name
+        SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, c.hidden, co.name AS country_name
         FROM clubs c
         LEFT JOIN countries co ON co.id_country = c.id_country
         WHERE c.active = true
@@ -1765,8 +1766,9 @@ export async function previewMatches(req, res) {
     }
 
     // Etapa 2: lookup restrito ao país detectado — evita homônimos de outros países
+    // Clubes ocultos (sem país) entram sempre, independente do país detectado
     const matchPool = (detectedCountry && !isMultiCountry)
-      ? allClubsRes.rows.filter(c => c.country_name === detectedCountry)
+      ? allClubsRes.rows.filter(c => c.country_name === detectedCountry || c.hidden)
       : allClubsRes.rows;
     const resolveClub = buildClubLookup(matchPool, clubAliasMapPM);
 
@@ -1846,7 +1848,7 @@ export async function previewPlayers(req, res) {
     // Clubes — inclui todos os campos de matching
     const [clubsRes, aliasesRes] = await Promise.all([
       db.query(`
-        SELECT c.id_club, c.name, c.short_name, c.slug, c.description, c.crest_url, co.name AS country_name
+        SELECT c.id_club, c.name, c.short_name, c.slug, c.description, c.crest_url, c.hidden, co.name AS country_name
         FROM clubs c
         LEFT JOIN countries co ON co.id_country = c.id_country
         WHERE c.active = true
@@ -1885,8 +1887,9 @@ export async function previewPlayers(req, res) {
     }
 
     // Etapa 2: lookup restrito ao país detectado — evita homônimos de outros países
+    // Clubes ocultos (sem país) entram sempre, independente do país detectado
     const matchPool = (detectedCountry && !isMultiCountry)
-      ? clubsRes.rows.filter(c => c.country_name === detectedCountry)
+      ? clubsRes.rows.filter(c => c.country_name === detectedCountry || c.hidden)
       : clubsRes.rows;
     const resolveClubId = buildClubLookup(matchPool, clubAliasMap);
 
