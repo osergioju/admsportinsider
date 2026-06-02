@@ -11,8 +11,8 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
   return (
     <Link to={`/dashboard/competitions/${league.id_league}`} className="group block">
       <div className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-3 hover:border-[#7F33D9]/40 hover:shadow-sm transition-all duration-200">
-        {league.logo_url
-          ? <img src={league.logo_url} className="w-10 h-10 object-contain flex-shrink-0" alt={league.name} />
+        {league.slug
+          ? <img src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`} className="w-10 h-10 object-contain flex-shrink-0" alt={league.name} />
           : <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <Trophy size={15} className="text-[#7F33D9]" />
             </div>

@@ -150,14 +150,9 @@ export default function DashLeagueUniques() {
         ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)`
         : glowPrimary;
 
-    const colors = [c1, c2, c3];
-    const lightCount = colors.filter(c => {
-        const rgb = hexToRgb(c);
-        if (!rgb) return false;
-        const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-        return lum > 0.6;
-    }).length;
-    const textColor = lightCount >= 2 ? "#0A0A0A" : "#FFFFFF";
+    const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
+    const textColor  = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
+    const borderColor = lum1 > 0.5 ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.4)";
 
     const fCurrency = financials?.currency || "BRL";
 
@@ -223,7 +218,7 @@ export default function DashLeagueUniques() {
                         </div>
 
                         {/* Nome + meta + nav cards */}
-                        <div className="flex-1 min-w-0 border-b border-white/40 pb-4 pl-2">
+                        <div className="flex-1 min-w-0 border-b pb-4 pl-2" style={{ borderColor }}>
                             <h1
                                 className="text-white font-light drop-shadow-md leading-tight truncate text-xl sm:text-2xl"
                                 style={{ color: textColor }}
@@ -283,7 +278,7 @@ export default function DashLeagueUniques() {
                         {lg.flag_url && (
                             <div
                                 className="absolute top-6 right-6 shrink-0 w-8 h-8 rounded-full overflow-hidden shadow-lg"
-                                style={{ border: "2px solid rgba(255,255,255,0.28)" }}
+                                style={{ border: `2px solid ${borderColor}` }}
                                 title={lg.country_name}
                             >
                                 <img src={lg.flag_url} alt={lg.country_name} className="w-full h-full object-cover" />
