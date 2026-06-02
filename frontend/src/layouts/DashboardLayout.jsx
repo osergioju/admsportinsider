@@ -19,6 +19,7 @@ export default function DashboardLayout() {
     const [translateX, setTranslateX] = useState(0);
     const [openLigas, setOpenLigas] = useState(false);
     const [openClubes, setOpenClubes] = useState(false);
+    const [openFeds, setOpenFeds] = useState(false);
     const navigate = useNavigate();
 
     const { logout, user, loading } = useContext(AuthContext);
@@ -165,6 +166,25 @@ export default function DashboardLayout() {
                                             to="/dashboard/clubs/favorites"
                                             label={t("menu.favorites", "Favoritos")}
                                         />
+                                    )}
+                                </ul>
+                            )}
+                        </li>
+
+                        {/* Dropdown Federações */}
+                        <li>
+                            <button onClick={() => setOpenFeds(!openFeds)} className={menuItemStyle}>
+                                <div className="flex items-center gap-3">
+                                    <ShieldUser strokeWidth={1.5} className={iconStyle} size={18} />
+                                    <span className={textStyle}>Federações</span>
+                                </div>
+                                <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openFeds ? "rotate-180 text-purple-500" : ""}`} />
+                            </button>
+                            {openFeds && (
+                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations" label="Todas as federações" />
+                                    {user && (
+                                        <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations?tab=favs" label={t("menu.favorites", "Favoritas")} />
                                     )}
                                 </ul>
                             )}

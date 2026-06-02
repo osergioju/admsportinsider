@@ -45,6 +45,7 @@ import GestaoLigas from "./Pages/Admin/GestaoLigas";
 import GestaoClubes from "./Pages/Admin/GestaoClubes";
 import GestaoJogadores from "./Pages/Admin/GestaoJogadores";
 import GestaoContinent from "./Pages/Admin/GestaoContinent";
+import GestaoFederacoes from "./Pages/Admin/GestaoFederacoes";
 import GestaoHospitalidade from "./Pages/Admin/GestaoHospitalidade";
 
 // ADMIN - Gestão do usuário 
@@ -109,6 +110,8 @@ import CompetitionsClubs from "./Pages/Dashboard/Clubs/CompetitionsClubs";
 import ClubPlayers from "./Pages/Dashboard/Clubs/ClubPlayers";
 import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
 import MatchDetail from "./Pages/Dashboard/Matches/MatchDetail";
+import DashFederations from "./Pages/Dashboard/Federations/Index";
+import FederationDetail from "./Pages/Dashboard/Federations/FederationDetail";
 
 
 export default function App() {
@@ -181,6 +184,9 @@ export default function App() {
           <Route path="/dashboard/countries/:id" element={<CountryDetail />} />
 
           {/* Ligas */}
+          <Route path="/dashboard/federations" element={<DashFederations />} />
+          <Route path="/dashboard/federations/:slug" element={<FederationDetail />} />
+
           <Route path="/dashboard/competitions" element={<DashLeagues />} />
           <Route path="/dashboard/competitions/finance/:id" element={<DashLeagueFinance />} />
           <Route path="/dashboard/competitions/sports/:id" element={<DashLeagueSports />} />
@@ -208,6 +214,7 @@ export default function App() {
               <Route element={<AdminPermissionRoute permissionKey="gestao-dados" />}>
                 <Route path="/admin/gestao-paises" element={<GestaoPaises />} />
                 <Route path="/admin/gestao-continentes" element={<GestaoContinent />} />
+                <Route path="/admin/gestao-federacoes" element={<GestaoFederacoes />} />
                 <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
                 <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
                 <Route path="/admin/gestao-jogadores" element={<GestaoJogadores />} />

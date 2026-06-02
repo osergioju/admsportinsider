@@ -72,11 +72,24 @@ export async function getAllLeagues(req, res) {
       l.id_continent,
       c.name AS country_name,
       c.flag_url,
+      c.flag_color1,
+      c.flag_color2,
+      c.flag_color3,
       ct.name AS continent_name,
-      ct.logo_url AS continent_logo_url
+      ct.logo_url AS continent_logo_url,
+      f.id_federation,
+      f.acronym AS federation_acronym,
+      f.name AS federation_name,
+      f.slug AS federation_slug,
+      f.sphere AS federation_sphere,
+      f.primary_color AS fed_color1,
+      f.secondary_color AS fed_color2,
+      f.tertiary_color AS fed_color3,
+      f.logo_url AS federation_logo_url
     FROM leagues l
     LEFT JOIN countries c ON c.id_country = l.id_country
     LEFT JOIN continents ct ON ct.id_continent = l.id_continent
+    LEFT JOIN federations f ON f.id_federation = l.id_federation
     WHERE l.active = true
     ORDER BY l.name ASC
     LIMIT $1 OFFSET $2
@@ -111,11 +124,24 @@ export async function getLeagueById(req, res) {
       l.*,
       c.name AS country_name,
       c.flag_url,
+      c.flag_color1,
+      c.flag_color2,
+      c.flag_color3,
       ct.name AS continent_name,
-      ct.logo_url AS continent_logo_url
+      ct.logo_url AS continent_logo_url,
+      f.id_federation,
+      f.acronym AS federation_acronym,
+      f.name AS federation_name,
+      f.slug AS federation_slug,
+      f.sphere AS federation_sphere,
+      f.primary_color AS fed_color1,
+      f.secondary_color AS fed_color2,
+      f.tertiary_color AS fed_color3,
+      f.logo_url AS federation_logo_url
     FROM leagues l
     LEFT JOIN countries c ON c.id_country = l.id_country
     LEFT JOIN continents ct ON ct.id_continent = l.id_continent
+    LEFT JOIN federations f ON f.id_federation = l.id_federation
     WHERE id_league = $1
   `, [id]);
 
@@ -132,7 +158,7 @@ export async function getLeagueById(req, res) {
 }
 
 export async function createLeague(req, res) {
-  const { id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nome é obrigatório." });
@@ -143,9 +169,9 @@ export async function createLeague(req, res) {
 
   try {
     await db.query(`
-      INSERT INTO leagues (id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color, currency_code)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [id_country || null, id_continent || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null]);
+      INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null]);
 
     return res.status(201).json({ message: "Liga cadastrada com sucesso!" });
 
@@ -157,7 +183,7 @@ export async function createLeague(req, res) {
 
 export async function updateLeague(req, res) {
   const { id } = req.params;
-  const { id_country, id_continent, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
 
   try {
     await db.query(`
@@ -165,15 +191,16 @@ export async function updateLeague(req, res) {
       SET
         id_country = $1,
         id_continent = $2,
-        name = $3,
-        description = $4,
-        logo_url = $5,
-        format = $6,
-        primary_color = $7,
-        secondary_color = $8,
-        currency_code = $9
-      WHERE id_league = $10
-    `, [id_country || null, id_continent || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, id]);
+        id_federation = $3,
+        name = $4,
+        description = $5,
+        logo_url = $6,
+        format = $7,
+        primary_color = $8,
+        secondary_color = $9,
+        currency_code = $10
+      WHERE id_league = $11
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, id]);
 
     return res.json({ message: "Liga atualizada com sucesso!" });
 
@@ -448,11 +475,23 @@ export async function leaguesSearch(req, res) {
         l.slug,
         co.id_country,
         co.name AS country_name,
-        co.flag_url
+        co.flag_url,
+        co.flag_color1,
+        co.flag_color2,
+        co.flag_color3,
+        f.id_federation,
+        f.acronym AS federation_acronym,
+        f.name AS federation_name,
+        f.slug AS federation_slug,
+        f.sphere AS federation_sphere,
+        f.primary_color AS fed_color1,
+        f.secondary_color AS fed_color2,
+        f.tertiary_color AS fed_color3,
+        f.logo_url AS federation_logo_url
 
       FROM leagues l
-      LEFT JOIN countries co
-        ON co.id_country = l.id_country
+      LEFT JOIN countries co ON co.id_country = l.id_country
+      LEFT JOIN federations f ON f.id_federation = l.id_federation
 
       ${whereClause}
       ORDER BY l.name ASC
@@ -883,6 +922,128 @@ export async function disableContinent(req, res) {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erro ao desativar continente" });
+  }
+}
+
+// ─── FEDERAÇÕES ──────────────────────────────────────────────────────────────
+
+export async function getDashboardFederations(req, res) {
+  try {
+    const result = await db.query(`
+      SELECT
+        f.id_federation, f.name, f.acronym, f.logo_url, f.slug, f.sort_order,
+        f.sphere, f.primary_color, f.secondary_color, f.tertiary_color, f.full_name,
+        COUNT(l.id_league) AS competition_count
+      FROM federations f
+      LEFT JOIN leagues l ON l.id_federation = f.id_federation AND l.active = true
+      WHERE f.active = true
+      GROUP BY f.id_federation
+      ORDER BY
+        CASE f.sphere WHEN 'global' THEN 0 WHEN 'continental' THEN 1 ELSE 2 END,
+        f.sort_order ASC, f.name ASC
+    `);
+    return res.json({ federations: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao listar federações" });
+  }
+}
+
+export async function getDashboardFederationBySlug(req, res) {
+  const { slug } = req.params;
+  try {
+    const fedResult = await db.query(
+      `SELECT id_federation, name, acronym, logo_url, slug, sort_order FROM federations WHERE slug = $1 AND active = true`,
+      [slug]
+    );
+    if (fedResult.rowCount === 0) return res.status(404).json({ message: "Federação não encontrada" });
+    const federation = fedResult.rows[0];
+
+    // Federações continentais/globais só exibem competições trans-nacionais (sem país)
+    const countryFilter = ['continental', 'global'].includes(federation.sphere)
+      ? 'AND l.id_country IS NULL'
+      : '';
+
+    const leaguesResult = await db.query(`
+      SELECT
+        l.id_league, l.name, l.slug, l.logo_url, l.description,
+        l.id_country, l.id_continent,
+        c.name AS country_name, c.flag_url,
+        ct.name AS continent_name
+      FROM leagues l
+      LEFT JOIN countries c ON c.id_country = l.id_country
+      LEFT JOIN continents ct ON ct.id_continent = l.id_continent
+      WHERE l.id_federation = $1 AND l.active = true ${countryFilter}
+      ORDER BY l.name ASC
+    `, [federation.id_federation]);
+
+    return res.json({ federation, leagues: leaguesResult.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao buscar federação" });
+  }
+}
+
+export async function getAllFederations(req, res) {
+  try {
+    const result = await db.query(`
+      SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
+             primary_color, secondary_color, tertiary_color, full_name
+      FROM federations WHERE active = true
+      ORDER BY
+        CASE sphere WHEN 'global' THEN 0 WHEN 'continental' THEN 1 ELSE 2 END,
+        sort_order ASC, name ASC
+    `);
+    return res.json({ federations: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao listar federações" });
+  }
+}
+
+export async function createFederation(req, res) {
+  const { name, acronym, logo_url, sort_order } = req.body;
+  if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
+  try {
+    const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
+    const result = await db.query(
+      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug) VALUES ($1, $2, $3, $4, $5) RETURNING id_federation",
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug]
+    );
+    return res.status(201).json({ id_federation: result.rows[0].id_federation, message: "Federação criada com sucesso!" });
+  } catch (err) {
+    console.error(err);
+    if (err.code === "23505") return res.status(400).json({ message: "Sigla já existe." });
+    res.status(500).json({ message: "Erro ao criar federação" });
+  }
+}
+
+export async function updateFederation(req, res) {
+  const { id } = req.params;
+  const { name, acronym, logo_url, sort_order } = req.body;
+  if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
+  try {
+    const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
+    await db.query(
+      "UPDATE federations SET name = $1, acronym = $2, logo_url = $3, sort_order = $4, slug = $5 WHERE id_federation = $6",
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, id]
+    );
+    return res.json({ message: "Federação atualizada com sucesso!" });
+  } catch (err) {
+    console.error(err);
+    if (err.code === "23505") return res.status(400).json({ message: "Sigla já existe." });
+    res.status(500).json({ message: "Erro ao atualizar federação" });
+  }
+}
+
+export async function disableFederation(req, res) {
+  const { id } = req.params;
+  try {
+    await db.query("UPDATE federations SET active = false WHERE id_federation = $1", [id]);
+    return res.json({ message: "Federação desativada com sucesso!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erro ao desativar federação" });
   }
 }
 

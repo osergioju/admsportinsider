@@ -1,6 +1,11 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import db from  "./src/config/db.js";
 
 import authRoutes from "./src/routes/auth.routes.js";
@@ -74,6 +79,9 @@ app.use(cors({
 
 // ===== WEBHOOK (vem ANTES do express.json()) =====
 app.use("/stripe", stripeWebhookRoutes);
+
+// ===== ARQUIVOS ESTÁTICOS =====
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ===== JSON NORMAL =====
 app.use(express.json());

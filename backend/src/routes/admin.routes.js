@@ -1487,12 +1487,13 @@
  *         description: Erro interno do servidor
  */
 import { Router } from "express";
-import { previewClubImport, uploadClubXlsx, previewLeagueImport, uploadLeagueXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, bulkDisableClubs, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason, getAllContinents, createContinent, updateContinent, disableContinent, getTournamentSuggestions, bulkAssignPhases, getGroupClubs, saveGroupClubs, searchStadiums, listHospitality, upsertHospitality, deleteHospitality, createHiddenClub, getLeagueMatches } from "../controllers/admin.controller.js";
+import { previewClubImport, uploadClubXlsx, previewLeagueImport, uploadLeagueXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, bulkDisableClubs, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason, getAllContinents, createContinent, updateContinent, disableContinent, getAllFederations, createFederation, updateFederation, disableFederation, getTournamentSuggestions, bulkAssignPhases, getGroupClubs, saveGroupClubs, searchStadiums, listHospitality, upsertHospitality, deleteHospitality, createHiddenClub, getLeagueMatches } from "../controllers/admin.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
 import { uploadImage } from "../middlewares/uploadImage.js";
-import { uploadClubLogo } from "../controllers/upload.controller.js";
+import { uploadFederationImage } from "../middlewares/uploadFederationImage.js";
+import { uploadClubLogo, uploadFederationLogo } from "../controllers/upload.controller.js";
 import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
 import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage, reorderBanners } from "../controllers/banner.controller.js";
 import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations, getCommonTermsByRegion, saveCommonTermsTranslations } from "../controllers/adminRegionsController.js";
@@ -1517,6 +1518,12 @@ router.get("/continents", getAllContinents);
 router.post("/continents", adminGuard, createContinent);
 router.put("/continents/:id", adminGuard, updateContinent);
 router.delete("/continents/:id", adminGuard, disableContinent);
+
+// FEDERAÇÕES - GESTÃO CRUD
+router.get("/federations", getAllFederations);
+router.post("/federations", adminGuard, createFederation);
+router.put("/federations/:id", adminGuard, updateFederation);
+router.delete("/federations/:id", adminGuard, disableFederation);
 
 // LIGAS - GESTÃO CRUD
 router.get("/leagues", getAllLeagues);
@@ -1589,6 +1596,7 @@ router.post("/create-user", adminGuard, createUser); // Criar usuaário
 
 // Subir foto do clube
 router.post("/upload-club-logo", uploadImage, uploadClubLogo);
+router.post("/federations/upload-logo", adminGuard, uploadFederationImage, uploadFederationLogo);
 
 // PLANOS - CRUD
 router.get("/plans", getAllPlans);

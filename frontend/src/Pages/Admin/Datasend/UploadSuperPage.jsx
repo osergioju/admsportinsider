@@ -1193,6 +1193,16 @@ export default function UploadSuperPage() {
                       : <><span className="text-xs font-bold text-green-600">{r.inserted ?? 0} inseridos</span>{(r.skipped ?? 0) > 0 && <span className="text-xs font-bold text-orange-500">{r.skipped} ignorados</span>}</>}
                   </div>
                   {r.importError && <p className="text-[10px] text-red-600 mt-1.5 font-mono leading-relaxed">{r.importError}</p>}
+                  {!r.importError && (r.skippedTeams?.length > 0) && (
+                    <div className="mt-2 pt-2 border-t border-orange-100">
+                      <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wide mb-1">Não encontrados no banco</p>
+                      <div className="flex flex-wrap gap-1">
+                        {r.skippedTeams.map((name, j) => (
+                          <span key={j} className="text-[10px] bg-orange-50 border border-orange-200 text-orange-700 rounded-lg px-2 py-0.5">{name}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1227,20 +1237,37 @@ export default function UploadSuperPage() {
                 <Trophy size={13} className="text-amber-500" />
                 <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Partidas</p>
               </div>
-              {matchesResults.map((r, i) => (
-                <div key={i} className={`p-3 rounded-2xl border ${r.importError ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-100"}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-700 truncate">{r.fileName}</p>
-                      <p className="text-[10px] text-gray-400">{r.season}</p>
+              {matchesResults.map((r, i) => {
+                const clubsNotFound = [...new Set(
+                  (r.skippedDetails ?? [])
+                    .filter(d => d.reason === "club_not_found")
+                    .flatMap(d => [d.home, d.away].filter(Boolean))
+                )];
+                return (
+                  <div key={i} className={`p-3 rounded-2xl border ${r.importError ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-100"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-700 truncate">{r.fileName}</p>
+                        <p className="text-[10px] text-gray-400">{r.season}</p>
+                      </div>
+                      {r.importError
+                        ? <span className="text-xs font-bold text-red-500 flex items-center gap-1"><AlertTriangle size={11} /> Falhou</span>
+                        : <><span className="text-xs font-bold text-green-600">{r.inserted} inseridas</span>{r.skipped > 0 && <span className="text-xs font-bold text-orange-500">{r.skipped} ignoradas</span>}</>}
                     </div>
-                    {r.importError
-                      ? <span className="text-xs font-bold text-red-500 flex items-center gap-1"><AlertTriangle size={11} /> Falhou</span>
-                      : <><span className="text-xs font-bold text-green-600">{r.inserted} inseridas</span>{r.skipped > 0 && <span className="text-xs font-bold text-orange-500">{r.skipped} ignoradas</span>}</>}
+                    {r.importError && <p className="text-[10px] text-red-600 mt-1.5 font-mono leading-relaxed">{r.importError}</p>}
+                    {!r.importError && clubsNotFound.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-orange-100">
+                        <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wide mb-1">Times não encontrados (causaram partidas ignoradas)</p>
+                        <div className="flex flex-wrap gap-1">
+                          {clubsNotFound.map((name, j) => (
+                            <span key={j} className="text-[10px] bg-orange-50 border border-orange-200 text-orange-700 rounded-lg px-2 py-0.5">{name}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {r.importError && <p className="text-[10px] text-red-600 mt-1.5 font-mono leading-relaxed">{r.importError}</p>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

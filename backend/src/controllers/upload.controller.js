@@ -65,7 +65,19 @@ export async function uploadClubLogo(req, res) {
   }
 }
 
-// Analiza o xlsx pra mapear 
+export async function uploadFederationLogo(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ message: "Nenhum arquivo enviado." });
+    const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
+    const url = `${baseUrl}/uploads/federacoes/${req.file.filename}`;
+    return res.status(200).json({ url });
+  } catch (error) {
+    console.error("Erro no upload de federação:", error);
+    return res.status(500).json({ message: "Erro interno no upload." });
+  }
+}
+
+// Analiza o xlsx pra mapear
 export async function analyzeXlsx(req, res) {
   try {
     if (!req.file) {

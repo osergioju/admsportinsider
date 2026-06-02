@@ -13,7 +13,7 @@ export const ADMIN_PAGES = [
     key: "gestao-dados",
     label: "Gestão (Países, Competições e Clubes)",
     group: "Gestão",
-    routes: ["/admin/gestao-paises", "/admin/gestao-continentes", "/admin/gestao-ligas", "/admin/gestao-clubes"],
+    routes: ["/admin/gestao-paises", "/admin/gestao-continentes", "/admin/gestao-federacoes", "/admin/gestao-ligas", "/admin/gestao-clubes"],
   },
 
   // ── Usuários ─────────────────────────────────────────

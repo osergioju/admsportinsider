@@ -86,18 +86,33 @@ function SkeletonCard() {
 
 // ─── Card de liga ─────────────────────────────────────────────────────────────
 
+function leagueCardBg(c1, c2, c3) {
+  const a = c1 || "#1e1b4b";
+  const b = c2 || a;
+  const c = c3 || b;
+  return `radial-gradient(circle at 20% 30%, ${a} 0%, transparent 65%),
+          radial-gradient(circle at 80% 70%, ${b} 0%, transparent 65%),
+          linear-gradient(135deg, ${a}, ${b}, ${c})`;
+}
+
 function LeagueCard({ league, isFavorited, toggleFavorite }) {
   const initials = (league.name || "?").substring(0, 3).toUpperCase();
-  console.log(league);
+  // Cores da federação vinculada (CBF → Brasileirão, CONMEBOL → Libertadores, etc.)
+  const bg = leagueCardBg(league.fed_color1, league.fed_color2, league.fed_color3);
+
   return (
     <Link to={`/dashboard/competitions/${league.id_league}`} className="block group">
       <div className="h-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
 
-        {/* Topo */}
-        <div className="h-36 flex items-center justify-center relative">
+        {/* Topo com gradiente das cores da bandeira */}
+        <div className="h-36 flex items-center justify-center relative" style={{ background: bg }}>
+
+          {/* Overlay escuro sutil para manter legibilidade */}
+          <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(league.id_league, "league"); }}
-            className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40  transition"
+            className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 transition"
             aria-label="Favoritar"
           >
             <Heart
@@ -108,12 +123,14 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
             />
           </button>
 
-          <div className="bg-white relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center border border-white/20 group-hover:scale-105 transition-transform duration-300">
+          <div className="bg-white/95 relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
             {league.slug
               ? <img
-                src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
-                alt={league.name} className="w-14 h-14 lg:w-22 lg:h-22 object-contain drop-shadow-lg" />
-              : <span className="text-white font-black text-xl italic">{initials}</span>
+                  src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
+                  alt={league.name}
+                  className="w-14 h-14 object-contain drop-shadow-sm"
+                />
+              : <span className="font-black text-lg" style={{ color: league.flag_color1 || "#7F33D9" }}>{initials}</span>
             }
           </div>
         </div>

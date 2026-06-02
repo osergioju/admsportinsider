@@ -126,7 +126,7 @@ export async function importMatches(req, res) {
     const clubsRes = matchesLeagueCountry
       ? await client.query(`
           SELECT c.id_club, c.name, c.short_name, c.description, c.slug
-          FROM clubs c WHERE c.id_country = $1
+          FROM clubs c WHERE c.id_country = $1 OR c.hidden = true
         `, [matchesLeagueCountry])
       : await client.query(`
           SELECT c.id_club, c.name, c.short_name, c.description, c.slug
@@ -1018,7 +1018,7 @@ export async function importTeams(req, res) {
           SELECT c.id_club, c.name, c.short_name, c.description, c.slug, co.name AS country_name
           FROM clubs c
           LEFT JOIN countries co ON co.id_country = c.id_country
-          WHERE c.id_country = $1
+          WHERE c.id_country = $1 OR c.hidden = true
         `, [leagueCountry])
       : await client.query(`
           SELECT c.id_club, c.name, c.short_name, c.description, c.slug, co.name AS country_name

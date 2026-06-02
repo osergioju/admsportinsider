@@ -184,22 +184,28 @@ export default function PrePageClubs() {
 
     const colorWOpacity = lighten(c1, 0.7);
 
+    const rgb1 = hexToRgb(c1);
+    const rgb2 = hexToRgb(c2);
+
     const background = `
-        linear-gradient(83.98deg, ${c1} 35.41%, ${c3} 83.12%, ${c2} 100%)
+        radial-gradient(circle at 20% 30%, ${c1} 0%, transparent 60%),
+        radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
+        linear-gradient(135deg, ${c1}, ${c2}, ${c3})
     `.trim();
 
     const backgroundLine = `
         linear-gradient(to bottom, ${c1}, ${c3}, ${c2}, transparent)
     `.trim();
 
-    const rgb1 = hexToRgb(c1);
-    const rgb2 = hexToRgb(c2);
-
     const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
     const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
     const borderColor = lum1 > 0.5 ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.4)";
-    const glowPrimary = rgb1 ? `rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.6)` : "rgba(0,0,0,0.3)";
-    const glowSecondary = rgb2 ? `rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.45)` : glowPrimary;
+    const glowPrimary = rgb1
+        ? `radial-gradient(circle, rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.45) 0%, transparent 70%)`
+        : "rgba(0,0,0,0.2)";
+    const glowSecondary = rgb2
+        ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)`
+        : glowPrimary;
 
     const clubName = theClub.club.name;
 
@@ -230,6 +236,13 @@ export default function PrePageClubs() {
 
             {/* ── HEADER (faixa com gradiente do clube) ────────── */}
             <div className="rounded-2xl mb-4 relative overflow-hidden" style={{ background: background }}>
+
+                {/* Overlay escuro para legibilidade */}
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)" }} />
+
+                {/* Glow orbs decorativos */}
+                <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl" style={{ background: glowPrimary }} />
+                <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
 
                 <div className="relative z-10 px-5 sm:px-6 pt-4 pb-8">
 

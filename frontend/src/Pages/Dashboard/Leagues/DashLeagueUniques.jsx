@@ -126,10 +126,29 @@ export default function DashLeagueUniques() {
     };
     const formatLabel = lg.format ? (FORMAT_LABEL[lg.format] ?? lg.format) : null;
 
-    const [c1, c2, c3] = resolveColors(lg.primary_color, lg.secondary_color, lg.tertiary_color);
+    // Cores da liga → fallback para federação vinculada
+    const [c1, c2, c3] = resolveColors(
+        lg.primary_color   || lg.fed_color1,
+        lg.secondary_color || lg.fed_color2,
+        lg.tertiary_color  || lg.fed_color3
+    );
 
-    const background = `linear-gradient(83.98deg, ${c1} 35.41%, ${c3} 83.12%, ${c2} 100%)`.trim();
+    const rgb1 = hexToRgb(c1);
+    const rgb2 = hexToRgb(c2);
+
+    const background = `
+        radial-gradient(circle at 20% 30%, ${c1} 0%, transparent 60%),
+        radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
+        linear-gradient(135deg, ${c1}, ${c2}, ${c3})
+    `.trim();
     const backgroundLine = `linear-gradient(to bottom, ${c1}, ${c3}, ${c2}, transparent)`.trim();
+
+    const glowPrimary = rgb1
+        ? `radial-gradient(circle, rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.45) 0%, transparent 70%)`
+        : "rgba(0,0,0,0.2)";
+    const glowSecondary = rgb2
+        ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)`
+        : glowPrimary;
 
     const colors = [c1, c2, c3];
     const lightCount = colors.filter(c => {
@@ -185,6 +204,9 @@ export default function DashLeagueUniques() {
 
             {/* ── HEADER ───────────────────────────────────────── */}
             <div className="rounded-2xl mb-4 relative overflow-hidden" style={{ background }}>
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)" }} />
+                <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl" style={{ background: glowPrimary }} />
+                <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
 
                 <div className="relative z-10 px-5 sm:px-6 pt-4 pb-8">
                     <div className="flex items-center gap-4 lg:p-5 flex-wrap">

@@ -12,11 +12,12 @@ export default function GestaoLigas() {
     const [leagues, setLeagues] = useState([]);
     const [countries, setCountries] = useState([]);
     const [continents, setContinents] = useState([]);
+    const [federations, setFederations] = useState([]);
     const [modal, setModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
     const [leagueScope, setLeagueScope] = useState("country"); // "country" | "continent"
-    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
+    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
     const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -31,16 +32,18 @@ export default function GestaoLigas() {
 
     async function loadData() {
         try {
-            const [respLeagues, respCountries, respContinents, respCurrencies] = await Promise.all([
+            const [respLeagues, respCountries, respContinents, respCurrencies, respFeds] = await Promise.all([
                 api.get(`/admin/leagues?limit=1000`),
                 api.get(`/admin/countries?onlyActive=true&limit=1000`),
                 api.get(`/admin/continents`),
                 api.get(`/currency/currencies`),
+                api.get(`/admin/federations`),
             ]);
             setLeagues(respLeagues.data.leagues);
             setCountries(respCountries.data.countries.map(c => ({ value: c.id_country, label: c.name, image: c.flag_url })));
             setContinents(respContinents.data.continents.map(c => ({ value: c.id_continent, label: c.name, image: c.logo_url })));
             setCurrencies(respCurrencies.data);
+            setFederations(respFeds.data.federations);
         } catch (err) { console.error("Erro dados:", err); }
     }
 
@@ -54,7 +57,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", id_continent: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
+        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
         setLeagueScope("country");
         setIsEditing(false); setModal(true);
     };
@@ -314,6 +317,20 @@ export default function GestaoLigas() {
                                     />
                                 </div>
                             )}
+                            <div>
+                                <label className={labelClass}>Federação <span className="text-gray-300 normal-case font-normal tracking-normal">(opcional)</span></label>
+                                <select
+                                    className={inputClass}
+                                    value={newLeague.id_federation || ""}
+                                    onChange={(e) => setNewLeague({ ...newLeague, id_federation: e.target.value || null })}
+                                >
+                                    <option value="">Sem federação</option>
+                                    {federations.map(f => (
+                                        <option key={f.id_federation} value={f.id_federation}>{f.acronym} — {f.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div>
                                 <label className={labelClass}>Nome</label>
                                 <input type="text" className={inputClass} value={newLeague.name} onChange={(e) => setNewLeague({ ...newLeague, name: e.target.value })} />
