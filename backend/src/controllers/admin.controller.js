@@ -954,7 +954,9 @@ export async function getDashboardFederationBySlug(req, res) {
   const { slug } = req.params;
   try {
     const fedResult = await db.query(
-      `SELECT id_federation, name, acronym, logo_url, slug, sort_order FROM federations WHERE slug = $1 AND active = true`,
+      `SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
+              primary_color, secondary_color, tertiary_color, full_name
+       FROM federations WHERE slug = $1 AND active = true`,
       [slug]
     );
     if (fedResult.rowCount === 0) return res.status(404).json({ message: "Federação não encontrada" });

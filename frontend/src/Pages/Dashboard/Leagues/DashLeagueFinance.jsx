@@ -127,6 +127,7 @@ export default function DashLeagueFinance() {
 
   useEffect(() => {
     if (!mainLeagueId) return;
+    if (!theLeague) return; // aguarda info da liga para saber se tem edições
     // Ligas com edições (Copa do Mundo, Euro…) não têm filtro de ano — exibem todos os ciclos
     const hasEditions = theLeague?.league?.has_editions;
     const yearParams  = hasEditions ? "" : "&fromYear=2018&toYear=2025";

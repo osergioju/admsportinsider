@@ -66,15 +66,8 @@ export default function NetResultSection({
 
   useEffect(() => {
     if (!availableYears || availableYears.length === 0) return;
-
-    if (!startYear) {
-      setStartYear(availableYears[0]);
-    }
-
-    if (!endYear) {
-      setEndYear(availableYears[availableYears.length - 1]);
-    }
-
+    setStartYear(availableYears[0]);
+    setEndYear(availableYears[availableYears.length - 1]);
   }, [availableYears]);
 
   const mainData = data?.[mainLeagueId];

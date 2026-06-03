@@ -62,8 +62,13 @@ export default function RevenueLineChart({
         fontWeight: "normal"
       },
       formatter: (params) => {
-        const label = adapted.xAxisLabels?.[params[0]?.dataIndex] || params[0]?.axisValue;
-        const header = label !== params[0]?.axisValue ? `<b>${label}</b><br/>` : "";
+        const idx   = params[0]?.dataIndex;
+        const year  = adapted.years?.[idx];
+        const label = adapted.xAxisLabels?.[idx] || params[0]?.axisValue;
+        const isEditionName = label && label !== String(year);
+        const header = isEditionName
+          ? `<b>${label} (${year})</b><br/>`
+          : `<b>${year}</b><br/>`;
         return header + params
           .map(p => `${p.marker} ${p.seriesName}: ${(p.value / 10).toFixed(1)}`)
           .join("<br/>");

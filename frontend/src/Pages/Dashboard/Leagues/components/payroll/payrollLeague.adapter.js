@@ -27,6 +27,14 @@ export function adaptPayrollLineData(
 
   if (years.length === 0) return null;
 
+  const yearLabels = {};
+  leagueIds.forEach((leagueId) => {
+    (dataByLeague[leagueId] || []).forEach((item) => {
+      if (item.edition_name && item.year) yearLabels[item.year] = item.edition_name;
+    });
+  });
+  const xAxisLabels = years.map(y => yearLabels[y] || String(y));
+
   const DEFAULT_COLOR = "#999999";
 
   const series = leagueIds.map((leagueId) => {
@@ -65,5 +73,5 @@ export function adaptPayrollLineData(
     };
   });
 
-  return { years, series };
+  return { years, xAxisLabels, series };
 }

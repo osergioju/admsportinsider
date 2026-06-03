@@ -5,7 +5,7 @@ export function adaptNetResultEvolutionByLeague(
   mainLeagueId,
   leagueColor,
   metric = "net_income",
-  limit = 5
+  limit = 100
 ) {
   if (!data || Object.keys(data).length === 0) {
     return null;
@@ -32,6 +32,14 @@ export function adaptNetResultEvolutionByLeague(
   const years = Array.from(yearsSet)
     .sort((a, b) => a - b)
     .slice(-limit);
+
+  const yearLabels = {};
+  leagueIds.forEach((leagueId) => {
+    (data[leagueId] || []).forEach((item) => {
+      if (item.edition_name && item.year) yearLabels[item.year] = item.edition_name;
+    });
+  });
+  const xAxisLabels = years.map(y => yearLabels[y] || String(y));
 
   // 2) Montar séries
   const series = leagueIds.map((leagueId) => {
@@ -70,5 +78,5 @@ export function adaptNetResultEvolutionByLeague(
     };
   });
 
-  return { years, series };
+  return { years, xAxisLabels, series };
 }

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptNetResultEvolution } from "./netResultEvolutionLeague.adapter";
 
@@ -62,11 +63,15 @@ export default function NetResultLineChart({
         fontWeight: "normal"
       },
       formatter: (params) => {
-        return params
-          .map(
-            (p) =>
-              `${p.marker} ${p.seriesName}: ${p.value}`
-          )
+        const idx   = params[0]?.dataIndex;
+        const year  = adapted.years?.[idx];
+        const label = adapted.xAxisLabels?.[idx] || params[0]?.axisValue;
+        const isEditionName = label && label !== String(year);
+        const header = isEditionName
+          ? `<b>${label} (${year})</b><br/>`
+          : `<b>${year}</b><br/>`;
+        return header + params
+          .map(p => `${p.marker} ${p.seriesName}: ${p.value}`)
           .join("<br/>");
       }
     },
@@ -95,7 +100,7 @@ export default function NetResultLineChart({
 
     xAxis: {
       type: "category",
-      data: adapted.years,
+      data: adapted.xAxisLabels || adapted.years,
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
