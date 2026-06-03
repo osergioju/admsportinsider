@@ -4,6 +4,7 @@ import { api } from "../../../services/api";
 import { ChevronLeft, ChevronRight, Search, X, Heart, Globe, Trophy } from "lucide-react";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
+import { federationLogo } from "../../../utils/federationUrl";
 
 const PAGE_SIZE = 24;
 
@@ -124,11 +125,12 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
           </button>
 
           <div className="bg-white/95 relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
-            {league.slug
+            {(league.logo_url || league.slug)
               ? <img
-                  src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
+                  src={league.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
                   alt={league.name}
                   className="w-14 h-14 object-contain drop-shadow-sm"
+                  onError={e => e.currentTarget.style.display = 'none'}
                 />
               : <span className="font-black text-lg" style={{ color: league.flag_color1 || "#7F33D9" }}>{initials}</span>
             }
@@ -211,17 +213,17 @@ function ContinentCard({ name, confederation, count, logoUrl, onClick }) {
     <button onClick={onClick} className="group text-left w-full">
       <div className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-3 hover:border-[#7F33D9]/40 hover:shadow-sm transition-all duration-200">
         {logoUrl
-          ? <img src={logoUrl} className="w-10 h-[26px] object-contain rounded-md flex-shrink-0" alt={name} />
-          : <div className="w-10 h-[26px] bg-gradient-to-br from-purple-100 to-purple-50 rounded-md flex items-center justify-center flex-shrink-0">
-            <Globe size={13} className="text-[#7F33D9]" />
-          </div>
+          ? <img src={logoUrl} className="w-10 h-10 object-contain flex-shrink-0" alt={name} onError={e => e.currentTarget.style.display='none'} />
+          : <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Globe size={16} className="text-[#7F33D9]" />
+            </div>
         }
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#7F33D9] transition-colors leading-tight">
-            {name}
+            {name}{confederation ? ` — ${confederation}` : ""}
           </p>
           <p className="text-[11px] text-gray-400 mt-0.5">
-            {confederation ? `${confederation} · ` : ""}{count} {count === 1 ? t("leagues.singular", "competição") : t("leagues.plural", "competições")}
+            {count} {count === 1 ? t("leagues.singular", "competição") : t("leagues.plural", "competições")}
           </p>
         </div>
         <ChevronRight size={14} className="text-gray-300 group-hover:text-[#7F33D9] transition-colors flex-shrink-0" />
@@ -284,9 +286,15 @@ export default function DashLeagues() {
     continentalLeagues.forEach(league => {
       const meta = parseMeta(league.structure_json);
       const region = meta.continent || "Internacional";
-      const confederation = meta.confederation || null;
-      const logoUrl = meta.continent_logo_url || league.continent_logo_url || null;
+      const confederation = meta.confederation || league.fed_acronym || null;
+      // Logo: structure_json > continent_logo_url > logo da federação via slug
+      const logoUrl = meta.continent_logo_url
+        || league.continent_logo_url
+        || league.fed_logo_url
+        || (league.fed_slug ? federationLogo(league.fed_slug, "thumb") : null);
       if (!map[region]) map[region] = { name: region, confederation, logoUrl, leagues: [] };
+      if (!map[region].logoUrl && logoUrl) map[region].logoUrl = logoUrl;
+      if (!map[region].confederation && confederation) map[region].confederation = confederation;
       map[region].leagues.push(league);
     });
     return Object.values(map).sort((a, b) => a.name.localeCompare(b.name, "pt"));

@@ -100,7 +100,7 @@ function LigaAvatar({ logoUrl, name }) {
         }}
       >
         <img
-          src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${logoUrl}.webp`}
+          src={logoUrl.startsWith("http") ? logoUrl : `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${logoUrl}.webp`}
           alt={name}
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
           onError={(e) => {
@@ -210,7 +210,7 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
   const country = item.country_name || item.country || "";
   const crestUrl = item.crest_url || null;
   const flagUrl = item.flag_url || null;
-  const logoUrl = item.slug || null;
+  const logoUrl = item.logo_url || item.slug || null;
 
   // 🧩 Avatar por tipo
   const avatarMap = {

@@ -90,7 +90,6 @@ export async function getAllLeagues(req, res) {
     LEFT JOIN countries c ON c.id_country = l.id_country
     LEFT JOIN continents ct ON ct.id_continent = l.id_continent
     LEFT JOIN federations f ON f.id_federation = l.id_federation
-    WHERE l.active = true
     ORDER BY l.name ASC
     LIMIT $1 OFFSET $2
   `, [limit, offset]);
@@ -530,10 +529,22 @@ export async function leaguesSearch(req, res) {
 export async function getContinentalLeagues(req, res) {
   try {
     const result = await db.query(`
-      SELECT id_league, name, logo_url, slug, active, structure_json
-      FROM leagues
-      WHERE active = TRUE AND id_country IS NULL
-      ORDER BY name ASC
+      SELECT
+        l.id_league, l.name, l.logo_url, l.slug, l.active, l.structure_json,
+        l.id_federation,
+        f.logo_url  AS fed_logo_url,
+        f.slug      AS fed_slug,
+        f.acronym   AS fed_acronym,
+        f.sphere    AS fed_sphere,
+        f.primary_color   AS fed_color1,
+        f.secondary_color AS fed_color2,
+        f.tertiary_color  AS fed_color3
+      FROM leagues l
+      LEFT JOIN federations f ON f.id_federation = l.id_federation
+      WHERE l.active = TRUE
+        AND l.id_country IS NULL
+        AND l.is_competition = TRUE
+      ORDER BY l.name ASC
     `);
     return res.json({ leagues: result.rows });
   } catch (err) {

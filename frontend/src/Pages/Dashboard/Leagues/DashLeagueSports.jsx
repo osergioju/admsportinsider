@@ -64,9 +64,9 @@ export default function DashLeagueSports() {
                 <div className="relative z-10 p-6 sm:p-8">
                     <div className="flex items-start gap-5">
                         <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center p-2.5">
-                            {lg.logo_url && (
+                            {(lg.logo_url || lg.slug) && (
                                 <img
-                                    src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
+                                    src={lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
                                     alt={competitionTitle}
                                     className="w-full h-full object-contain drop-shadow-lg"
                                 />

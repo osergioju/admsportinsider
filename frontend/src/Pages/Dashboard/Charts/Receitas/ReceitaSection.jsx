@@ -137,8 +137,8 @@ export default function ReceitaSection({
                 onClick={() => handleRemoveLeague(leagueId)}
                 className="cursor-pointer hover:bg-[#7f34d9] hover:text-white transition-all bg-[#EDE6F6] flex items-center gap-2 px-3 py-1 rounded-lg text-sm text-[#8D6C6C]"
               >
-                {meta.slug && (
-                  <img src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${meta.slug}.webp`} alt="" className="w-4 h-4 object-contain flex-shrink-0" />
+                {(meta.logo_url || meta.slug) && (
+                  <img src={meta.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${meta.slug}.webp`} alt="" className="w-4 h-4 object-contain flex-shrink-0" />
                 )}
                 {meta.flag_url && (
                   <img src={meta.flag_url} alt="" className="w-4 h-3 object-cover rounded-sm flex-shrink-0" />

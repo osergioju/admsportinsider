@@ -89,8 +89,8 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
               >
                 <td className="py-3.5 pr-6 whitespace-nowrap">
                   <div className="flex items-center gap-2.5">
-                    {meta.slug ? (
-                      <img src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${meta.slug}.webp`} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
+                    {(meta.logo_url || meta.slug) ? (
+                      <img src={meta.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${meta.slug}.webp`} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
                     ) : (
                       <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                     )}
