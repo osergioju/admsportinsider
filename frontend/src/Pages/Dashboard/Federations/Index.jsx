@@ -20,9 +20,9 @@ function fedBg(c1, c2, c3) {
 const SPHERE_ORDER = { global: 0, continental: 1, nacional: 2 };
 const SPHERE_LABEL = { global: "Global", continental: "Continental", nacional: "Nacional" };
 const SPHERE_STYLE = {
-  global:      "bg-amber-50 text-amber-700 border border-amber-200",
+  global: "bg-amber-50 text-amber-700 border border-amber-200",
   continental: "bg-blue-50 text-blue-700 border border-blue-200",
-  nacional:    "bg-gray-100 text-gray-500",
+  nacional: "bg-gray-100 text-gray-500",
 };
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ function FederationCard({ federation, isFavorited, toggleFavorite }) {
 
           <div className="bg-white/95 relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
             {federation.slug
-              ? <img src={federationLogo(federation.slug, "medium")} alt={federation.acronym} className="w-14 h-14 object-contain drop-shadow-sm" onError={e=>e.currentTarget.style.display='none'} />
+              ? <img src={federationLogo(federation.slug, "medium")} alt={federation.acronym} className="w-14 h-14 object-contain drop-shadow-sm" onError={e => e.currentTarget.style.display = 'none'} />
               : <span className="font-black text-sm tracking-tight" style={{ color: federation.primary_color || "#7F33D9" }}>{initials}</span>
             }
           </div>
@@ -72,9 +72,9 @@ function FederationCard({ federation, isFavorited, toggleFavorite }) {
 
         <div className="px-3 py-3 text-center">
           <p className="font-bold text-gray-900 text-sm group-hover:text-[#7F33D9] transition-colors line-clamp-1">
-            {federation.acronym}
+            {federation.name}
           </p>
-          <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{federation.name}</p>
+          <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{federation.acronym}</p>
           {count > 0 && (
             <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-gray-400">
               <Trophy size={10} />

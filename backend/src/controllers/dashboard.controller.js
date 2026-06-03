@@ -874,7 +874,9 @@ export async function getLeagueRevenues(req, res) {
         lf.year,
         fi.code,
         COALESCE(fit.name, fi.name_pt) AS name,
-        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,
+        lf.value,
+        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
       FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator

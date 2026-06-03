@@ -221,20 +221,18 @@ export async function getFederationCycleFinancials(req, res) {
   try {
     // Resolve federação → liga
     const fedRow = await db.query(
-      `SELECT f.id_federation FROM federations f
+      `SELECT f.id_federation, f.financial_league_id FROM federations f
        WHERE f.slug = $1 AND f.active = true LIMIT 1`,
       [slug]
     );
     if (!fedRow.rows.length) return res.status(404).json({ message: "Federação não encontrada" });
 
-    // Pega id_league das edições desta federação (via leagues.id_federation)
+    const financialLeagueId = fedRow.rows[0].financial_league_id;
+    if (!financialLeagueId) return res.json({ editions: [] });
+
     const leagueRow = await db.query(
-      `SELECT l.id_league, l.currency_code
-       FROM leagues l
-       JOIN competition_editions ce ON ce.id_league = l.id_league
-       WHERE l.id_federation = $1
-       LIMIT 1`,
-      [fedRow.rows[0].id_federation]
+      `SELECT id_league, currency_code FROM leagues WHERE id_league = $1`,
+      [financialLeagueId]
     );
     if (!leagueRow.rows.length) return res.json({ editions: [] });
 

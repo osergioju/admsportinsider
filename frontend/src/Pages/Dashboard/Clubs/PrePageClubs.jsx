@@ -211,7 +211,7 @@ export default function PrePageClubs() {
 
     const navCards = [
         {
-            title: t("clubs.finances", "Finançasx"),
+            title: 'Indicadores financeiros',
             desc: t("clubs.finances_desc", "Receitas, custos, EBITDA, endividamento e mais."),
             route: `/dashboard/clubs/finance/${id}`,
             Icon: TrendingUp,
@@ -224,7 +224,7 @@ export default function PrePageClubs() {
             Icon: Trophy,
         },
         {
-            title: t("clubs.main_squad", "Elenco"),
+            title: 'Elenco de atletas',
             desc: t("clubs.squad_desc", "Características de atletas e estratégia no mercado."),
             route: `/dashboard/clubs/club-players/${id}`,
             Icon: Users,
@@ -247,7 +247,7 @@ export default function PrePageClubs() {
                 <div className="relative z-10 px-5 sm:px-6 pt-4 pb-8">
 
                     {/* Linha principal: crest + nome + bandeira */}
-                    <div className="flex items-center gap-4 lg:p-5 flex-wrap">
+                    <div className="flex items-start  gap-4 lg:p-5 flex-wrap">
                         <div className="shrink-0 w-14 h-14 lg:w-30 lg:h-30 xl:w-40 xl:h-40 flex items-center justify-center">
                             <img
                                 src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${theClub.club.crest_url}.webp`}
@@ -274,7 +274,7 @@ export default function PrePageClubs() {
                                     {theClub.club.description}
                                 </span>
                             )}
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-4 flex gap-2 lg:flex-row flex-col lg:justify-between">
                                 {(theClub.club.stadium_name) && (
                                     <>
                                         <div className="text-left pr-6">
@@ -309,13 +309,13 @@ export default function PrePageClubs() {
 
                                         {theClub.hospitality?.hospitality_url && (
                                             <div
-                                                className="py-2 flex items-center w-auto"
+                                                className="flex-col lg:flex-row py-2 flex items-start w-auto"
                                             >
                                                 <a
                                                     href={theClub.hospitality.hospitality_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-[#0A0A0A] font-[400] text-[18px] bg-gradient-to-r to-white py-4 px-6 lg:px-8 rounded-full transition-all hover:brightness-[1.1]"
+                                                    className="text-[#0A0A0A] font-[400] text-sm lg:text-[16px] bg-gradient-to-r to-white py-4 px-6 lg:px-6 lg:py-4 rounded-full transition-all hover:brightness-[1.1]"
                                                     style={{
                                                         background: `linear-gradient(to right, #ffffff, ${colorWOpacity})`
                                                     }}
@@ -323,7 +323,7 @@ export default function PrePageClubs() {
                                                 >
                                                     {theClub.hospitality.description || t("club.hospitality", "Hospitalidade e camarotes")}
                                                 </a>
-                                                <svg class="ml-6 w-[150px] invert" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1000 244.92">
+                                                <svg class="w-[100px] mt-2 lg:ml-6 lg:w-[150px] invert" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1000 244.92">
                                                     <g>
                                                         <path class="st0" d="M72.8,151.71c-7.46,0-14.14-1.78-20.05-5.34-5.91-3.56-10.58-8.46-14.03-14.71-3.44-6.25-5.16-13.28-5.16-21.08s1.69-14.77,5.08-20.91c3.38-6.14,8.06-11.01,14.03-14.63,5.96-3.61,12.62-5.42,19.96-5.42,6.42,0,12.13,1.26,17.12,3.79,4.99,2.53,8.92,6.05,11.79,10.58,2.87,4.53,4.47,9.84,4.82,15.92v21.68c-.34,5.97-1.98,11.22-4.9,15.75-2.93,4.53-6.86,8.06-11.79,10.58-4.93,2.53-10.56,3.79-16.87,3.79ZM72.8,189.06c-8.49,0-15.95-1.55-22.37-4.65-6.43-3.1-11.65-7.46-15.66-13.08l10.15-10.15c3.33,4.24,7.28,7.49,11.88,9.72,4.59,2.24,10.04,3.36,16.35,3.36,8.26,0,14.86-2.21,19.79-6.63,4.93-4.42,7.4-10.36,7.4-17.81v-20.31l2.75-18.41-2.75-18.24v-21.51h15.49v78.48c0,7.8-1.81,14.66-5.42,20.57-3.61,5.91-8.66,10.5-15.14,13.77-6.48,3.27-13.97,4.91-22.46,4.91ZM75.72,137.08c5.16,0,9.64-1.09,13.42-3.27,3.79-2.18,6.74-5.25,8.86-9.21,2.12-3.96,3.18-8.58,3.18-13.85s-1.06-9.9-3.18-13.85c-2.12-3.96-5.11-7.06-8.95-9.29-3.85-2.24-8.29-3.36-13.34-3.36s-9.7,1.12-13.6,3.36c-3.9,2.24-6.97,5.34-9.21,9.29s-3.36,8.52-3.36,13.68,1.12,9.75,3.36,13.77c2.24,4.02,5.34,7.14,9.29,9.38,3.96,2.24,8.46,3.36,13.51,3.36Z" />
                                                         <path class="st0" d="M168.14,154.81c-7.92,0-15.09-1.89-21.51-5.68-6.43-3.79-11.53-8.92-15.32-15.4-3.79-6.48-5.68-13.74-5.68-21.77s1.89-15.06,5.68-21.43,8.89-11.44,15.32-15.23c6.42-3.79,13.6-5.68,21.51-5.68s15.29,1.87,21.77,5.59c6.48,3.73,11.62,8.81,15.4,15.23,3.79,6.43,5.68,13.6,5.68,21.51s-1.89,15.29-5.68,21.77c-3.79,6.48-8.92,11.62-15.4,15.4-6.48,3.79-13.74,5.68-21.77,5.68ZM168.14,139.83c5.28,0,9.92-1.2,13.94-3.61,4.02-2.41,7.17-5.71,9.47-9.9,2.29-4.19,3.44-8.98,3.44-14.37s-1.18-9.98-3.53-14.11c-2.35-4.13-5.51-7.37-9.47-9.72-3.96-2.35-8.58-3.53-13.85-3.53s-9.58,1.18-13.6,3.53c-4.02,2.35-7.17,5.59-9.47,9.72-2.3,4.13-3.44,8.84-3.44,14.11s1.15,10.18,3.44,14.37c2.29,4.19,5.45,7.49,9.47,9.9,4.01,2.41,8.55,3.61,13.6,3.61Z" />
@@ -355,21 +355,21 @@ export default function PrePageClubs() {
                         {/* ── CONTENT (fundo neutro escuro) ─────────────────── */}
                         <div className="w-full mt-4">
                             {!isHidden && (
-                                <div className="grid lg:grid-cols-3 gap-4 sm:gap-5">
+                                <div className="grid lg:grid-cols-3 gap-1 lg:gap-4 sm:gap-5">
                                     {navCards.map((card, i) => (
                                         <div
                                             key={card.title}
-                                            className="border rounded-2xl p-6 cursor-pointer"
+                                            className="flex items-center justify-between border rounded-2xl p-2 px-5 pr-2 lg:p-4 lg:px-6 cursor-pointer"
                                             style={{
                                                 background: `linear-gradient(to right, #ffffff, #ffffff)`
                                             }}
                                             onClick={() => navigate(card.route)}
                                         >
-                                            <div className="mb-4">
-                                                <h2 className="text-[#0A0A0A] font-[400] text-[18px] mb-1">
+                                            <div className="w-1/3 lg:w-auto">
+                                                <h2 className="text-[#0A0A0A] font-[400] text-[16px] mb-0 leading-none">
                                                     {card.title}
                                                 </h2>
-                                                <p className="text-sm text-[#5F5F5F]/80">{card.desc}</p>
+                                                {/* <p className="text-sm text-[#5F5F5F]/80">{card.desc}</p> */}
                                             </div>
 
                                             <button

@@ -18,8 +18,8 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
         {league.slug
           ? <img src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`} className="w-10 h-10 object-contain flex-shrink-0" alt={league.name} />
           : <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Trophy size={15} className="text-[#7F33D9]" />
-            </div>
+            <Trophy size={15} className="text-[#7F33D9]" />
+          </div>
         }
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#7F33D9] transition-colors leading-tight">{league.name}</p>
@@ -48,19 +48,21 @@ function SkeletonRow() {
 
 // ─── Gráfico de ciclo ─────────────────────────────────────────────────────────
 
-function CycleChart({ title, editions, field, color, currency }) {
+function CycleChart({ title, editions, field, color, currency, invertSign, clampZero }) {
   if (!editions?.length) return null;
 
-  // Um ponto por edição — X = ano da Copa, tooltip = nome da sede
   const labels = editions.map(e => String(e.edition_year));
   const values = editions.map(e => {
-    const v = parseFloat(e[field]);
-    return isNaN(v) ? null : Math.round(v * 10) / 10;
+    let v = parseFloat(e[field]);
+    if (isNaN(v)) return null;
+    if (invertSign) v = v * -1;
+    if (clampZero && v < 0) v = 0;
+    return Math.round(v * 10) / 10;
   });
 
   const latest = values.filter(v => v != null).at(-1);
-  const prev   = values.filter(v => v != null).at(-2);
-  const pct    = (latest != null && prev != null && prev !== 0)
+  const prev = values.filter(v => v != null).at(-2);
+  const pct = (latest != null && prev != null && prev !== 0)
     ? ((latest - prev) / Math.abs(prev)) * 100
     : null;
 
@@ -114,7 +116,7 @@ function CycleChart({ title, editions, field, color, currency }) {
         <p className="text-2xl font-bold text-gray-900">{fmt(latest)} <span className="text-sm font-normal text-gray-400">{currency}</span></p>
         {pct != null && (
           <span className={`flex items-center gap-0.5 text-xs font-semibold mb-1 ${pct >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-            {pct >= 0 ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
+            {pct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
             {Math.abs(pct).toFixed(0)}%
           </span>
         )}
@@ -136,15 +138,15 @@ export default function FederationDetail() {
   const { user } = useContext(AuthContext);
 
   const [federation, setFederation] = useState(null);
-  const [leagues, setLeagues]       = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [notFound, setNotFound]     = useState(false);
+  const [leagues, setLeagues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [searchInput, setSearchInput] = useState("");
 
   // Financeiros por ciclo
-  const [editions, setEditions]         = useState(null); // null = not yet loaded
-  const [loadingFin, setLoadingFin]     = useState(false);
-  const [currency, setCurrency]         = useState(user?.currency_code || "USD");
+  const [editions, setEditions] = useState(null); // null = not yet loaded
+  const [loadingFin, setLoadingFin] = useState(false);
+  const [currency, setCurrency] = useState(user?.currency_code || "USD");
 
   const token = localStorage.getItem("token");
 
@@ -214,10 +216,9 @@ export default function FederationDetail() {
         {loading ? <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" /> : federation && (
           <div className="flex items-center gap-2">
             {federation.slug
-              ? <img src={federationLogo(federation.slug, "thumb")} className="w-6 h-6 object-contain" alt={federation.acronym} onError={e=>e.currentTarget.style.display='none'} />
+              ? <img src={federationLogo(federation.slug, "thumb")} className="w-6 h-6 object-contain" alt={federation.acronym} onError={e => e.currentTarget.style.display = 'none'} />
               : <Shield size={14} className="text-[#7F33D9]" />
             }
-            <span className="text-sm font-medium text-gray-700">{federation.acronym}</span>
             <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{federation.name}</span>
           </div>
         )}
@@ -252,7 +253,6 @@ export default function FederationDetail() {
           <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-100">
             <div>
               <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Evolução financeira por ciclo</p>
-              <p className="text-xs text-gray-400 mt-0.5">Receita, custos e lucro = soma dos 4 anos do ciclo · Dívida = último ano do ciclo</p>
             </div>
             <div className="flex gap-1 bg-gray-100 rounded-full p-1 shrink-0">
               {CURRENCIES.map(c => (
@@ -275,9 +275,9 @@ export default function FederationDetail() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <CycleChart title="Receitas" editions={editions} field="revenue_converted" color="#7F33D9" currency={currency} />
-              <CycleChart title="Custos" editions={editions} field="costs_converted" color="#ef4444" currency={currency} />
+              <CycleChart title="Custos" editions={editions} field="costs_converted" color="#ef4444" currency={currency} invertSign />
               <CycleChart title="Lucro líquido" editions={editions} field="net_income_converted" color="#10b981" currency={currency} />
-              <CycleChart title="Dívida líquida" editions={editions} field="net_debt_converted" color="#f59e0b" currency={currency} />
+              <CycleChart title="Dívida líquida" editions={editions} field="net_debt_converted" color="#f59e0b" currency={currency} clampZero />
             </div>
           )}
         </>
