@@ -64,8 +64,8 @@ export default function ReceitaSection({
         }
       });
     });
-    if (max >= 1_000) return "em bilhões";
-    if (max > 0)      return "em milhões";
+    if (max >= 1_000) return t("ui.in_billions", "em bilhões");
+    if (max > 0)      return t("ui.in_millions", "em milhões");
     return null;
   }, [data]);
 

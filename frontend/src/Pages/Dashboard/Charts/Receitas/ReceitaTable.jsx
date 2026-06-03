@@ -62,8 +62,8 @@ export default function ReceitaTable({ data, ligasSelecionadas, leagueMap, leagu
         <thead>
           <tr>
             <th className="text-left py-3 pr-6 text-xs font-medium text-[#AFAFB2] uppercase tracking-wide whitespace-nowrap">
-              Liga
-            </th>
+              {t("ui.league", "Liga")}
+</th>
             {years.map((year) => (
               <th
                 key={year}

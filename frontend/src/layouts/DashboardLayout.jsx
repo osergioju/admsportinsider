@@ -23,7 +23,7 @@ export default function DashboardLayout() {
     const navigate = useNavigate();
 
     const { logout, user, loading } = useContext(AuthContext);
-    const { t } = useTranslation();
+    const { t, publicLocale, setPublicLocale, LOCALES } = useTranslation();
     const location = useLocation();
     const isPublic =
         location.pathname === "/dashboard-public" ||
@@ -79,10 +79,10 @@ export default function DashboardLayout() {
                 </div>
                 <div className="flex flex-col">
                     <span className="text-sm font-bold text-[#0A0A0A]">
-                        {user?.name ? user.name.split(" ")[0] : "Convidado"}
+                        {user?.name ? user.name.split(" ")[0] : t("ui.guest", "Convidado")}
                     </span>
                     <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
-                        {user?.plan_name ?? "Plano Gratuito"}
+                        {user?.plan_name ?? t("financial.free_plan", "Plano Gratuito")}
                     </span>
                 </div>
             </div>
@@ -176,13 +176,13 @@ export default function DashboardLayout() {
                             <button onClick={() => setOpenFeds(!openFeds)} className={menuItemStyle}>
                                 <div className="flex items-center gap-3">
                                     <ShieldUser strokeWidth={1.5} className={iconStyle} size={18} />
-                                    <span className={textStyle}>Federações</span>
+                                    <span className={textStyle}>{t("menu.federations", "Federações")}</span>
                                 </div>
                                 <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openFeds ? "rotate-180 text-purple-500" : ""}`} />
                             </button>
                             {openFeds && (
                                 <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations" label="Todas as federações" />
+                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations" label={t("menu.federations_all", "Todas as federações")} />
                                     {user && (
                                         <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations?tab=favs" label={t("menu.favorites", "Favoritas")} />
                                     )}
@@ -234,7 +234,7 @@ export default function DashboardLayout() {
                         </div>
                     ) : (
                         <div className="mt-4 pt-4 border-t px-4">
-                            <LinkButton to="/register" text="Crie sua conta"></LinkButton>
+                            <LinkButton to="/register" text={t("ui.create_account", "Crie sua conta")}></LinkButton>
                         </div>
                     )
                 }
@@ -308,11 +308,27 @@ export default function DashboardLayout() {
                                 </div>
                             ) : (
                                 <>
+                                    {/* Seletor de idioma mobile */}
+                                    <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-full px-1 py-0.5">
+                                        {LOCALES.map(loc => (
+                                            <button
+                                                key={loc.code}
+                                                onClick={() => setPublicLocale(loc.code)}
+                                                className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all ${
+                                                    publicLocale === loc.code
+                                                        ? "bg-[#7F33D9] text-white"
+                                                        : "text-gray-500"
+                                                }`}
+                                            >
+                                                {loc.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                     <Link to="/login" className="text-xs font-semibold text-[#7F33D9] border border-[#7F33D9]/30 rounded-full px-3 py-1.5 hover:bg-purple-50 transition-colors">
-                                        Entrar
+                                        {t("ui.login", "Entrar")}
                                     </Link>
                                     <Link to="/register" className="text-xs font-semibold text-white bg-[#7F33D9] rounded-full px-3 py-1.5 shadow-sm shadow-purple-400/30 hover:bg-[#6a28b8] transition-colors">
-                                        Criar conta
+                                        {t("ui.create_account", "Criar conta")}
                                     </Link>
                                 </>
                             )}
@@ -404,17 +420,35 @@ export default function DashboardLayout() {
                             </>
                         ) : (
                             <>
+                                {/* Seletor de idioma público */}
+                                <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-full px-1 py-1 shadow-sm">
+                                    {LOCALES.map(loc => (
+                                        <button
+                                            key={loc.code}
+                                            onClick={() => setPublicLocale(loc.code)}
+                                            className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
+                                                publicLocale === loc.code
+                                                    ? "bg-[#7F33D9] text-white shadow-sm"
+                                                    : "text-gray-500 hover:text-[#7F33D9]"
+                                            }`}
+                                            title={loc.flag}
+                                        >
+                                            {loc.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="w-px h-5 bg-gray-200" />
                                 <Link
                                     to="/login"
                                     className="px-5 py-2 text-sm font-semibold text-[#7F33D9] border border-[#7F33D9]/30 rounded-full hover:bg-purple-50 transition-colors"
                                 >
-                                    Entrar
+                                    {t("ui.login", "Entrar")}
                                 </Link>
                                 <Link
                                     to="/register"
                                     className="px-5 py-2 text-sm font-semibold text-white bg-[#7F33D9] rounded-full hover:bg-[#6025A8] transition-colors shadow-md shadow-purple-500/20"
                                 >
-                                    Criar conta grátis
+                                    {t("ui.create_account_free", "Criar conta grátis")}
                                 </Link>
                             </>
                         )}
@@ -425,21 +459,21 @@ export default function DashboardLayout() {
                 {isPublic && !user && (
                     <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-gradient-to-r from-[#7F33D9] to-[#5A1FA8] rounded-2xl shadow-lg shadow-purple-500/20">
                         <div>
-                            <p className="text-white font-bold text-sm">Você está explorando o Sport Insider gratuitamente</p>
-                            <p className="text-purple-200 text-xs mt-0.5">Crie sua conta para salvar favoritos, acessar relatórios e muito mais.</p>
+                            <p className="text-white font-bold text-sm">{t("ui.exploring_free", "Você está explorando o Sport Insider gratuitamente")}</p>
+                            <p className="text-purple-200 text-xs mt-0.5">{t("ui.exploring_cta", "Crie sua conta para salvar favoritos, acessar relatórios e muito mais.")}</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                             <Link
                                 to="/login"
                                 className="px-4 py-2 text-xs font-bold text-white border border-white/30 rounded-full hover:bg-white/10 transition-colors"
                             >
-                                Já tenho conta
+                                {t("ui.already_have_account", "Já tenho conta")}
                             </Link>
                             <Link
                                 to="/register"
                                 className="px-4 py-2 text-xs font-bold text-[#7F33D9] bg-white rounded-full hover:bg-purple-50 transition-colors shadow-sm"
                             >
-                                Criar conta grátis →
+                                {t("ui.create_account_free", "Criar conta grátis")} →
                             </Link>
                         </div>
                     </div>

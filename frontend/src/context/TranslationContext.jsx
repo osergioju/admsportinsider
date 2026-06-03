@@ -5,32 +5,47 @@ import { AuthContext } from "./AuthContext";
 export const TranslationContext = createContext({
   t: (code, fallback) => fallback ?? code,
   locale: "pt-BR",
+  publicLocale: "pt-BR",
+  setPublicLocale: () => {},
   loadingTranslations: false,
 });
+
+const LOCALES = [
+  { code: "pt-BR", label: "PT", flag: "🇧🇷" },
+  { code: "en-US", label: "EN", flag: "🇺🇸" },
+  { code: "ES",    label: "ES", flag: "🇪🇸" },
+];
 
 export function TranslationProvider({ children }) {
   const { user, loading: authLoading } = useContext(AuthContext);
   const [translations, setTranslations] = useState({});
   const [loadingTranslations, setLoadingTranslations] = useState(false);
+  const [publicLocale, setPublicLocaleState] = useState(
+    () => localStorage.getItem("publicLocale") || "pt-BR"
+  );
 
-  // Locale vem de user.region_code (ex: "en-US", "ES", "pt-BR")
-  const locale = user?.region_code ?? "pt-BR";
+  const locale = user?.region_code ?? publicLocale;
+
+  function setPublicLocale(code) {
+    localStorage.setItem("publicLocale", code);
+    setPublicLocaleState(code);
+  }
 
   useEffect(() => {
-    // Só busca quando o usuário está logado e o auth terminou de carregar
-    if (authLoading || !user) {
-      setTranslations({});
-      return;
-    }
+    if (authLoading) return;
 
     async function fetchTranslations() {
       setLoadingTranslations(true);
       try {
-        const { data } = await api.get("/user/translations");
+        let data;
+        if (user) {
+          ({ data } = await api.get("/user/translations"));
+        } else {
+          ({ data } = await api.get(`/public/translations?locale=${publicLocale}`));
+        }
         setTranslations(data);
       } catch (err) {
         console.error("[TranslationContext] Erro ao buscar traduções:", err);
-        // Falha silenciosa — o app continua funcionando com pt-BR hardcoded
         setTranslations({});
       } finally {
         setLoadingTranslations(false);
@@ -38,29 +53,20 @@ export function TranslationProvider({ children }) {
     }
 
     fetchTranslations();
-  }, [user?.region_code, user?.id, authLoading]); // re-busca se o usuário trocar de idioma
+  }, [user?.region_code, user?.id, authLoading, publicLocale]);
 
-  /**
-   * t(code, fallback?)
-   * Retorna a tradução do code ou o fallback fornecido ou o próprio code.
-   *
-   * Uso:
-   *   t("menu.home")            → "Home page" (en-US) | "Página inicial" (pt-BR fallback)
-   *   t("menu.home", "Início")  → usa "Início" se não encontrar nem no mapa nem no db
-   */
   const t = useCallback(
     (code, fallback) => translations[code] ?? fallback ?? code,
     [translations]
   );
 
   return (
-    <TranslationContext.Provider value={{ t, locale, loadingTranslations }}>
+    <TranslationContext.Provider value={{ t, locale, publicLocale, setPublicLocale, loadingTranslations, LOCALES }}>
       {children}
     </TranslationContext.Provider>
   );
 }
 
-/** Hook de conveniência */
 export function useTranslation() {
   return useContext(TranslationContext);
 }
