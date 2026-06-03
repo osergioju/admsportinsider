@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { api } from "../../services/api";
 import { Trash2, Loader2, Check, Plus, Search, X, Shield, Pencil, Crown, UploadCloud } from "lucide-react";
+import { federationLogo } from "../../utils/federationUrl";
 
 const FIFA_ACRONYM = "FIFA";
 
@@ -61,14 +62,18 @@ export default function GestaoFederacoes() {
     const handleFileChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        // Slug para nomear o arquivo: usa current.slug (edição) ou acronym em lowercase (criação)
+        const slug = current?.slug || form.acronym.toLowerCase().replace(/[^a-z0-9]/g, "-");
+        if (!slug) { setError("Defina a sigla antes de fazer upload."); return; }
         setUploading(true);
         try {
             const fd = new FormData();
             fd.append("file", file);
-            const res = await api.post("/admin/federations/upload-logo", fd, {
+            fd.append("slug", slug);
+            await api.post("/admin/federations/upload-logo", fd, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            setForm(prev => ({ ...prev, logo_url: res.data.url }));
+            // URL derivada do slug — não precisa guardar no form
         } catch {
             setError("Erro ao fazer upload da imagem.");
         } finally {
@@ -115,6 +120,7 @@ export default function GestaoFederacoes() {
     };
 
     const isFifa = (f) => f.acronym === FIFA_ACRONYM;
+    const fedLogoUrl = (f) => federationLogo(f.slug, "medium");
 
     const btnPrimary = "flex items-center gap-2 px-5 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20";
     const btnSecondary = "px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors";
@@ -166,8 +172,8 @@ export default function GestaoFederacoes() {
                                     </div>
                                 )}
                                 <div className="relative w-16 h-16 rounded-full border-4 border-gray-50 shadow-sm overflow-hidden group-hover:scale-110 transition-transform duration-300 bg-gray-50 flex items-center justify-center">
-                                    {f.logo_url
-                                        ? <img className="w-full h-full object-contain p-1" src={f.logo_url} alt={f.name} />
+                                    {fedLogoUrl(f)
+                                        ? <img className="w-full h-full object-contain p-1" src={fedLogoUrl(f)} alt={f.name} onError={e => e.currentTarget.style.display='none'} />
                                         : <Shield size={28} className="text-gray-300" />
                                     }
                                 </div>
@@ -225,8 +231,13 @@ export default function GestaoFederacoes() {
                                             <div className="w-16 h-16 shrink-0 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden">
                                                 {uploading
                                                     ? <Loader2 size={20} className="animate-spin text-[#7F33D9]" />
-                                                    : form.logo_url
-                                                        ? <img src={form.logo_url} className="w-full h-full object-contain p-1" alt="Logo" />
+                                                    : (current?.slug || form.acronym)
+                                                        ? <img
+                                                            src={federationLogo(current?.slug || form.acronym.toLowerCase().replace(/[^a-z0-9]/g,'-'), "medium")}
+                                                            className="w-full h-full object-contain p-1"
+                                                            alt="Logo"
+                                                            onError={e => e.currentTarget.style.display='none'}
+                                                          />
                                                         : <Shield size={24} className="text-gray-300" />
                                                 }
                                             </div>

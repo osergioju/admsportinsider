@@ -68,9 +68,21 @@ export async function uploadClubLogo(req, res) {
 export async function uploadFederationLogo(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: "Nenhum arquivo enviado." });
+    const slug = req.body.slug?.trim();
+    if (!slug) return res.status(400).json({ message: "Slug da federação é obrigatório." });
+
+    const path = await import("path");
+    const fs   = await import("fs");
+    const dest = path.default.join(process.cwd(), "uploads", "federacoes");
+    const ext  = path.default.extname(req.file.originalname).toLowerCase() || ".webp";
+    const finalName = `${slug}${ext}`;
+    const finalPath = path.default.join(dest, finalName);
+
+    // Renomeia o arquivo temporário para {slug}.ext
+    fs.default.renameSync(req.file.path, finalPath);
+
     const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
-    const url = `${baseUrl}/uploads/federacoes/${req.file.filename}`;
-    return res.status(200).json({ url });
+    return res.status(200).json({ url: `${baseUrl}/uploads/federacoes/${finalName}` });
   } catch (error) {
     console.error("Erro no upload de federação:", error);
     return res.status(500).json({ message: "Erro interno no upload." });

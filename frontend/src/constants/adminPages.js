@@ -8,6 +8,14 @@
  * - routes: prefixos de rota cobertos por esta permissão (usados em AdminPermissionRoute)
  */
 export const ADMIN_PAGES = [
+  // ── Modo Manutenção ──────────────────────────────────
+  {
+    key: "manutencao",
+    label: "Modo Manutenção",
+    group: "Gestão",
+    routes: ["/admin/manutencao"],
+  },
+
   // ── Gestão de dados ──────────────────────────────────
   {
     key: "gestao-dados",

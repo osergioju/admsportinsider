@@ -206,7 +206,7 @@ export async function getRevenueEvolutionByLeague(req, res) {
         l.name AS league_name,
         lf.year,
         SUM(lf.value) AS total
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN leagues l ON l.id_league = lf.id_league
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE fi.category = 'revenue'
@@ -354,7 +354,8 @@ export async function getRevenues(req, res) {
         name: row.name,
         value: row.value,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
   } catch (err) {
@@ -583,7 +584,8 @@ export async function getNetResult(req, res) {
         value: row.value,
         rate: row.rate,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
   } catch (err) {
@@ -629,7 +631,8 @@ export async function getNetResultEvolution(req, res) {
         value: row.value,
         rate: row.rate,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
   } catch (err) {
@@ -687,7 +690,8 @@ export async function getDebtsBreakdown(req, res) {
         name: row.name,
         value: row.value,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
   } catch (err) {
@@ -733,7 +737,8 @@ export async function getDebtsEvolution(req, res) {
         value: row.value,
         rate: row.rate,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
   } catch (err) {
@@ -790,7 +795,8 @@ export async function getFinancialIndicators(req, res) {
         value: row.value,
         rate: row.rate,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
   } catch (err) {
@@ -809,7 +815,7 @@ export async function getLeagueAvailableYears(req, res) {
 
     const result = await db.query(`
       SELECT DISTINCT year
-      FROM league_financials
+      FROM unified_league_financials
       WHERE id_league = $1
       ORDER BY year ASC;
     `, [id]);
@@ -868,10 +874,9 @@ export async function getLeagueRevenues(req, res) {
         lf.year,
         fi.code,
         COALESCE(fit.name, fi.name_pt) AS name,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $2
@@ -891,7 +896,8 @@ export async function getLeagueRevenues(req, res) {
         name: row.name,
         value: row.value,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
 
@@ -917,7 +923,7 @@ export async function getLeagueRevenuesBreakdown(req, res) {
     const result = await db.query(`
       WITH latest_year AS (
         SELECT MAX(year) AS year
-        FROM league_financials
+        FROM unified_league_financials
         WHERE id_league = $1
       ),
       rate_cte AS (
@@ -936,7 +942,7 @@ export async function getLeagueRevenuesBreakdown(req, res) {
         lf.year,
         COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi
         ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
@@ -1000,10 +1006,9 @@ export async function getLeaguePayrollCosts(req, res) {
       )
       SELECT
         lf.year,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
@@ -1045,7 +1050,7 @@ export async function getLeagueCostsBreakdown(req, res) {
     const result = await db.query(`
       WITH latest_year AS (
         SELECT MAX(year) AS year
-        FROM league_financials
+        FROM unified_league_financials
         WHERE id_league = $1
       ),
       rate_cte AS (
@@ -1061,10 +1066,9 @@ export async function getLeagueCostsBreakdown(req, res) {
         lf.year,
         fi.code,
         COALESCE(fit.name, fi.name_pt) AS name,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
@@ -1128,10 +1132,9 @@ export async function getLeagueNetResult(req, res) {
         lf.year,
         fi.code,
         COALESCE(fit.name, fi.name_pt) AS name,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
@@ -1152,7 +1155,8 @@ export async function getLeagueNetResult(req, res) {
         value: row.value,
         rate: row.rate,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
 
@@ -1187,10 +1191,9 @@ export async function getLeagueNetResultEvolution(req, res) {
       )
       SELECT
         lf.year,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
@@ -1206,7 +1209,8 @@ export async function getLeagueNetResultEvolution(req, res) {
         value: row.value,
         rate: row.rate,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
 
@@ -1232,7 +1236,7 @@ export async function getLeagueDebtsBreakdown(req, res) {
     const result = await db.query(`
       WITH latest_year AS (
         SELECT MAX(year) AS year
-        FROM league_financials
+        FROM unified_league_financials
         WHERE id_league = $1
       ),
       rate_cte AS (
@@ -1248,10 +1252,9 @@ export async function getLeagueDebtsBreakdown(req, res) {
         lf.year,
         fi.code,
         COALESCE(fit.name, fi.name_pt) AS name,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $4
@@ -1272,7 +1275,8 @@ export async function getLeagueDebtsBreakdown(req, res) {
         name: row.name,
         value: row.value,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
 
@@ -1307,10 +1311,9 @@ export async function getLeagueDebtsEvolution(req, res) {
       )
       SELECT
         lf.year,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN rate_cte r ON r.year = lf.year
       WHERE lf.id_league = $1
@@ -1326,7 +1329,8 @@ export async function getLeagueDebtsEvolution(req, res) {
         value: row.value,
         rate: row.rate,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
 
@@ -1343,7 +1347,7 @@ export async function getLeagueAvailableYears(req, res) {
 
     const result = await db.query(`
       SELECT DISTINCT year
-      FROM league_financials
+      FROM unified_league_financials
       WHERE id_league = $1
       ORDER BY year ASC;
     `, [id]);
@@ -1384,7 +1388,7 @@ export async function getLeagueRevenues(req, res) {
         fi.code,
         fi.name_pt,
         lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi 
         ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
@@ -1446,10 +1450,9 @@ export async function getLeagueRevenues(req, res) {
         lf.year,
         fi.code,
         COALESCE(fit.name, fi.name_pt) AS name,
-        lf.value,
-        COALESCE(r.rate, 1) AS rate,
+        lf.edition_name,\n        lf.value,\n        COALESCE(r.rate, 1) AS rate,
         (lf.value * COALESCE(r.rate, 1)) AS converted_value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $2
@@ -1470,7 +1473,8 @@ export async function getLeagueRevenues(req, res) {
         name: row.name,
         value: row.value,
         converted_value: row.converted_value,
-        currency_converted: toCurrency
+        currency_converted: toCurrency,
+        edition_name: row.edition_name || null
       }))
     });
 
@@ -1489,7 +1493,7 @@ export async function getLeagueRevenuesBreakdown(req, res) {
           fi.name_pt,
           lf.value,
           lf.year
-        FROM league_financials lf
+        FROM unified_league_financials lf
         JOIN financial_indicators fi 
           ON fi.id = lf.id_indicator
         WHERE lf.id_league = $1
@@ -1521,7 +1525,7 @@ export async function getLeaguePayrollCosts(req, res) {
 
     const result = await db.query(`
       SELECT lf.year, lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
         AND fi.code = 'wages'
@@ -1542,7 +1546,7 @@ export async function getLeagueCostsBreakdown(req, res) {
 
     const result = await db.query(`
       SELECT lf.year, fi.code, fi.name_pt, lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
         AND fi.code IN (
@@ -1569,7 +1573,7 @@ export async function getLeagueNetResult(req, res) {
 
     const result = await db.query(`
       SELECT lf.year, fi.code, fi.name_pt, lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
         AND fi.code IN ('revenue', 'costs', 'net_income', 'ebitda', 'financial_result')
@@ -1591,7 +1595,7 @@ export async function getLeagueNetResultEvolution(req, res) {
 
     const result = await db.query(`
       SELECT lf.year, lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
         AND fi.code = 'net_income'
@@ -1612,7 +1616,7 @@ export async function getLeagueDebtsBreakdown(req, res) {
 
     const result = await db.query(`
       SELECT lf.year, fi.code, fi.name_pt, lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
         AND fi.code IN (
@@ -1622,7 +1626,7 @@ export async function getLeagueDebtsBreakdown(req, res) {
           'other_debt'
         )
         AND lf.year = (
-          SELECT MAX(year) FROM league_financials WHERE id_league = $1
+          SELECT MAX(year) FROM unified_league_financials WHERE id_league = $1
         )
       ORDER BY fi.name_pt;
     `, [id]);
@@ -1641,7 +1645,7 @@ export async function getLeagueDebtsEvolution(req, res) {
 
     const result = await db.query(`
       SELECT lf.year, lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
         AND fi.code = 'net_debt'
@@ -1663,7 +1667,7 @@ export async function getLeagueFinancialIndicators(req, res) {
 
     const result = await db.query(`
       SELECT lf.year, fi.code, fi.name_pt, lf.value
-      FROM league_financials lf
+      FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       WHERE lf.id_league = $1
         AND fi.code IN (

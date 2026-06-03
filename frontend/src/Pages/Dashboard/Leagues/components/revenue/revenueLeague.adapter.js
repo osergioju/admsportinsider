@@ -40,6 +40,15 @@ export function adaptRevenueLineData(
 
   if (years.length === 0) return null;
 
+  // Mapa year → nome da edição (Copa 2006 = "Alemanha", etc.)
+  const yearLabels = {};
+  ligasNoGrafico.forEach((leagueId) => {
+    (dataByLeague[leagueId] || []).forEach((item) => {
+      if (item.edition_name && item.year) yearLabels[item.year] = item.edition_name;
+    });
+  });
+  const xAxisLabels = years.map(y => yearLabels[y] || String(y));
+
   const DEFAULT_COLOR = "#999999";
 
   const series = ligasNoGrafico.map((leagueId) => {
@@ -64,5 +73,5 @@ export function adaptRevenueLineData(
     };
   });
 
-  return { years, series };
+  return { years, xAxisLabels, series };
 }

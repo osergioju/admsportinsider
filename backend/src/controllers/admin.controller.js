@@ -137,7 +137,8 @@ export async function getLeagueById(req, res) {
       f.primary_color AS fed_color1,
       f.secondary_color AS fed_color2,
       f.tertiary_color AS fed_color3,
-      f.logo_url AS federation_logo_url
+      f.logo_url AS federation_logo_url,
+      EXISTS(SELECT 1 FROM competition_editions ce WHERE ce.id_league = l.id_league LIMIT 1) AS has_editions
     FROM leagues l
     LEFT JOIN countries c ON c.id_country = l.id_country
     LEFT JOIN continents ct ON ct.id_continent = l.id_continent

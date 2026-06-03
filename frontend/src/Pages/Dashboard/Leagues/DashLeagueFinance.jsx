@@ -127,12 +127,16 @@ export default function DashLeagueFinance() {
 
   useEffect(() => {
     if (!mainLeagueId) return;
+    // Ligas com edições (Copa do Mundo, Euro…) não têm filtro de ano — exibem todos os ciclos
+    const hasEditions = theLeague?.league?.has_editions;
+    const yearParams  = hasEditions ? "" : "&fromYear=2018&toYear=2025";
+    const yearParamsNR = hasEditions ? "" : "&fromYear=2021&toYear=2025";
     const builders = {
-      revenue:          (lid) => `/dashboard/leagues/${lid}/financials/revenues?to=${displayCurrency}&fromYear=2018&toYear=2025`,
-      payroll:          (lid) => `/dashboard/leagues/${lid}/financials/costs/payroll?to=${displayCurrency}&fromYear=2018&toYear=2025`,
+      revenue:          (lid) => `/dashboard/leagues/${lid}/financials/revenues?to=${displayCurrency}${yearParams}`,
+      payroll:          (lid) => `/dashboard/leagues/${lid}/financials/costs/payroll?to=${displayCurrency}${yearParams}`,
       costs:            (lid) => `/dashboard/leagues/${lid}/financials/costs/breakdown?to=${displayCurrency}`,
-      netResult:        (lid) => `/dashboard/leagues/${lid}/financials/net-result?to=${displayCurrency}&fromYear=2021&toYear=2025`,
-      netEvolution:     (lid) => `/dashboard/leagues/${lid}/financials/net-result/evolution?to=${displayCurrency}&fromYear=2018&toYear=2025`,
+      netResult:        (lid) => `/dashboard/leagues/${lid}/financials/net-result?to=${displayCurrency}${yearParamsNR}`,
+      netEvolution:     (lid) => `/dashboard/leagues/${lid}/financials/net-result/evolution?to=${displayCurrency}${yearParams}`,
       debts:            (lid) => `/dashboard/leagues/${lid}/financials/debts/breakdown?to=${displayCurrency}`,
       revenueBreakdown: (lid) => `/dashboard/leagues/${lid}/financials/revenues/breakdown?to=${displayCurrency}`,
     };
@@ -140,7 +144,7 @@ export default function DashLeagueFinance() {
       fetchChartData(key, builder, true);
     });
   }, [
-    mainLeagueId, displayCurrency,
+    mainLeagueId, displayCurrency, theLeague,
     chartComparisons.revenue, chartComparisons.payroll, chartComparisons.costs,
     chartComparisons.netResult, chartComparisons.netEvolution,
     chartComparisons.debts, chartComparisons.revenueBreakdown,

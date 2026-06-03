@@ -41,6 +41,7 @@ import { createFavorite, listFavorites } from "../controllers/dashboardFavorites
 import { getClubCompetitions, getClubPlayers, getPlayerDetail, searchPlayers, getPlayerCountries, getLeagueSports, getMatchDetail } from "../controllers/sports.controller.js";
 import { financialContext } from "../middlewares/financialContext.middleware.js";
 import { clubsGroupedByCountry, clubsSearch, getClubById, getLeagueById, leaguesSearch, getContinentalLeagues, getDashboardFederations, getDashboardFederationBySlug } from "../controllers/admin.controller.js";
+import { getFederationCycleFinancials, getLeagueCycleFinancials } from "../controllers/federationFinancial.controller.js";
 
 const router = Router();
 
@@ -105,10 +106,12 @@ router.get("/clubs/:id/financials/currencies", optionalAuth, getAvailableCurrenc
 
 
 router.get("/leagues/continental", getContinentalLeagues);
+router.get("/leagues/:id/cycle-financials", getLeagueCycleFinancials);
 
 // FEDERAÇÕES
 router.get("/federations", getDashboardFederations);
 router.get("/federations/:slug", getDashboardFederationBySlug);
+router.get("/federations/:slug/cycle-financials", getFederationCycleFinancials);
 router.get("/leagues/:id/info", getLeagueById);
 router.post("/leagues/search", leaguesSearch);
 

@@ -21,7 +21,7 @@ import {
     Languages,
     MessageCircleQuestionMark,
     CircleDollarSign,
-    ChartArea,
+    ChartArea, Zap,
     Trophy
 } from "lucide-react";
 
@@ -104,6 +104,17 @@ export default function AdminLayout() {
             {(user.role === "admin_master" || user.role === "admin") && (
                 <div className="space-y-6">
 
+                    {/* MODO MANUTENÇÃO — super destaque */}
+                    <div>
+                        <Link
+                            to="/admin/manutencao"
+                            onClick={() => setOpenMenu(false)}
+                            className="text-center justify-center mx-2 flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white hover:from-red-700 hover:to-orange-600 transition-all shadow-lg shadow-red-500/30"
+                        >
+                            <span className="text-sm font-bold tracking-tight">Modo Manutenção</span>
+                        </Link>
+                    </div>
+
                     {/* SEÇÃO: GERAL — sempre visível */}
                     <div>
                         <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Geral</span>
@@ -182,6 +193,7 @@ export default function AdminLayout() {
                                         {openUpload && (
                                             <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                                 {canAccess("upload-financeiro") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/ligas" label="Financeiro" />}
+                                                {canAccess("upload-financeiro") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/federation-financial" label="Copa do Mundo / Federações" />}
                                                 {canAccess("upload-times") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/teams" label="Times" />}
                                                 {canAccess("upload-jogadores") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/players" label="Jogadores" />}
                                                 {canAccess("upload-partidas") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/matches" label="Partidas" />}

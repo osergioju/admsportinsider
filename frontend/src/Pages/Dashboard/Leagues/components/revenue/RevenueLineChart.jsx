@@ -62,11 +62,10 @@ export default function RevenueLineChart({
         fontWeight: "normal"
       },
       formatter: (params) => {
-        return params
-          .map(
-            (p) =>
-              `${p.marker} ${p.seriesName}: ${(p.value / 10).toFixed(1)}`
-          )
+        const label = adapted.xAxisLabels?.[params[0]?.dataIndex] || params[0]?.axisValue;
+        const header = label !== params[0]?.axisValue ? `<b>${label}</b><br/>` : "";
+        return header + params
+          .map(p => `${p.marker} ${p.seriesName}: ${(p.value / 10).toFixed(1)}`)
           .join("<br/>");
       }
     },
@@ -94,7 +93,7 @@ export default function RevenueLineChart({
 
     xAxis: {
       type: "category",
-      data: adapted.years,
+      data: adapted.xAxisLabels || adapted.years,
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {

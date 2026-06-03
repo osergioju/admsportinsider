@@ -1497,8 +1497,10 @@ import { uploadClubLogo, uploadFederationLogo } from "../controllers/upload.cont
 import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
 import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage, reorderBanners } from "../controllers/banner.controller.js";
 import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations, getCommonTermsByRegion, saveCommonTermsTranslations } from "../controllers/adminRegionsController.js";
+import { previewFederationFinancial, importFederationFinancial, getEditionsByLeague, getFederationCycleFinancials } from "../controllers/federationFinancial.controller.js";
 
 import { adminGuard } from "../middlewares/auth.middleware.js";
+import { getMaintenanceOverview, toggleCountry, toggleLeague, toggleFederation, bulkToggle } from "../controllers/maintenance.controller.js";
 const router = Router();
 
 //router.use(adminGuard);
@@ -1518,6 +1520,13 @@ router.get("/continents", getAllContinents);
 router.post("/continents", adminGuard, createContinent);
 router.put("/continents/:id", adminGuard, updateContinent);
 router.delete("/continents/:id", adminGuard, disableContinent);
+
+// MODO MANUTENÇÃO
+router.get("/maintenance/overview",              adminGuard, getMaintenanceOverview);
+router.put("/maintenance/country/:id/toggle",    adminGuard, toggleCountry);
+router.put("/maintenance/league/:id/toggle",     adminGuard, toggleLeague);
+router.put("/maintenance/federation/:id/toggle", adminGuard, toggleFederation);
+router.post("/maintenance/bulk",                 adminGuard, bulkToggle);
 
 // FEDERAÇÕES - GESTÃO CRUD
 router.get("/federations", getAllFederations);
@@ -1597,6 +1606,11 @@ router.post("/create-user", adminGuard, createUser); // Criar usuaário
 // Subir foto do clube
 router.post("/upload-club-logo", uploadImage, uploadClubLogo);
 router.post("/federations/upload-logo", adminGuard, uploadFederationImage, uploadFederationLogo);
+
+// FINANCEIRO DE COMPETIÇÕES DE FEDERAÇÃO (Copa do Mundo, Copa América, Euro...)
+router.post("/federation-financial/preview", adminGuard, uploadXlsx, previewFederationFinancial);
+router.post("/federation-financial/import",  adminGuard, uploadXlsx, importFederationFinancial);
+router.get("/federation-financial/editions/:id", adminGuard, getEditionsByLeague);
 
 // PLANOS - CRUD
 router.get("/plans", getAllPlans);

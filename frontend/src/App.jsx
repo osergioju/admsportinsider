@@ -33,6 +33,7 @@ import LeaguesFavorites from "./Pages/User/LeaguesFavorites";
 // ADMIN PAGES // 
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
+import UploadFederationFinancialPage from "./Pages/Admin/Datasend/UploadFederationFinancialPage";
 import AdminProfileDetails from "./Pages/Admin/AdminProfileDetails";
 import UploadTeamsPage from "./Pages/Admin/Datasend/UploadTeamsPage";
 import UploadPlayersPage from "./Pages/Admin/Datasend/UploadPlayersPage";
@@ -44,6 +45,7 @@ import GestaoPaises from "./Pages/Admin/GestaoPaises";
 import GestaoLigas from "./Pages/Admin/GestaoLigas";
 import GestaoClubes from "./Pages/Admin/GestaoClubes";
 import GestaoJogadores from "./Pages/Admin/GestaoJogadores";
+import Manutencao from "./Pages/Admin/Manutencao";
 import GestaoContinent from "./Pages/Admin/GestaoContinent";
 import GestaoFederacoes from "./Pages/Admin/GestaoFederacoes";
 import GestaoHospitalidade from "./Pages/Admin/GestaoHospitalidade";
@@ -209,6 +211,7 @@ export default function App() {
               {/* ── Sempre acessíveis para qualquer admin ── */}
               <Route path="/admin" element={<AdminIndex />} />
               <Route path="/admin/profile" element={<AdminProfileDetails />} />
+              <Route path="/admin/manutencao" element={<Manutencao />} />
 
               {/* ── Gestão de países, ligas e clubes ── */}
               <Route element={<AdminPermissionRoute permissionKey="gestao-dados" />}>
@@ -268,6 +271,7 @@ export default function App() {
               {/* ── Upload de dados ── */}
               <Route element={<AdminPermissionRoute permissionKey="upload-financeiro" />}>
                 <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
+                <Route path="/admin/upload/federation-financial" element={<UploadFederationFinancialPage />} />
               </Route>
               <Route element={<AdminPermissionRoute permissionKey="upload-times" />}>
                 <Route path="/admin/upload/teams" element={<UploadTeamsPage />} />

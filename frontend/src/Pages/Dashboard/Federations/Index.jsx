@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Search, X, Heart, Shield, Trophy } from "lucide-react";
+import { federationLogo } from "../../../utils/federationUrl";
 import { api } from "../../../services/api";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
@@ -62,8 +63,8 @@ function FederationCard({ federation, isFavorited, toggleFavorite }) {
           </button>
 
           <div className="bg-white/95 relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
-            {federation.logo_url
-              ? <img src={federation.logo_url} alt={federation.acronym} className="w-14 h-14 object-contain drop-shadow-sm" />
+            {federation.slug
+              ? <img src={federationLogo(federation.slug, "medium")} alt={federation.acronym} className="w-14 h-14 object-contain drop-shadow-sm" onError={e=>e.currentTarget.style.display='none'} />
               : <span className="font-black text-sm tracking-tight" style={{ color: federation.primary_color || "#7F33D9" }}>{initials}</span>
             }
           </div>
