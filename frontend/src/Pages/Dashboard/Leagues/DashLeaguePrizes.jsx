@@ -461,11 +461,6 @@ export default function DashLeaguePrizes() {
                                                     {ed.name}
                                                 </span>
                                             )}
-                                            {top5.length > 0 && (
-                                                <div className="flex justify-start mt-1">
-                                                    <CountryList positions={top5} max={4} compact />
-                                                </div>
-                                            )}
                                         </th>
                                     );
                                 })}
@@ -485,16 +480,13 @@ export default function DashLeaguePrizes() {
                                                 .filter(c => c.prize_order === row.position_order);
                                             return (
                                                 <td key={yr} className="py-3 px-4 text-xs tabular-nums whitespace-nowrap">
-                                                    <div className="flex flex-col items-start gap-0.5">
+                                                    <div className="flex flex-col items-center gap-0.5">
                                                         {val != null ? (
                                                             <span className="inline-block px-2.5 py-1.5 rounded-lg bg-gray-100/70 font-mono text-gray-700 text-sm font-medium">
                                                                 {fmtVal(val, convert)}
                                                             </span>
                                                         ) : (
                                                             <span className="text-gray-200 text-sm">—</span>
-                                                        )}
-                                                        {tier.length > 0 && (
-                                                            <CountryList positions={tier} max={3} compact />
                                                         )}
                                                     </div>
                                                 </td>
@@ -613,13 +605,21 @@ export default function DashLeaguePrizes() {
                                         )}
                                     </div>
 
-                                    {/* Top 4 sobrepondo o header */}
-                                    {top5.length > 0 && (
-                                        <div className="mx-4 -mt-6 mb-3 relative z-10 bg-white rounded-xl shadow-sm px-3 py-2.5 border border-gray-100">
-                                            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">Top 4</p>
-                                            <CountryList positions={top5} max={4} compact={false} />
+                                    {/* Logo da competição sobrepondo o header */}
+                                    <div className="mx-4 -mt-7 mb-3 relative z-10 bg-white rounded-xl shadow-sm px-3 py-2 border border-gray-100 flex items-center gap-3">
+                                        {lg.logo_url && (
+                                            <img
+                                                src={lg.logo_url}
+                                                alt={lg.name}
+                                                className="w-10 h-10 object-contain shrink-0"
+                                                onError={e => e.currentTarget.style.display = "none"}
+                                            />
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-semibold text-gray-700 leading-tight truncate">{lg.name}</p>
+                                            <p className="text-[11px] text-gray-400 leading-tight">{edition.name}</p>
                                         </div>
-                                    )}
+                                    </div>
 
                                     {/* Lista de países por faixa */}
                                     <div className="px-4 pb-4 flex-1 space-y-3 overflow-y-auto max-h-80">

@@ -9,6 +9,7 @@ import PaymentSuccess from "./Pages/Auth/SucessPayment";
 import Dashboard from "./Pages/Dashboard/Main";
 import NotFound from "./Pages/Errors/NotFound";
 import FrontPage from "./Pages/FrontPage";
+import Legal from "./Pages/Legal";
 import ResetPassConfirm from "./Pages/Auth/ResetPassConfirm";
 import GoogleCallback from "./Pages/Auth/GoogleCallback";
 
@@ -127,6 +128,7 @@ export default function App() {
         {/* ---- Abertos para todos ---- */}
         <Route element={<AuthLayout />}>
           <Route path="/" element={<FrontPage />} />
+          <Route path="/legal" element={<Legal />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/pricing" element={<Pricing />} />

@@ -98,6 +98,26 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
   );
 }
 
+// ── CountryMappingRow — para competições de seleções nacionais ────────────────
+function CountryMappingRow({ csvName, countryMappings, countriesOptions, onMap }) {
+  return (
+    <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
+      <div className="flex items-center gap-1.5">
+        {countryMappings[csvName] ? <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+          : <XCircle size={13} className="text-amber-400 shrink-0" />}
+        <span className="text-xs font-mono font-semibold text-gray-700 truncate">{csvName}</span>
+        <ArrowRight size={11} className="text-gray-300 shrink-0 ml-auto" />
+      </div>
+      <SearchableSelect
+        options={countriesOptions}
+        value={countryMappings[csvName] || ""}
+        onChange={(val) => onMap(csvName, val)}
+        placeholder="Buscar país... (vazio = ignorar)"
+      />
+    </div>
+  );
+}
+
 // ── ClubMappingRow ────────────────────────────────────────────────────────────
 function ClubMappingRow({ csvName, countryName, clubMappings, hiddenClubs, creatingHidden, clubsGrouped, onMap, onCreateHidden, onUndoHidden }) {
   return (
@@ -177,6 +197,8 @@ export default function UploadSuperPage() {
   const [teamsClubMappings, setTeamsClubMappings] = useState({});
   const [teamsHiddenClubs, setTeamsHiddenClubs] = useState({});
   const [teamsCreatingHidden, setTeamsCreatingHidden] = useState({});
+  const [teamsIsCountryMode, setTeamsIsCountryMode] = useState(false);
+  const [teamsCountryMappings, setTeamsCountryMappings] = useState({});
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [teamsImportingIdx, setTeamsImportingIdx] = useState(0);
   const [teamsResults, setTeamsResults] = useState([]);
@@ -302,20 +324,32 @@ export default function UploadSuperPage() {
         Promise.all(mf.map((f) => previewForm("/upload/import/matches/preview", f))),
       ]);
 
-      // Teams: union of all not-found clubs
+      // Teams: union of all not-found clubs (ou países em country mode)
       const validTeams = teamsData.filter(Boolean);
       if (validTeams.length) {
         setTeamsPreviews(validTeams);
         const league = selectedLeague || (validTeams[0].leagues?.length === 1 ? String(validTeams[0].leagues[0].id_league) : "");
         setTeamsLeague(league);
         if (validTeams[0].isMultiCountry) setTeamsShowAllLeagues(true);
-        const unionNotFound = new Set(validTeams.flatMap((p) => p.notFoundTeams ?? []));
-        const init = {};
-        for (const n of unionNotFound) init[n] = "";
-        for (const p of validTeams)
-          for (const c of p.duplicateConflicts ?? [])
-            for (const n of c.csv_names) init[n] = String(c.id_club);
-        setTeamsClubMappings(init);
+
+        if (validTeams[0].countryMode) {
+          setTeamsIsCountryMode(true);
+          setTeamsClubMappings({});
+          const unionNotFound = new Set(validTeams.flatMap((p) => (p.notFoundCountriesData ?? []).map(d => d.name)));
+          const countryInit = {};
+          for (const n of unionNotFound) countryInit[n] = "";
+          setTeamsCountryMappings(countryInit);
+        } else {
+          setTeamsIsCountryMode(false);
+          setTeamsCountryMappings({});
+          const unionNotFound = new Set(validTeams.flatMap((p) => p.notFoundTeams ?? []));
+          const init = {};
+          for (const n of unionNotFound) init[n] = "";
+          for (const p of validTeams)
+            for (const c of p.duplicateConflicts ?? [])
+              for (const n of c.csv_names) init[n] = String(c.id_club);
+          setTeamsClubMappings(init);
+        }
       }
 
       // Players: union of not-found clubs + nationalities
@@ -378,14 +412,22 @@ export default function UploadSuperPage() {
       const preview = teamsPreviews[i];
       if (!preview) { results.push({ fileName: teamsFiles[i].name, season: "—", importError: "Preview não disponível" }); continue; }
       try {
-        const activeMappings = Object.fromEntries(
-          Object.entries(teamsClubMappings).filter(([k, v]) => v !== "" && (preview.notFoundTeams ?? []).includes(k))
-        );
         const form = new FormData();
         form.append("file", teamsFiles[i]);
         form.append("league", teamsLeague);
         form.append("season", preview.csvSeason);
-        if (Object.keys(activeMappings).length) form.append("clubMappings", JSON.stringify(activeMappings));
+        if (teamsIsCountryMode) {
+          const activeMappings = Object.fromEntries(
+            Object.entries(teamsCountryMappings).filter(([, v]) => v !== "")
+          );
+          if (Object.keys(activeMappings).length) form.append("countryMappings", JSON.stringify(activeMappings));
+          else form.append("countryMappings", "{}");
+        } else {
+          const activeMappings = Object.fromEntries(
+            Object.entries(teamsClubMappings).filter(([k, v]) => v !== "" && (preview.notFoundTeams ?? []).includes(k))
+          );
+          if (Object.keys(activeMappings).length) form.append("clubMappings", JSON.stringify(activeMappings));
+        }
         const { data } = await api.post("/upload/import/teams", form, { headers: { "Content-Type": "multipart/form-data" } });
         results.push({ ...data, fileName: teamsFiles[i].name, season: String(preview.csvSeason ?? "") });
       } catch (err) {
@@ -549,6 +591,10 @@ export default function UploadSuperPage() {
   }
 
   const teamsClubsGrouped = useMemo(() => buildGrouped(teamsPreviews[0]?.allClubs, teamsPreviews[0]?.csvCountry, true), [teamsPreviews]);
+  const allCountriesOptions = useMemo(() =>
+    allCountries.map((c) => ({ value: String(c.id_country), label: c.name, image: c.flag_url })),
+    [allCountries]
+  );
   const playersClubsGrouped = useMemo(() => buildGrouped(playersPreviews[0]?.allClubs, null, false), [playersPreviews]);
   const matchesClubsGrouped = useMemo(() => buildGrouped(matchesPreviews[0]?.allClubs, null, true), [matchesPreviews]);
 
@@ -661,7 +707,7 @@ export default function UploadSuperPage() {
   function handleReset() {
     setPhase("configure"); setFileItems([]);
     setSelectedCountry(""); setSelectedLeague("");
-    setTeamsPreviews([]); setTeamsLeague(""); setTeamsClubMappings({}); setTeamsHiddenClubs({}); setTeamsCreatingHidden({}); setTeamsResults([]); setTeamsShowAllLeagues(false); setTeamsImportingIdx(0);
+    setTeamsPreviews([]); setTeamsLeague(""); setTeamsClubMappings({}); setTeamsHiddenClubs({}); setTeamsCreatingHidden({}); setTeamsResults([]); setTeamsShowAllLeagues(false); setTeamsImportingIdx(0); setTeamsIsCountryMode(false); setTeamsCountryMappings({});
     setPlayersPreviews([]); setPlayersLeagueId(""); setPlayersClubMappings({}); setPlayersHiddenClubs({}); setPlayersCreatingHidden({}); setPlayersNatMappings({}); setPlayersCountries([]); setPlayersResults([]); setPlayersImportingIdx(0);
     setMatchesPreviews([]); setMatchesLeague(""); setMatchesCountry(""); setMatchesClubMappings({}); setMatchesHiddenClubs({}); setMatchesCreatingHidden({}); setMatchesSeasonOverrides({}); setMatchesResults([]); setMatchesImportingIdx(0);
   }
@@ -887,23 +933,52 @@ export default function UploadSuperPage() {
           </div>
 
           {/* Stats cards (aggregated) */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-green-50 border border-green-100 rounded-2xl">
-              <p className="text-[10px] uppercase font-black text-green-400 mb-1">Encontrados</p>
-              <p className="text-xl font-bold text-green-600">{teamsTotalFound}</p>
-              <p className="text-[10px] text-green-500 mt-0.5">em todos os arquivos</p>
-            </div>
-            <div className={`p-3 rounded-2xl border ${teamsTotalNotFound > 0 ? "bg-amber-50 border-amber-100" : "bg-green-50 border-green-100"}`}>
-              <p className={`text-[10px] uppercase font-black mb-1 ${teamsTotalNotFound > 0 ? "text-amber-400" : "text-green-400"}`}>Não encontrados</p>
-              <p className={`text-xl font-bold ${teamsTotalNotFound > 0 ? "text-amber-600" : "text-green-600"}`}>{teamsTotalNotFound}</p>
-              <p className={`text-[10px] mt-0.5 ${teamsTotalNotFound > 0 ? "text-amber-500" : "text-green-500"}`}>
-                {teamsTotalNotFound > 0 ? "mapear abaixo (valem para todas as temporadas)" : "todos reconhecidos!"}
-              </p>
-            </div>
-          </div>
+          {(() => {
+            const found = teamsIsCountryMode
+              ? teamsPreviews.reduce((s, p) => s + (p.foundCountries?.length ?? 0), 0)
+              : teamsTotalFound;
+            const notFound = teamsIsCountryMode
+              ? Object.keys(teamsCountryMappings).length
+              : teamsTotalNotFound;
+            return (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-green-50 border border-green-100 rounded-2xl">
+                  <p className="text-[10px] uppercase font-black text-green-400 mb-1">Encontrados</p>
+                  <p className="text-xl font-bold text-green-600">{found}</p>
+                  <p className="text-[10px] text-green-500 mt-0.5">em todos os arquivos</p>
+                </div>
+                <div className={`p-3 rounded-2xl border ${notFound > 0 ? "bg-amber-50 border-amber-100" : "bg-green-50 border-green-100"}`}>
+                  <p className={`text-[10px] uppercase font-black mb-1 ${notFound > 0 ? "text-amber-400" : "text-green-400"}`}>Não encontrados</p>
+                  <p className={`text-xl font-bold ${notFound > 0 ? "text-amber-600" : "text-green-600"}`}>{notFound}</p>
+                  <p className={`text-[10px] mt-0.5 ${notFound > 0 ? "text-amber-500" : "text-green-500"}`}>
+                    {notFound > 0 ? "mapear abaixo" : "todos reconhecidos!"}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
-          {/* Unmapped teams */}
-          {Object.keys(teamsClubMappings).length > 0 && (
+          {/* Unmapped countries (country mode) */}
+          {teamsIsCountryMode && Object.keys(teamsCountryMappings).length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Mapear Seleções Não Encontradas</p>
+              <p className="text-xs text-gray-400">Associe cada seleção ao país cadastrado no sistema.</p>
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {Object.keys(teamsCountryMappings).map((csvName) => (
+                  <CountryMappingRow
+                    key={csvName}
+                    csvName={csvName}
+                    countryMappings={teamsCountryMappings}
+                    countriesOptions={allCountriesOptions}
+                    onMap={(n, v) => setTeamsCountryMappings((p) => ({ ...p, [n]: v }))}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Unmapped clubs (club mode) */}
+          {!teamsIsCountryMode && Object.keys(teamsClubMappings).length > 0 && (
             <div className="space-y-3">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Mapear Times Não Encontrados</p>
               <p className="text-xs text-gray-400">O mapeamento vale para todas as temporadas simultaneamente.</p>

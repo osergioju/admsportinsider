@@ -71,6 +71,8 @@ function buildValues(rowCount, colCount) {
   }).join(",");
 }
 
+function normalizeStr(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim(); }
+
 export async function importMatches(req, res) {
   const client = await db.connect();
 
@@ -967,7 +969,10 @@ export async function importTeams(req, res) {
     const idLeague = Number(req.body.league);
     const seasonYear = parseSeasonYear(req.body.season);
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
-    // clubMappings: { "csvCommonName": dbClubId }
+    const countryMappings = req.body.countryMappings ? JSON.parse(req.body.countryMappings) : null;
+    const isCountryMode = countryMappings !== null;
+    // clubMappings: { "csvCommonName": dbClubId } — modo clubes
+    // countryMappings: { "csvCommonName": id_country } — modo países (Copa do Mundo etc.)
 
     if (!idLeague || !seasonYear) {
       return res.status(400).json({ error: "Liga e temporada são obrigatórias" });
@@ -1074,6 +1079,24 @@ export async function importTeams(req, res) {
     }
 
     /* ------------------------------------------------------------------
+       MODO PAÍSES — resolve times como entradas da tabela countries
+    ------------------------------------------------------------------ */
+    let resolveCountry = null;
+    if (isCountryMode) {
+      const [cRes, ctRes] = await Promise.all([
+        client.query(`SELECT id_country, name FROM countries`),
+        client.query(`SELECT id_country, name AS translated_name FROM country_translations`),
+      ]);
+      const cnMap = new Map();
+      for (const c of cRes.rows) cnMap.set(normalizeStr(c.name), c.id_country);
+      for (const tr of ctRes.rows) {
+        const k = normalizeStr(tr.translated_name);
+        if (!cnMap.has(k)) cnMap.set(k, tr.id_country);
+      }
+      resolveCountry = (name) => (name ? cnMap.get(normalizeStr(name)) ?? null : null);
+    }
+
+    /* ------------------------------------------------------------------
        PREPARE ROWS
     ------------------------------------------------------------------ */
 
@@ -1086,53 +1109,70 @@ export async function importTeams(req, res) {
       const commonName = row["common_name"] || "";
       const teamName = row["team_name"] || "";
       const csvCountryKey = (row["country"] || "").toLowerCase();
-      const commonSlug = slugify(commonName, { lower: true, strict: true });
-      const teamSlug = slugify(teamName, { lower: true, strict: true });
 
-      let idClub = null;
-      let resolvedVia = null;
+      let teamId = null; // id_club (modo clubes) ou id_country (modo países)
 
-      // 1. Para ligas continentais: tenta primeiro pelo país do CSV (evita falso-positivo)
-      if (!leagueCountry && csvCountryKey) {
-        const countryResolve = importCountryResolvers.get(csvCountryKey);
-        if (countryResolve) {
-          idClub = countryResolve(commonName) ?? countryResolve(teamName) ?? null;
-          if (idClub) resolvedVia = "country_restricted";
+      if (isCountryMode) {
+        teamId = resolveCountry(commonName)
+          ?? resolveCountry(row["country"] || "")
+          ?? resolveCountry(teamName)
+          ?? null;
+        if (!teamId) {
+          const manualKey = countryMappings[commonName] != null ? commonName : teamName;
+          if (countryMappings[manualKey] != null) teamId = Number(countryMappings[manualKey]);
         }
-      }
-
-      // 2. Fallback: pool completo
-      if (!idClub) {
-        idClub = clubsByName.get(commonSlug)
-          || clubsByName.get(teamSlug)
-          || clubsByDesc.get(commonSlug)
-          || clubsByDesc.get(teamSlug)
-          || null;
-        if (idClub) resolvedVia = "full_pool";
-      }
-
-      // 3. Mapeamento manual enviado pelo usuário
-      if (!idClub) {
-        // Mapeamento manual: tenta common_name primeiro, depois team_name
-        const manualKey = clubMappings[commonName] != null ? commonName : teamName;
-        if (clubMappings[manualKey] != null) {
-          idClub = Number(clubMappings[manualKey]);
-          resolvedVia = "manual_mapping";
+        if (!teamId) {
+          skipped.push(commonName || teamName);
+          continue;
         }
-      }
+      } else {
+        const commonSlug = slugify(commonName, { lower: true, strict: true });
+        const teamSlug = slugify(teamName, { lower: true, strict: true });
+        let idClub = null;
+        let resolvedVia = null;
 
-      if (!idClub) {
-        skipped.push(commonName || teamName);
-        console.warn(`[importTeams] ⚠️  não encontrado: common="${commonName}" team="${teamName}"`);
-        continue;
-      }
+        // 1. Para ligas continentais: tenta primeiro pelo país do CSV (evita falso-positivo)
+        if (!leagueCountry && csvCountryKey) {
+          const countryResolve = importCountryResolvers.get(csvCountryKey);
+          if (countryResolve) {
+            idClub = countryResolve(commonName) ?? countryResolve(teamName) ?? null;
+            if (idClub) resolvedVia = "country_restricted";
+          }
+        }
 
-      resolvedLog.push({ common: commonName, team: teamName, idClub, via: resolvedVia });
-      matchedClubIds.push(idClub);
+        // 2. Fallback: pool completo
+        if (!idClub) {
+          idClub = clubsByName.get(commonSlug)
+            || clubsByName.get(teamSlug)
+            || clubsByDesc.get(commonSlug)
+            || clubsByDesc.get(teamSlug)
+            || null;
+          if (idClub) resolvedVia = "full_pool";
+        }
+
+        // 3. Mapeamento manual enviado pelo usuário
+        if (!idClub) {
+          const manualKey = clubMappings[commonName] != null ? commonName : teamName;
+          if (clubMappings[manualKey] != null) {
+            idClub = Number(clubMappings[manualKey]);
+            resolvedVia = "manual_mapping";
+          }
+        }
+
+        if (!idClub) {
+          skipped.push(commonName || teamName);
+          console.warn(`[importTeams] ⚠️  não encontrado: common="${commonName}" team="${teamName}"`);
+          continue;
+        }
+
+        resolvedLog.push({ common: commonName, team: teamName, idClub, via: resolvedVia });
+        matchedClubIds.push(idClub);
+        teamId = idClub;
+      }
 
       statsRows.push([
         idCompetitionSeason,
-        idClub,
+        teamId,
         toInt(row["league_position"]),
         toInt(row["league_position_home"]),
         toInt(row["league_position_away"]),
@@ -1225,7 +1265,7 @@ export async function importTeams(req, res) {
        Isso permite que importPlayers funcione depois sem configuração extra
     ------------------------------------------------------------------ */
 
-    if (matchedClubIds.length > 0) {
+    if (!isCountryMode && matchedClubIds.length > 0) {
       // club_seasons — liga clube ao ano da liga
       const csValues = buildValues(matchedClubIds.length, 4);
       const csParams = matchedClubIds.flatMap(id => [id, idLeague, seasonYear, "1"]);
@@ -1247,26 +1287,18 @@ export async function importTeams(req, res) {
       `, clsParams);
     }
 
-    /* ------------------------------------------------------------------
-       LOG de resolução CSV → id_club
-    ------------------------------------------------------------------ */
-
-    console.log(`[importTeams] ✅ ${resolvedLog.length} clube(s) resolvido(s), ${skipped.length} ignorado(s):`);
-    for (const r of resolvedLog) {
-      console.log(`  ${r.via === "manual_mapping" ? "🔧" : "🔍"} "${r.common || r.team}" → id_club=${r.idClub} (via ${r.via})`);
-    }
-
-    /* ------------------------------------------------------------------
-       Persiste common_name como description quando diferem do team_name.
-       Isso permite que imports de players/matches localizem clubes pelo
-       nome abreviado (ex: "Tokyo" → encontra "FC Tokyo").
-    ------------------------------------------------------------------ */
-    const descUpdates = resolvedLog.filter(r => r.common && r.team && r.common !== r.team);
-    for (const { idClub, common } of descUpdates) {
-      await client.query(
-        `UPDATE clubs SET description = $1 WHERE id_club = $2 AND (description IS NULL OR description = '')`,
-        [common, idClub]
-      );
+    if (!isCountryMode) {
+      console.log(`[importTeams] ✅ ${resolvedLog.length} clube(s) resolvido(s), ${skipped.length} ignorado(s):`);
+      for (const r of resolvedLog) {
+        console.log(`  ${r.via === "manual_mapping" ? "🔧" : "🔍"} "${r.common || r.team}" → id_club=${r.idClub} (via ${r.via})`);
+      }
+      const descUpdates = resolvedLog.filter(r => r.common && r.team && r.common !== r.team);
+      for (const { idClub, common } of descUpdates) {
+        await client.query(
+          `UPDATE clubs SET description = $1 WHERE id_club = $2 AND (description IS NULL OR description = '')`,
+          [common, idClub]
+        );
+      }
     }
 
     /* ------------------------------------------------------------------
@@ -1290,13 +1322,18 @@ export async function importTeams(req, res) {
     const COL_COUNT = dedupedStatsRows[0]?.length ?? 0;
     let inserted = 0;
 
+    const teamIdCol = isCountryMode ? "id_country" : "id_club";
+    const conflictClause = isCountryMode
+      ? "(id_competition_season, id_country) WHERE id_country IS NOT NULL"
+      : "(id_competition_season, id_club) WHERE id_club IS NOT NULL";
+
     for (const chunkRows of chunk(dedupedStatsRows, 50)) {
       const values = buildValues(chunkRows.length, COL_COUNT);
       const params = chunkRows.flat();
 
       await client.query(`
         INSERT INTO club_competition_stats (
-          id_competition_season, id_club,
+          id_competition_season, ${teamIdCol},
           position_total, position_home, position_away,
           points,
           matches_total, matches_home, matches_away,
@@ -1328,7 +1365,7 @@ export async function importTeams(req, res) {
           ht_goals_conceded_total, ht_goals_conceded_home, ht_goals_conceded_away
         )
         VALUES ${values}
-        ON CONFLICT (id_competition_season, id_club) DO UPDATE SET
+        ON CONFLICT ${conflictClause} DO UPDATE SET
           position_total       = EXCLUDED.position_total,
           position_home        = EXCLUDED.position_home,
           position_away        = EXCLUDED.position_away,
@@ -1387,9 +1424,9 @@ export async function importTeams(req, res) {
 
     await client.query("COMMIT");
 
-    // Salva aliases para mapeamentos manuais (clubMappings = { csvName: idClub })
+    // Salva aliases para mapeamentos manuais (apenas no modo clubes)
     let aliasResultT = { saved: [], conflicts: [] };
-    if (Object.keys(clubMappings).length > 0) {
+    if (!isCountryMode && Object.keys(clubMappings).length > 0) {
       try { aliasResultT = await saveClubAliases(clubMappings); }
       catch (err) { console.error("[importTeams] alias save error:", err); }
     }
@@ -1671,12 +1708,39 @@ export async function previewTeams(req, res) {
       }
     }
 
+    // ── Detecta se os times são países (Copa do Mundo, etc.) ──────────────
+    let countryMode = false;
+    let foundCountries = [];
+    let notFoundCountriesData = [];
+    {
+      const [cRes, ctRes] = await Promise.all([
+        db.query(`SELECT id_country, name FROM countries`),
+        db.query(`SELECT id_country, name AS translated_name FROM country_translations`),
+      ]);
+      const cnMap = new Map();
+      for (const c of cRes.rows) cnMap.set(normalizeStr(c.name), c.id_country);
+      for (const tr of ctRes.rows) {
+        const k = normalizeStr(tr.translated_name);
+        if (!cnMap.has(k)) cnMap.set(k, tr.id_country);
+      }
+      const resolveC = (name) => (name ? cnMap.get(normalizeStr(name)) ?? null : null);
+
+      for (const displayName of teamNames) {
+        const srcRow = rows.find(r => (r.common_name || r.team_name) === displayName) ?? {};
+        const idC = resolveC(srcRow.common_name) ?? resolveC(srcRow.country) ?? resolveC(srcRow.team_name) ?? null;
+        if (idC) foundCountries.push(displayName);
+        else notFoundCountriesData.push({ name: displayName, country_name: srcRow.country ?? null });
+      }
+      countryMode = foundCountries.length > foundTeams.length && foundCountries.length > 0;
+    }
+
     res.json({
       csvCountry, csvSeason, csvSeasonYear, isMultiCountry,
       leagues: leaguesRes.rows,
       allLeagues: allLeaguesRes.rows,
       foundTeams, notFoundTeams, notFoundTeamsData,
       duplicateConflicts,
+      countryMode, foundCountries, notFoundCountriesData,
       allClubs: allClubs.map(c => ({
         id_club: c.id_club,
         name: c.name,
