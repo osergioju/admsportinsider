@@ -477,7 +477,7 @@ export default function SearchBar() {
     setFocused(false);
 
     if (item.id_league !== undefined) {
-      navigate(`/dashboard/competitions/${item.id_league}`);
+      navigate(`/dashboard/competitions/${item.slug || item.id_league}`);
     } else if (item.id_club !== undefined) {
       navigate(clubUrl(item.id_club, item.slug));
     } else if (item.id_country !== undefined) {

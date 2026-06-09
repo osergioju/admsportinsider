@@ -21,16 +21,16 @@ function resolveColors(primary, secondary, tertiary) {
 }
 
 export default function DashLeagueSports() {
-    const { id } = useParams();
+    const { slug } = useParams();
     const [theLeague, setTheLeague] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get(`/dashboard/leagues/${id}/info`)
+        api.get(`/dashboard/leagues/${slug}/info`)
             .then(res => setTheLeague(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
-    }, [id]);
+    }, [slug]);
 
     if (loading || !theLeague) return null;
 
@@ -92,7 +92,7 @@ export default function DashLeagueSports() {
             </div>
 
             {/* CONTEÚDO ESPORTIVO */}
-            <LeagueSportsSection leagueId={Number(id)} />
+            <LeagueSportsSection leagueId={lg.id_league} />
         </div>
     );
 }

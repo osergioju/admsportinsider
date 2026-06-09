@@ -9,7 +9,7 @@ export default function GestaoFederacoes() {
     const [federations, setFederations] = useState([]);
     const [modalMode, setModalMode] = useState(null); // null | "create" | "edit" | "delete"
     const [current, setCurrent] = useState(null);
-    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", sort_order: 99 });
+    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -34,14 +34,14 @@ export default function GestaoFederacoes() {
     );
 
     const openCreate = () => {
-        setForm({ name: "", acronym: "", logo_url: "", sort_order: 99 });
+        setForm({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "" });
         setError("");
         setModalMode("create");
     };
 
     const openEdit = (f) => {
         setCurrent(f);
-        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", sort_order: f.sort_order });
+        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", sort_order: f.sort_order, full_name: f.full_name || "", city_name: f.city_name || "", founded_at: f.founded_at || "" });
         setError("");
         setModalMode("edit");
     };
@@ -260,17 +260,7 @@ export default function GestaoFederacoes() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className={labelClass}>Nome completo</label>
-                                            <input
-                                                type="text"
-                                                className={inputClass}
-                                                placeholder="ex: Union of European..."
-                                                value={form.name}
-                                                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className={labelClass}>Sigla</label>
+                                            <label className={labelClass}>Sigla <span className="text-red-400">*</span></label>
                                             <input
                                                 type="text"
                                                 className={inputClass}
@@ -278,6 +268,49 @@ export default function GestaoFederacoes() {
                                                 value={form.acronym}
                                                 onChange={(e) => setForm({ ...form, acronym: e.target.value.toUpperCase() })}
                                                 maxLength={20}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Nome curto <span className="text-red-400">*</span></label>
+                                            <input
+                                                type="text"
+                                                className={inputClass}
+                                                placeholder="ex: UEFA"
+                                                value={form.name}
+                                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClass}>Nome completo</label>
+                                        <input
+                                            type="text"
+                                            className={inputClass}
+                                            placeholder="ex: Fédération Internationale de Football Association"
+                                            value={form.full_name}
+                                            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className={labelClass}>Cidade-sede</label>
+                                            <input
+                                                type="text"
+                                                className={inputClass}
+                                                placeholder="ex: Zurique"
+                                                value={form.city_name}
+                                                onChange={(e) => setForm({ ...form, city_name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Data de fundação</label>
+                                            <input
+                                                type="date"
+                                                className={inputClass}
+                                                value={form.founded_at}
+                                                onChange={(e) => setForm({ ...form, founded_at: e.target.value })}
                                             />
                                         </div>
                                     </div>

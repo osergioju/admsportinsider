@@ -102,7 +102,7 @@ function LeagueCard({ league, isFavorited, toggleFavorite }) {
   const bg = leagueCardBg(league.fed_color1, league.fed_color2, league.fed_color3);
 
   return (
-    <Link to={`/dashboard/competitions/${league.id_league}`} className="block group">
+    <Link to={`/dashboard/competitions/${league.slug || league.id_league}`} className="block group">
       <div className="h-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
 
         {/* Topo com gradiente das cores da bandeira */}
@@ -168,7 +168,7 @@ function ContinentalLeagueCard({ league, isFavorited, toggleFavorite }) {
   const meta = parseMeta(league.structure_json);
 
   return (
-    <Link to={`/dashboard/competitions/${league.id_league}`} className="group block">
+    <Link to={`/dashboard/competitions/${league.slug || league.id_league}`} className="group block">
       <div className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-3 hover:border-[#7F33D9]/40 hover:shadow-sm transition-all duration-200">
         {league.logo_url
           ? <img src={league.logo_url} className="w-10 h-10 object-contain flex-shrink-0" alt={league.name} />

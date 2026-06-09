@@ -190,9 +190,9 @@ export default function App() {
           <Route path="/dashboard/federations/:slug" element={<FederationDetail />} />
 
           <Route path="/dashboard/competitions" element={<DashLeagues />} />
-          <Route path="/dashboard/competitions/finance/:id" element={<DashLeagueFinance />} />
-          <Route path="/dashboard/competitions/sports/:id" element={<DashLeagueSports />} />
-          <Route path="/dashboard/competitions/:id" element={<DashLeagueUniques />} />
+          <Route path="/dashboard/competitions/finance/:slug" element={<DashLeagueFinance />} />
+          <Route path="/dashboard/competitions/sports/:slug" element={<DashLeagueSports />} />
+          <Route path="/dashboard/competitions/:slug" element={<DashLeagueUniques />} />
 
           {/* Jogadores */}
           <Route path="/dashboard/players" element={<PlayersList />} />

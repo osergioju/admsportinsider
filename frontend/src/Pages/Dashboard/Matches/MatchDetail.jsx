@@ -75,7 +75,7 @@ export default function MatchDetail() {
         {/* Liga / rodada */}
         <div className="flex items-center justify-center gap-2 px-6 py-3 border-b border-gray-100 bg-gray-50">
           <span className="text-xs font-semibold text-gray-500">
-            <Link to={`/dashboard/competitions/${league.id}`} className="hover:text-violet-600 transition-colors">{league.name}</Link>
+            <Link to={`/dashboard/competitions/${league.slug || league.id}`} className="hover:text-violet-600 transition-colors">{league.name}</Link>
             {game_week ? ` · Rodada ${game_week}` : ""}
             {season ? ` · ${season}` : ""}
           </span>

@@ -1421,24 +1421,54 @@ export async function importTeams(req, res) {
 // Salva aliases novos após import bem-sucedido (fora de transação, não-fatal)
 // csvToIdMap: { [csvName]: idClub (number) }
 async function saveClubAliases(csvToIdMap) {
+  const entries = Object.entries(csvToIdMap)
+    .filter(([, idClub]) => !!idClub)
+    .map(([csvName, idClub]) => ({
+      csvName,
+      idClub: Number(idClub),
+      aliasNorm: slugify(csvName, { lower: true, strict: true }),
+    }));
+
+  if (!entries.length) return { saved: [], conflicts: [] };
+
+  // 1 query para buscar todos os aliases existentes de uma vez
+  const aliasNorms = entries.map(e => e.aliasNorm);
+  const existingRes = await db.query(
+    `SELECT alias_norm, id_club FROM club_aliases WHERE alias_norm = ANY($1::text[])`,
+    [aliasNorms]
+  );
+  const existingMap = new Map(existingRes.rows.map(r => [r.alias_norm, r.id_club]));
+
+  const toInsert = [];
   const saved = [];
   const conflicts = [];
-  for (const [csvName, idClub] of Object.entries(csvToIdMap)) {
-    if (!idClub) continue;
-    const aliasNorm = slugify(csvName, { lower: true, strict: true });
-    const existing = await db.query(`SELECT id_club FROM club_aliases WHERE alias_norm = $1`, [aliasNorm]);
-    if (existing.rows.length > 0) {
-      if (existing.rows[0].id_club !== Number(idClub)) {
-        conflicts.push({ csvName, idClub: Number(idClub), conflictClubId: existing.rows[0].id_club });
+
+  for (const { csvName, idClub, aliasNorm } of entries) {
+    if (existingMap.has(aliasNorm)) {
+      if (existingMap.get(aliasNorm) !== idClub) {
+        conflicts.push({ csvName, idClub, conflictClubId: existingMap.get(aliasNorm) });
       }
       continue;
     }
-    await db.query(
-      `INSERT INTO club_aliases (id_club, alias_raw, alias_norm) VALUES ($1, $2, $3) ON CONFLICT (alias_norm) DO NOTHING`,
-      [Number(idClub), csvName, aliasNorm]
-    );
-    saved.push({ csvName, idClub: Number(idClub) });
+    toInsert.push([idClub, csvName, aliasNorm]);
+    saved.push({ csvName, idClub });
   }
+
+  // 1 INSERT batch para todos os novos aliases
+  if (toInsert.length > 0) {
+    const params = [];
+    const placeholders = toInsert.map((r, i) => {
+      params.push(...r);
+      return `($${i*3+1},$${i*3+2},$${i*3+3})`;
+    });
+    await db.query(
+      `INSERT INTO club_aliases (id_club, alias_raw, alias_norm)
+       VALUES ${placeholders.join(",")}
+       ON CONFLICT (alias_norm) DO NOTHING`,
+      params
+    );
+  }
+
   return { saved, conflicts };
 }
 

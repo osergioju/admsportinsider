@@ -32,8 +32,8 @@ import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
 
 export default function DashLeagueFinance() {
   const { t } = useTranslation();
-  const { id } = useParams();
-  const mainLeagueId = Number(id);
+  const { slug } = useParams();
+  const [mainLeagueId, setMainLeagueId] = useState(null);
 
   const { user } = useContext(AuthContext);
   const planID = user?.plan_id;
@@ -91,13 +91,13 @@ export default function DashLeagueFinance() {
     async function loadDashboard() {
       try {
         setLoading(true);
-        const [leagueRes, currenciesRes] = await Promise.all([
-          api.get(`/dashboard/leagues/${id}/info`),
-          api.get(`/dashboard/leagues/${id}/financials/currencies`),
-        ]);
+        const leagueRes = await api.get(`/dashboard/leagues/${slug}/info`);
+        const numId = leagueRes.data.league.id_league;
+        setMainLeagueId(numId);
+        const currenciesRes = await api.get(`/dashboard/leagues/${numId}/financials/currencies`);
         setTheLeague(leagueRes.data);
-        setLeagueMap({ [mainLeagueId]: leagueRes.data.league.name });
-        setLeagueColor({ [mainLeagueId]: { color_one: leagueRes.data.league.primary_color } });
+        setLeagueMap({ [numId]: leagueRes.data.league.name });
+        setLeagueColor({ [numId]: { color_one: leagueRes.data.league.primary_color } });
         setCurrencies(currenciesRes.data || []);
       } catch (err) {
         console.error("Erro ao carregar dashboard da liga:", err);
@@ -106,7 +106,7 @@ export default function DashLeagueFinance() {
       }
     }
     loadDashboard();
-  }, [id, mainLeagueId]);
+  }, [slug]);
 
   async function fetchChartData(chartKey, endpointBuilder, force = false) {
     const leagues = leaguesForChart(chartKey);

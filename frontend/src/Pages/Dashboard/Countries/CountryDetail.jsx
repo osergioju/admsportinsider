@@ -25,7 +25,7 @@ function SkeletonCard() {
 function LeagueCard({ league, isFavorited, toggleFavorite }) {
   const initials = (league.name || "?").substring(0, 3).toUpperCase();
   return (
-    <Link to={`/dashboard/competitions/${league.id}`} className="block group">
+    <Link to={`/dashboard/competitions/${league.slug || league.id}`} className="block group">
       <div className="h-full rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         <div className="h-36 flex items-center justify-center relative">
           <button

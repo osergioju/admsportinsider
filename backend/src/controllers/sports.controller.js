@@ -76,12 +76,29 @@ export async function getClubCompetitions(req, res) {
       ORDER BY s.year DESC
     `, [clubId]);
 
-    const competitions = [];
+    // ── Batch: busca todos os dados de uma vez, sem N+1 ────────────────────
+    const compSeasonIds = compRes.rows.map(c => c.id_competition_season);
+    const leagueIds     = compRes.rows.map(c => c.id_league);
+    const seasonIds     = compRes.rows.map(c => c.id_season);
 
-    for (const comp of compRes.rows) {
-      // Full standings with home/away splits
-      const standingsRes = await db.query(`
-        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug, c.hidden AS club_hidden,
+    // Identifica comps knockout antes de disparar as queries
+    const knockoutSet = new Set(
+      compRes.rows
+        .filter(comp => {
+          const fmt = comp.structure_json?.[String(season)]?.tipo || comp.format || "";
+          return !["pontos_corridos", "pontos_corridos_turno_unico", "grupos", "apertura_clausura"].includes(fmt);
+        })
+        .map(c => c.id_competition_season)
+    );
+    const koComps  = compRes.rows.filter(c => knockoutSet.has(c.id_competition_season));
+    const koLeagueIds  = koComps.map(c => c.id_league);
+    const koSeasonIds  = koComps.map(c => c.id_season);
+
+    const queries = [
+      // 1. Standings de todas as competições em batch
+      db.query(`
+        SELECT ccs.id_competition_season,
+          c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug, c.hidden AS club_hidden,
           ccs.position_total, ccs.position_home, ccs.position_away,
           ccs.points,
           ccs.matches_total, ccs.matches_home, ccs.matches_away,
@@ -93,32 +110,21 @@ export async function getClubCompetitions(req, res) {
           ccs.goal_difference, ccs.win_percentage
         FROM club_competition_stats ccs
         JOIN clubs c ON c.id_club = ccs.id_club
-        WHERE ccs.id_competition_season = $1
-        ORDER BY ccs.position_total ASC NULLS LAST
-      `, [comp.id_competition_season]);
+        WHERE ccs.id_competition_season = ANY($1::int[])
+        ORDER BY ccs.id_competition_season, ccs.position_total ASC NULLS LAST
+      `, [compSeasonIds]),
 
-      // Last 5 matches for form
-      const formRes = await db.query(`
-        SELECT home_club_id, away_club_id, home_goals, away_goals
-        FROM matches
-        WHERE id_league = $1 AND id_season = $2
-          AND (home_club_id = $3 OR away_club_id = $3)
-          AND home_goals IS NOT NULL
-        ORDER BY game_week DESC LIMIT 5
-      `, [comp.id_league, comp.id_season, clubId]);
-      const form = computeForm(formRes.rows, clubId);
-
-      // Club stats (all splits)
-      const statsRes = await db.query(`
+      // 2. Stats do clube em todas as competições
+      db.query(`
         SELECT ccs.*
         FROM club_competition_stats ccs
-        WHERE ccs.id_competition_season = $1 AND ccs.id_club = $2
-      `, [comp.id_competition_season, clubId]);
-      const cs = statsRes.rows[0] || {};
+        WHERE ccs.id_competition_season = ANY($1::int[]) AND ccs.id_club = $2
+      `, [compSeasonIds, clubId]),
 
-      // All matches of this club in this competition
-      const matchesRes = await db.query(`
-        SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
+      // 3. Partidas do clube em todas as competições
+      db.query(`
+        SELECT m.id_match, m.id_league, m.id_season, m.game_week, m.match_date,
+               m.home_goals, m.away_goals, m.status,
                hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
                ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden,
                ms.home_goals_ht, ms.away_goals_ht
@@ -126,13 +132,81 @@ export async function getClubCompetitions(req, res) {
         JOIN clubs hc ON hc.id_club = m.home_club_id
         JOIN clubs ac ON ac.id_club = m.away_club_id
         LEFT JOIN match_stats ms ON ms.id_match = m.id_match
-        WHERE m.id_league = $1 AND m.id_season = $2
-          AND (m.home_club_id = $3 OR m.away_club_id = $3)
-        ORDER BY m.game_week ASC NULLS LAST, m.match_date ASC
-      `, [comp.id_league, comp.id_season, clubId]);
+        WHERE (m.home_club_id = $1 OR m.away_club_id = $1)
+          AND (m.id_league, m.id_season) IN (SELECT unnest($2::int[]), unnest($3::int[]))
+        ORDER BY m.id_league, m.id_season, m.game_week ASC NULLS LAST, m.match_date ASC
+      `, [clubId, leagueIds, seasonIds]),
+
+      // 4. Form (últimas 5 partidas por competição via window)
+      db.query(`
+        SELECT id_league, id_season, home_club_id, away_club_id, home_goals, away_goals FROM (
+          SELECT m.id_league, m.id_season, m.home_club_id, m.away_club_id, m.home_goals, m.away_goals,
+                 ROW_NUMBER() OVER (PARTITION BY m.id_league, m.id_season ORDER BY m.game_week DESC NULLS LAST) AS rn
+          FROM matches m
+          WHERE (m.home_club_id = $1 OR m.away_club_id = $1)
+            AND m.home_goals IS NOT NULL
+            AND (m.id_league, m.id_season) IN (SELECT unnest($2::int[]), unnest($3::int[]))
+        ) sub WHERE rn <= 5
+      `, [clubId, leagueIds, seasonIds]),
+    ];
+
+    // 5. Partidas completas das comps knockout (se houver)
+    if (koComps.length > 0) {
+      queries.push(db.query(`
+        SELECT m.id_match, m.id_league, m.id_season, m.game_week, m.match_date, m.home_goals, m.away_goals,
+               hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
+               ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden
+        FROM matches m
+        JOIN clubs hc ON hc.id_club = m.home_club_id
+        JOIN clubs ac ON ac.id_club = m.away_club_id
+        WHERE (m.id_league, m.id_season) IN (SELECT unnest($1::int[]), unnest($2::int[]))
+        ORDER BY m.id_league, m.id_season, m.game_week ASC NULLS LAST, m.match_date ASC
+      `, [koLeagueIds, koSeasonIds]));
+    }
+
+    const results = await Promise.all(queries);
+    const [standingsAll, statsAll, matchesAll, formAll, koMatchesAll] = results;
+
+    // Indexa resultados por chave para lookup O(1)
+    const standingsByComp = Map.groupBy
+      ? Map.groupBy(standingsAll.rows, r => r.id_competition_season)
+      : standingsAll.rows.reduce((m, r) => { const k = r.id_competition_season; if (!m.has(k)) m.set(k, []); m.get(k).push(r); return m; }, new Map());
+
+    const statsByComp = new Map(statsAll.rows.map(r => [r.id_competition_season, r]));
+
+    const matchesByComp = matchesAll.rows.reduce((m, r) => {
+      const k = `${r.id_league}_${r.id_season}`;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(r);
+      return m;
+    }, new Map());
+
+    const formByComp = formAll.rows.reduce((m, r) => {
+      const k = `${r.id_league}_${r.id_season}`;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(r);
+      return m;
+    }, new Map());
+
+    const koMatchesByComp = (koMatchesAll?.rows ?? []).reduce((m, r) => {
+      const k = `${r.id_league}_${r.id_season}`;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(r);
+      return m;
+    }, new Map());
+
+    // ── Monta resposta agrupando dados em memória ──────────────────────────
+    const competitions = [];
+
+    for (const comp of compRes.rows) {
+      const compKey = `${comp.id_league}_${comp.id_season}`;
+      const standingsRows = standingsByComp.get(comp.id_competition_season) ?? [];
+      const cs = statsByComp.get(comp.id_competition_season) ?? {};
+      const compMatches = matchesByComp.get(compKey) ?? [];
+      const form = computeForm(formByComp.get(compKey) ?? [], clubId);
 
       const matchesByWeek = {};
-      for (const m of matchesRes.rows) {
+      for (const m of compMatches) {
         const w = m.game_week ?? 0;
         if (!matchesByWeek[w]) matchesByWeek[w] = [];
         matchesByWeek[w].push({
@@ -152,27 +226,10 @@ export async function getClubCompetitions(req, res) {
         .sort((a, b) => Number(a[0]) - Number(b[0]))
         .map(([week, games]) => ({ week: Number(week), games }));
 
-      // For knockout competitions fetch ALL league matches so the frontend can
-      // build the full bracket and then extract only this club's confrontos.
-      const seasonFmtKey = String(season);
-      const seasonFmt = comp.structure_json?.[seasonFmtKey]?.tipo || comp.format || "";
-      const isKnockoutComp = !["pontos_corridos", "pontos_corridos_turno_unico", "grupos", "apertura_clausura"].includes(seasonFmt);
-
       let leagueMatchesGrouped = [];
-      if (isKnockoutComp) {
-        const allMatchRes = await db.query(`
-          SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals,
-                 hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
-                 ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden
-          FROM matches m
-          JOIN clubs hc ON hc.id_club = m.home_club_id
-          JOIN clubs ac ON ac.id_club = m.away_club_id
-          WHERE m.id_league = $1 AND m.id_season = $2
-          ORDER BY m.game_week ASC NULLS LAST, m.match_date ASC
-        `, [comp.id_league, comp.id_season]);
-
+      if (knockoutSet.has(comp.id_competition_season)) {
         const allByWeek = {};
-        for (const m of allMatchRes.rows) {
+        for (const m of koMatchesByComp.get(compKey) ?? []) {
           const w = m.game_week ?? 0;
           if (!allByWeek[w]) allByWeek[w] = [];
           allByWeek[w].push({
@@ -221,9 +278,9 @@ export async function getClubCompetitions(req, res) {
         country: { id: comp.id_country, name: comp.country_name, flag: comp.country_flag },
 
         standings: {
-          total: standingsRes.rows.map(r => buildRow(r, 'position_total', 'wins_total', 'draws_total', 'losses_total', 'goals_for_total', 'goals_against_total', 'matches_total')),
-          home: standingsRes.rows.filter(r => r.position_home).sort((a, b) => (a.position_home ?? 999) - (b.position_home ?? 999)).map(r => buildRow(r, 'position_home', 'wins_home', 'draws_home', 'losses_home', 'goals_for_home', 'goals_against_home', 'matches_home')),
-          away: standingsRes.rows.filter(r => r.position_away).sort((a, b) => (a.position_away ?? 999) - (b.position_away ?? 999)).map(r => buildRow(r, 'position_away', 'wins_away', 'draws_away', 'losses_away', 'goals_for_away', 'goals_against_away', 'matches_away')),
+          total: standingsRows.map(r => buildRow(r, 'position_total', 'wins_total', 'draws_total', 'losses_total', 'goals_for_total', 'goals_against_total', 'matches_total')),
+          home: standingsRows.filter(r => r.position_home).sort((a, b) => (a.position_home ?? 999) - (b.position_home ?? 999)).map(r => buildRow(r, 'position_home', 'wins_home', 'draws_home', 'losses_home', 'goals_for_home', 'goals_against_home', 'matches_home')),
+          away: standingsRows.filter(r => r.position_away).sort((a, b) => (a.position_away ?? 999) - (b.position_away ?? 999)).map(r => buildRow(r, 'position_away', 'wins_away', 'draws_away', 'losses_away', 'goals_for_away', 'goals_against_away', 'matches_away')),
         },
 
         summary: {

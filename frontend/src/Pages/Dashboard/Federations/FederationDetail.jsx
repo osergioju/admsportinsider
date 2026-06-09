@@ -1,75 +1,99 @@
 import { useEffect, useState, useContext } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { Heart, Shield, Trophy, ChevronLeft, ChevronRight, Globe, Search, X, TrendingUp, TrendingDown } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Heart, Shield, Trophy, ChevronLeft, ArrowRight, MapPin, Calendar, TrendingUp } from "lucide-react";
 import { federationLogo } from "../../../utils/federationUrl";
 import ReactECharts from "echarts-for-react";
 import { api } from "../../../services/api";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
 import { AuthContext } from "../../../context/AuthContext";
-import { formatFinancial } from "../../../utils/formatFinancial";
 
-// ─── Card compacto de competição ─────────────────────────────────────────────
+// ─── Helpers de cor ───────────────────────────────────────────────────────────
 
-function LeagueCard({ league, isFavorited, toggleFavorite }) {
-  return (
-    <Link to={`/dashboard/competitions/${league.id_league}`} className="group block">
-      <div className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-3 hover:border-[#7F33D9]/40 hover:shadow-sm transition-all duration-200">
-        {(league.logo_url || league.slug)
-          ? <img src={league.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`} className="w-10 h-10 object-contain flex-shrink-0" alt={league.name} onError={e => e.currentTarget.style.display='none'} />
-          : <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Trophy size={15} className="text-[#7F33D9]" />
-          </div>
-        }
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#7F33D9] transition-colors leading-tight">{league.name}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {league.flag_url
-              ? <img src={league.flag_url} className="w-3.5 h-2.5 object-cover rounded-sm flex-shrink-0" alt="" />
-              : <Globe size={10} className="text-gray-400 flex-shrink-0" />
-            }
-            <span className="text-[11px] text-gray-400 truncate">{league.country_name || league.continent_name || "Internacional"}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(league.id_league, "league"); }} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-purple-50 transition" aria-label="Favoritar">
-            <Heart size={12} strokeWidth={2} className="transition-colors" style={{ color: isFavorited(league.id_league, "league") ? "#7F33D9" : "#d1d5db" }} fill={isFavorited(league.id_league, "league") ? "#7F33D9" : "transparent"} />
-          </button>
-          <ChevronRight size={14} className="text-gray-300 group-hover:text-[#7F33D9] transition-colors" />
-        </div>
-      </div>
-    </Link>
-  );
+function hexToRgb(hex) {
+  if (!hex) return null;
+  const cleaned = hex.replace("#", "");
+  const full = cleaned.length === 3 ? cleaned.split("").map(c => c + c).join("") : cleaned;
+  const num = parseInt(full, 16);
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
 }
 
-function SkeletonRow() {
-  return <div className="h-[66px] bg-white rounded-2xl border border-gray-100 animate-pulse" />;
+function resolveColors(primary, secondary, tertiary) {
+  const c1 = primary || "#7F33D9";
+  const c2 = secondary || c1;
+  const c3 = tertiary || c2;
+  return [c1, c2, c3];
 }
 
-// ─── Gráfico de ciclo ─────────────────────────────────────────────────────────
+function lighten(hex, amount = 0.7) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const r = Math.min(255, Math.floor(rgb.r + (255 - rgb.r) * amount));
+  const g = Math.min(255, Math.floor(rgb.g + (255 - rgb.g) * amount));
+  const b = Math.min(255, Math.floor(rgb.b + (255 - rgb.b) * amount));
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
-function CycleChart({ title, editions, field, color, currency, invertSign, clampZero }) {
+// ─── Helpers financeiros ──────────────────────────────────────────────────────
+
+function parseCycleYears(edition) {
+  if (edition.name) {
+    const match = edition.name.match(/(\d{4})\s*[-–]\s*(\d{4})/);
+    if (match) return { start: parseInt(match[1]), end: parseInt(match[2]) };
+  }
+  const end = edition.edition_year ?? new Date().getFullYear();
+  return { start: end - 3, end };
+}
+
+function fmtCycleValue(v, currency) {
+  if (v == null || isNaN(v)) return "—";
+  const abs = Math.abs(v);
+  const sign = v < 0 ? "-" : "";
+  if (abs >= 1000) return `${currency} ${sign}${(abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} bilhões`;
+  return `${currency} ${sign}${abs.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} milhões`;
+}
+
+function calcPct(latest, prev) {
+  if (prev == null || prev === 0) return null;
+  return ((latest - prev) / Math.abs(prev)) * 100;
+}
+
+// ─── Keyframes ────────────────────────────────────────────────────────────────
+
+const STYLE_ID = "fed-detail-styles";
+function injectStyles() {
+  if (document.getElementById(STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID;
+  el.textContent = `
+    .fed-comp-card { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+    .fed-comp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+    .fed-comp-card .card-arrow { transition: transform 0.2s ease; }
+    .fed-comp-card:hover .card-arrow { transform: translateX(4px); }
+  `;
+  document.head.appendChild(el);
+}
+
+// ─── Gráfico de barras por ciclo ──────────────────────────────────────────────
+
+function CycleBarChart({ editions, field, color }) {
   if (!editions?.length) return null;
 
-  const labels = editions.map(e => String(e.edition_year));
-  const values = editions.map(e => {
-    let v = parseFloat(e[field]);
-    if (isNaN(v)) return null;
-    if (invertSign) v = v * -1;
-    if (clampZero && v < 0) v = 0;
-    return Math.round(v * 10) / 10;
+  const labels = editions.map(e => {
+    const { start, end } = parseCycleYears(e);
+    return `${start}-${end}`;
   });
 
-  const latest = values.filter(v => v != null).at(-1);
-  const prev = values.filter(v => v != null).at(-2);
-  const pct = (latest != null && prev != null && prev !== 0)
-    ? ((latest - prev) / Math.abs(prev)) * 100
-    : null;
+  const values = editions.map(e => {
+    const v = parseFloat(e[field]);
+    return isNaN(v) ? null : Math.round(v * 10) / 10;
+  });
 
   const fmt = (v) => {
     if (v == null) return "—";
-    if (Math.abs(v) >= 1000) return `${(v / 1000).toFixed(2)}B`;
-    return `${v.toFixed(0)}M`;
+    const abs = Math.abs(v);
+    if (abs >= 1000) return `${(v / 1000).toFixed(1)}B`;
+    return `${Math.round(v)}M`;
   };
 
   const option = {
@@ -77,15 +101,14 @@ function CycleChart({ title, editions, field, color, currency, invertSign, clamp
       trigger: "axis",
       formatter: (params) => {
         const p = params[0];
-        const ed = editions[p.dataIndex];
-        return `<b>${ed?.name || p.name} (${ed?.edition_year})</b><br/>${p.marker} ${fmt(p.value)} ${currency}`;
-      }
+        return `<b>${labels[p.dataIndex]}</b><br/>${p.marker} ${fmt(p.value)}`;
+      },
     },
     grid: { left: 8, right: 8, top: 10, bottom: 24, containLabel: true },
     xAxis: {
       type: "category",
       data: labels,
-      axisLabel: { fontSize: 10, color: "#9ca3af" },
+      axisLabel: { fontSize: 11, color: "#9ca3af" },
       axisLine: { show: false },
       axisTick: { show: false },
     },
@@ -97,38 +120,20 @@ function CycleChart({ title, editions, field, color, currency, invertSign, clamp
     series: [{
       type: "bar",
       data: values,
-      barMaxWidth: 40,
-      itemStyle: { color, borderRadius: [4, 4, 0, 0] },
-      label: {
-        show: true,
-        position: "top",
-        formatter: (p) => fmt(p.value),
-        fontSize: 9,
-        color: "#6b7280",
-      }
-    }]
+      barMaxWidth: 70,
+      itemStyle: { color, borderRadius: [6, 6, 0, 0] },
+      label: { show: true, position: "top", formatter: (p) => fmt(p.value), fontSize: 10, color: "#6b7280" },
+    }],
   };
 
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{title}</p>
-      <div className="flex items-end gap-3 mb-4">
-        <p className="text-2xl font-bold text-gray-900">{fmt(latest)} <span className="text-sm font-normal text-gray-400">{currency}</span></p>
-        {pct != null && (
-          <span className={`flex items-center gap-0.5 text-xs font-semibold mb-1 ${pct >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-            {pct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-            {Math.abs(pct).toFixed(0)}%
-          </span>
-        )}
-      </div>
-      <ReactECharts option={option} style={{ height: 160 }} />
-    </div>
-  );
+  return <ReactECharts option={option} style={{ height: 220 }} />;
 }
 
-// ─── Página ───────────────────────────────────────────────────────────────────
+// ─── Seletor de moeda ─────────────────────────────────────────────────────────
 
 const CURRENCIES = ["USD", "BRL", "EUR", "GBP", "JPY"];
+
+// ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function FederationDetail() {
   const { slug } = useParams();
@@ -141,14 +146,14 @@ export default function FederationDetail() {
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
 
-  // Financeiros por ciclo
-  const [editions, setEditions] = useState(null); // null = not yet loaded
+  const [editions, setEditions] = useState(null);
   const [loadingFin, setLoadingFin] = useState(false);
   const [currency, setCurrency] = useState(user?.currency_code || "USD");
 
   const token = localStorage.getItem("token");
+
+  useEffect(() => { injectStyles(); }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -158,7 +163,6 @@ export default function FederationDetail() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  // Carrega financeiros do ciclo quando federação for global/continental
   useEffect(() => {
     if (!federation) return;
     if (!["global", "continental"].includes(federation.sphere)) return;
@@ -171,93 +175,229 @@ export default function FederationDetail() {
 
   if (notFound) {
     return (
-      <div className="w-full pb-20 space-y-5">
+      <div className="w-full pb-20">
         <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
           <Shield size={28} className="mx-auto mb-3 text-gray-300" />
           <p className="text-gray-500 text-sm font-medium mb-1">Federação não encontrada</p>
-          <button onClick={() => navigate("/dashboard/federations")} className="mt-4 text-sm text-[#7F33D9] font-bold hover:underline">Voltar para federações</button>
+          <button onClick={() => navigate("/dashboard/federations")} className="mt-4 text-sm text-[#7F33D9] font-bold hover:underline">
+            Voltar para federações
+          </button>
         </div>
       </div>
     );
   }
 
-  const favFed = federation && isFavorited(federation.id_federation, "federation");
-  const filtered = leagues.filter(l => !searchInput || l.name.toLowerCase().includes(searchInput.toLowerCase()));
+  if (loading || !federation) return null;
+
+  // ── Cores da federação ─────────────────────────────────────────────────────
+  const [c1, c2, c3] = resolveColors(federation.primary_color, federation.secondary_color, federation.tertiary_color);
+  const rgb1 = hexToRgb(c1);
+  const rgb2 = hexToRgb(c2);
+
+  const background = `
+    radial-gradient(circle at 20% 30%, ${c1} 0%, transparent 60%),
+    radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
+    linear-gradient(135deg, ${c1}, ${c2}, ${c3})
+  `.trim();
+
+  const backgroundLine = `linear-gradient(to bottom, ${c1}, ${c3}, ${c2}, transparent)`;
+
+  const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
+  const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
+  const borderColor = lum1 > 0.5 ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.4)";
+
+  const glowPrimary = rgb1
+    ? `radial-gradient(circle, rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.45) 0%, transparent 70%)`
+    : "rgba(0,0,0,0.2)";
+  const glowSecondary = rgb2
+    ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)`
+    : glowPrimary;
+
+  const colorWOpacity = lighten(c1, 0.7);
+
+  // ── Dados financeiros ──────────────────────────────────────────────────────
   const hasFinancials = editions && editions.length > 0;
+  const latestEd = hasFinancials ? editions[editions.length - 1] : null;
+  const prevEd = editions?.length >= 2 ? editions[editions.length - 2] : null;
+
+  const latestRev = latestEd ? parseFloat(latestEd.revenue_converted) : null;
+  const prevRev = prevEd ? parseFloat(prevEd.revenue_converted) : null;
+  const revPct = (latestRev != null && prevRev != null) ? calcPct(latestRev, prevRev) : null;
+
+  const latestNet = latestEd ? parseFloat(latestEd.net_income_converted) : null;
+  const prevNet = prevEd ? parseFloat(prevEd.net_income_converted) : null;
+
+  const latestCycle = latestEd ? parseCycleYears(latestEd) : null;
+
+  const formatFoundedAt = (dateStr) => {
+    if (!dateStr) return null;
+    try {
+      const clean = String(dateStr).split("T")[0];
+      const [y, m, d] = clean.split("-").map(Number);
+      if (!y || !m || !d) return clean;
+      return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+    } catch { return String(dateStr); }
+  };
+
+  const favFed = isFavorited(federation.id_federation, "federation");
+  const fedName = federation.acronym || federation.name;
 
   return (
-    <div className="w-full pb-20 space-y-5">
+    <div className="w-full overflow-hidden">
 
-      {/* ── Header card ───────────────────────────────────────────────── */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-2.5">
-          <div className="flex-1 relative">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Filtrar competições…"
-              className="w-full pl-10 pr-9 py-2.5 text-sm border border-gray-200 rounded-full bg-[#fafaf8] focus:outline-none focus:ring-2 focus:ring-[#7F33D9]/20 focus:border-[#7F33D9] transition" />
-            {searchInput && <button onClick={() => setSearchInput("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
+      {/* ── Breadcrumb ──────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => navigate("/dashboard/federations")}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#7F33D9] transition font-medium"
+        >
+          <ChevronLeft size={16} />{t("ui.back", "Voltar")}
+        </button>
+        <div className="w-px h-4 bg-gray-200" />
+        <div className="flex items-center gap-2">
+          {federation.slug
+            ? <img src={federationLogo(federation.slug, "thumb")} className="w-5 h-5 object-contain" alt={federation.acronym} onError={e => e.currentTarget.style.display = "none"} />
+            : <Shield size={14} className="text-[#7F33D9]" />
+          }
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{federation.name}</span>
+        </div>
+        {token && (
+          <button
+            onClick={() => toggleFavorite(federation.id_federation, "federation")}
+            className={`ml-auto shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-semibold transition-all ${favFed ? "bg-[#7F33D9] border-[#7F33D9] text-white" : "bg-white border-gray-200 text-gray-500 hover:border-[#7F33D9] hover:text-[#7F33D9]"}`}
+          >
+            <Heart size={12} fill={favFed ? "white" : "transparent"} strokeWidth={2} />
+            {favFed ? "Favoritada" : "Favoritar"}
+          </button>
+        )}
+      </div>
+
+      {/* ── Header com gradiente ─────────────────────────────────────────── */}
+      <div className="rounded-2xl mb-4 relative overflow-hidden" style={{ background }}>
+
+        {/* Overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)" }} />
+
+        {/* Glow orbs */}
+        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl" style={{ background: glowPrimary }} />
+        <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
+
+        <div className="relative z-10 px-5 sm:px-6 pt-4 pb-8">
+          <div className="flex items-start gap-4 lg:p-5 flex-wrap">
+
+            {/* Logo */}
+            <div className="shrink-0 w-14 h-14 lg:w-28 lg:h-28 xl:w-36 xl:h-36 flex items-center justify-center">
+              {federation.slug
+                ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain drop-shadow-lg" />
+                : <Shield size={40} style={{ color: textColor, opacity: 0.6 }} />
+              }
+            </div>
+
+            {/* Nome + nome completo + info */}
+            <div className="flex-1 min-w-0 border-b pb-4 pl-2" style={{ borderColor }}>
+              <h1 className="font-light drop-shadow-md leading-tight text-xl sm:text-2xl" style={{ color: textColor }}>
+                {fedName}
+              </h1>
+              {federation.full_name && (
+                <span
+                  className="inline-block mt-1 text-xs border px-5 py-2 font-[300] rounded-full"
+                  style={{ color: textColor, borderColor }}
+                >
+                  {federation.full_name}
+                </span>
+              )}
+
+              <div className="mt-4 flex gap-2 lg:flex-row flex-col lg:justify-between">
+
+                {/* Cidade-sede + Data de fundação */}
+                <div className="flex gap-6 flex-wrap">
+                  {federation.city_name && (
+                    <div className="text-left pr-4">
+                      <span className="flex items-center gap-1.5 text-sm font-[300]" style={{ color: textColor }}>
+                        <MapPin size={13} /> Cidade-sede
+                      </span>
+                      <p className="text-lg lg:text-xl font-[400] leading-none mt-2" style={{ color: textColor }}>
+                        {federation.city_name}
+                      </p>
+                    </div>
+                  )}
+                  {federation.founded_at && (
+                    <div className="text-left">
+                      <span className="flex items-center gap-1.5 text-sm font-[300]" style={{ color: textColor }}>
+                        <Calendar size={13} /> Fundação
+                      </span>
+                      <p className="text-lg lg:text-xl font-[400] leading-none mt-2" style={{ color: textColor }}>
+                        {formatFoundedAt(federation.founded_at)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botão Indicadores financeiros (onde fica Hospitalidade nos clubes) */}
+                {hasFinancials && (
+                  <div className="flex items-start lg:items-center py-1">
+                    <a
+                      href="#financials"
+                      className="flex items-center gap-2 text-[#0A0A0A] font-[400] text-sm lg:text-[15px] py-3 px-5 rounded-full transition-all hover:brightness-[1.05]"
+                      style={{ background: `linear-gradient(to right, #ffffff, ${colorWOpacity})` }}
+                    >
+                      <TrendingUp size={15} />
+                      Indicadores financeiros
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          {token && federation && (
-            <button onClick={() => toggleFavorite(federation.id_federation, "federation")}
-              className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all ${favFed ? "bg-[#7F33D9] border-[#7F33D9] text-white" : "bg-white border-gray-200 text-gray-500 hover:border-[#7F33D9] hover:text-[#7F33D9]"}`}>
-              <Heart size={12} fill={favFed ? "white" : "transparent"} strokeWidth={2} />
-              {favFed ? "Favoritada" : "Favoritar"}
-            </button>
+
+          {/* Botões de competições (onde ficam os 3 nav cards nos clubes) */}
+          {leagues.length > 0 && (
+            <div className="w-full mt-4">
+              <div className="grid lg:grid-cols-3 gap-1 lg:gap-4 sm:gap-2">
+                {leagues.slice(0, 3).map((league) => (
+                  <div
+                    key={league.id_league}
+                    className="fed-comp-card flex items-center justify-between border rounded-2xl p-2 px-4 pr-2 lg:p-4 lg:px-5 cursor-pointer bg-white"
+                    onClick={() => navigate(`/dashboard/competitions/${league.slug || league.id_league}`)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {league.logo_url
+                        ? <img src={league.logo_url} className="w-8 h-8 shrink-0 object-contain" alt={league.name} onError={e => e.currentTarget.style.display = "none"} />
+                        : <Trophy size={18} className="text-gray-400 shrink-0" />
+                      }
+                      <h2 className="text-[#0A0A0A] font-[400] text-[14px] lg:text-[15px] leading-tight truncate">
+                        {league.name}
+                      </h2>
+                    </div>
+                    <button
+                      className="shrink-0 cursor-pointer transition-all text-sm px-4 py-2.5 ml-2 rounded-full border border-[#1E1E1E]/40 flex items-center gap-1.5 hover:bg-gray-50"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/competitions/${league.slug || league.id_league}`); }}
+                    >
+                      Ver mais
+                      <ArrowRight size={13} className="card-arrow" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
 
-      {/* ── Cabeçalho da federação ─────────────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/dashboard/federations")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#7F33D9] transition font-medium">
-          <ChevronLeft size={16} />{t("ui.back", "Voltar")}
-        </button>
-        <div className="w-px h-4 bg-gray-200" />
-        {loading ? <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" /> : federation && (
-          <div className="flex items-center gap-2">
-            {federation.slug
-              ? <img src={federationLogo(federation.slug, "thumb")} className="w-6 h-6 object-contain" alt={federation.acronym} onError={e => e.currentTarget.style.display = 'none'} />
-              : <Shield size={14} className="text-[#7F33D9]" />
-            }
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{federation.name}</span>
-          </div>
-        )}
-        <span className="text-sm text-gray-400 ml-auto">{filtered.length} {filtered.length === 1 ? "competição" : "competições"}</span>
-      </div>
-
-      {/* ── Grid de competições ────────────────────────────────────────── */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
-          <p className="text-2xl mb-3 opacity-30">🏆</p>
-          {searchInput
-            ? <p className="text-gray-500 text-sm font-medium mb-1">Nenhuma competição encontrada</p>
-            : <p className="text-gray-500 text-sm font-medium mb-1">Nenhuma competição vinculada</p>
-          }
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {filtered.map(league => (
-            <LeagueCard key={league.id_league} league={league} isFavorited={isFavorited} toggleFavorite={toggleFavorite} />
-          ))}
-        </div>
-      )}
-
-      {/* ── Seção financeira por ciclo ─────────────────────────────────── */}
+      {/* ── Seção financeira ─────────────────────────────────────────────── */}
       {!loading && editions !== null && (
-        <>
-          {/* Separador + título + seletor de moeda */}
-          <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-100">
-            <div>
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Evolução financeira por ciclo</p>
-            </div>
+        <div id="financials">
+
+          {/* Seletor de moeda */}
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Receitas por ciclo</p>
             <div className="flex gap-1 bg-gray-100 rounded-full p-1 shrink-0">
               {CURRENCIES.map(c => (
-                <button key={c} onClick={() => setCurrency(c)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${currency === c ? "bg-white text-[#7F33D9] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                <button
+                  key={c}
+                  onClick={() => setCurrency(c)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${currency === c ? "bg-white text-[#7F33D9] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                >
                   {c}
                 </button>
               ))}
@@ -265,22 +405,74 @@ export default function FederationDetail() {
           </div>
 
           {loadingFin ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-64 bg-white rounded-2xl border border-gray-100 animate-pulse" />)}
+            <div className="space-y-4">
+              <div className="h-72 bg-white rounded-2xl border border-gray-100 animate-pulse" />
+              <div className="h-72 bg-white rounded-2xl border border-gray-100 animate-pulse" />
             </div>
           ) : !hasFinancials ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-              <p className="text-gray-400 text-sm">Sem dados financeiros por ciclo para esta federação.</p>
+              <p className="text-gray-400 text-sm">Sem dados financeiros para esta federação.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <CycleChart title="Receitas" editions={editions} field="revenue_converted" color="#7F33D9" currency={currency} />
-              <CycleChart title="Custos" editions={editions} field="costs_converted" color="#ef4444" currency={currency} invertSign />
-              <CycleChart title="Lucro líquido" editions={editions} field="net_income_converted" color="#10b981" currency={currency} />
-              <CycleChart title="Dívida líquida" editions={editions} field="net_debt_converted" color="#f59e0b" currency={currency} clampZero />
-            </div>
+            <>
+              {/* ── Gráfico de Receitas ── */}
+              <div className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
+                <div className="flex flex-wrap w-full items-center">
+                  <div className="w-full lg:w-1/2">
+                    <CycleBarChart editions={editions} field="revenue_converted" color={c1} />
+                  </div>
+                  <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                    <h2
+                      style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                      className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                    >
+                      <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                      Receitas por ciclo
+                    </h2>
+                    {latestEd && latestCycle && latestRev != null && (
+                      <p
+                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                        className="text-lg font-light lg:text-xl xl:text-2xl"
+                      >
+                        {`A ${fedName} projeta receita de ${fmtCycleValue(latestRev, currency)} entre ${latestCycle.start} e ${latestCycle.end}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(0)}% em relação ao período anterior` : ""}.`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Resultado Líquido ── */}
+              <div id="resultado" className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
+                <div className="flex flex-wrap w-full items-center">
+                  <div className="w-full lg:w-1/2">
+                    <CycleBarChart
+                      editions={editions}
+                      field="net_income_converted"
+                      color={latestNet != null && latestNet >= 0 ? "#10b981" : "#ef4444"}
+                    />
+                  </div>
+                  <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
+                    <h2
+                      style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                      className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                    >
+                      <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
+                      Resultado líquido
+                    </h2>
+                    {latestEd && latestCycle && latestNet != null && (
+                      <p
+                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                        className="text-lg font-light lg:text-xl xl:text-2xl"
+                      >
+                        {`A ${fedName} projeta ${latestNet >= 0 ? "lucro" : "prejuízo"} de ${fmtCycleValue(Math.abs(latestNet), currency)} entre ${latestCycle.start} e ${latestCycle.end}${prevNet != null ? `, ${latestNet >= prevNet ? "acima" : "abaixo"} do ${prevNet >= 0 ? "lucro" : "prejuízo"} de ${fmtCycleValue(Math.abs(prevNet), currency)} registrado no período anterior` : ""}.`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
           )}
-        </>
+        </div>
       )}
     </div>
   );

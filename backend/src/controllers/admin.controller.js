@@ -142,7 +142,7 @@ export async function getLeagueById(req, res) {
     LEFT JOIN countries c ON c.id_country = l.id_country
     LEFT JOIN continents ct ON ct.id_continent = l.id_continent
     LEFT JOIN federations f ON f.id_federation = l.id_federation
-    WHERE id_league = $1
+    WHERE (CASE WHEN $1 ~ '^\d+$' THEN l.id_league = $1::integer ELSE l.slug = $1 END)
   `, [id]);
 
     if (result.rows.length === 0) {
@@ -557,59 +557,45 @@ export async function getClubById(req, res) {
   const { id } = req.params;
 
   try {
-    // Buscar o clube + país
-    const clubResult = await db.query(`
-      SELECT
-        c.*,
-        co.id_country,
-        co.name AS country_name,
-        co.flag_url
-      FROM clubs c
-      LEFT JOIN countries co
-        ON co.id_country = c.id_country
-      WHERE c.id_club = $1
-    `, [id]);
+    // Todas as queries em paralelo — clube+país+hospitalidade em um único JOIN
+    const [clubResult, attrResult, ownersResult] = await Promise.all([
+      db.query(`
+        SELECT c.*,
+               co.id_country, co.name AS country_name, co.flag_url,
+               sh.id          AS hospitality_id,
+               sh.hospitality_url,
+               sh.description AS hospitality_description
+        FROM clubs c
+        LEFT JOIN countries co ON co.id_country = c.id_country
+        LEFT JOIN stadium_hospitality sh
+               ON c.stadium_name IS NOT NULL
+              AND LOWER(sh.stadium_name) = LOWER(c.stadium_name)
+        WHERE c.id_club = $1
+        LIMIT 1
+      `, [id]),
+      db.query(`
+        SELECT key, value, value_type
+        FROM club_attributes WHERE id_club = $1 ORDER BY key ASC
+      `, [id]),
+      db.query(`
+        SELECT id, name, ownership_pct
+        FROM club_owners WHERE id_club = $1
+        ORDER BY ownership_pct DESC NULLS LAST, name ASC
+      `, [id]),
+    ]);
 
     if (clubResult.rows.length === 0) {
       return res.status(404).json({ message: "Clube não encontrado" });
     }
 
-    const club = clubResult.rows[0];
+    const row = clubResult.rows[0];
+    const hospitality = row.hospitality_id
+      ? { id: row.hospitality_id, hospitality_url: row.hospitality_url, description: row.hospitality_description }
+      : null;
+    // Remove campos de hospitalidade do objeto principal para não poluir
+    const { hospitality_id, hospitality_url, hospitality_description, ...club } = row;
 
-    // Buscar atributos dinâmicos
-    const attrResult = await db.query(`
-      SELECT key, value, value_type
-      FROM club_attributes
-      WHERE id_club = $1
-      ORDER BY key ASC
-    `, [id]);
-
-    // Buscar proprietários
-    const ownersResult = await db.query(`
-      SELECT id, name, ownership_pct
-      FROM club_owners
-      WHERE id_club = $1
-      ORDER BY ownership_pct DESC NULLS LAST, name ASC
-    `, [id]);
-
-    // Buscar hospitalidade do estádio (se o clube tiver estádio cadastrado)
-    let hospitality = null;
-    if (club.stadium_name) {
-      const hospResult = await db.query(`
-        SELECT id, hospitality_url, description
-        FROM stadium_hospitality
-        WHERE LOWER(stadium_name) = LOWER($1)
-        LIMIT 1
-      `, [club.stadium_name]);
-      if (hospResult.rows.length > 0) hospitality = hospResult.rows[0];
-    }
-
-    return res.json({
-      club,
-      attributes: attrResult.rows,
-      owners: ownersResult.rows,
-      hospitality,
-    });
+    return res.json({ club, attributes: attrResult.rows, owners: ownersResult.rows, hospitality });
 
   } catch (err) {
     console.error("Erro ao buscar clube:", err);
@@ -966,7 +952,8 @@ export async function getDashboardFederationBySlug(req, res) {
   try {
     const fedResult = await db.query(
       `SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
-              primary_color, secondary_color, tertiary_color, full_name
+              primary_color, secondary_color, tertiary_color, full_name,
+              city_name, TO_CHAR(founded_at, 'YYYY-MM-DD') AS founded_at
        FROM federations WHERE slug = $1 AND active = true`,
       [slug]
     );
@@ -1002,7 +989,8 @@ export async function getAllFederations(req, res) {
   try {
     const result = await db.query(`
       SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
-             primary_color, secondary_color, tertiary_color, full_name
+             primary_color, secondary_color, tertiary_color, full_name,
+             city_name, TO_CHAR(founded_at, 'YYYY-MM-DD') AS founded_at
       FROM federations WHERE active = true
       ORDER BY
         CASE sphere WHEN 'global' THEN 0 WHEN 'continental' THEN 1 ELSE 2 END,
@@ -1016,13 +1004,13 @@ export async function getAllFederations(req, res) {
 }
 
 export async function createFederation(req, res) {
-  const { name, acronym, logo_url, sort_order } = req.body;
+  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
     const result = await db.query(
-      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug) VALUES ($1, $2, $3, $4, $5) RETURNING id_federation",
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug]
+      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug, full_name, city_name, founded_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id_federation",
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null]
     );
     return res.status(201).json({ id_federation: result.rows[0].id_federation, message: "Federação criada com sucesso!" });
   } catch (err) {
@@ -1034,13 +1022,13 @@ export async function createFederation(req, res) {
 
 export async function updateFederation(req, res) {
   const { id } = req.params;
-  const { name, acronym, logo_url, sort_order } = req.body;
+  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
     await db.query(
-      "UPDATE federations SET name = $1, acronym = $2, logo_url = $3, sort_order = $4, slug = $5 WHERE id_federation = $6",
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, id]
+      "UPDATE federations SET name = $1, acronym = $2, logo_url = $3, sort_order = $4, slug = $5, full_name = $6, city_name = $7, founded_at = $8 WHERE id_federation = $9",
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id]
     );
     return res.json({ message: "Federação atualizada com sucesso!" });
   } catch (err) {
@@ -2687,13 +2675,19 @@ export async function saveGroupAssignments(req, res) {
       [idLeague, idSeason]
     );
 
-    for (const a of assignments) {
+    if (assignments.length > 0) {
+      const params = [];
+      const placeholders = assignments.map((a, i) => {
+        const base = i * 6;
+        params.push(idLeague, idSeason, a.phase_key, a.group_key ?? null, Number(a.id_club), a.slot_order ?? 0);
+        return `($${base+1},$${base+2},$${base+3},$${base+4},$${base+5},$${base+6})`;
+      });
       await client.query(`
         INSERT INTO competition_group_clubs (id_league, id_season, phase_key, group_key, id_club, slot_order)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        VALUES ${placeholders.join(",")}
         ON CONFLICT (id_league, id_season, phase_key, id_club) DO UPDATE
           SET group_key = EXCLUDED.group_key, slot_order = EXCLUDED.slot_order
-      `, [idLeague, idSeason, a.phase_key, a.group_key ?? null, Number(a.id_club), a.slot_order ?? 0]);
+      `, params);
     }
 
     await client.query("COMMIT");
@@ -2917,29 +2911,34 @@ export async function generateMatchesFromGroups(req, res) {
       byGroup.get(key).push(r.id_club);
     }
 
-    let created = 0;
+    // Acumula todos os confrontos em memória e faz um único INSERT batch
+    const matchTuples = [];
     for (const [groupKey, clubIds] of byGroup) {
       const gk = groupKey === "__none__" ? null : groupKey;
-      // Todos contra todos dentro do grupo
       for (let i = 0; i < clubIds.length; i++) {
         for (let j = i + 1; j < clubIds.length; j++) {
-          await client.query(`
-            INSERT INTO matches (id_league, id_season, home_club_id, away_club_id, status, phase_key, group_key)
-            VALUES ($1,$2,$3,$4,'scheduled',$5,$6)
-            ON CONFLICT DO NOTHING
-          `, [idLeague, idSeason, clubIds[i], clubIds[j], phase_key, gk]);
-          created++;
-
+          matchTuples.push([idLeague, idSeason, clubIds[i], clubIds[j], phase_key, gk]);
           if (formato === "ida_volta") {
-            await client.query(`
-              INSERT INTO matches (id_league, id_season, home_club_id, away_club_id, status, phase_key, group_key)
-              VALUES ($1,$2,$3,$4,'scheduled',$5,$6)
-              ON CONFLICT DO NOTHING
-            `, [idLeague, idSeason, clubIds[j], clubIds[i], phase_key, gk]);
-            created++;
+            matchTuples.push([idLeague, idSeason, clubIds[j], clubIds[i], phase_key, gk]);
           }
         }
       }
+    }
+
+    let created = 0;
+    if (matchTuples.length > 0) {
+      const params = [];
+      const placeholders = matchTuples.map((t, i) => {
+        const base = i * 6;
+        params.push(...t);
+        return `($${base+1},$${base+2},$${base+3},$${base+4},'scheduled',$${base+5},$${base+6})`;
+      });
+      await client.query(`
+        INSERT INTO matches (id_league, id_season, home_club_id, away_club_id, status, phase_key, group_key)
+        VALUES ${placeholders.join(",")}
+        ON CONFLICT DO NOTHING
+      `, params);
+      created = matchTuples.length;
     }
 
     await client.query("COMMIT");
@@ -3218,17 +3217,26 @@ export async function saveGroupClubs(req, res) {
       [idLeague, idSeason]
     );
 
-    let inserted = 0;
+    const rows = [];
     for (const { phaseKey, groupKey, clubIds } of assignments) {
       if (!phaseKey || !groupKey || !Array.isArray(clubIds)) continue;
-      for (let i = 0; i < clubIds.length; i++) {
-        await client.query(`
-          INSERT INTO competition_group_clubs (id_league, id_season, phase_key, group_key, id_club, slot_order)
-          VALUES ($1, $2, $3, $4, $5, $6)
-          ON CONFLICT DO NOTHING
-        `, [idLeague, idSeason, phaseKey, groupKey, clubIds[i], i + 1]);
-        inserted++;
-      }
+      clubIds.forEach((clubId, i) => rows.push([idLeague, idSeason, phaseKey, groupKey, clubId, i + 1]));
+    }
+
+    let inserted = 0;
+    if (rows.length > 0) {
+      const params = [];
+      const placeholders = rows.map((r, i) => {
+        const base = i * 6;
+        params.push(...r);
+        return `($${base+1},$${base+2},$${base+3},$${base+4},$${base+5},$${base+6})`;
+      });
+      await client.query(`
+        INSERT INTO competition_group_clubs (id_league, id_season, phase_key, group_key, id_club, slot_order)
+        VALUES ${placeholders.join(",")}
+        ON CONFLICT DO NOTHING
+      `, params);
+      inserted = rows.length;
     }
 
     await client.query("COMMIT");
