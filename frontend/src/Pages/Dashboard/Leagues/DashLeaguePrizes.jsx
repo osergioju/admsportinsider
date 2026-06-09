@@ -16,10 +16,16 @@ function hexToRgb(hex) {
 function fmtMoney(v, currency = "USD") {
     if (v == null) return "—";
     const abs = Math.abs(v);
-    if (abs >= 1_000_000_000) return `${currency} ${(v / 1_000_000_000).toFixed(1)}B`;
-    if (abs >= 1_000_000)     return `${currency} ${(v / 1_000_000).toFixed(0)}M`;
-    if (abs >= 1_000)         return `${currency} ${(v / 1_000).toFixed(0)}K`;
-    return `${currency} ${v}`;
+    const prefix = currency ? `${currency} ` : "";
+    if (abs >= 1_000_000_000) return `${prefix}${(v / 1_000_000_000).toFixed(1)}B`;
+    if (abs >= 1_000_000)     return `${prefix}${(v / 1_000_000).toFixed(0)}M`;
+    if (abs >= 1_000)         return `${prefix}${(v / 1_000).toFixed(0)}K`;
+    return `${prefix}${v}`;
+}
+
+/* Sem prefixo de moeda — para células da tabela */
+function fmtVal(v, convertFn) {
+    return fmtMoney(convertFn(v), "");
 }
 
 function flagSrc(code) {
@@ -48,22 +54,35 @@ function FlagAvatar({ code, size = 26, title = "" }) {
     );
 }
 
-/* ─── Pilha de bandeiras (até N, sobrepostas) ──────────────────── */
-function FlagStack({ positions, size = 24, max = 6 }) {
+/* ─── Lista de países com bandeira + nome ──────────────────────── */
+function CountryList({ positions, max = 4, compact = false }) {
     const visible = positions.slice(0, max);
-    const overlap = Math.round(size * 0.35);
+    const extra = positions.length - max;
     return (
-        <div className="flex items-center" style={{ paddingLeft: overlap }}>
+        <div className={compact ? "flex flex-col gap-0.5 mt-1.5" : "flex flex-col gap-1 mt-1.5"}>
             {visible.map((pos, i) => (
-                <div
-                    key={i}
-                    title={pos.country}
-                    style={{ marginLeft: -overlap, zIndex: max - i }}
-                    className="relative"
-                >
-                    <FlagAvatar code={pos.code} size={size} title={pos.country} />
+                <div key={i} className="flex items-center gap-1.5 min-w-0">
+                    <div
+                        className="rounded-sm overflow-hidden shrink-0 bg-gray-100"
+                        style={{ width: compact ? 14 : 18, height: compact ? 10 : 13 }}
+                    >
+                        {pos.code && (
+                            <img
+                                src={flagSrc(pos.code)}
+                                alt={pos.code}
+                                className="w-full h-full object-cover"
+                                onError={e => { e.currentTarget.style.opacity = "0"; }}
+                            />
+                        )}
+                    </div>
+                    <span className={`truncate leading-none ${compact ? "text-xs text-gray-500" : "text-xs text-gray-600"}`}>
+                        {pos.country || "—"}
+                    </span>
                 </div>
             ))}
+            {extra > 0 && (
+                <span className="text-[10px] text-gray-400 pl-0.5">+{extra} países</span>
+            )}
         </div>
     );
 }
@@ -391,7 +410,7 @@ export default function DashLeaguePrizes() {
                 <div className="px-6 pt-5 pb-0">
                     <div className="mb-3">
                         <h2 className="text-base font-semibold text-gray-800">Tabela de premiações</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">Valores em USD · Dados por edição</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Valores em {currency} · Dados por edição</p>
                     </div>
 
                     {/* Pills de filtro */}
@@ -443,8 +462,8 @@ export default function DashLeaguePrizes() {
                                                 </span>
                                             )}
                                             {top5.length > 0 && (
-                                                <div className="flex justify-center mt-1">
-                                                    <FlagStack positions={top5} size={20} max={5} />
+                                                <div className="flex justify-start mt-1">
+                                                    <CountryList positions={top5} max={4} compact />
                                                 </div>
                                             )}
                                         </th>
@@ -466,16 +485,16 @@ export default function DashLeaguePrizes() {
                                                 .filter(c => c.prize_order === row.position_order);
                                             return (
                                                 <td key={yr} className="py-3 px-4 text-xs tabular-nums whitespace-nowrap">
-                                                    <div className="flex flex-col items-center gap-1.5">
+                                                    <div className="flex flex-col items-start gap-0.5">
                                                         {val != null ? (
-                                                            <span className="inline-block px-2.5 py-1 rounded-lg bg-gray-100/70 font-mono text-gray-600 text-[11px]">
-                                                                {fmtMoney(convert(val), currency)}
+                                                            <span className="inline-block px-2.5 py-1.5 rounded-lg bg-gray-100/70 font-mono text-gray-700 text-sm font-medium">
+                                                                {fmtVal(val, convert)}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-gray-200 text-[11px]">—</span>
+                                                            <span className="text-gray-200 text-sm">—</span>
                                                         )}
                                                         {tier.length > 0 && (
-                                                            <FlagStack positions={tier} size={18} max={4} />
+                                                            <CountryList positions={tier} max={3} compact />
                                                         )}
                                                     </div>
                                                 </td>
@@ -493,8 +512,8 @@ export default function DashLeaguePrizes() {
                                         {totalRow.position_label}
                                     </td>
                                     {visibleYears.map(yr => (
-                                        <td key={yr} className="text-center py-3.5 px-4 text-[11px] font-bold tabular-nums whitespace-nowrap" style={{ color: textColor }}>
-                                            {totalRow[yr] != null ? fmtMoney(convert(totalRow[yr]), currency) : "—"}
+                                        <td key={yr} className="text-center py-3.5 px-4 text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: textColor }}>
+                                            {totalRow[yr] != null ? fmtVal(totalRow[yr], convert) : "—"}
                                         </td>
                                     ))}
                                 </tr>
@@ -594,11 +613,11 @@ export default function DashLeaguePrizes() {
                                         )}
                                     </div>
 
-                                    {/* Stack top-4 sobrepondo o header */}
+                                    {/* Top 4 sobrepondo o header */}
                                     {top5.length > 0 && (
-                                        <div className="mx-4 -mt-6 mb-3 relative z-10 bg-white rounded-xl shadow-sm px-3 py-2.5 flex items-center gap-3 border border-gray-100">
-                                            <FlagStack positions={top5} size={26} max={4} />
-                                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Top 4</span>
+                                        <div className="mx-4 -mt-6 mb-3 relative z-10 bg-white rounded-xl shadow-sm px-3 py-2.5 border border-gray-100">
+                                            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">Top 4</p>
+                                            <CountryList positions={top5} max={4} compact={false} />
                                         </div>
                                     )}
 
@@ -615,8 +634,8 @@ export default function DashLeaguePrizes() {
                                                     <div className="flex items-center justify-between mb-1.5">
                                                         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
                                                         {prizeVal != null && (
-                                                            <span className="text-[10px] font-mono text-gray-500 tabular-nums">
-                                                                {fmtMoney(convert(prizeVal), currency)}
+                                                            <span className="text-xs font-mono text-gray-600 tabular-nums">
+                                                                {fmtVal(prizeVal, convert)}
                                                                 {tierCountries.length > 1 ? " cada" : ""}
                                                             </span>
                                                         )}
