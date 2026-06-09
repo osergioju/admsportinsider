@@ -280,6 +280,10 @@ const MOCK_LEAGUE = {
     secondary_color: "#B90C2C",
 };
 
+/* ─── Taxas de câmbio (base USD) ───────────────────────────────── */
+const RATES = { USD: 1, BRL: 5.75, EUR: 0.92, GBP: 0.79, ARS: 970 };
+const CURRENCY_LABELS = { USD: "USD — Dólar", BRL: "BRL — Real", EUR: "EUR — Euro", GBP: "GBP — Libra", ARS: "ARS — Peso arg." };
+
 /* ─── Componente principal ─────────────────────────────────────── */
 
 export default function DashLeaguePrizes() {
@@ -290,6 +294,7 @@ export default function DashLeaguePrizes() {
     const [activeYear, setActiveYear] = useState(null);
     const [compared, setCompared] = useState([2022, 2018]);
     const [addYear, setAddYear] = useState("");
+    const [currency, setCurrency] = useState("USD");
 
     useEffect(() => {
         api.get(`/dashboard/leagues/${slug}/info`)
@@ -300,7 +305,11 @@ export default function DashLeaguePrizes() {
     const lg = league || MOCK_LEAGUE;
     const prizes = MOCK_PRIZES;
     const years = MOCK_YEARS;
-    const currency = "USD";
+
+    function convert(v) {
+        if (v == null) return null;
+        return v * (RATES[currency] ?? 1);
+    }
 
     const c1 = lg.primary_color || "#001F5B";
     const c2 = lg.secondary_color || c1;
@@ -346,7 +355,7 @@ export default function DashLeaguePrizes() {
                             className="w-10 h-10 object-contain drop-shadow"
                             onError={e => e.currentTarget.style.display = "none"} />
                     )}
-                    <div>
+                    <div className="flex-1 min-w-0">
                         <h1 className="text-lg sm:text-xl font-light leading-tight" style={{ color: textColor }}>
                             {lg.name}
                         </h1>
@@ -357,6 +366,23 @@ export default function DashLeaguePrizes() {
                             </span>
                         </div>
                     </div>
+                    {/* Seletor de moeda */}
+                    <select
+                        value={currency}
+                        onChange={e => setCurrency(e.target.value)}
+                        className="shrink-0 text-xs font-semibold rounded-xl px-3 py-2 border focus:outline-none cursor-pointer"
+                        style={{
+                            background: "rgba(255,255,255,0.15)",
+                            color: textColor,
+                            borderColor: "rgba(255,255,255,0.3)",
+                        }}
+                    >
+                        {Object.entries(CURRENCY_LABELS).map(([code, label]) => (
+                            <option key={code} value={code} style={{ background: "#1a1a2e", color: "#fff" }}>
+                                {label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
@@ -436,7 +462,6 @@ export default function DashLeaguePrizes() {
                                         </td>
                                         {visibleYears.map(yr => {
                                             const val = row[yr];
-                                            /* países nessa faixa nessa edição */
                                             const tier = (MOCK_EDITIONS[yr]?.countries ?? [])
                                                 .filter(c => c.prize_order === row.position_order);
                                             return (
@@ -444,7 +469,7 @@ export default function DashLeaguePrizes() {
                                                     <div className="flex flex-col items-center gap-1.5">
                                                         {val != null ? (
                                                             <span className="inline-block px-2.5 py-1 rounded-lg bg-gray-100/70 font-mono text-gray-600 text-[11px]">
-                                                                {fmtMoney(val, "")}
+                                                                {fmtMoney(convert(val), currency)}
                                                             </span>
                                                         ) : (
                                                             <span className="text-gray-200 text-[11px]">—</span>
@@ -469,7 +494,7 @@ export default function DashLeaguePrizes() {
                                     </td>
                                     {visibleYears.map(yr => (
                                         <td key={yr} className="text-center py-3.5 px-4 text-[11px] font-bold tabular-nums whitespace-nowrap" style={{ color: textColor }}>
-                                            {totalRow[yr] != null ? fmtMoney(totalRow[yr], "") : "—"}
+                                            {totalRow[yr] != null ? fmtMoney(convert(totalRow[yr]), currency) : "—"}
                                         </td>
                                     ))}
                                 </tr>
@@ -564,22 +589,16 @@ export default function DashLeaguePrizes() {
                                         <span className="text-2xl font-light" style={{ color: textColor }}>{yr}</span>
                                         {pool != null && (
                                             <p className="text-[11px] mt-1 font-light" style={{ color: textColor, opacity: 0.65 }}>
-                                                Pool total: {fmtMoney(pool, currency)}
+                                                Total: {fmtMoney(convert(pool), currency)}
                                             </p>
                                         )}
                                     </div>
 
-                                    {/* Stack de bandeiras top-5 sobrepondo o header */}
+                                    {/* Stack top-4 sobrepondo o header */}
                                     {top5.length > 0 && (
-                                        <div className="mx-4 -mt-8 mb-3 relative z-10 bg-white rounded-xl shadow px-3 py-2.5 flex items-center gap-2.5 border border-gray-100">
-                                            <FlagStack positions={top5} size={26} max={5} />
-                                            <div className="min-w-0">
-                                                <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold leading-none mb-0.5">Top finalizadores</p>
-                                                <p className="text-[11px] text-gray-500 leading-tight truncate">
-                                                    {top5.slice(0, 3).map(p => p.country).filter(Boolean).join(", ")}
-                                                    {top5.length > 3 ? ` +${top5.length - 3}` : ""}
-                                                </p>
-                                            </div>
+                                        <div className="mx-4 -mt-6 mb-3 relative z-10 bg-white rounded-xl shadow-sm px-3 py-2.5 flex items-center gap-3 border border-gray-100">
+                                            <FlagStack positions={top5} size={26} max={4} />
+                                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Top 4</span>
                                         </div>
                                     )}
 
@@ -597,7 +616,7 @@ export default function DashLeaguePrizes() {
                                                         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
                                                         {prizeVal != null && (
                                                             <span className="text-[10px] font-mono text-gray-500 tabular-nums">
-                                                                {fmtMoney(prizeVal, currency)}
+                                                                {fmtMoney(convert(prizeVal), currency)}
                                                                 {tierCountries.length > 1 ? " cada" : ""}
                                                             </span>
                                                         )}
