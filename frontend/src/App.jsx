@@ -108,6 +108,8 @@ import DashLeagues from "./Pages/Dashboard/Leagues/Index";
 import DashLeagueUniques from "./Pages/Dashboard/Leagues/DashLeagueUniques";
 import DashLeagueFinance from "./Pages/Dashboard/Leagues/DashLeagueFinance";
 import DashLeagueSports from "./Pages/Dashboard/Leagues/DashLeagueSports";
+import DashLeaguePrizes from "./Pages/Dashboard/Leagues/DashLeaguePrizes";
+import UploadPrizesPage from "./Pages/Admin/Datasend/UploadPrizesPage";
 import CompetitionsClubs from "./Pages/Dashboard/Clubs/CompetitionsClubs";
 import ClubPlayers from "./Pages/Dashboard/Clubs/ClubPlayers";
 import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
@@ -192,6 +194,7 @@ export default function App() {
           <Route path="/dashboard/competitions" element={<DashLeagues />} />
           <Route path="/dashboard/competitions/finance/:slug" element={<DashLeagueFinance />} />
           <Route path="/dashboard/competitions/sports/:slug" element={<DashLeagueSports />} />
+          <Route path="/dashboard/competitions/prizes/:slug" element={<DashLeaguePrizes />} />
           <Route path="/dashboard/competitions/:slug" element={<DashLeagueUniques />} />
 
           {/* Jogadores */}
@@ -272,6 +275,7 @@ export default function App() {
               <Route element={<AdminPermissionRoute permissionKey="upload-financeiro" />}>
                 <Route path="/admin/upload/ligas" element={<SendLeaguePage />} />
                 <Route path="/admin/upload/federation-financial" element={<UploadFederationFinancialPage />} />
+                <Route path="/admin/upload/prizes" element={<UploadPrizesPage />} />
               </Route>
               <Route element={<AdminPermissionRoute permissionKey="upload-times" />}>
                 <Route path="/admin/upload/teams" element={<UploadTeamsPage />} />

@@ -258,9 +258,9 @@ export default function DashLeagueUniques() {
         ...(hasPrizesSection ? [{
             title: "Premiações",
             desc: "Distribuição de premiações por edição da competição.",
-            route: `#premiacoes`,
+            route: `/dashboard/competitions/prizes/${slug}`,
             Icon: Award,
-            isAnchor: true,
+            isAnchor: false,
         }] : []),
         ...(hasAttendanceSection ? [{
             title: "Público e renda",
