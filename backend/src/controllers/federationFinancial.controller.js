@@ -168,13 +168,53 @@ export async function importFederationFinancial(req, res) {
 
     const client = await db.connect();
     let totalRows = 0;
+    let teamPrizesSaved = 0;
     let editionIds = {};
+
+    // 0. Classifica as linhas: indicadores normais × linhas por-time (planilha de
+    //    premiações usa slug de federação como code nas seções "Times"/"Material de apoio")
+    const fedRes = await db.query(`
+      SELECT f.id_federation, f.slug, f.name, c.name AS country_name
+      FROM federations f LEFT JOIN countries c ON c.id_country = f.id_country
+    `);
+    const normFed = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    const fedBySlug = new Map();
+    const fedByName = new Map();
+    for (const f of fedRes.rows) {
+      if (f.slug) fedBySlug.set(f.slug, f.id_federation);
+      if (f.name) fedByName.set(normFed(f.name), f.id_federation);
+      if (f.country_name && !fedByName.has(normFed(f.country_name))) fedByName.set(normFed(f.country_name), f.id_federation);
+    }
+    const TEAM_SECTIONS = [
+      [/prizes-per-team_total$/, "total"],
+      [/prizes-per-team_performance$/, "performance"],
+      [/prizes-per-team_fixed$/, "fixed"],
+      [/standings_per-team$/, "standing"],
+    ];
+    const finInds = [];       // → financial_indicators / edition_financials
+    const teamRows = [];      // → edition_team_prizes
+    const teamRowsSkipped = [];
+    let currentTeamCategory = null;
+    for (const ind of indicators) {
+      const section = TEAM_SECTIONS.find(([re]) => re.test(ind.code));
+      if (section) { currentTeamCategory = section[1]; finInds.push(ind); continue; }
+      // Linha dentro de seção por-time que não é cabeçalho agregado (códigos
+      // agregados contêm o prefixo da competição, ex: 'world-cup_...')
+      const idFed = fedBySlug.get(ind.code) ?? fedByName.get(normFed(ind.name ?? "")) ?? null;
+      const isTeamRow = currentTeamCategory != null && (idFed != null || !ind.code.includes("cup_"));
+      if (isTeamRow) {
+        if (idFed != null) teamRows.push({ idFed, category: currentTeamCategory, values: ind.values });
+        else teamRowsSkipped.push(ind.name ?? ind.code);
+        continue;
+      }
+      finInds.push(ind);
+    }
 
     try {
       await client.query("BEGIN");
 
-      // 1. Bulk upsert dos indicadores — deduplica por código
-      const uniqueInds = Array.from(new Map(indicators.map(i => [i.code, i])).values());
+      // 1. Bulk upsert dos indicadores — deduplica por código (sem linhas por-time)
+      const uniqueInds = Array.from(new Map(finInds.map(i => [i.code, i])).values());
       const indValues = uniqueInds.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(",");
       const indParams = uniqueInds.flatMap(ind => [ind.code, ind.name, ind.level]);
       const indResult = await client.query(
@@ -233,11 +273,41 @@ export async function importFederationFinancial(req, res) {
         editionIds[ed.slug] = r.rows[0].id_edition;
       }
 
-      // 3. Monta todos os registros financeiros em memória
+      // 2b. Premiações por seleção → edition_team_prizes
+      const teamPrizeMap = new Map(); // `${id_edition}|${id_federation}` → linha consolidada
+      for (const tr of teamRows) {
+        for (const ed of editions) {
+          const id_edition = editionIds[ed.slug];
+          const year = ed.editionYear ?? (ed.years.length ? Math.max(...ed.years.filter(Boolean)) : null);
+          const raw = tr.values[ed.cols[0]];
+          if (raw == null || raw === "N/A" || raw === "") continue;
+          const numVal = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", "."));
+          if (isNaN(numVal)) continue;
+          const key = `${id_edition}|${tr.idFed}`;
+          if (!teamPrizeMap.has(key)) teamPrizeMap.set(key, { id_edition, id_federation: tr.idFed, year, total: null, performance: null, fixed: null, standing: null });
+          teamPrizeMap.get(key)[tr.category] = tr.category === "standing" ? Math.round(numVal) : numVal;
+        }
+      }
+      for (const tp of teamPrizeMap.values()) {
+        teamPrizesSaved++;
+        await client.query(
+          `INSERT INTO edition_team_prizes (id_edition, id_federation, year, total, performance, fixed, standing)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (id_edition, id_federation) DO UPDATE SET
+             year        = COALESCE(EXCLUDED.year, edition_team_prizes.year),
+             total       = COALESCE(EXCLUDED.total, edition_team_prizes.total),
+             performance = COALESCE(EXCLUDED.performance, edition_team_prizes.performance),
+             fixed       = COALESCE(EXCLUDED.fixed, edition_team_prizes.fixed),
+             standing    = COALESCE(EXCLUDED.standing, edition_team_prizes.standing)`,
+          [tp.id_edition, tp.id_federation, tp.year, tp.total, tp.performance, tp.fixed, tp.standing]
+        );
+      }
+
+      // 3. Monta registros financeiros em memória (apenas indicadores normais)
       const financialRows = [];
       for (const ed of editions) {
         const id_edition = editionIds[ed.slug];
-        for (const ind of indicators) {
+        for (const ind of finInds) {
           const id_indicator = indicatorIdByCode[ind.code];
           if (!id_indicator) continue;
           for (let i = 0; i < ed.cols.length; i++) {
@@ -288,6 +358,8 @@ export async function importFederationFinancial(req, res) {
       message: "Importação concluída com sucesso!",
       editions: Object.keys(editionIds).length,
       rows: totalRows,
+      teamPrizes: teamPrizesSaved,
+      teamRowsSkipped: [...new Set(teamRowsSkipped)],
     });
   } catch (err) {
     console.error(err);
@@ -476,5 +548,81 @@ export async function getEditionsByLeague(req, res) {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erro ao listar edições." });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /dashboard/leagues/:id/prizes
+// Página de Premiações: valores por posição (edition_financials, em milhões USD)
+// + premiação por seleção (edition_team_prizes) com federação e bandeira
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getLeaguePrizes(req, res) {
+  const leagueId = Number(req.params.id);
+  try {
+    // Indicadores de premiação de todas as edições — chave normalizada sem prefixo
+    const indRes = await db.query(`
+      SELECT fi.code, fi.name_pt, ef.year, SUM(ef.value) AS value
+      FROM edition_financials ef
+      JOIN competition_editions ce ON ce.id_edition = ef.id_edition
+      JOIN financial_indicators fi ON fi.id = ef.id_indicator
+      WHERE ce.id_league = $1
+        AND (fi.code LIKE '%prizes%' OR fi.code LIKE '%performance-%' OR fi.code LIKE '%preparation-fee%')
+      GROUP BY fi.code, fi.name_pt, ef.year
+      ORDER BY ef.year
+    `, [leagueId]);
+
+    const indicators = {}; // { ano: { 'prizes_total': v, ... } }
+    const labels = {};     // { 'performance-champion_per-position': 'Campeão' }
+    for (const r of indRes.rows) {
+      const key = r.code.includes('_') ? r.code.slice(r.code.indexOf('_') + 1) : r.code;
+      if (!indicators[r.year]) indicators[r.year] = {};
+      indicators[r.year][key] = parseFloat(r.value);
+      if (r.name_pt) labels[key] = r.name_pt;
+    }
+
+    // Premiação por seleção, com escudo da federação e bandeira do país
+    const teamsRes = await db.query(`
+      SELECT etp.year, etp.total, etp.performance, etp.fixed, etp.standing,
+             f.slug AS federation_slug, f.acronym AS federation_acronym,
+             f.name AS federation_name, f.active AS federation_active,
+             c.flag_url
+      FROM edition_team_prizes etp
+      JOIN competition_editions ce ON ce.id_edition = etp.id_edition
+      JOIN federations f ON f.id_federation = etp.id_federation
+      LEFT JOIN countries c ON c.id_country = f.id_country
+      WHERE ce.id_league = $1
+      ORDER BY etp.year, etp.total DESC NULLS LAST
+    `, [leagueId]);
+
+    const teams = {}; // { ano: [linhas] }
+    for (const t of teamsRes.rows) {
+      if (!teams[t.year]) teams[t.year] = [];
+      teams[t.year].push({
+        federation_slug: t.federation_slug,
+        federation_acronym: t.federation_acronym,
+        name: t.federation_name,
+        federation_active: t.federation_active ?? false,
+        flag_url: t.flag_url,
+        total: t.total != null ? parseFloat(t.total) : null,
+        performance: t.performance != null ? parseFloat(t.performance) : null,
+        fixed: t.fixed != null ? parseFloat(t.fixed) : null,
+        standing: t.standing,
+      });
+    }
+
+    // Edições (nome/sede) para os cabeçalhos
+    const edRes = await db.query(`
+      SELECT edition_year AS year, name, slug FROM competition_editions
+      WHERE id_league = $1 ORDER BY edition_year
+    `, [leagueId]);
+    const editions = {};
+    for (const e of edRes.rows) editions[e.year] = { name: e.name, slug: e.slug };
+
+    const years = [...new Set([...Object.keys(indicators), ...Object.keys(teams)].map(Number))].sort((a, b) => a - b);
+
+    res.json({ years, indicators, labels, teams, editions });
+  } catch (err) {
+    console.error('[getLeaguePrizes]', err);
+    res.status(500).json({ error: 'Erro ao buscar premiações' });
   }
 }

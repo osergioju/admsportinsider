@@ -1509,3 +1509,28 @@ export async function importMatchStats(req, res) {
     client.release();
   }
 }
+// Logo de edição de competição (ex: marca da Copa 2014). Slug esperado:
+// "{slug-da-liga}_{ano}" — salvo em uploads/edicoes/{slug}.ext
+export async function uploadEditionLogo(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ message: "Nenhum arquivo enviado." });
+    const slug = req.body.slug?.trim();
+    if (!slug) return res.status(400).json({ message: "Slug da edição é obrigatório." });
+
+    const path = await import("path");
+    const fs   = await import("fs");
+    const dest = path.default.join(process.cwd(), "uploads", "edicoes");
+    fs.default.mkdirSync(dest, { recursive: true });
+    const ext  = path.default.extname(req.file.originalname).toLowerCase() || ".webp";
+    const finalName = `${slug}${ext}`;
+    const finalPath = path.default.join(dest, finalName);
+
+    fs.default.renameSync(req.file.path, finalPath);
+
+    const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
+    return res.status(200).json({ url: `${baseUrl}/uploads/edicoes/${finalName}` });
+  } catch (error) {
+    console.error("Erro no upload de edição:", error);
+    return res.status(500).json({ message: "Erro interno no upload." });
+  }
+}

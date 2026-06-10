@@ -438,6 +438,9 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
 
   const [continentalSpots, setContinentalSpots] = useState(0);
   const [relegationSpots, setRelegationSpots] = useState(0);
+  // Logo da edição (ex: marca da Copa 2014) — fallback é a logo padrão da liga
+  const [editionLogo, setEditionLogo] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [erros, setErros] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -458,6 +461,7 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
     }
     setContinentalSpots(cfg.continental_spots ?? 0);
     setRelegationSpots(cfg.relegation_spots ?? 0);
+    setEditionLogo(cfg.edition_logo ?? "");
     setErros([]);
     setStep("tipo");
   };
@@ -482,6 +486,7 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
     setTorneios(buildDefaultTorneios());
     setContinentalSpots(0);
     setRelegationSpots(0);
+    setEditionLogo("");
     setErros([]);
     setStep("tipo");
   };
@@ -499,8 +504,26 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
     }
     setContinentalSpots(cfg.continental_spots ?? 0);
     setRelegationSpots(cfg.relegation_spots ?? 0);
+    setEditionLogo(""); // duplicação não copia logo — cada edição tem a sua
     setErros([]);
     setStep("tipo");
+  };
+
+  // ─── upload da logo da edição ────────────────────────────────────────────────
+  const handleEditionLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !ano) return;
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("slug", `${league.slug || league.id_league}_${ano}`);
+      const { data } = await api.post("/admin/editions/upload-logo", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setEditionLogo(data.url);
+    } catch { alert("Erro ao enviar a logo da edição."); }
+    finally { setUploadingLogo(false); }
   };
 
   // ─── selecionar tipo ─────────────────────────────────────────────────────────
@@ -560,6 +583,7 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
     const anoConfig = isAC
       ? { tipo: tipoComp, torneios, continental_spots: continentalSpots || 0, relegation_spots: relegationSpots || 0 }
       : { tipo: tipoComp, fases,   continental_spots: continentalSpots || 0, relegation_spots: relegationSpots || 0 };
+    if (editionLogo.trim()) anoConfig.edition_logo = editionLogo.trim();
 
     const structure = { ...stored, [ano]: anoConfig };
 
@@ -684,6 +708,26 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
                   <label className={labelClass}>Rebaixamentos</label>
                   <input type="number" min={0} className={inputClass} value={relegationSpots}
                     onChange={e => setRelegationSpots(Number(e.target.value))} placeholder="0" />
+                </div>
+              </div>
+
+              {/* Logo da edição — fallback é a logo padrão da liga */}
+              <div>
+                <label className={labelClass}>Logo da edição <span className="text-gray-300 normal-case font-normal tracking-normal">(opcional — sem logo, usa a marca padrão da liga)</span></label>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 shrink-0 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden">
+                    {uploadingLogo
+                      ? <Loader2 size={16} className="animate-spin text-[#7F33D9]" />
+                      : editionLogo
+                        ? <img src={editionLogo} alt="logo da edição" className="w-full h-full object-contain p-1" onError={e => { e.currentTarget.style.display = "none"; }} />
+                        : <Trophy size={18} className="text-gray-300" />}
+                  </div>
+                  <input type="text" className={inputClass} placeholder="https://... (URL da marca desta edição)"
+                    value={editionLogo} onChange={e => setEditionLogo(e.target.value)} />
+                  <label className={`shrink-0 px-3 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-colors ${ano ? "border-[#7F33D9]/30 text-[#7F33D9] hover:bg-[#7F33D9]/5" : "border-gray-200 text-gray-300 cursor-not-allowed"}`}>
+                    {uploadingLogo ? "Enviando…" : "Upload"}
+                    <input type="file" accept="image/*" className="hidden" disabled={!ano || uploadingLogo} onChange={handleEditionLogoUpload} />
+                  </label>
                 </div>
               </div>
 

@@ -40,6 +40,7 @@ import { authGuard, optionalAuth } from "../middlewares/auth.middleware.js";
 
 import { createFavorite, listFavorites } from "../controllers/dashboardFavorites.controller.js";
 import { getClubCompetitions, getClubPlayers, getPlayerDetail, searchPlayers, getPlayerCountries, getLeagueSports, getMatchDetail, getLeagueAttendance } from "../controllers/sports.controller.js";
+import { getLeaguePrizes } from "../controllers/federationFinancial.controller.js";
 import { financialContext } from "../middlewares/financialContext.middleware.js";
 import { clubsGroupedByCountry, clubsSearch, getClubById, getLeagueById, leaguesSearch, getContinentalLeagues, getDashboardFederations, getDashboardFederationBySlug } from "../controllers/admin.controller.js";
 import { getFederationCycleFinancials, getLeagueCycleFinancials } from "../controllers/federationFinancial.controller.js";
@@ -170,6 +171,7 @@ router.get("/players/:id", optionalAuth, getPlayerDetail);
 // Liga esportivo (classificação + partidas)
 router.get("/leagues/:id/sports", optionalAuth, getLeagueSports);
 router.get("/leagues/:id/attendance", optionalAuth, getLeagueAttendance);
+router.get("/leagues/:id/prizes", optionalAuth, getLeaguePrizes);
 
 // Detalhe de partida
 router.get("/matches/:id", optionalAuth, getMatchDetail);

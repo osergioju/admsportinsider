@@ -222,7 +222,13 @@ export default function UploadFederationFinancialPage() {
           <h2 className="text-xl font-bold text-gray-900">Importação concluída!</h2>
           <p className="text-gray-500 text-sm">
             <strong>{result.editions}</strong> edições · <strong>{result.rows?.toLocaleString("pt-BR")}</strong> registros financeiros
+            {result.teamPrizes > 0 && <> · <strong>{result.teamPrizes.toLocaleString("pt-BR")}</strong> premiações por seleção</>}
           </p>
+          {result.teamRowsSkipped?.length > 0 && (
+            <p className="text-xs text-amber-600">
+              Seleções sem federação correspondente (ignoradas): {result.teamRowsSkipped.join(", ")}
+            </p>
+          )}
           <button onClick={reset} className={`${btnPrimary} mx-auto`}>Nova importação</button>
         </div>
       )}

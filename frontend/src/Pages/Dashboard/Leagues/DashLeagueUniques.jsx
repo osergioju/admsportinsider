@@ -240,6 +240,15 @@ export default function DashLeagueUniques() {
     const netChartData = { [chartLeagueId]: toNative(financials?.netEvolution) };
     const debtsChartData = { [chartLeagueId]: toNative(financials?.debtsBreakdown) };
 
+    // Cor das barras dos gráficos: nunca usa cor clara demais (ex: secundária
+    // #FFFFFF da FIFA → barras brancas invisíveis em fundo branco)
+    const isDarkEnough = (hex) => {
+        const rgb = hexToRgb(hex);
+        return rgb ? (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255 < 0.82 : false;
+    };
+    const chartColorPrimary = isDarkEnough(c1) ? c1 : "#10b981";
+    const chartColorSecondary = (c2 !== c1 && isDarkEnough(c2)) ? c2 : chartColorPrimary === c1 ? "#10b981" : chartColorPrimary;
+
     // Indicadores anuais (premiações e público)
     const prizesData = annualIndicators?.["world-cup_prizes_total"] || [];
     const attendanceData = annualIndicators?.["world-cup_attendance-total"] || [];
@@ -418,7 +427,7 @@ export default function DashLeagueUniques() {
                         <div id="premiacoes" className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
                             <div className="flex flex-wrap w-full items-center">
                                 <div className="w-full lg:w-1/2">
-                                    <AnnualBarChart rows={prizesData} color={c1} />
+                                    <AnnualBarChart rows={prizesData} color={chartColorPrimary} />
                                 </div>
                                 <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                                     <h2
@@ -445,7 +454,7 @@ export default function DashLeagueUniques() {
                         <div id="publico" className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
                             <div className="flex flex-wrap w-full items-center">
                                 <div className="w-full lg:w-1/2">
-                                    <AnnualBarChart rows={attendanceData} color={c2 !== c1 ? c2 : "#10b981"} />
+                                    <AnnualBarChart rows={attendanceData} color={chartColorSecondary} />
                                 </div>
                                 <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                                     <h2
