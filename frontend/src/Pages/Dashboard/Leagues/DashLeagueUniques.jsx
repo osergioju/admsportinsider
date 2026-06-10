@@ -246,6 +246,29 @@ export default function DashLeagueUniques() {
     const hasPrizesSection = !!(sj.prizes_text || prizesData.length);
     const hasAttendanceSection = !!(sj.attendance_text || attendanceData.length);
     const hasSpecialSections = hasPrizesSection || hasAttendanceSection;
+    // Competições de seleções (Copa do Mundo etc.) nunca exibem finanças —
+    // o financeiro pertence à federação organizadora, não à competição
+    const showFinance = !hasSpecialSections && lg.team_type !== "national";
+
+    // Rola até uma seção SEM usar scrollIntoView: o root da página tem
+    // overflow-hidden e o scrollIntoView rolava esse container internamente,
+    // cortando o header. Aqui rolamos só o container de scroll real do layout.
+    const scrollToSection = (sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        let parent = el.parentElement;
+        while (parent && parent !== document.body) {
+            const oy = getComputedStyle(parent).overflowY;
+            if (oy === "auto" || oy === "scroll") break;
+            parent = parent.parentElement;
+        }
+        if (parent && parent !== document.body) {
+            const delta = el.getBoundingClientRect().top - parent.getBoundingClientRect().top - 16;
+            parent.scrollBy({ top: delta, behavior: "smooth" });
+        } else {
+            window.scrollBy({ top: el.getBoundingClientRect().top - 16, behavior: "smooth" });
+        }
+    };
 
     // Nav cards
     const navCards = [
@@ -265,11 +288,11 @@ export default function DashLeagueUniques() {
         ...(hasAttendanceSection ? [{
             title: "Público e renda",
             desc: "Público total e renda nos estádios por edição da competição.",
-            route: `#publico`,
+            route: `/dashboard/competitions/attendance/${slug}`,
             Icon: Users,
-            isAnchor: true,
+            isAnchor: false,
         }] : []),
-        ...(!hasSpecialSections ? [{
+        ...(showFinance ? [{
             title: t("leagues.finances", "Finanças"),
             desc: t("leagues.finances_desc", "Receitas, custos, folha salarial, dívidas e resultado financeiro líquido."),
             route: `/dashboard/competitions/finance/${slug}`,
@@ -353,7 +376,7 @@ export default function DashLeagueUniques() {
                                         <div
                                             key={card.title}
                                             className="fed-comp-card flex items-center justify-between border rounded-2xl p-2 px-4 pr-2 lg:p-4 lg:px-5 cursor-pointer bg-white"
-                                            onClick={() => card.isAnchor ? document.querySelector(card.route)?.scrollIntoView({ behavior: "smooth" }) : navigate(card.route)}
+                                            onClick={() => card.isAnchor ? scrollToSection(card.route) : navigate(card.route)}
                                         >
                                             <h2 className="text-[#0A0A0A] font-[400] text-[14px] lg:text-[15px] leading-tight">
                                                 {card.title}
@@ -362,9 +385,7 @@ export default function DashLeagueUniques() {
                                                 className="shrink-0 cursor-pointer transition-all text-sm px-4 py-2.5 ml-2 rounded-full border border-[#1E1E1E]/40 flex items-center gap-1.5 hover:bg-gray-50"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    card.isAnchor
-                                                        ? document.querySelector(card.route)?.scrollIntoView({ behavior: "smooth" })
-                                                        : navigate(card.route);
+                                                    card.isAnchor ? scrollToSection(card.route) : navigate(card.route);
                                                 }}
                                             >
                                                 Ver mais
@@ -449,8 +470,8 @@ export default function DashLeagueUniques() {
                 </>
             )}
 
-            {/* ── SEÇÕES FINANCEIRAS (apenas quando não há seções especiais) ── */}
-            {!hasSpecialSections && (
+            {/* ── SEÇÕES FINANCEIRAS (nunca para competições de seleções) ── */}
+            {showFinance && (
                 <>
                     <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
                         {!latestRev ? (

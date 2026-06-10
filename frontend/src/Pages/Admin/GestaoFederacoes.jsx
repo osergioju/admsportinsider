@@ -2,14 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { api } from "../../services/api";
 import { Trash2, Loader2, Check, Plus, Search, X, Shield, Pencil, Crown, UploadCloud } from "lucide-react";
 import { federationLogo } from "../../utils/federationUrl";
+import SearchableSelect from "../../components/uxui/SearchableSelect";
 
 const FIFA_ACRONYM = "FIFA";
 
 export default function GestaoFederacoes() {
     const [federations, setFederations] = useState([]);
+    const [countries, setCountries] = useState([]);
     const [modalMode, setModalMode] = useState(null); // null | "create" | "edit" | "delete"
     const [current, setCurrent] = useState(null);
-    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "" });
+    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -24,6 +26,12 @@ export default function GestaoFederacoes() {
         } catch (err) {
             console.error("Erro ao carregar federações:", err);
         }
+        try {
+            const { data } = await api.get("/admin/countries?limit=1000");
+            setCountries((data.countries ?? []).map(c => ({ value: String(c.id_country), label: c.name, image: c.flag_url })));
+        } catch (err) {
+            console.error("Erro ao carregar países:", err);
+        }
     }
 
     useEffect(() => { load(); }, []);
@@ -34,14 +42,14 @@ export default function GestaoFederacoes() {
     );
 
     const openCreate = () => {
-        setForm({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "" });
+        setForm({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "" });
         setError("");
         setModalMode("create");
     };
 
     const openEdit = (f) => {
         setCurrent(f);
-        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", sort_order: f.sort_order, full_name: f.full_name || "", city_name: f.city_name || "", founded_at: f.founded_at || "" });
+        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", sort_order: f.sort_order, full_name: f.full_name || "", city_name: f.city_name || "", founded_at: f.founded_at || "", id_country: f.id_country ? String(f.id_country) : "" });
         setError("");
         setModalMode("edit");
     };
@@ -180,6 +188,12 @@ export default function GestaoFederacoes() {
                                 <div>
                                     <span className="font-bold text-gray-900 text-lg group-hover:text-[#7F33D9] transition-colors block leading-tight">{f.acronym}</span>
                                     <span className="text-xs text-gray-400">{f.name}</span>
+                                    {f.country_name && (
+                                        <span className="flex items-center justify-center gap-1 mt-1 text-[10px] font-bold text-gray-500">
+                                            {f.country_flag_url && <img src={f.country_flag_url} alt="" className="w-4 h-3 object-cover rounded-sm" />}
+                                            {f.country_name}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 flex gap-2">
                                     <button onClick={() => openEdit(f)} className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-100 transition-colors">
@@ -280,6 +294,16 @@ export default function GestaoFederacoes() {
                                                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                                             />
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClass}>País <span className="text-gray-300 normal-case font-normal tracking-normal">(federações nacionais — ex: CBF → Brasil)</span></label>
+                                        <SearchableSelect
+                                            options={countries}
+                                            value={form.id_country}
+                                            onChange={(val) => setForm({ ...form, id_country: val })}
+                                            placeholder="Sem país (continental/global)..."
+                                        />
                                     </div>
 
                                     <div>

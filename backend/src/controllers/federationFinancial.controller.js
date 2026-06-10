@@ -1,26 +1,51 @@
 import db from "../config/db.js";
 import XLSX from "xlsx";
 
-const META_COLS = 4; // cols 0-3: code, level, ?, name
+const META_COLS = 4; // cols 0-3: code, level, ?, name (layout clássico)
 const SKIP_COL  = 4; // col 4 é template/referência — ignorar
+
+// Status válidos para edition_financials; qualquer outra coisa (ex: linha
+// "País-sede" ocupando a posição do status) vira "realizado"
+const VALID_STATUS = new Set(["realizado", "previsto", "estimado", "projetado", "orcado", "orçado"]);
 
 function parseSheet(buffer, sheetName) {
   const wb = XLSX.read(buffer, { type: "buffer" });
-  const ws = wb.Sheets[sheetName];
+  let usedSheet = sheetName;
+  let ws = wb.Sheets[sheetName];
+  // Fallback: workbook com uma única aba usa essa aba (ex: "Planilha1")
+  if (!ws && wb.SheetNames.length === 1) {
+    usedSheet = wb.SheetNames[0];
+    ws = wb.Sheets[usedSheet];
+  }
   if (!ws) throw new Error(`Sheet "${sheetName}" não encontrada. Disponíveis: ${wb.SheetNames.join(", ")}`);
-  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  return { rows: XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }), usedSheet };
 }
 
-function buildEditions(rows) {
+// Detecta onde estão as colunas de meta a partir dos cabeçalhos da linha 1
+// ("code", "Slug"). Layout clássico: code na col 0, label na col 3.
+// Layout alternativo (Público e Renda): code na col 1, label na col 4.
+function detectLayout(rows) {
+  const headerRow = rows[1] ?? [];
+  const findCol = (val) => headerRow.findIndex(c => typeof c === "string" && c.trim().toLowerCase() === val);
+  const codeIdx = findCol("code");
+  const labelIdx = findCol("slug");
+  return {
+    codeCol: codeIdx >= 0 ? codeIdx : 0,
+    labelCol: labelIdx >= 0 ? labelIdx : 3,
+  };
+}
+
+function buildEditions(rows, layout) {
   const slugRow    = rows[1];
   const currRow    = rows[2];
   const yearRow    = rows[3];
   const statusRow  = rows[5];
   const editionRow = rows[0];
+  const labelCol   = layout?.labelCol ?? 3;
 
   // Primeira coluna com slug real (contém "_" e não é template)
   let dataStart = -1;
-  for (let c = META_COLS + 1; c < slugRow.length; c++) {
+  for (let c = labelCol + 1; c < slugRow.length; c++) {
     const s = slugRow[c];
     if (s && typeof s === "string" && s.includes("_") && s !== "brazil_abc") {
       dataStart = c;
@@ -34,28 +59,39 @@ function buildEditions(rows) {
     const slug = slugRow[c];
     if (!slug || typeof slug !== "string" || !slug.includes("_")) continue;
     if (!editions[slug]) {
-      editions[slug] = { slug, name: null, currency: currRow[c] || "USD", cols: [], years: [], statuses: [] };
+      // Ano da edição: header (linha 0) numérico, senão ano embutido no slug
+      let headerYear = null;
+      const h = editionRow[c];
+      if (typeof h === "number" && h > 1900 && h < 2100) headerYear = h;
+      else {
+        const m = String(slug).match(/(19|20)\d{2}/);
+        if (m) headerYear = Number(m[0]);
+      }
+      editions[slug] = { slug, name: null, currency: currRow[c] || "USD", editionYear: headerYear, cols: [], years: [], statuses: [] };
     }
     if (!editions[slug].name) {
       const n = editionRow[c];
       if (n && typeof n === "string") editions[slug].name = n;
     }
+    const rawStatus = String(statusRow?.[c] ?? "").toLowerCase().trim();
     editions[slug].cols.push(c);
     editions[slug].years.push(yearRow[c]);
-    editions[slug].statuses.push((statusRow?.[c] || "realizado").toLowerCase());
+    editions[slug].statuses.push(VALID_STATUS.has(rawStatus) ? rawStatus : "realizado");
   }
 
   return { editions: Object.values(editions), dataStart };
 }
 
-function buildIndicators(rows, dataStart) {
+function buildIndicators(rows, layout) {
+  const codeCol = layout?.codeCol ?? 0;
+  const labelCol = layout?.labelCol ?? 3;
   return rows.slice(7).filter(r => {
-    const code = r[0];
+    const code = r[codeCol];
     return code && typeof code === "string" && !code.startsWith("#") && code.trim() !== "";
   }).map(r => ({
-    code:  r[0].trim(),
-    level: r[1] ?? 1,
-    name:  r[3] ?? r[0],
+    code:  r[codeCol].trim(),
+    level: r[codeCol + 1] ?? 1,
+    name:  r[labelCol] ?? r[codeCol],
     values: r, // full row — values indexed by col
   }));
 }
@@ -66,33 +102,49 @@ export async function previewFederationFinancial(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: "Nenhum arquivo enviado." });
     const sheetName = req.body.sheet || "Fifa";
-    const rows = parseSheet(req.file.buffer, sheetName);
-    const { editions } = buildEditions(rows);
-    const indicators = buildIndicators(rows);
+    const id_league = req.body.id_league ? parseInt(req.body.id_league) : null;
+    const { rows, usedSheet } = parseSheet(req.file.buffer, sheetName);
+    const layout = detectLayout(rows);
+    const { editions } = buildEditions(rows, layout);
+    const indicators = buildIndicators(rows, layout);
 
-    // Verifica quais edições já existem
+    // Edições existentes: por slug OU por (liga, ano) — evita marcar como "nova"
+    // edição que já existe com slug diferente (ex: world-cup_2002 × 2002_south-korea-japan)
     const existingSlugs = new Set();
+    const existingYears = new Map(); // edition_year → slug existente
     if (editions.length) {
       const r = await db.query(
         `SELECT slug FROM competition_editions WHERE slug = ANY($1)`,
         [editions.map(e => e.slug)]
       );
       r.rows.forEach(row => existingSlugs.add(row.slug));
+      if (id_league) {
+        const ry = await db.query(
+          `SELECT edition_year, slug FROM competition_editions WHERE id_league = $1`,
+          [id_league]
+        );
+        ry.rows.forEach(row => existingYears.set(row.edition_year, row.slug));
+      }
     }
 
     return res.json({
-      sheetName,
-      editions: editions.map(e => ({
-        slug: e.slug,
-        name: e.name,
-        currency: e.currency,
-        years: e.years,
-        exists: existingSlugs.has(e.slug),
-        rows: indicators.filter(i => {
-          // conta valores não-nulos para essa edição
-          return e.cols.some(c => i.values[c] != null && i.values[c] !== "N/A" && i.values[c] !== "");
-        }).length,
-      })),
+      sheetName: usedSheet,
+      editions: editions.map(e => {
+        const matchedByYear = !existingSlugs.has(e.slug) && e.editionYear != null && existingYears.has(e.editionYear);
+        return {
+          slug: e.slug,
+          name: e.name,
+          currency: e.currency,
+          years: e.years,
+          editionYear: e.editionYear,
+          exists: existingSlugs.has(e.slug) || matchedByYear,
+          matchedSlug: matchedByYear ? existingYears.get(e.editionYear) : null,
+          rows: indicators.filter(i => {
+            // conta valores não-nulos para essa edição
+            return e.cols.some(c => i.values[c] != null && i.values[c] !== "N/A" && i.values[c] !== "");
+          }).length,
+        };
+      }),
       totalIndicators: indicators.length,
     });
   } catch (err) {
@@ -109,9 +161,10 @@ export async function importFederationFinancial(req, res) {
 
     const sheetName = req.body.sheet || "Fifa";
     const id_league = req.body.id_league ? parseInt(req.body.id_league) : null;
-    const rows = parseSheet(req.file.buffer, sheetName);
-    const { editions, dataStart } = buildEditions(rows);
-    const indicators = buildIndicators(rows, dataStart);
+    const { rows } = parseSheet(req.file.buffer, sheetName);
+    const layout = detectLayout(rows);
+    const { editions } = buildEditions(rows, layout);
+    const indicators = buildIndicators(rows, layout);
 
     const client = await db.connect();
     let totalRows = 0;
@@ -134,17 +187,46 @@ export async function importFederationFinancial(req, res) {
       const indicatorIdByCode = {};
       indResult.rows.forEach(r => { indicatorIdByCode[r.code] = r.id; });
 
-      // 2. Upsert edições (poucas, query simples)
+      // 2. Resolve edições (poucas, queries simples)
+      //    a) slug exato; b) edição existente da mesma liga e ano (evita duplicar
+      //       ex: world-cup_2002 quando já existe 2002_south-korea-japan); c) cria
       for (const ed of editions) {
-        const editionYear = ed.years.length ? Math.max(...ed.years.filter(Boolean)) : null;
+        const editionYear = ed.editionYear
+          ?? (ed.years.length ? Math.max(...ed.years.filter(Boolean)) : null);
+
+        const bySlug = await client.query(
+          `SELECT id_edition FROM competition_editions WHERE slug = $1`,
+          [ed.slug]
+        );
+        if (bySlug.rows.length) {
+          editionIds[ed.slug] = bySlug.rows[0].id_edition;
+          await client.query(
+            `UPDATE competition_editions
+             SET name = COALESCE($1, name),
+                 id_league = COALESCE($2, id_league),
+                 edition_year = COALESCE($3, edition_year),
+                 currency = COALESCE($4, currency)
+             WHERE id_edition = $5`,
+            [ed.name, id_league, editionYear, ed.currency, bySlug.rows[0].id_edition]
+          );
+          continue;
+        }
+
+        if (id_league && editionYear != null) {
+          const byYear = await client.query(
+            `SELECT id_edition FROM competition_editions WHERE id_league = $1 AND edition_year = $2`,
+            [id_league, editionYear]
+          );
+          if (byYear.rows.length === 1) {
+            // Reusa a edição existente sem sobrescrever slug/nome dela
+            editionIds[ed.slug] = byYear.rows[0].id_edition;
+            continue;
+          }
+        }
+
         const r = await client.query(
           `INSERT INTO competition_editions (slug, name, id_league, edition_year, currency)
            VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (slug) DO UPDATE
-             SET name = EXCLUDED.name,
-                 id_league = COALESCE(EXCLUDED.id_league, competition_editions.id_league),
-                 edition_year = EXCLUDED.edition_year,
-                 currency = EXCLUDED.currency
            RETURNING id_edition`,
           [ed.slug, ed.name, id_league, editionYear, ed.currency]
         );
@@ -160,7 +242,10 @@ export async function importFederationFinancial(req, res) {
           if (!id_indicator) continue;
           for (let i = 0; i < ed.cols.length; i++) {
             const raw  = ind.values[ed.cols[i]];
-            const year = ed.years[i];
+            // Edição de coluna única (Público e Renda): o valor pertence ao ano
+            // da edição, mesmo que o "Exercício" fiscal seja outro (ex: Copa 2018
+            // com exercício 2015). Múltiplas colunas (balanço FIFA) mantém o ano fiscal.
+            const year = (ed.cols.length === 1 && ed.editionYear != null) ? ed.editionYear : ed.years[i];
             if (raw == null || raw === "N/A" || raw === "" || year == null) continue;
             const numVal = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", "."));
             if (isNaN(numVal)) continue;

@@ -20,6 +20,9 @@ export default function GestaoPaises() {
     // modalMode: null | "create" | "edit" | "delete"
     const [modalMode, setModalMode] = useState(null);
     const [paisSelecionado, setPaisSelecionado] = useState(null);
+    // createMode: "list" (world-countries) | "manual" (nome livre, ex: Sérvia e Montenegro)
+    const [createMode, setCreateMode] = useState("list");
+    const [manualForm, setManualForm] = useState({ name: "", flag_url: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [currentCountry, setCurrentCountry] = useState(null);
@@ -48,6 +51,8 @@ export default function GestaoPaises() {
     // --- HANDLERS ---
     const handleOpenCreateModal = () => {
         setPaisSelecionado(null);
+        setCreateMode("list");
+        setManualForm({ name: "", flag_url: "" });
         setModalMode("create");
     };
 
@@ -84,9 +89,17 @@ export default function GestaoPaises() {
     };
 
     const sendCountry = async () => {
+        // Monta o payload conforme o modo: lista global ou cadastro manual
+        const payload = createMode === "manual"
+            ? { codigo: null, flag: manualForm.flag_url.trim() || null, value: manualForm.name.trim() }
+            : paisSelecionado;
+        if (!payload?.value) return;
+        if (countries.some((c) => c.name.toLowerCase() === payload.value.toLowerCase())) {
+            return alert(`"${payload.value}" já está cadastrado.`);
+        }
         setLoading(true);
         try {
-            const res = await api.post("/admin/send-countries", paisSelecionado);
+            const res = await api.post("/admin/send-countries", payload);
             if (res.status === 201) {
                 setSuccess(true);
                 setTimeout(() => { closeModal(); loadCountries(); }, 1000);
@@ -186,23 +199,83 @@ export default function GestaoPaises() {
                             {/* CRIAR */}
                             {modalMode === "create" && (
                                 <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 ml-1">Selecione na lista global</label>
-                                        <CountryCombobox
-                                            options={paises}
-                                            value={paisSelecionado}
-                                            onChange={handleSelectCountry}
-                                            placeholder="Buscar país..."
-                                        />
+                                    {/* Toggle Lista global / Manual */}
+                                    <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCreateMode("list")}
+                                            className={`flex-1 py-2 text-sm font-medium transition-colors ${createMode === "list" ? "bg-[#7F33D9] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                        >
+                                            Lista global
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCreateMode("manual")}
+                                            className={`flex-1 py-2 text-sm font-medium transition-colors ${createMode === "manual" ? "bg-[#7F33D9] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                        >
+                                            Manual
+                                        </button>
                                     </div>
-                                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 min-h-[120px] flex flex-col items-center justify-center text-center">
-                                        {paisSelecionado ? (
-                                            success ? <div className="text-green-600 font-bold"><Check size={24} className="mx-auto mb-2" />Cadastrado!</div> :
-                                                loading ? <Loader2 size={32} className="animate-spin text-[#7F33D9]" /> :
-                                                    <div><img src={paisSelecionado.flag} className="w-16 h-auto shadow-sm rounded mb-3 mx-auto" /> <span className="text-lg font-bold block">{paisSelecionado.value}</span></div>
-                                        ) : <div className="text-gray-400"><Globe size={32} className="mb-2 opacity-50 mx-auto" /><span className="text-xs">Nenhum país selecionado</span></div>}
-                                    </div>
-                                    <button onClick={sendCountry} disabled={!paisSelecionado || loading || success} className={`${btnPrimary} w-full justify-center py-3`}>Confirmar Cadastro</button>
+
+                                    {createMode === "list" ? (
+                                        <>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-gray-700 ml-1">Selecione na lista global</label>
+                                                <CountryCombobox
+                                                    options={paises}
+                                                    value={paisSelecionado}
+                                                    onChange={handleSelectCountry}
+                                                    placeholder="Buscar país..."
+                                                />
+                                            </div>
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 min-h-[120px] flex flex-col items-center justify-center text-center">
+                                                {paisSelecionado ? (
+                                                    success ? <div className="text-green-600 font-bold"><Check size={24} className="mx-auto mb-2" />Cadastrado!</div> :
+                                                        loading ? <Loader2 size={32} className="animate-spin text-[#7F33D9]" /> :
+                                                            <div><img src={paisSelecionado.flag} className="w-16 h-auto shadow-sm rounded mb-3 mx-auto" /> <span className="text-lg font-bold block">{paisSelecionado.value}</span></div>
+                                                ) : <div className="text-gray-400"><Globe size={32} className="mb-2 opacity-50 mx-auto" /><span className="text-xs">Nenhum país selecionado</span></div>}
+                                            </div>
+                                            <button onClick={sendCountry} disabled={!paisSelecionado || loading || success} className={`${btnPrimary} w-full justify-center py-3`}>Confirmar Cadastro</button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-xs text-gray-400 -mt-2">
+                                                Para países/seleções que não existem na lista global — ex: <strong>Sérvia e Montenegro</strong>, Iugoslávia, União Soviética.
+                                            </p>
+                                            <div>
+                                                <label className={labelClass}>Nome</label>
+                                                <input
+                                                    type="text"
+                                                    className={inputClass}
+                                                    placeholder="Ex: Sérvia e Montenegro"
+                                                    value={manualForm.name}
+                                                    onChange={(e) => setManualForm({ ...manualForm, name: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={labelClass}>URL da Bandeira <span className="font-normal text-gray-400 normal-case">(opcional)</span></label>
+                                                <div className="flex items-center gap-2">
+                                                    {manualForm.flag_url.trim() && (
+                                                        <img src={manualForm.flag_url} alt="preview" className="w-10 h-7 object-cover rounded shadow-sm border border-gray-100 shrink-0" onError={(e) => { e.target.style.display = "none"; }} />
+                                                    )}
+                                                    <input
+                                                        type="text"
+                                                        className={inputClass}
+                                                        placeholder="https://..."
+                                                        value={manualForm.flag_url}
+                                                        onChange={(e) => setManualForm({ ...manualForm, flag_url: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {success ? (
+                                                <div className="text-green-600 font-bold text-center py-2"><Check size={24} className="mx-auto mb-1" />Cadastrado!</div>
+                                            ) : (
+                                                <button onClick={sendCountry} disabled={!manualForm.name.trim() || loading} className={`${btnPrimary} w-full justify-center py-3`}>
+                                                    {loading ? <Loader2 size={16} className="animate-spin" /> : "Confirmar Cadastro"}
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             )}
 

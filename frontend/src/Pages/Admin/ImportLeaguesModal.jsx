@@ -36,7 +36,7 @@ export default function ImportLeaguesModal({ onClose, onSuccess }) {
   });
 
   useEffect(() => {
-    api.get("/admin/countries?onlyActive=true&limit=500")
+    api.get("/admin/countries?limit=500")
       .then(res => setDbCountries(res.data.countries ?? []))
       .catch(() => {});
   }, []);

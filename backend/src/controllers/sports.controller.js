@@ -809,15 +809,32 @@ export async function getLeagueSports(req, res) {
     } : null;
 
     // Busca partidas brutas (sempre necessário) — inclui phase_key
+    // LEFT JOIN em clubs E countries: competições de seleções (Copa do Mundo)
+    // usam home/away_country_id; a federação do país é o vínculo navegável
     const matchesRes = await db.query(`
       SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
              m.phase_key,
-             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
-             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden,
+             COALESCE(m.winner_club_id, m.winner_country_id) AS winner_id,
+             COALESCE(hc.id_club, hco.id_country) AS home_id,
+             COALESCE(hc.name, hco.name) AS home_name,
+             COALESCE(hc.crest_url, hco.flag_url) AS home_crest,
+             hc.slug AS home_slug, hc.hidden AS home_hidden,
+             (m.home_country_id IS NOT NULL) AS home_is_country,
+             hf.slug AS home_federation_slug, hf.acronym AS home_federation_acronym, hf.active AS home_federation_active,
+             COALESCE(ac.id_club, aco.id_country) AS away_id,
+             COALESCE(ac.name, aco.name) AS away_name,
+             COALESCE(ac.crest_url, aco.flag_url) AS away_crest,
+             ac.slug AS away_slug, ac.hidden AS away_hidden,
+             (m.away_country_id IS NOT NULL) AS away_is_country,
+             af.slug AS away_federation_slug, af.acronym AS away_federation_acronym, af.active AS away_federation_active,
              ms.home_goals_ht, ms.away_goals_ht
       FROM matches m
-      JOIN clubs hc ON hc.id_club = m.home_club_id
-      JOIN clubs ac ON ac.id_club = m.away_club_id
+      LEFT JOIN clubs hc ON hc.id_club = m.home_club_id
+      LEFT JOIN clubs ac ON ac.id_club = m.away_club_id
+      LEFT JOIN countries hco ON hco.id_country = m.home_country_id
+      LEFT JOIN countries aco ON aco.id_country = m.away_country_id
+      LEFT JOIN federations hf ON hf.id_country = m.home_country_id AND hf.sphere = 'nacional'
+      LEFT JOIN federations af ON af.id_country = m.away_country_id AND af.sphere = 'nacional'
       LEFT JOIN match_stats ms ON ms.id_match = m.id_match
       WHERE m.id_league = $1 AND m.id_season = $2
       ORDER BY m.game_week ASC NULLS LAST, m.match_date ASC
@@ -942,7 +959,13 @@ export async function getLeagueSports(req, res) {
       }
     } else {
       const standingsRes = await db.query(`
-        SELECT c.id_club, c.name AS club_name, c.crest_url, c.slug AS club_slug, c.hidden AS club_hidden,
+        SELECT
+          COALESCE(c.id_club, co.id_country) AS id_club,
+          COALESCE(c.name, co.name) AS club_name,
+          COALESCE(c.crest_url, co.flag_url) AS crest_url,
+          c.slug AS club_slug, c.hidden AS club_hidden,
+          (ccs.id_country IS NOT NULL) AS is_country,
+          f.slug AS federation_slug, f.acronym AS federation_acronym, f.active AS federation_active,
           ccs.position_total, ccs.position_home, ccs.position_away,
           ccs.points,
           ccs.matches_total, ccs.matches_home, ccs.matches_away,
@@ -953,7 +976,9 @@ export async function getLeagueSports(req, res) {
           ccs.goals_against_total, ccs.goals_against_home, ccs.goals_against_away,
           ccs.goal_difference, ccs.win_percentage
         FROM club_competition_stats ccs
-        JOIN clubs c ON c.id_club = ccs.id_club
+        LEFT JOIN clubs c ON c.id_club = ccs.id_club
+        LEFT JOIN countries co ON co.id_country = ccs.id_country
+        LEFT JOIN federations f ON f.id_country = ccs.id_country AND f.sphere = 'nacional'
         WHERE ccs.id_competition_season = $1
         ORDER BY
           CASE WHEN ccs.position_total = 0 OR ccs.position_total IS NULL THEN 1 ELSE 0 END,
@@ -965,6 +990,9 @@ export async function getLeagueSports(req, res) {
 
       const mkRow = (r, posF, wF, dF, lF, gpF, gcF, mF) => ({
         id: r.id_club, name: r.club_name, crest: r.crest_url, slug: r.club_slug ?? null, hidden: r.club_hidden ?? false,
+        is_country: r.is_country ?? false,
+        federation_slug: r.federation_slug ?? null, federation_acronym: r.federation_acronym ?? null,
+        federation_active: r.federation_active ?? false,
         pos: r[posF] || null,
         pts: r[wF] * 3 + r[dF],
         j: r[mF], v: r[wF], e: r[dF], d: r[lF],
@@ -990,8 +1018,9 @@ export async function getLeagueSports(req, res) {
       byWeek[w].push({
         id: m.id_match, date: m.match_date, status: m.status,
         phase: resolvePhase(m),
-        home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug ?? null, hidden: m.home_hidden ?? false },
-        away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug ?? null, hidden: m.away_hidden ?? false },
+        winner_id: m.winner_id ?? null,
+        home: { id: m.home_id, name: m.home_name, crest: m.home_crest, slug: m.home_slug ?? null, hidden: m.home_hidden ?? false, is_country: m.home_is_country ?? false, federation_slug: m.home_federation_slug ?? null, federation_acronym: m.home_federation_acronym ?? null, federation_active: m.home_federation_active ?? false },
+        away: { id: m.away_id, name: m.away_name, crest: m.away_crest, slug: m.away_slug ?? null, hidden: m.away_hidden ?? false, is_country: m.away_is_country ?? false, federation_slug: m.away_federation_slug ?? null, federation_acronym: m.away_federation_acronym ?? null, federation_active: m.away_federation_active ?? false },
         home_goals: m.home_goals, away_goals: m.away_goals,
         home_goals_ht: m.home_goals_ht, away_goals_ht: m.away_goals_ht,
       });
@@ -1021,31 +1050,34 @@ export async function getLeagueSports(req, res) {
       }
     }
 
-    // ── Disciplinar agregado por clube na temporada ──────────────────────────
+    // ── Disciplinar agregado por time na temporada ───────────────────────────
+    // Expande cada partida em dois lados (mandante/visitante) e resolve o time
+    // como clube OU país (seleções) — funciona para os dois modos
     const disciplineRes = await db.query(`
       SELECT
-        c.id_club,
-        c.name  AS club_name,
-        c.crest_url,
+        COALESCE(c.id_club, co.id_country) AS id_club,
+        COALESCE(c.name, co.name) AS club_name,
+        COALESCE(c.crest_url, co.flag_url) AS crest_url,
+        c.slug AS club_slug,
+        (MAX(side.country_id) IS NOT NULL) AS is_country,
+        MAX(f.slug) AS federation_slug,
+        BOOL_OR(f.active) AS federation_active,
         COUNT(DISTINCT m.id_match)::int AS matches_played,
-        COALESCE(SUM(
-          CASE WHEN m.home_club_id = c.id_club
-               THEN ms.home_fouls ELSE ms.away_fouls END
-        ), 0)::int AS fouls,
-        COALESCE(SUM(
-          CASE WHEN m.home_club_id = c.id_club
-               THEN ms.home_yellow_cards ELSE ms.away_yellow_cards END
-        ), 0)::int AS yellow_cards,
-        COALESCE(SUM(
-          CASE WHEN m.home_club_id = c.id_club
-               THEN ms.home_red_cards ELSE ms.away_red_cards END
-        ), 0)::int AS red_cards
-      FROM clubs c
-      JOIN matches m
-        ON m.home_club_id = c.id_club OR m.away_club_id = c.id_club
+        COALESCE(SUM(side.fouls), 0)::int AS fouls,
+        COALESCE(SUM(side.yellows), 0)::int AS yellow_cards,
+        COALESCE(SUM(side.reds), 0)::int AS red_cards
+      FROM matches m
       LEFT JOIN match_stats ms ON ms.id_match = m.id_match
+      CROSS JOIN LATERAL (
+        VALUES (m.home_club_id, m.home_country_id, ms.home_fouls, ms.home_yellow_cards, ms.home_red_cards),
+               (m.away_club_id, m.away_country_id, ms.away_fouls, ms.away_yellow_cards, ms.away_red_cards)
+      ) AS side(club_id, country_id, fouls, yellows, reds)
+      LEFT JOIN clubs c ON c.id_club = side.club_id
+      LEFT JOIN countries co ON co.id_country = side.country_id
+      LEFT JOIN federations f ON f.id_country = side.country_id AND f.sphere = 'nacional'
       WHERE m.id_league = $1 AND m.id_season = $2
-      GROUP BY c.id_club, c.name, c.crest_url
+        AND (side.club_id IS NOT NULL OR side.country_id IS NOT NULL)
+      GROUP BY 1, 2, 3, 4
       HAVING COUNT(DISTINCT m.id_match) > 0
       ORDER BY yellow_cards DESC NULLS LAST, red_cards DESC NULLS LAST
     `, [leagueId, idSeason]);
@@ -1054,6 +1086,10 @@ export async function getLeagueSports(req, res) {
       id: r.id_club,
       name: r.club_name,
       crest: r.crest_url,
+      slug: r.club_slug ?? null,
+      is_country: r.is_country ?? false,
+      federation_slug: r.federation_slug ?? null,
+      federation_active: r.federation_active ?? false,
       matches: r.matches_played,
       fouls: r.fouls,
       yellow: r.yellow_cards,
@@ -1077,8 +1113,14 @@ export async function getMatchDetail(req, res) {
     const r = (await db.query(`
       SELECT m.id_match, m.game_week, m.match_date, m.home_goals, m.away_goals, m.status,
              m.attendance, m.referee, m.stadium_name,
-             hc.id_club AS home_id, hc.name AS home_name, hc.crest_url AS home_crest, hc.slug AS home_slug, hc.hidden AS home_hidden,
-             ac.id_club AS away_id, ac.name AS away_name, ac.crest_url AS away_crest, ac.slug AS away_slug, ac.hidden AS away_hidden,
+             COALESCE(hc.id_club, hco.id_country) AS home_id,
+             COALESCE(hc.name, hco.name) AS home_name,
+             COALESCE(hc.crest_url, hco.flag_url) AS home_crest,
+             hc.slug AS home_slug, hc.hidden AS home_hidden,
+             COALESCE(ac.id_club, aco.id_country) AS away_id,
+             COALESCE(ac.name, aco.name) AS away_name,
+             COALESCE(ac.crest_url, aco.flag_url) AS away_crest,
+             ac.slug AS away_slug, ac.hidden AS away_hidden,
              l.id_league, l.name AS league_name, s.year AS season,
              ms.home_shots, ms.away_shots,
              ms.home_shots_on_target, ms.away_shots_on_target,
@@ -1090,8 +1132,10 @@ export async function getMatchDetail(req, res) {
              ms.home_xg_pre, ms.away_xg_pre,
              ms.home_goals_ht, ms.away_goals_ht
       FROM matches m
-      JOIN clubs hc ON hc.id_club = m.home_club_id
-      JOIN clubs ac ON ac.id_club = m.away_club_id
+      LEFT JOIN clubs hc ON hc.id_club = m.home_club_id
+      LEFT JOIN clubs ac ON ac.id_club = m.away_club_id
+      LEFT JOIN countries hco ON hco.id_country = m.home_country_id
+      LEFT JOIN countries aco ON aco.id_country = m.away_country_id
       JOIN leagues l ON l.id_league = m.id_league
       JOIN seasons s ON s.id_season = m.id_season
       LEFT JOIN match_stats ms ON ms.id_match = m.id_match
@@ -1122,5 +1166,83 @@ export async function getMatchDetail(req, res) {
   } catch (err) {
     console.error('[getMatchDetail]', err);
     res.status(500).json({ error: 'Erro ao buscar partida' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /dashboard/leagues/:id/attendance?season=YYYY
+// Página de Público e Renda: big numbers por edição (edition_financials) +
+// partidas da temporada com público e estádio (ordenável no front)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getLeagueAttendance(req, res) {
+  const leagueId = Number(req.params.id);
+  const season = Number(req.query.season) || null;
+
+  try {
+    // Big numbers de TODAS as edições numa chamada — comparação é client-side.
+    // Chave normalizada sem o prefixo da competição: 'world-cup_attendance-total' → 'attendance-total'
+    const indRes = await db.query(`
+      SELECT fi.code, ef.year, SUM(ef.value) AS value
+      FROM edition_financials ef
+      JOIN competition_editions ce ON ce.id_edition = ef.id_edition
+      JOIN financial_indicators fi ON fi.id = ef.id_indicator
+      WHERE ce.id_league = $1
+        AND (fi.code LIKE '%attendance%' OR fi.code LIKE '%ticketing%' OR fi.code LIKE '%number-matches')
+      GROUP BY fi.code, ef.year
+      ORDER BY ef.year
+    `, [leagueId]);
+
+    const indicators = {}; // { ano: { 'attendance-total': v, ... } }
+    for (const r of indRes.rows) {
+      const key = r.code.includes('_') ? r.code.slice(r.code.indexOf('_') + 1) : r.code;
+      if (!indicators[r.year]) indicators[r.year] = {};
+      indicators[r.year][key] = parseFloat(r.value);
+    }
+
+    // Temporadas disponíveis: união de edições com indicadores e anos com partidas
+    const matchYearsRes = await db.query(`
+      SELECT DISTINCT s.year FROM matches m
+      JOIN seasons s ON s.id_season = m.id_season
+      WHERE m.id_league = $1
+    `, [leagueId]);
+    const seasons = [...new Set([
+      ...Object.keys(indicators).map(Number),
+      ...matchYearsRes.rows.map(r => r.year),
+    ])].sort((a, b) => b - a);
+
+    // Partidas da temporada pedida — com público e estádio
+    let matches = [];
+    if (season) {
+      const sRes = await db.query(`SELECT id_season FROM seasons WHERE year = $1`, [season]);
+      if (sRes.rows.length) {
+        const mRes = await db.query(`
+          SELECT m.id_match, m.match_date, m.game_week, m.home_goals, m.away_goals,
+                 m.attendance, m.stadium_name,
+                 COALESCE(hc.name, hco.name) AS home_name,
+                 COALESCE(hc.crest_url, hco.flag_url) AS home_crest,
+                 hc.slug AS home_slug,
+                 hf.slug AS home_federation_slug,
+                 COALESCE(ac.name, aco.name) AS away_name,
+                 COALESCE(ac.crest_url, aco.flag_url) AS away_crest,
+                 ac.slug AS away_slug,
+                 af.slug AS away_federation_slug
+          FROM matches m
+          LEFT JOIN clubs hc ON hc.id_club = m.home_club_id
+          LEFT JOIN clubs ac ON ac.id_club = m.away_club_id
+          LEFT JOIN countries hco ON hco.id_country = m.home_country_id
+          LEFT JOIN countries aco ON aco.id_country = m.away_country_id
+          LEFT JOIN federations hf ON hf.id_country = m.home_country_id AND hf.sphere = 'nacional'
+          LEFT JOIN federations af ON af.id_country = m.away_country_id AND af.sphere = 'nacional'
+          WHERE m.id_league = $1 AND m.id_season = $2
+          ORDER BY m.match_date ASC NULLS LAST, m.id_match
+        `, [leagueId, sRes.rows[0].id_season]);
+        matches = mRes.rows;
+      }
+    }
+
+    res.json({ seasons, indicators, season, matches });
+  } catch (err) {
+    console.error('[getLeagueAttendance]', err);
+    res.status(500).json({ error: 'Erro ao buscar público e renda' });
   }
 }

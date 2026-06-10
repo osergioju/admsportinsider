@@ -23,15 +23,18 @@ export async function getAllCountries(req, res) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
+    // Admin vê todos os países por padrão; "active" controla visibilidade pública.
+    // onlyActive=true mantém o filtro antigo para quem precisar.
+    const where = req.query.onlyActive === "true" ? "WHERE active = true" : "";
 
     const countriesQuery = await db.query(`
-      SELECT id_country, name, flag_url FROM countries
-      where active = true
+      SELECT id_country, name, flag_url, active FROM countries
+      ${where}
       ORDER BY name ASC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
-    const countQuery = await db.query(`SELECT COUNT(*) FROM countries WHERE active = true`);
+    const countQuery = await db.query(`SELECT COUNT(*) FROM countries ${where}`);
 
     const total = parseInt(countQuery.rows[0].count);
     const totalPages = Math.ceil(total / limit);
@@ -70,6 +73,7 @@ export async function getAllLeagues(req, res) {
       l.created_at,
       l.id_country,
       l.id_continent,
+      l.team_type,
       c.name AS country_name,
       c.flag_url,
       c.flag_color1,
@@ -158,7 +162,7 @@ export async function getLeagueById(req, res) {
 }
 
 export async function createLeague(req, res) {
-  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nome é obrigatório." });
@@ -167,11 +171,13 @@ export async function createLeague(req, res) {
     return res.status(400).json({ message: "Selecione um país ou continente." });
   }
 
+  const teamType = team_type === "national" ? "national" : "clubs";
+
   try {
     await db.query(`
-      INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null]);
+      INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType]);
 
     return res.status(201).json({ message: "Liga cadastrada com sucesso!" });
 
@@ -183,7 +189,9 @@ export async function createLeague(req, res) {
 
 export async function updateLeague(req, res) {
   const { id } = req.params;
-  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type } = req.body;
+
+  const teamType = team_type === "national" ? "national" : "clubs";
 
   try {
     await db.query(`
@@ -198,9 +206,10 @@ export async function updateLeague(req, res) {
         format = $7,
         primary_color = $8,
         secondary_color = $9,
-        currency_code = $10
-      WHERE id_league = $11
-    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, id]);
+        currency_code = $10,
+        team_type = $11
+      WHERE id_league = $12
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType, id]);
 
     return res.json({ message: "Liga atualizada com sucesso!" });
 
@@ -988,13 +997,15 @@ export async function getDashboardFederationBySlug(req, res) {
 export async function getAllFederations(req, res) {
   try {
     const result = await db.query(`
-      SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
-             primary_color, secondary_color, tertiary_color, full_name,
-             city_name, TO_CHAR(founded_at, 'YYYY-MM-DD') AS founded_at
-      FROM federations WHERE active = true
+      SELECT f.id_federation, f.name, f.acronym, f.logo_url, f.slug, f.sort_order, f.sphere,
+             f.primary_color, f.secondary_color, f.tertiary_color, f.full_name,
+             f.city_name, TO_CHAR(f.founded_at, 'YYYY-MM-DD') AS founded_at, f.active,
+             f.id_country, c.name AS country_name, c.flag_url AS country_flag_url
+      FROM federations f
+      LEFT JOIN countries c ON c.id_country = f.id_country
       ORDER BY
-        CASE sphere WHEN 'global' THEN 0 WHEN 'continental' THEN 1 ELSE 2 END,
-        sort_order ASC, name ASC
+        CASE f.sphere WHEN 'global' THEN 0 WHEN 'continental' THEN 1 ELSE 2 END,
+        f.sort_order ASC, f.name ASC
     `);
     return res.json({ federations: result.rows });
   } catch (err) {
@@ -1004,13 +1015,14 @@ export async function getAllFederations(req, res) {
 }
 
 export async function createFederation(req, res) {
-  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at } = req.body;
+  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
+    // Federação com país é nacional por definição (CBF, DBU...)
     const result = await db.query(
-      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug, full_name, city_name, founded_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id_federation",
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null]
+      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug, full_name, city_name, founded_at, id_country, sphere) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id_federation",
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, id_country ? "nacional" : null]
     );
     return res.status(201).json({ id_federation: result.rows[0].id_federation, message: "Federação criada com sucesso!" });
   } catch (err) {
@@ -1022,13 +1034,16 @@ export async function createFederation(req, res) {
 
 export async function updateFederation(req, res) {
   const { id } = req.params;
-  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at } = req.body;
+  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
     await db.query(
-      "UPDATE federations SET name = $1, acronym = $2, logo_url = $3, sort_order = $4, slug = $5, full_name = $6, city_name = $7, founded_at = $8 WHERE id_federation = $9",
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id]
+      `UPDATE federations SET name = $1, acronym = $2, logo_url = $3, sort_order = $4, slug = $5,
+         full_name = $6, city_name = $7, founded_at = $8, id_country = $9,
+         sphere = CASE WHEN $9::int IS NOT NULL AND sphere IS NULL THEN 'nacional' ELSE sphere END
+       WHERE id_federation = $10`,
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, id]
     );
     return res.json({ message: "Federação atualizada com sucesso!" });
   } catch (err) {
@@ -2786,6 +2801,8 @@ export async function getLeagueMatches(req, res) {
     if (!seasonRes.rows.length) return res.json({ seasons, matches: [] });
     const idSeason = seasonRes.rows[0].id_season;
 
+    // LEFT JOIN em clubs E countries: partidas de seleções (Copa do Mundo etc.)
+    // usam home_country_id/away_country_id em vez de home_club_id/away_club_id
     const matchesRes = await db.query(`
       SELECT
         m.id_match,
@@ -2795,15 +2812,28 @@ export async function getLeagueMatches(req, res) {
         m.away_goals,
         m.status,
         m.winner_club_id,
+        m.winner_country_id,
         m.home_club_id,
-        hc.name AS home_name,
-        hc.crest_url AS home_crest,
+        m.home_country_id,
+        COALESCE(hc.name, hco.name) AS home_name,
+        COALESCE(hc.crest_url, hco.flag_url) AS home_crest,
+        hf.id_federation AS home_federation_id,
+        hf.acronym AS home_federation_acronym,
+        hf.slug AS home_federation_slug,
         m.away_club_id,
-        ac.name AS away_name,
-        ac.crest_url AS away_crest
+        m.away_country_id,
+        COALESCE(ac.name, aco.name) AS away_name,
+        COALESCE(ac.crest_url, aco.flag_url) AS away_crest,
+        af.id_federation AS away_federation_id,
+        af.acronym AS away_federation_acronym,
+        af.slug AS away_federation_slug
       FROM matches m
-      JOIN clubs hc ON hc.id_club = m.home_club_id
-      JOIN clubs ac ON ac.id_club = m.away_club_id
+      LEFT JOIN clubs hc ON hc.id_club = m.home_club_id
+      LEFT JOIN clubs ac ON ac.id_club = m.away_club_id
+      LEFT JOIN countries hco ON hco.id_country = m.home_country_id
+      LEFT JOIN countries aco ON aco.id_country = m.away_country_id
+      LEFT JOIN federations hf ON hf.id_country = m.home_country_id AND hf.sphere = 'nacional'
+      LEFT JOIN federations af ON af.id_country = m.away_country_id AND af.sphere = 'nacional'
       WHERE m.id_league = $1 AND m.id_season = $2
       ORDER BY m.match_date NULLS LAST, m.game_week NULLS LAST, m.id_match
     `, [idLeague, idSeason]);
@@ -2819,20 +2849,21 @@ export async function getLeagueMatches(req, res) {
 // Body: { match_date?, home_goals?, away_goals?, status?, phase_key?, group_key?, game_week?, winner_club_id? }
 export async function updateCustomMatch(req, res) {
   const idMatch = Number(req.params.id);
-  const { match_date, home_goals, away_goals, status, phase_key, group_key, game_week, winner_club_id } = req.body;
+  const { match_date, home_goals, away_goals, status, phase_key, group_key, game_week, winner_club_id, winner_country_id } = req.body;
 
   try {
     await db.query(`
       UPDATE matches SET
-        match_date     = COALESCE($1, match_date),
-        home_goals     = $2,
-        away_goals     = $3,
-        status         = COALESCE($4, status),
-        phase_key      = $5,
-        group_key      = $6,
-        game_week      = $7,
-        winner_club_id = $8
-      WHERE id_match = $9
+        match_date        = COALESCE($1, match_date),
+        home_goals        = $2,
+        away_goals        = $3,
+        status            = COALESCE($4, status),
+        phase_key         = $5,
+        group_key         = $6,
+        game_week         = $7,
+        winner_club_id    = $8,
+        winner_country_id = $9
+      WHERE id_match = $10
     `, [
       match_date ?? null,
       home_goals != null ? Number(home_goals) : null,
@@ -2842,6 +2873,7 @@ export async function updateCustomMatch(req, res) {
       group_key ?? null,
       game_week != null ? Number(game_week) : null,
       winner_club_id != null ? Number(winner_club_id) : null,
+      winner_country_id != null ? Number(winner_country_id) : null,
       idMatch,
     ]);
 

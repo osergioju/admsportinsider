@@ -5,21 +5,31 @@ import { api } from "../../services/api";
 const fmtDate = d => d ? new Date(d).toISOString().slice(0, 10) : "";
 
 function ClubCrest({ crest, name }) {
-  return crest ? (
+  if (!crest) return <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />;
+  // Seleções: crest já vem como URL completa (bandeira); clubes vêm como token
+  const src = String(crest).startsWith("http")
+    ? crest
+    : `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${crest}.webp`;
+  return (
     <img
-      src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${crest}.webp`}
+      src={src}
       alt=""
       className="w-5 h-5 object-contain shrink-0"
       onError={e => { e.currentTarget.style.display = "none"; }}
     />
-  ) : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />;
+  );
 }
 
 function MatchRow({ match, onSave }) {
+  // Partida de seleções usa home/away_country_id e winner_country_id
+  const isCountryMatch = match.home_country_id != null;
+  const homeId = match.home_club_id ?? match.home_country_id;
+  const awayId = match.away_club_id ?? match.away_country_id;
+
   const [edit, setEdit] = useState({
     home_goals: match.home_goals ?? "",
     away_goals: match.away_goals ?? "",
-    winner_club_id: match.winner_club_id ?? "",
+    winner_club_id: (isCountryMatch ? match.winner_country_id : match.winner_club_id) ?? "",
     game_week: match.game_week ?? "",
     match_date: fmtDate(match.match_date),
   });
@@ -33,10 +43,11 @@ function MatchRow({ match, onSave }) {
 
   const hasWinner = edit.winner_club_id !== "" && edit.winner_club_id != null;
 
+  const savedWinner = (isCountryMatch ? match.winner_country_id : match.winner_club_id) ?? "";
   const dirty =
     String(edit.home_goals) !== String(match.home_goals ?? "") ||
     String(edit.away_goals) !== String(match.away_goals ?? "") ||
-    String(edit.winner_club_id ?? "") !== String(match.winner_club_id ?? "") ||
+    String(edit.winner_club_id ?? "") !== String(savedWinner) ||
     String(edit.game_week ?? "") !== String(match.game_week ?? "") ||
     fmtDate(edit.match_date) !== fmtDate(match.match_date);
 
@@ -48,10 +59,12 @@ function MatchRow({ match, onSave }) {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const winnerValue = edit.winner_club_id !== "" ? Number(edit.winner_club_id) : null;
       await onSave(match.id_match, {
         home_goals: edit.home_goals !== "" ? Number(edit.home_goals) : null,
         away_goals: edit.away_goals !== "" ? Number(edit.away_goals) : null,
-        winner_club_id: edit.winner_club_id !== "" ? Number(edit.winner_club_id) : null,
+        winner_club_id: isCountryMatch ? null : winnerValue,
+        winner_country_id: isCountryMatch ? winnerValue : null,
         game_week: edit.game_week !== "" ? Number(edit.game_week) : null,
         match_date: edit.match_date || null,
       });
@@ -110,8 +123,8 @@ function MatchRow({ match, onSave }) {
             onChange={e => set("winner_club_id", e.target.value)}
           >
             <option value="">Empate</option>
-            <option value={match.home_club_id}>{match.home_name}</option>
-            <option value={match.away_club_id}>{match.away_name}</option>
+            <option value={homeId}>{match.home_name}</option>
+            <option value={awayId}>{match.away_name}</option>
           </select>
         ) : (
           <span className="text-gray-300 text-xs">—</span>

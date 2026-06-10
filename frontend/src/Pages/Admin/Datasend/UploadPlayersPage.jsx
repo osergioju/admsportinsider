@@ -32,7 +32,7 @@ function RegisterCountryModal({ csvNat, suggestion, onClose, onCreated }) {
         flag: flag.trim() || null,
         codigo: suggestion?.cca2 ?? null,
       });
-      const res = await api.get("/admin/countries?onlyActive=true&limit=500");
+      const res = await api.get("/admin/countries?limit=500");
       const created = res.data.countries.find(
         (c) => c.name.toLowerCase() === name.trim().toLowerCase()
       );

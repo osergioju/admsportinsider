@@ -17,7 +17,7 @@ export default function GestaoLigas() {
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
     const [leagueScope, setLeagueScope] = useState("country"); // "country" | "continent"
-    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
+    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs" });
     const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -34,7 +34,7 @@ export default function GestaoLigas() {
         try {
             const [respLeagues, respCountries, respContinents, respCurrencies, respFeds] = await Promise.all([
                 api.get(`/admin/leagues?limit=1000`),
-                api.get(`/admin/countries?onlyActive=true&limit=1000`),
+                api.get(`/admin/countries?limit=1000`),
                 api.get(`/admin/continents`),
                 api.get(`/currency/currencies`),
                 api.get(`/admin/federations`),
@@ -57,7 +57,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "" });
+        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs" });
         setLeagueScope("country");
         setIsEditing(false); setModal(true);
     };
@@ -66,7 +66,7 @@ export default function GestaoLigas() {
         try {
             const { data } = await api.get(`/admin/leagues/${id}`);
             setCurrentLeague(data.league);
-            setNewLeague({ ...data.league });
+            setNewLeague({ ...data.league, team_type: data.league.team_type || "clubs" });
             setLeagueScope(data.league.id_continent ? "continent" : "country");
             setIsEditing(true); setModal(true);
         } catch (err) { console.error(err); }
@@ -317,6 +317,32 @@ export default function GestaoLigas() {
                                     />
                                 </div>
                             )}
+                            {/* Toggle Clubes / Seleções */}
+                            <div>
+                                <label className={labelClass}>Participantes</label>
+                                <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewLeague({ ...newLeague, team_type: "clubs" })}
+                                        className={`flex-1 py-2 text-sm font-medium transition-colors ${(newLeague.team_type || "clubs") === "clubs" ? "bg-[#7F33D9] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                    >
+                                        Clubes
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewLeague({ ...newLeague, team_type: "national" })}
+                                        className={`flex-1 py-2 text-sm font-medium transition-colors ${newLeague.team_type === "national" ? "bg-[#7F33D9] text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                    >
+                                        Seleções
+                                    </button>
+                                </div>
+                                <p className="mt-1.5 text-xs text-gray-400">
+                                    {newLeague.team_type === "national"
+                                        ? "Os times desta competição são seleções nacionais — importações mapeiam por países (ex: Copa do Mundo)."
+                                        : "Os times desta competição são clubes — importações mapeiam por clubes."}
+                                </p>
+                            </div>
+
                             <div>
                                 <label className={labelClass}>Federação <span className="text-gray-300 normal-case font-normal tracking-normal">(opcional)</span></label>
                                 <select

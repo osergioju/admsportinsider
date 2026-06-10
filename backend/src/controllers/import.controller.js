@@ -48,6 +48,22 @@ function parseSeasonYear(raw) {
   return isNaN(n) ? null : n;
 }
 
+// Alguns CSVs chegam re-exportados com cada linha de dados embrulhada em aspas
+// (a linha inteira vira UM campo: "1668960000,Nov 20 2022 - 4:00pm,...").
+// Detecta e desembrulha: linha que começa/termina com aspas, cujo interior só
+// tem aspas duplicadas ("" = escape) e contém vírgulas, é um campo único → expande.
+function unwrapFullyQuotedLines(text) {
+  return text.split(/\r?\n/).map((line) => {
+    const t = line.trim();
+    if (t.length < 2 || t[0] !== '"' || t[t.length - 1] !== '"') return line;
+    const inner = t.slice(1, -1);
+    if (inner.replace(/""/g, "").includes('"')) return line; // linha CSV normal com vários campos
+    const unescaped = inner.replace(/""/g, '"');
+    if (!unescaped.includes(",")) return line; // campo único legítimo, sem vírgula
+    return unescaped;
+  }).join("\n");
+}
+
 // CSV files sent as buffer are read as Latin-1 by xlsx by default.
 // This helper forces UTF-8 decoding for CSV so accented chars (ã, ê, etc.) are preserved.
 function readWorkbook(file) {
@@ -56,7 +72,7 @@ function readWorkbook(file) {
     || file.originalname.toLowerCase().endsWith(".csv");
 
   if (isCSV) {
-    return xlsx.read(file.buffer.toString("utf8"), { type: "string" });
+    return xlsx.read(unwrapFullyQuotedLines(file.buffer.toString("utf8")), { type: "string" });
   }
   return xlsx.read(file.buffer, { type: "buffer", cellDates: true });
 }
@@ -79,6 +95,8 @@ export async function importMatches(req, res) {
   try {
     const idLeague = Number(req.body.league);
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
+    const countryMappings = req.body.countryMappings ? JSON.parse(req.body.countryMappings) : null;
+    const isCountryMode = countryMappings !== null;
 
     const workbook = readWorkbook(req.file);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -117,45 +135,71 @@ export async function importMatches(req, res) {
     }
 
     /* ------------------------------------------------------------------
-       CLUBS CACHE — filtered to this league to avoid full-table scan
+       COUNTRY RESOLVER — só no modo seleções nacionais
     ------------------------------------------------------------------ */
 
-    const leagueCountryForMatches = await client.query(
-      `SELECT id_country FROM leagues WHERE id_league = $1`, [idLeague]
-    );
-    const matchesLeagueCountry = leagueCountryForMatches.rows[0]?.id_country ?? null;
-
-    const clubsRes = matchesLeagueCountry
-      ? await client.query(`
-          SELECT c.id_club, c.name, c.short_name, c.description, c.slug
-          FROM clubs c WHERE c.id_country = $1 OR c.hidden = true
-        `, [matchesLeagueCountry])
-      : await client.query(`
-          SELECT c.id_club, c.name, c.short_name, c.description, c.slug
-          FROM clubs c WHERE c.active = true
-        `);
-
-    const aliasesResM = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
-    const clubIdSetM = new Set(clubsRes.rows.map(c => c.id_club));
-
-    const clubsByName = new Map(); // slug, name, short_name → id
-    const clubsByDesc = new Map(); // description → id
-    for (const club of clubsRes.rows) {
-      if (club.slug) clubsByName.set(club.slug, club.id_club);
-      clubsByName.set(slugify(club.name, { lower: true, strict: true }), club.id_club);
-      if (club.short_name) clubsByName.set(slugify(club.short_name, { lower: true, strict: true }), club.id_club);
-      if (club.description) clubsByDesc.set(slugify(club.description, { lower: true, strict: true }), club.id_club);
-    }
-    // Aliases filtrados ao pool atual (respeita escopo de país)
-    for (const { alias_norm, id_club } of aliasesResM.rows) {
-      if (clubIdSetM.has(id_club) && !clubsByName.has(alias_norm)) clubsByName.set(alias_norm, id_club);
+    let resolveCountry = null;
+    if (isCountryMode) {
+      const [cRes, ctRes] = await Promise.all([
+        client.query(`SELECT id_country, name FROM countries`),
+        client.query(`SELECT id_country, name AS translated_name FROM country_translations`),
+      ]);
+      const cnMap = new Map();
+      const cNorm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+      for (const c of cRes.rows) cnMap.set(cNorm(c.name), c.id_country);
+      for (const tr of ctRes.rows) {
+        const k = cNorm(tr.translated_name);
+        if (!cnMap.has(k)) cnMap.set(k, tr.id_country);
+      }
+      resolveCountry = (name) => {
+        if (!name) return null;
+        if (countryMappings[name] != null) return Number(countryMappings[name]);
+        return cnMap.get(cNorm(name)) ?? null;
+      };
     }
 
-    const resolveClub = (csvName) => {
-      if (!csvName) return null;
-      const s = slugify(csvName, { lower: true, strict: true });
-      return clubsByName.get(s) || clubsByDesc.get(s) || null;
-    };
+    /* ------------------------------------------------------------------
+       CLUBS CACHE — só no modo clubes
+    ------------------------------------------------------------------ */
+
+    let resolveClub = null;
+    if (!isCountryMode) {
+      const leagueCountryForMatches = await client.query(
+        `SELECT id_country FROM leagues WHERE id_league = $1`, [idLeague]
+      );
+      const matchesLeagueCountry = leagueCountryForMatches.rows[0]?.id_country ?? null;
+
+      const clubsRes = matchesLeagueCountry
+        ? await client.query(`
+            SELECT c.id_club, c.name, c.short_name, c.description, c.slug
+            FROM clubs c WHERE c.id_country = $1 OR c.hidden = true
+          `, [matchesLeagueCountry])
+        : await client.query(`
+            SELECT c.id_club, c.name, c.short_name, c.description, c.slug
+            FROM clubs c WHERE c.active = true
+          `);
+
+      const aliasesResM = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
+      const clubIdSetM = new Set(clubsRes.rows.map(c => c.id_club));
+
+      const clubsByName = new Map();
+      const clubsByDesc = new Map();
+      for (const club of clubsRes.rows) {
+        if (club.slug) clubsByName.set(club.slug, club.id_club);
+        clubsByName.set(slugify(club.name, { lower: true, strict: true }), club.id_club);
+        if (club.short_name) clubsByName.set(slugify(club.short_name, { lower: true, strict: true }), club.id_club);
+        if (club.description) clubsByDesc.set(slugify(club.description, { lower: true, strict: true }), club.id_club);
+      }
+      for (const { alias_norm, id_club } of aliasesResM.rows) {
+        if (clubIdSetM.has(id_club) && !clubsByName.has(alias_norm)) clubsByName.set(alias_norm, id_club);
+      }
+
+      resolveClub = (csvName) => {
+        if (!csvName) return null;
+        const s = slugify(csvName, { lower: true, strict: true });
+        return clubsByName.get(s) || clubsByDesc.get(s) || null;
+      };
+    }
 
     /* ------------------------------------------------------------------
        PREPARE ROWS
@@ -173,10 +217,16 @@ export async function importMatches(req, res) {
         continue;
       }
 
-      let homeClubId = resolveClub(homeName) ?? (clubMappings[homeName] != null ? Number(clubMappings[homeName]) : null);
-      let awayClubId = resolveClub(awayName) ?? (clubMappings[awayName] != null ? Number(clubMappings[awayName]) : null);
+      let homeId, awayId;
+      if (isCountryMode) {
+        homeId = resolveCountry(homeName);
+        awayId = resolveCountry(awayName);
+      } else {
+        homeId = resolveClub(homeName) ?? (clubMappings[homeName] != null ? Number(clubMappings[homeName]) : null);
+        awayId = resolveClub(awayName) ?? (clubMappings[awayName] != null ? Number(clubMappings[awayName]) : null);
+      }
 
-      if (!homeClubId || !awayClubId) {
+      if (!homeId || !awayId) {
         skippedReasons.push({ reason: "club_not_found", home: homeName, away: awayName });
         continue;
       }
@@ -199,8 +249,8 @@ export async function importMatches(req, res) {
       matchRows.push([
         idLeague,
         idSeason,
-        homeClubId,
-        awayClubId,
+        homeId,
+        awayId,
         matchTimestamp,
         matchDate,
         row["status"] || null,
@@ -266,13 +316,21 @@ export async function importMatches(req, res) {
       stadium_name    = EXCLUDED.stadium_name
     `;
 
+    const homeAwayCols = isCountryMode
+      ? 'home_country_id, away_country_id'
+      : 'home_club_id, away_club_id';
+
+    const conflictWithGW = isCountryMode
+      ? `ON CONFLICT (id_league, id_season, home_country_id, away_country_id, game_week) WHERE home_country_id IS NOT NULL AND away_country_id IS NOT NULL DO UPDATE SET ${MATCH_UPDATE}`
+      : `ON CONFLICT (id_league, id_season, home_club_id, away_club_id, game_week) DO UPDATE SET ${MATCH_UPDATE}`;
+
     const insertMatchChunk = async (chunkRows, conflictClause) => {
       const matchParams = chunkRows.map(r => r.slice(0, MATCH_COLS)).flat();
       const matchValues = buildValues(chunkRows.length, MATCH_COLS);
 
       const res = await client.query(`
         INSERT INTO matches (
-          id_league, id_season, home_club_id, away_club_id,
+          id_league, id_season, ${homeAwayCols},
           match_timestamp, match_date, status, attendance,
           referee, stadium_name, game_week, home_goals, away_goals
         )
@@ -325,10 +383,9 @@ export async function importMatches(req, res) {
       `, statsParams);
     };
 
-    // Grupo 1: com game_week → constraint uq_match
+    // Grupo 1: com game_week → constraint uq_match (ou uq_country_match_gw em country mode)
     for (const chunkRows of chunk(rowsWithGW, 100)) {
-      const conflict = `ON CONFLICT (id_league, id_season, home_club_id, away_club_id, game_week) DO UPDATE SET ${MATCH_UPDATE}`;
-      const matchIds = await insertMatchChunk(chunkRows, conflict);
+      const matchIds = await insertMatchChunk(chunkRows, conflictWithGW);
       await insertStatsChunk(chunkRows, matchIds);
       inserted += chunkRows.length;
     }
@@ -368,9 +425,9 @@ export async function importMatches(req, res) {
 
     await client.query("COMMIT");
 
-    // Salva aliases para mapeamentos manuais (clubMappings = { csvName: idClub })
+    // Salva aliases para mapeamentos manuais (apenas modo clubes)
     let aliasResult = { saved: [], conflicts: [] };
-    if (Object.keys(clubMappings).length > 0) {
+    if (!isCountryMode && Object.keys(clubMappings).length > 0) {
       try { aliasResult = await saveClubAliases(clubMappings); }
       catch (err) { console.error("[importMatches] alias save error:", err); }
     }
@@ -451,6 +508,8 @@ export async function importPlayers(req, res) {
     const idLeague = req.body.leagueId ? Number(req.body.leagueId) : null;
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
     const nationalityMappings = req.body.nationalityMappings ? JSON.parse(req.body.nationalityMappings) : {};
+    const countryMappings = req.body.countryMappings ? JSON.parse(req.body.countryMappings) : null;
+    const isCountryMode = countryMappings !== null; // country mode quando countryMappings está presente
 
     await client.query("BEGIN");
 
@@ -478,7 +537,10 @@ export async function importPlayers(req, res) {
 
     const clubSeasonMap = new Map();
 
-    if (idLeague) {
+    // Em modo seleções o cache/auto-link de clubes não roda: além de inútil,
+    // criava club_league_seasons indevidos quando uma seleção tinha homônimo
+    // de clube (ex: seleção "Costa Rica" × clube brasileiro Costa Rica EC).
+    if (idLeague && !isCountryMode) {
       const cls = await client.query(`
         SELECT cls.id_club_league_season, c.name AS club, c.slug, c.description, s.year AS season
         FROM club_league_seasons cls
@@ -582,7 +644,7 @@ export async function importPlayers(req, res) {
           }
         }
       }
-    } else {
+    } else if (!isCountryMode) {
       const cls = await client.query(`
         SELECT
           cls.id_club_league_season,
@@ -596,6 +658,73 @@ export async function importPlayers(req, res) {
       `);
       for (const r of cls.rows) {
         clubSeasonMap.set(`${r.club}__${r.league}__${r.season}`, r.id_club_league_season);
+      }
+    }
+
+    /* ------------------------------------------------------------------
+       COUNTRY SEASON MAP — usado quando clubsAreCountries (ex: Copa do Mundo)
+    ------------------------------------------------------------------ */
+
+    const countrySeasonMap = new Map(); // key: "idCountry__year" → id_country_league_season
+
+    if (isCountryMode && idLeague) {
+      // Carrega country_league_seasons existentes para esta liga
+      const existing = await client.query(`
+        SELECT cls.id_country_league_season, cls.id_country, s.year
+        FROM country_league_seasons cls
+        JOIN seasons s ON s.id_season = cls.id_season
+        WHERE cls.id_league = $1
+      `, [idLeague]);
+      for (const r of existing.rows) {
+        countrySeasonMap.set(`${r.id_country}__${r.year}`, r.id_country_league_season);
+      }
+
+      // Resolve mapeamentos e auto-cria country_league_seasons que faltam
+      const allCountriesRes = await client.query(`SELECT id_country, name FROM countries`);
+      const allCountriesTrans = await client.query(`SELECT id_country, name AS translated_name FROM country_translations`);
+      const cNorm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+      const cIdByNorm = new Map(allCountriesRes.rows.map(c => [cNorm(c.name), c.id_country]));
+      for (const tr of allCountriesTrans.rows) {
+        const k = cNorm(tr.translated_name);
+        if (!cIdByNorm.has(k)) cIdByNorm.set(k, tr.id_country);
+      }
+      const resolveC = (name) => name ? (cIdByNorm.get(cNorm(name)) ?? null) : null;
+
+      // Pares únicos (idCountry, seasonYear) do CSV
+      const csvCountryYears = new Set();
+      for (const row of rows) {
+        if (!row["Current Club"] || !row.season) continue;
+        const rawTeam = row["Current Club"].trim();
+        const mappedId = countryMappings[rawTeam] ? Number(countryMappings[rawTeam]) : resolveC(rawTeam);
+        if (mappedId) csvCountryYears.add(`${mappedId}__${parseSeasonYear(row.season)}`);
+      }
+
+      for (const key of csvCountryYears) {
+        if (countrySeasonMap.has(key)) continue;
+        const [idCountryStr, yearStr] = key.split("__");
+        const idCountry = Number(idCountryStr);
+        const year = Number(yearStr);
+
+        // Garante season e competition_season existem
+        const sRes = await client.query(
+          `INSERT INTO seasons (year) VALUES ($1) ON CONFLICT (year) DO UPDATE SET year = EXCLUDED.year RETURNING id_season`,
+          [year]
+        );
+        const idSeason = sRes.rows[0].id_season;
+        await client.query(
+          `INSERT INTO competition_seasons (id_league, id_season) VALUES ($1, $2) ON CONFLICT (id_league, id_season) DO NOTHING`,
+          [idLeague, idSeason]
+        );
+
+        // Cria/encontra country_league_season
+        const clsRes = await client.query(
+          `INSERT INTO country_league_seasons (id_country, id_league, id_season)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (id_country, id_league, id_season) DO UPDATE SET id_country = EXCLUDED.id_country
+           RETURNING id_country_league_season`,
+          [idCountry, idLeague, idSeason]
+        );
+        countrySeasonMap.set(key, clsRes.rows[0].id_country_league_season);
       }
     }
 
@@ -673,28 +802,53 @@ export async function importPlayers(req, res) {
     console.log(`[importPlayers] clubMappings:`, clubMappings);
     console.log(`[importPlayers] total CSV rows: ${rows.length}`);
 
+    // Função auxiliar para resolver id_country de um nome de seleção
+    const cNormP = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    const cIdByNormP = new Map();
+    if (isCountryMode) {
+      const allCR = await client.query(`SELECT id_country, name FROM countries`);
+      const allCT = await client.query(`SELECT id_country, name AS translated_name FROM country_translations`);
+      for (const c of allCR.rows) cIdByNormP.set(cNormP(c.name), c.id_country);
+      for (const tr of allCT.rows) {
+        const k = cNormP(tr.translated_name);
+        if (!cIdByNormP.has(k)) cIdByNormP.set(k, tr.id_country);
+      }
+    }
+    const resolveCPlayer = (name) => name ? (cIdByNormP.get(cNormP(name)) ?? null) : null;
+
     for (const row of rows) {
       if (!row.full_name) continue;
 
       const birthday = normalizeDate(row.birthday_GMT);
       const playerKey = row.full_name;
       const idPlayer = playersMap.get(playerKey);
-
-      // Resolve nome do clube: usa mapeamento do usuário se fornecido
       const rawClub = row["Current Club"];
-      const resolvedClub = clubMappings[rawClub] ?? rawClub;
       const clubSeasonYear = parseSeasonYear(row.season);
-      let idClubLeagueSeason;
-      if (idLeague) {
-        const slug = slugify(resolvedClub, { lower: true, strict: true });
-        idClubLeagueSeason = clubSeasonMap.get(`${resolvedClub}__${clubSeasonYear}`)
-          ?? clubSeasonMap.get(`${slug}__${clubSeasonYear}`);
+
+      let idClubLeagueSeason = null;
+      let idCountryLeagueSeason = null;
+
+      if (isCountryMode) {
+        // Resolve seleção → id_country (via mapeamento do usuário ou auto-resolução)
+        const mappedId = countryMappings[rawClub] ? Number(countryMappings[rawClub]) : resolveCPlayer(rawClub);
+        if (mappedId) {
+          idCountryLeagueSeason = countrySeasonMap.get(`${mappedId}__${clubSeasonYear}`) ?? null;
+        }
       } else {
-        idClubLeagueSeason = clubSeasonMap.get(`${resolvedClub}__${row.league}__${clubSeasonYear}`);
+        // Resolve nome do clube: usa mapeamento do usuário se fornecido
+        const resolvedClub = clubMappings[rawClub] ?? rawClub;
+        if (idLeague) {
+          const slug = slugify(resolvedClub, { lower: true, strict: true });
+          idClubLeagueSeason = clubSeasonMap.get(`${resolvedClub}__${clubSeasonYear}`)
+            ?? clubSeasonMap.get(`${slug}__${clubSeasonYear}`);
+        } else {
+          idClubLeagueSeason = clubSeasonMap.get(`${resolvedClub}__${row.league}__${clubSeasonYear}`);
+        }
       }
-      const clubSeasonKey = idLeague
-        ? `${resolvedClub}__${clubSeasonYear}`
-        : `${resolvedClub}__${row.league}__${clubSeasonYear}`;
+
+      const teamSeasonKey = isCountryMode
+        ? `country:${rawClub}__${clubSeasonYear}`
+        : (idLeague ? `${rawClub}__${clubSeasonYear}` : `${rawClub}__${row.league}__${clubSeasonYear}`);
 
       if (!idPlayer) {
         skippedNoPlayer++;
@@ -704,11 +858,11 @@ export async function importPlayers(req, res) {
         }
         continue;
       }
-      if (!idClubLeagueSeason) {
+      if (!idClubLeagueSeason && !idCountryLeagueSeason) {
         skippedNoClubSeason++;
         if (debugNoClubSeason.length < 20) {
-          debugNoClubSeason.push({ full_name: row.full_name, rawClub, resolvedClub, clubSeasonKey, season: row.season });
-          console.log(`[importPlayers] noClubSeason: player="${row.full_name}" | rawClub="${rawClub}" | resolved="${resolvedClub}" | key="${clubSeasonKey}"`);
+          debugNoClubSeason.push({ full_name: row.full_name, rawClub, teamSeasonKey, season: row.season });
+          console.log(`[importPlayers] noTeamSeason: player="${row.full_name}" | rawClub="${rawClub}" | key="${teamSeasonKey}"`);
         }
         continue;
       }
@@ -716,6 +870,7 @@ export async function importPlayers(req, res) {
       playerSeasonData.push([
         idPlayer,
         idClubLeagueSeason,
+        idCountryLeagueSeason,
         toInt(row.shirt_number) || null,
         toNumber(row.market_value) || null,
         toNumber(row.annual_salary_eur) || null
@@ -774,15 +929,14 @@ export async function importPlayers(req, res) {
     }
 
     /* ------------------------------------------------------------------
-       DEDUPLICATE player_seasons — same (id_player, id_club_league_season)
-       can appear multiple times in one CSV; keep last occurrence to avoid
-       "ON CONFLICT DO UPDATE command cannot affect row a second time"
+       DEDUPLICATE player_seasons
     ------------------------------------------------------------------ */
 
-    const dedupMap = new Map(); // key → { seasonRow, statsRow }
+    const dedupMap = new Map();
     for (let i = 0; i < playerSeasonData.length; i++) {
-      const [idPlayer, idCLS] = playerSeasonData[i];
-      dedupMap.set(`${idPlayer}__${idCLS}`, { seasonRow: playerSeasonData[i], statsRow: playerStatsData[i] });
+      const [idPlayer, idCLS, idCTLS] = playerSeasonData[i];
+      const key = idCTLS ? `${idPlayer}__country:${idCTLS}` : `${idPlayer}__club:${idCLS}`;
+      dedupMap.set(key, { seasonRow: playerSeasonData[i], statsRow: playerStatsData[i] });
     }
     const dedupedSeasonData = [];
     const dedupedStatsData = [];
@@ -795,25 +949,50 @@ export async function importPlayers(req, res) {
        BULK INSERT player_seasons — RETURNING garante o id mesmo em conflito
     ------------------------------------------------------------------ */
 
-    const playerSeasonIdMap = new Map(); // key: "idPlayer__idCLS" → id_player_season
+    const playerSeasonIdMap = new Map();
 
-    for (const chunkRows of chunk(dedupedSeasonData, 500)) {
-      const values = buildValues(chunkRows.length, 5);
-      const params = chunkRows.flat();
+    if (isCountryMode) {
+      // player_seasons: (id_player, id_country_league_season, shirt_number, market_value, salary)
+      for (const chunkRows of chunk(dedupedSeasonData, 500)) {
+        const values = buildValues(chunkRows.length, 5);
+        // [idPlayer, null, idCTLS, shirt, market, salary] → reorder for query
+        const params = chunkRows.flatMap(r => [r[0], r[2], r[3], r[4], r[5]]);
 
-      const result = await client.query(`
-        INSERT INTO player_seasons
-          (id_player, id_club_league_season, shirt_number, market_value, salary)
-        VALUES ${values}
-        ON CONFLICT (id_player, id_club_league_season) DO UPDATE
-          SET shirt_number = EXCLUDED.shirt_number,
-              market_value = EXCLUDED.market_value,
-              salary       = EXCLUDED.salary
-        RETURNING id_player_season, id_player, id_club_league_season
-      `, params);
+        const result = await client.query(`
+          INSERT INTO player_seasons
+            (id_player, id_country_league_season, shirt_number, market_value, salary)
+          VALUES ${values}
+          ON CONFLICT (id_player, id_country_league_season) WHERE id_country_league_season IS NOT NULL DO UPDATE
+            SET shirt_number = EXCLUDED.shirt_number,
+                market_value = EXCLUDED.market_value,
+                salary       = EXCLUDED.salary
+          RETURNING id_player_season, id_player, id_country_league_season
+        `, params);
 
-      for (const r of result.rows) {
-        playerSeasonIdMap.set(`${r.id_player}__${r.id_club_league_season}`, r.id_player_season);
+        for (const r of result.rows) {
+          playerSeasonIdMap.set(`${r.id_player}__country:${r.id_country_league_season}`, r.id_player_season);
+        }
+      }
+    } else {
+      for (const chunkRows of chunk(dedupedSeasonData, 500)) {
+        const values = buildValues(chunkRows.length, 5);
+        // [idPlayer, idCLS, null, shirt, market, salary] → reorder
+        const params = chunkRows.flatMap(r => [r[0], r[1], r[3], r[4], r[5]]);
+
+        const result = await client.query(`
+          INSERT INTO player_seasons
+            (id_player, id_club_league_season, shirt_number, market_value, salary)
+          VALUES ${values}
+          ON CONFLICT (id_player, id_club_league_season) WHERE id_club_league_season IS NOT NULL DO UPDATE
+            SET shirt_number = EXCLUDED.shirt_number,
+                market_value = EXCLUDED.market_value,
+                salary       = EXCLUDED.salary
+          RETURNING id_player_season, id_player, id_club_league_season
+        `, params);
+
+        for (const r of result.rows) {
+          playerSeasonIdMap.set(`${r.id_player}__club:${r.id_club_league_season}`, r.id_player_season);
+        }
       }
     }
 
@@ -824,8 +1003,9 @@ export async function importPlayers(req, res) {
     const statsToInsert = [];
 
     for (let i = 0; i < dedupedSeasonData.length; i++) {
-      const [idPlayer, idCLS] = dedupedSeasonData[i];
-      const id_player_season = playerSeasonIdMap.get(`${idPlayer}__${idCLS}`);
+      const [idPlayer, idCLS, idCTLS] = dedupedSeasonData[i];
+      const key = idCTLS ? `${idPlayer}__country:${idCTLS}` : `${idPlayer}__club:${idCLS}`;
+      const id_player_season = playerSeasonIdMap.get(key);
       if (!id_player_season) continue;
       statsToInsert.push([id_player_season, ...dedupedStatsData[i]]);
     }
@@ -1596,7 +1776,7 @@ export async function previewTeams(req, res) {
     let leaguesRes;
     if (detectedCountry) {
       leaguesRes = await db.query(`
-        SELECT l.id_league, l.name, c.name AS country_name, ct.name AS continent_name
+        SELECT l.id_league, l.name, l.team_type, c.name AS country_name, ct.name AS continent_name
         FROM leagues l
         LEFT JOIN countries c ON c.id_country = l.id_country
         LEFT JOIN continents ct ON ct.id_continent = l.id_continent
@@ -1607,7 +1787,7 @@ export async function previewTeams(req, res) {
 
     // Busca todas as ligas (para o toggle "ver todas")
     const allLeaguesRes = await db.query(`
-      SELECT l.id_league, l.name, c.name AS country_name, ct.name AS continent_name
+      SELECT l.id_league, l.name, l.team_type, c.name AS country_name, ct.name AS continent_name
       FROM leagues l
       LEFT JOIN countries c ON c.id_country = l.id_country
       LEFT JOIN continents ct ON ct.id_continent = l.id_continent
@@ -1712,11 +1892,23 @@ export async function previewTeams(req, res) {
     let countryMode = false;
     let foundCountries = [];
     let notFoundCountriesData = [];
+    let allCountriesData = [];
     {
       const [cRes, ctRes] = await Promise.all([
-        db.query(`SELECT id_country, name FROM countries`),
+        db.query(`SELECT co.id_country, co.name, co.flag_url,
+               f.id_federation, f.acronym AS federation_acronym, f.name AS federation_name,
+               f.slug AS federation_slug, f.logo_url AS federation_logo
+        FROM countries co
+        LEFT JOIN LATERAL (
+          SELECT id_federation, acronym, name, slug, logo_url
+          FROM federations
+          WHERE id_country = co.id_country AND sphere = 'nacional'
+          ORDER BY id_federation LIMIT 1
+        ) f ON true
+        ORDER BY co.name ASC`),
         db.query(`SELECT id_country, name AS translated_name FROM country_translations`),
       ]);
+      allCountriesData = cRes.rows;
       const cnMap = new Map();
       for (const c of cRes.rows) cnMap.set(normalizeStr(c.name), c.id_country);
       for (const tr of ctRes.rows) {
@@ -1740,7 +1932,7 @@ export async function previewTeams(req, res) {
       allLeagues: allLeaguesRes.rows,
       foundTeams, notFoundTeams, notFoundTeamsData,
       duplicateConflicts,
-      countryMode, foundCountries, notFoundCountriesData,
+      countryMode, foundCountries, notFoundCountriesData, allCountriesData,
       allClubs: allClubs.map(c => ({
         id_club: c.id_club,
         name: c.name,
@@ -1767,19 +1959,29 @@ export async function previewMatches(req, res) {
 
     // 1. Se o CSV tem coluna "season" (ex: "2024/2025"), usa parseSeasonYear → 2025
     // 2. Senão, pega o ANO MÁXIMO encontrado nas datas das partidas
+    // 3. Último recurso: regex de ano (19xx/20xx) na string da data — cobre
+    //    formatos que new Date() não parseia e timestamps ausentes
     let detectedYear = null;
     const csvSeasonRaw = rows[0]?.season ?? null;
     if (csvSeasonRaw) {
       detectedYear = parseSeasonYear(csvSeasonRaw);
-    } else {
+    }
+    if (!detectedYear) {
+      const thisYear = new Date().getFullYear();
       for (const row of rows) {
         let yr = null;
         if (row.timestamp && Number(row.timestamp)) {
           yr = new Date(Number(row.timestamp) * 1000).getFullYear();
         } else if (row.date_GMT) {
-          const parsed = new Date(row.date_GMT.replace(" - ", " "));
+          const parsed = new Date(String(row.date_GMT).replace(" - ", " "));
           if (!isNaN(parsed)) yr = parsed.getFullYear();
+          if (!yr) {
+            const m = String(row.date_GMT).match(/\b(19|20)\d{2}\b/);
+            if (m) yr = Number(m[0]);
+          }
         }
+        // ignora anos absurdos (timestamp corrompido etc.)
+        if (yr && (yr < 1900 || yr > thisYear + 2)) yr = null;
         if (yr && yr > (detectedYear ?? 0)) detectedYear = yr;
       }
     }
@@ -1832,7 +2034,7 @@ export async function previewMatches(req, res) {
     }
 
     const ALL_LEAGUES_QUERY = `
-      SELECT l.id_league, l.name, c.id_country, c.name AS country_name, ct.name AS continent_name
+      SELECT l.id_league, l.name, l.team_type, c.id_country, c.name AS country_name, ct.name AS continent_name
       FROM leagues l
       LEFT JOIN countries c ON c.id_country = l.id_country
       LEFT JOIN continents ct ON ct.id_continent = l.id_continent
@@ -1847,7 +2049,7 @@ export async function previewMatches(req, res) {
       leaguesRes = await db.query(ALL_LEAGUES_QUERY);
     } else if (detectedCountry) {
       leaguesRes = await db.query(`
-        SELECT l.id_league, l.name, c.id_country, c.name AS country_name, ct.name AS continent_name
+        SELECT l.id_league, l.name, l.team_type, c.id_country, c.name AS country_name, ct.name AS continent_name
         FROM leagues l
         LEFT JOIN countries c ON c.id_country = l.id_country
         LEFT JOIN continents ct ON ct.id_continent = l.id_continent
@@ -1884,10 +2086,48 @@ export async function previewMatches(req, res) {
       }
     }
 
+    // Detecta se os times são países (Copa do Mundo etc.) — mesma lógica do previewTeams
+    let countryMode = false;
+    let foundCountries = [];
+    let notFoundCountriesData = [];
+    let allCountriesData = [];
+    {
+      const [cRes, ctRes] = await Promise.all([
+        db.query(`SELECT co.id_country, co.name, co.flag_url,
+               f.id_federation, f.acronym AS federation_acronym, f.name AS federation_name,
+               f.slug AS federation_slug, f.logo_url AS federation_logo
+        FROM countries co
+        LEFT JOIN LATERAL (
+          SELECT id_federation, acronym, name, slug, logo_url
+          FROM federations
+          WHERE id_country = co.id_country AND sphere = 'nacional'
+          ORDER BY id_federation LIMIT 1
+        ) f ON true
+        ORDER BY co.name ASC`),
+        db.query(`SELECT id_country, name AS translated_name FROM country_translations`),
+      ]);
+      allCountriesData = cRes.rows;
+      const cnMap = new Map();
+      const cNorm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+      for (const c of cRes.rows) cnMap.set(cNorm(c.name), c.id_country);
+      for (const tr of ctRes.rows) {
+        const k = cNorm(tr.translated_name);
+        if (!cnMap.has(k)) cnMap.set(k, tr.id_country);
+      }
+      const resolveC = (name) => name ? (cnMap.get(cNorm(name)) ?? null) : null;
+
+      for (const name of uniqueTeamNames) {
+        if (resolveC(name)) foundCountries.push(name);
+        else notFoundCountriesData.push({ name, country_name: csvMatchTeamCountry[name] ?? null });
+      }
+      countryMode = foundCountries.length > foundTeams.length && foundCountries.length > 0;
+    }
+
     res.json({
       detectedYear, rowCount: rows.length, isMultiCountry,
       leagues: leaguesRes.rows,
       foundTeams, notFoundTeams, notFoundTeamsData,
+      countryMode, foundCountries, notFoundCountriesData, allCountriesData,
       allClubs: allClubsRes.rows.map(c => ({
         id_club: c.id_club,
         name: c.name,
@@ -1992,11 +2232,22 @@ export async function previewPlayers(req, res) {
 
     // Países — inclui flag_url para o SearchableSelect com bandeiras
     const [countriesRes, natTransRes] = await Promise.all([
-      db.query(`SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`),
+      db.query(`SELECT co.id_country, co.name, co.flag_url,
+               f.id_federation, f.acronym AS federation_acronym, f.name AS federation_name,
+               f.slug AS federation_slug, f.logo_url AS federation_logo
+        FROM countries co
+        LEFT JOIN LATERAL (
+          SELECT id_federation, acronym, name, slug, logo_url
+          FROM federations
+          WHERE id_country = co.id_country AND sphere = 'nacional'
+          ORDER BY id_federation LIMIT 1
+        ) f ON true
+        ORDER BY co.name ASC`),
       db.query(`SELECT id_country, name AS translated_name FROM country_translations`),
     ]);
     const normalize = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const countryNameById = new Map(countriesRes.rows.map(c => [c.id_country, c.name]));
+    const countryIdByNorm = new Map(countriesRes.rows.map(c => [normalize(c.name), c.id_country]));
     const dbCountryByNorm = new Map(countriesRes.rows.map(c => [normalize(c.name), c.name]));
     for (const tr of natTransRes.rows) {
       const normKey = normalize(tr.translated_name);
@@ -2004,7 +2255,18 @@ export async function previewPlayers(req, res) {
         const canonical = countryNameById.get(tr.id_country);
         if (canonical) dbCountryByNorm.set(normKey, canonical);
       }
+      if (!countryIdByNorm.has(normKey)) countryIdByNorm.set(normKey, tr.id_country);
     }
+    const resolveCountryId = (name) => name ? (countryIdByNorm.get(normalize(name)) ?? null) : null;
+
+    // Detectar country mode: "clubes" no CSV são na verdade seleções nacionais.
+    // foundCountryTeams/notFoundCountryTeams são sempre retornados para o frontend
+    // poder alternar para modo seleções quando a liga tem team_type = 'national',
+    // mesmo que a heurística clubsAreCountries não dispare.
+    const foundAsCountries = csvClubs.filter(n => resolveCountryId(n));
+    const clubsAreCountries = foundAsCountries.length > foundClubs.length && foundAsCountries.length > 0;
+    const notFoundCountryTeams = csvClubs.filter(n => !resolveCountryId(n));
+    const foundCountryTeams = foundAsCountries;
 
     const foundNationalities = csvNationalities.filter(n => dbCountryByNorm.has(normalize(n)));
     const notFoundNationalities = csvNationalities.filter(n => !dbCountryByNorm.has(normalize(n)));
@@ -2019,7 +2281,7 @@ export async function previewPlayers(req, res) {
     let leaguesRes;
     if (detectedCountry) {
       leaguesRes = await db.query(`
-        SELECT l.id_league, l.name, c.name AS country_name, ct.name AS continent_name
+        SELECT l.id_league, l.name, l.team_type, c.name AS country_name, ct.name AS continent_name
         FROM leagues l
         LEFT JOIN countries c ON c.id_country = l.id_country
         LEFT JOIN continents ct ON ct.id_continent = l.id_continent
@@ -2030,7 +2292,7 @@ export async function previewPlayers(req, res) {
 
     if (!detectedCountry || !leaguesRes?.rows.length) {
       leaguesRes = await db.query(`
-        SELECT l.id_league, l.name, c.name AS country_name, ct.name AS continent_name
+        SELECT l.id_league, l.name, l.team_type, c.name AS country_name, ct.name AS continent_name
         FROM leagues l
         LEFT JOIN countries c ON c.id_country = l.id_country
         LEFT JOIN continents ct ON ct.id_continent = l.id_continent
@@ -2049,6 +2311,9 @@ export async function previewPlayers(req, res) {
       foundLeague,
       foundClubs,
       notFoundClubs,
+      clubsAreCountries,
+      foundCountryTeams,
+      notFoundCountryTeams,
       allLeagues: leaguesRes.rows,
       allClubs: clubsRes.rows,
       foundNationalities,
@@ -2136,7 +2401,7 @@ export async function previewLeaguesBulk(req, res) {
     const rows = parseLeagueCSV(req.file.buffer);
 
     const [countriesRes, leaguesRes] = await Promise.all([
-      db.query(`SELECT id_country, name, flag_url FROM countries WHERE active = true ORDER BY name`),
+      db.query(`SELECT id_country, name, flag_url FROM countries ORDER BY name`),
       db.query(`SELECT name, id_country FROM leagues`),
     ]);
 
@@ -2190,7 +2455,7 @@ export async function importLeaguesBulk(req, res) {
   const rows = parseLeagueCSV(req.file.buffer);
 
   const countriesRes = await db.query(
-    `SELECT id_country, name FROM countries WHERE active = true`
+    `SELECT id_country, name FROM countries`
   );
   const dbNameMap = new Map(
     countriesRes.rows.map((c) => [c.name.toLowerCase().trim(), c.id_country])

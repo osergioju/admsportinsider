@@ -43,6 +43,7 @@ export default function UploadFederationFinancialPage() {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("sheet", sheet);
+      if (leagueId) fd.append("id_league", leagueId);
       const { data } = await api.post("/admin/federation-financial/preview", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -117,7 +118,7 @@ export default function UploadFederationFinancialPage() {
               onChange={e => setSheet(e.target.value)}
               placeholder="ex: Fifa, Euro, Copa América"
             />
-            <p className="text-xs text-gray-400 mt-1">Nome exato da aba do Excel com os dados financeiros.</p>
+            <p className="text-xs text-gray-400 mt-1">Nome exato da aba do Excel com os dados financeiros. Se o arquivo tiver uma única aba, ela é usada automaticamente.</p>
           </div>
 
           {/* Liga vinculada (opcional) */}
@@ -178,7 +179,10 @@ export default function UploadFederationFinancialPage() {
                   {preview.editions.map(ed => (
                     <tr key={ed.slug} className="border-b border-gray-50 hover:bg-gray-50/50">
                       <td className="py-2.5 font-medium text-gray-800">{ed.name || ed.slug}</td>
-                      <td className="py-2.5 text-gray-400 font-mono text-xs">{ed.slug}</td>
+                      <td className="py-2.5 text-gray-400 font-mono text-xs">
+                        {ed.slug}
+                        {ed.matchedSlug && <span className="block text-[10px] text-emerald-600">→ {ed.matchedSlug}</span>}
+                      </td>
                       <td className="py-2.5 text-gray-500 text-xs">{ed.years?.[0]}–{ed.years?.[ed.years.length - 1]}</td>
                       <td className="py-2.5 text-gray-500">{ed.currency}</td>
                       <td className="py-2.5 text-right text-gray-700 font-medium">{ed.rows}</td>

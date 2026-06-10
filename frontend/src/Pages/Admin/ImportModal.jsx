@@ -33,7 +33,7 @@ function RegisterCountryModal({ suggestion, onClose, onCreated }) {
       });
 
       // Busca o país recém-criado pra pegar o id_country
-      const res = await api.get("/admin/countries?onlyActive=true&limit=500");
+      const res = await api.get("/admin/countries?limit=500");
       const created = res.data.countries.find(
         (c) => c.name.toLowerCase() === name.trim().toLowerCase()
       );

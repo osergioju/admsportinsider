@@ -2,14 +2,37 @@ import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { clubUrl } from "../../../utils/clubUrl";
-import { Loader2, Trophy, ChevronsDown } from "lucide-react";
+import { Loader2, Trophy, ChevronsDown, ArrowRight } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
+import { federationLogo } from "../../../utils/federationUrl";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function ClubLink({ id, slug, hidden, className, children }) {
+function ClubLink({ id, slug, hidden, className, children, federationSlug, isCountry, federationActive }) {
   if (hidden) return <span className={className}>{children}</span>;
+  // Seleções: navega para a página da federação (CBF, DFB...) somente se ela está
+  // ativa — federação desativada no modo manutenção não recebe link
+  if (federationSlug && federationActive) return <Link to={`/dashboard/federations/${federationSlug}`} className={className}>{children}</Link>;
+  if (isCountry || federationSlug) return <span className={className}>{children}</span>;
   return <Link to={clubUrl(id, slug)} className={className}>{children}</Link>;
+}
+
+// Resolve a imagem de um time: seleções usam o escudo da federação (CBF, DFB...);
+// clubes usam o escudo do clube; bandeira do país é o último fallback.
+function teamImg(t) {
+  if (!t) return null;
+  if (t.federation_slug) return federationLogo(t.federation_slug, "medium");
+  if (t.crest && String(t.crest).startsWith("http")) return t.crest; // bandeira (seleção sem federação)
+  if (t.slug) return `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${t.slug}.webp`;
+  if (t.crest) return `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${t.crest}.webp`;
+  return null;
+}
+
+function TeamCrest({ team, size = "w-5 h-5" }) {
+  const src = teamImg(team);
+  return src
+    ? <img src={src} alt="" className={`${size} object-contain shrink-0`} onError={e => { e.currentTarget.style.visibility = "hidden"; }} />
+    : <div className={`${size} rounded-full bg-gray-100 shrink-0`} />;
 }
 
 const fmtDate = d => d
@@ -51,19 +74,10 @@ function DisciplinaryTable({ rows, t }) {
               <td className="px-3 py-3 text-center font-semibold text-gray-400">{i + 1}</td>
               <td className="px-3 py-3">
                 <ClubLink
-                  id={row.id} slug={row.slug} hidden={row.hidden}
+                  id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active}
                   className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700"
                 >
-                  {row.crest ? (
-                    <img
-                      src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${row.crest}.webp`}
-                      alt=""
-                      className="w-5 h-5 object-contain shrink-0"
-                    />
-                  ) : (
-                    <div className="w-5 h-5 rounded bg-gray-100 shrink-0" />
-                  )}
-
+                  <TeamCrest team={row} />
                   {row.name}
                 </ClubLink>
               </td>
@@ -167,13 +181,10 @@ function StandingsTable({ rows, t, seasonConfig, legendContLabel }) {
 
                 <td className="px-3 py-3 sticky left-[40px] bg-white z-10">
                   <ClubLink
-                    id={row.id} slug={row.slug} hidden={row.hidden}
+                    id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active}
                     className={`flex items-center gap-2.5 hover:text-violet-700 transition-colors ${pos === 1 ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}
                   >
-                    {row.slug
-                      ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + row.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
-                      : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />
-                    }
+                    <TeamCrest team={row} />
                     <span className="truncate">{row.name}</span>
                   </ClubLink>
                 </td>
@@ -267,6 +278,11 @@ function ConfrontoCard({ confronto }) {
   const aggDone = allFinished && agg1 !== null && agg2 !== null;
   let winner = null;
   if (aggDone && agg1 !== agg2) winner = agg1 > agg2 ? team1.id : team2.id;
+  // Empate no agregado: usa o vencedor definido no admin (pênaltis/critério manual)
+  if (aggDone && winner === null) {
+    const manual = [...legs].reverse().find(l => l.winner_id != null)?.winner_id ?? null;
+    if (manual === team1.id || manual === team2.id) winner = manual;
+  }
 
   // ── Double-legged (Ida / Volta / Agr) ──────────────────────────────────────
   if (isDoubleLegged) {
@@ -305,10 +321,8 @@ function ConfrontoCard({ confronto }) {
       const aggScore = agg[team.id] ?? null;
       return (
         <div className={`flex items-center gap-1.5 px-3 py-2.5 ${isLoser ? "opacity-100" : ""}`}>
-          {team.crest
-            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + team.crest + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
-            : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
-          <ClubLink id={team.id} slug={team.slug} hidden={team.hidden}
+          <TeamCrest team={team} />
+          <ClubLink id={team.id} slug={team.slug} hidden={team.hidden} federationSlug={team.federation_slug} isCountry={team.is_country} federationActive={team.federation_active}
             className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
               ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
             {team.name}
@@ -344,13 +358,15 @@ function ConfrontoCard({ confronto }) {
   const finished = s1 !== null && s2 !== null;
   let singleWinner = null;
   if (finished && s1 !== s2) singleWinner = s1 > s2 ? team1.id : team2.id;
+  // Empate: vencedor manual definido no admin (pênaltis)
+  else if (finished && leg?.winner_id != null && (leg.winner_id === team1.id || leg.winner_id === team2.id)) {
+    singleWinner = leg.winner_id;
+  }
 
   const SingleRow = ({ team, score, isWinner, isLoser }) => (
     <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-35" : ""}`}>
-      {team.crest
-        ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + team.crest + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
-        : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
-      <ClubLink id={team.id} slug={team.slug} hidden={team.hidden}
+      <TeamCrest team={team} />
+      <ClubLink id={team.id} slug={team.slug} hidden={team.hidden} federationSlug={team.federation_slug} isCountry={team.is_country} federationActive={team.federation_active}
         className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
           ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
         {team.name}
@@ -368,10 +384,11 @@ function ConfrontoCard({ confronto }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:border-gray-200 transition-colors">
       {leg && (
-        <div className="px-4 pt-2 pb-1.5 border-b border-gray-50">
+        <div className="px-4 pt-2 pb-1.5 border-b border-gray-50 flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-gray-400">{fmtDate(leg.date)}</span>
           <Link to={`/dashboard/matches/${leg.id}`}
-            className="text-xs font-semibold text-gray-400 hover:text-violet-600 transition-colors">
-            {fmtDate(leg.date)}
+            className="flex items-center gap-1 text-[11px] font-bold text-violet-500 hover:text-violet-700 transition-colors shrink-0">
+            Ver partida <ArrowRight size={11} />
           </Link>
         </div>
       )}
@@ -390,7 +407,7 @@ function computeLeagueStandings(games) {
   const stats = {};
   for (const g of games) {
     for (const side of [g.home, g.away]) {
-      if (!stats[side.id]) stats[side.id] = { id: side.id, name: side.name, crest: side.crest, slug: side.slug ?? null, hidden: side.hidden ?? false, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
+      if (!stats[side.id]) stats[side.id] = { id: side.id, name: side.name, crest: side.crest, slug: side.slug ?? null, hidden: side.hidden ?? false, federation_active: side.federation_active ?? false, is_country: side.is_country ?? false, federation_slug: side.federation_slug ?? null, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
     }
     if (g.home_goals == null || g.away_goals == null) continue;
     const h = stats[g.home.id], a = stats[g.away.id];
@@ -436,13 +453,25 @@ function computeGroupStandings(games) {
     }
     groups.push(group);
   }
-  groups.sort((a, b) => Math.min(...a) - Math.min(...b));
+  // Ordena os grupos pela data do primeiro jogo de cada um: o grupo do jogo de
+  // abertura vira o Grupo A, e assim por diante (ex: Catar 2022 → Grupo A do Catar)
+  const firstGameOf = (groupIds) => {
+    const idSet = new Set(groupIds);
+    let first = Infinity;
+    for (const g of games) {
+      if (!idSet.has(g.home.id) || !idSet.has(g.away.id)) continue;
+      const t = new Date(g.date ?? 0).getTime();
+      if (t && t < first) first = t;
+    }
+    return first;
+  };
+  groups.sort((a, b) => firstGameOf(a) - firstGameOf(b) || Math.min(...a) - Math.min(...b));
   return groups.map(groupIds => {
     const idSet = new Set(groupIds);
     const stats = {};
     for (const id of groupIds) {
       const info = teamInfo.get(id);
-      stats[id] = { id, name: info?.name ?? "", crest: info?.crest ?? null, slug: info?.slug ?? null, hidden: info?.hidden ?? false, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
+      stats[id] = { id, name: info?.name ?? "", crest: info?.crest ?? null, slug: info?.slug ?? null, hidden: info?.hidden ?? false, federation_active: info?.federation_active ?? false, is_country: info?.is_country ?? false, federation_slug: info?.federation_slug ?? null, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
     }
     for (const g of games) {
       if (!idSet.has(g.home.id) || !idSet.has(g.away.id)) continue;
@@ -767,10 +796,8 @@ function GroupPhaseView({ phase, t, adminGroups }) {
                         {row.pos}
                       </td>
                       <td className="px-2 py-2 max-w-[120px]">
-                        <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
-                          {row.crest
-                            ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + row.crest + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
-                            : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
+                        <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                          <TeamCrest team={row} size="w-4 h-4" />
                           <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>
                             {row.name}
                           </span>
@@ -814,10 +841,10 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
   // Índice de info de times (nome + crest) a partir dos standings ou jogos
   const teamInfo = useMemo(() => {
     const info = {};
-    for (const r of (activeStandings ?? [])) info[r.id] = { name: r.name, crest: r.crest };
+    for (const r of (activeStandings ?? [])) info[r.id] = { name: r.name, crest: r.crest, slug: r.slug ?? null, federation_slug: r.federation_slug ?? null, federation_active: r.federation_active ?? false, is_country: r.is_country ?? false };
     for (const g of flatGames) {
-      if (!info[g.home.id]) info[g.home.id] = { name: g.home.name, crest: g.home.crest };
-      if (!info[g.away.id]) info[g.away.id] = { name: g.away.name, crest: g.away.crest };
+      if (!info[g.home.id]) info[g.home.id] = { name: g.home.name, crest: g.home.crest, slug: g.home.slug ?? null, federation_slug: g.home.federation_slug ?? null, federation_active: g.home.federation_active ?? false, is_country: g.home.is_country ?? false };
+      if (!info[g.away.id]) info[g.away.id] = { name: g.away.name, crest: g.away.crest, slug: g.away.slug ?? null, federation_slug: g.away.federation_slug ?? null, federation_active: g.away.federation_active ?? false, is_country: g.away.is_country ?? false };
     }
     return info;
   }, [activeStandings, flatGames]);
@@ -879,6 +906,9 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
           id,
           name: teamInfo[id]?.name ?? '',
           crest: teamInfo[id]?.crest ?? null,
+          slug: teamInfo[id]?.slug ?? null,
+          federation_slug: teamInfo[id]?.federation_slug ?? null,
+          federation_active: teamInfo[id]?.federation_active ?? false, is_country: teamInfo[id]?.is_country ?? false,
           j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0,
         }])
       );
@@ -953,10 +983,8 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
                       {ri + 1}
                     </td>
                     <td className="px-3 py-2">
-                      <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
-                        {row.slug
-                          ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
-                          : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
+                      <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                        <TeamCrest team={row} size="w-4 h-4" />
                         <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>{row.name}</span>
                       </ClubLink>
                     </td>
@@ -1041,10 +1069,8 @@ function TorneioPanelView({ matchesForPhase, adminGroups, activeStandings, grupo
                               {row.pos}
                             </td>
                             <td className="px-2 py-2">
-                              <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
-                                {row.slug
-                                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + row.slug + `.webp`} alt="" className="w-4 h-4 object-contain shrink-0" />
-                                  : <div className="w-4 h-4 rounded-full bg-gray-100 shrink-0" />}
+                              <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active} className="flex items-center gap-1.5 hover:text-violet-700 transition-colors">
+                                <TeamCrest team={row} size="w-4 h-4" />
                                 <span className={`truncate ${advances ? "font-semibold text-gray-800" : "font-medium text-gray-600"}`}>
                                   {row.name}
                                 </span>
@@ -1130,19 +1156,45 @@ function BracketView({ matches, structure_json, season, t, fasesOverride, groupC
   const finalPhase = knockoutPhases[knockoutPhases.length - 1];
   const finalConf = finalPhase?.confrontos[0];
   const champion = finalConf ? (() => {
-    const { team1, team2, agg } = finalConf;
+    const { team1, team2, agg, legs } = finalConf;
     const a1 = agg[team1.id] ?? null;
     const a2 = agg[team2.id] ?? null;
     if (a1 === null || a2 === null) return null;
     if (a1 > a2) return team1;
     if (a2 > a1) return team2;
+    // Final empatada: campeão definido manualmente no admin (pênaltis)
+    const manual = [...legs].reverse().find(l => l.winner_id != null)?.winner_id ?? null;
+    if (manual === team1.id) return team1;
+    if (manual === team2.id) return team2;
     return null;
   })() : null;
 
+  // Exibição invertida: campeão e fases finais primeiro, fases iniciais por último
+  const displayPhases = [...phases].reverse();
+
   return (
     <div className="flex flex-col items-center gap-0 w-full">
-      {phases.map((phase, pi) => {
-        const isLast = pi === phases.length - 1;
+      {/* Champion no topo */}
+      {champion && (
+        <div className="flex flex-col items-center gap-3 w-full max-w-[280px] mb-6">
+          <div className="w-full bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 shadow-sm">
+            <div className="w-1 self-stretch rounded-full bg-gray-900 shrink-0" />
+            <TeamCrest team={champion} size="w-10 h-10" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Campeão</p>
+              <ClubLink id={champion.id} slug={champion.slug} hidden={champion.hidden} federationSlug={champion.federation_slug} isCountry={champion.is_country} federationActive={champion.federation_active}
+                className="text-base font-bold text-gray-900 hover:text-violet-700 transition-colors truncate block">
+                {champion.name}
+              </ClubLink>
+            </div>
+          </div>
+          <div className="flex flex-col items-center text-gray-200">
+            <div className="w-px h-5 bg-gray-200" />
+          </div>
+        </div>
+      )}
+      {displayPhases.map((phase, pi) => {
+        const isLast = pi === displayPhases.length - 1;
 
         // ── Group stage ───────────────────────────────────────────────────────
         if (phase.tipo === "grupo") {
@@ -1210,10 +1262,8 @@ function BracketView({ matches, structure_json, season, t, fasesOverride, groupC
                               <span className="text-sm font-bold text-gray-400 block text-center tabular-nums">{row.pos}</span>
                             </td>
                             <td className="px-3 py-2.5">
-                              <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-medium text-gray-700">
-                                {row.slug
-                                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${row.slug}.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
-                                  : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
+                              <ClubLink id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active} className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-medium text-gray-700">
+                                <TeamCrest team={row} />
                                 <span className="truncate">{row.name}</span>
                               </ClubLink>
                             </td>
@@ -1287,28 +1337,6 @@ function BracketView({ matches, structure_json, season, t, fasesOverride, groupC
         );
       })}
 
-      {/* Champion — clean, no crown, no gradient */}
-      {champion && (
-        <div className="flex flex-col items-center mt-5 gap-3 w-full max-w-[280px] mb-10">
-          <div className="flex flex-col items-center text-gray-200">
-            <div className="w-px h-5 bg-gray-200" />
-            <ChevronsDown size={16} />
-          </div>
-          <div className="w-full bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 shadow-sm">
-            <div className="w-1 self-stretch rounded-full bg-gray-900 shrink-0" />
-            {champion.crest && (
-              <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_` + champion.crest + `.webp`} alt="" className="w-10 h-10 object-contain shrink-0" />
-            )}
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Campeão</p>
-              <ClubLink id={champion.id} slug={champion.slug} hidden={champion.hidden}
-                className="text-base font-bold text-gray-900 hover:text-violet-700 transition-colors truncate block">
-                {champion.name}
-              </ClubLink>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1322,7 +1350,7 @@ function MatchCard({ m }) {
       className="flex items-center gap-2 py-3 px-4 hover:bg-gray-50 transition-colors group">
       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
         <span className="text-sm font-medium text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.home.name}</span>
-        {m.home.slug && <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + m.home.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />}
+        <TeamCrest team={m.home} />
       </div>
       <div className="flex flex-col items-center shrink-0 min-w-[64px]">
         {finished
@@ -1336,7 +1364,7 @@ function MatchCard({ m }) {
         )}
       </div>
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {m.away.slug && <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + m.away.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />}
+        <TeamCrest team={m.away} />
         <span className="text-sm font-medium text-gray-700 truncate group-hover:text-violet-700 transition-colors">{m.away.name}</span>
       </div>
     </Link>
@@ -1551,11 +1579,11 @@ export default function LeagueSportsSection({ leagueId }) {
         <>
           <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
             {!loading && leader ? (
-              <ClubLink id={leader.id} slug={leader.slug} hidden={leader.hidden}
+              <ClubLink id={leader.id} slug={leader.slug} hidden={leader.hidden} federationSlug={leader.federation_slug} isCountry={leader.is_country} federationActive={leader.federation_active}
                 className="flex items-center gap-2 min-w-0 group">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0 hidden lg:block">CAMPEÃO</span>
-                {leader.slug
-                  ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + leader.slug + `.webp`} alt="" className="w-5 h-5 object-contain shrink-0" />
+                {teamImg(leader)
+                  ? <TeamCrest team={leader} />
                   : <Trophy size={16} className="text-gray-300 shrink-0" />
                 }
                 <span className="text-sm font-bold text-gray-900 group-hover:text-violet-700 transition-colors truncate">
