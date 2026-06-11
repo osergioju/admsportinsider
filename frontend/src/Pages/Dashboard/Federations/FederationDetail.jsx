@@ -25,6 +25,17 @@ function resolveColors(primary, secondary, tertiary) {
   return [c1, c2, c3];
 }
 
+// Primeira cor visível sobre fundo branco (pula brancos/quase-brancos)
+function pickChartColor(...colors) {
+  for (const c of colors) {
+    const rgb = hexToRgb(c);
+    if (!rgb) continue;
+    const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+    if (lum < 0.85) return c;
+  }
+  return "#7F33D9";
+}
+
 function lighten(hex, amount = 0.7) {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
@@ -214,6 +225,7 @@ export default function FederationDetail() {
     : glowPrimary;
 
   const colorWOpacity = lighten(c1, 0.7);
+  const chartColor = pickChartColor(federation.primary_color, federation.secondary_color, federation.tertiary_color);
 
   // ── Dados financeiros ──────────────────────────────────────────────────────
   const hasFinancials = editions && editions.length > 0;
@@ -336,14 +348,14 @@ export default function FederationDetail() {
                 {/* Botão Indicadores financeiros (onde fica Hospitalidade nos clubes) */}
                 {hasFinancials && (
                   <div className="flex items-start lg:items-center py-1">
-                    <a
-                      href="#financials"
-                      className="flex items-center gap-2 text-[#0A0A0A] font-[400] text-sm lg:text-[15px] py-3 px-5 rounded-full transition-all hover:brightness-[1.05]"
+                    <button
+                      onClick={() => navigate(`/dashboard/federations/finance/${slug}`)}
+                      className="flex items-center gap-2 cursor-pointer text-[#0A0A0A] font-[400] text-sm lg:text-[15px] py-3 px-5 rounded-full transition-all hover:brightness-[1.05]"
                       style={{ background: `linear-gradient(to right, #ffffff, ${colorWOpacity})` }}
                     >
                       <TrendingUp size={15} />
                       Indicadores financeiros
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>
@@ -419,7 +431,7 @@ export default function FederationDetail() {
               <div className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
                 <div className="flex flex-wrap w-full items-center">
                   <div className="w-full lg:w-1/2">
-                    <CycleBarChart editions={editions} field="revenue_converted" color={c1} />
+                    <CycleBarChart editions={editions} field="revenue_converted" color={chartColor} />
                   </div>
                   <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                     <h2

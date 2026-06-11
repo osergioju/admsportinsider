@@ -146,7 +146,7 @@ export async function getLeagueById(req, res) {
     LEFT JOIN countries c ON c.id_country = l.id_country
     LEFT JOIN continents ct ON ct.id_continent = l.id_continent
     LEFT JOIN federations f ON f.id_federation = l.id_federation
-    WHERE (CASE WHEN $1 ~ '^\d+$' THEN l.id_league = $1::integer ELSE l.slug = $1 END)
+    WHERE (CASE WHEN $1 ~ '^\\d+$' THEN l.id_league = $1::integer ELSE l.slug = $1 END)
   `, [id]);
 
     if (result.rows.length === 0) {
@@ -962,7 +962,8 @@ export async function getDashboardFederationBySlug(req, res) {
     const fedResult = await db.query(
       `SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
               primary_color, secondary_color, tertiary_color, full_name,
-              city_name, TO_CHAR(founded_at, 'YYYY-MM-DD') AS founded_at
+              city_name, TO_CHAR(founded_at, 'YYYY-MM-DD') AS founded_at,
+              financial_league_id
        FROM federations WHERE slug = $1 AND active = true`,
       [slug]
     );
@@ -1015,14 +1016,14 @@ export async function getAllFederations(req, res) {
 }
 
 export async function createFederation(req, res) {
-  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country } = req.body;
+  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country, primary_color, secondary_color, tertiary_color } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
     // Federação com país é nacional por definição (CBF, DBU...)
     const result = await db.query(
-      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug, full_name, city_name, founded_at, id_country, sphere) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id_federation",
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, id_country ? "nacional" : null]
+      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug, full_name, city_name, founded_at, id_country, sphere, primary_color, secondary_color, tertiary_color) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id_federation",
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, id_country ? "nacional" : null, primary_color || null, secondary_color || null, tertiary_color || null]
     );
     return res.status(201).json({ id_federation: result.rows[0].id_federation, message: "Federação criada com sucesso!" });
   } catch (err) {
@@ -1034,16 +1035,17 @@ export async function createFederation(req, res) {
 
 export async function updateFederation(req, res) {
   const { id } = req.params;
-  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country } = req.body;
+  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country, primary_color, secondary_color, tertiary_color } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
     await db.query(
       `UPDATE federations SET name = $1, acronym = $2, logo_url = $3, sort_order = $4, slug = $5,
          full_name = $6, city_name = $7, founded_at = $8, id_country = $9,
-         sphere = CASE WHEN $9::int IS NOT NULL AND sphere IS NULL THEN 'nacional' ELSE sphere END
-       WHERE id_federation = $10`,
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, id]
+         sphere = CASE WHEN $9::int IS NOT NULL AND sphere IS NULL THEN 'nacional' ELSE sphere END,
+         primary_color = $10, secondary_color = $11, tertiary_color = $12
+       WHERE id_federation = $13`,
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, primary_color || null, secondary_color || null, tertiary_color || null, id]
     );
     return res.json({ message: "Federação atualizada com sucesso!" });
   } catch (err) {

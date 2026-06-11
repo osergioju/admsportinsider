@@ -11,7 +11,7 @@ export default function GestaoFederacoes() {
     const [countries, setCountries] = useState([]);
     const [modalMode, setModalMode] = useState(null); // null | "create" | "edit" | "delete"
     const [current, setCurrent] = useState(null);
-    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "" });
+    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "", primary_color: "", secondary_color: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -42,14 +42,14 @@ export default function GestaoFederacoes() {
     );
 
     const openCreate = () => {
-        setForm({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "" });
+        setForm({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "", primary_color: "", secondary_color: "" });
         setError("");
         setModalMode("create");
     };
 
     const openEdit = (f) => {
         setCurrent(f);
-        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", sort_order: f.sort_order, full_name: f.full_name || "", city_name: f.city_name || "", founded_at: f.founded_at || "", id_country: f.id_country ? String(f.id_country) : "" });
+        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", sort_order: f.sort_order, full_name: f.full_name || "", city_name: f.city_name || "", founded_at: f.founded_at || "", id_country: f.id_country ? String(f.id_country) : "", primary_color: f.primary_color || "", secondary_color: f.secondary_color || "" });
         setError("");
         setModalMode("edit");
     };
@@ -336,6 +336,32 @@ export default function GestaoFederacoes() {
                                                 value={form.founded_at}
                                                 onChange={(e) => setForm({ ...form, founded_at: e.target.value })}
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Cores — usadas como fundo nas páginas (ligas sem cor própria herdam) */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className={labelClass}>Cor primária <span className="text-gray-300 normal-case font-normal tracking-normal">(fundo)</span></label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white shrink-0"
+                                                    value={form.primary_color || "#02285b"}
+                                                    onChange={(e) => setForm({ ...form, primary_color: e.target.value })} />
+                                                <input type="text" className={inputClass} placeholder="#02285b"
+                                                    value={form.primary_color}
+                                                    onChange={(e) => setForm({ ...form, primary_color: e.target.value })} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Cor secundária</label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="color" className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white shrink-0"
+                                                    value={form.secondary_color || "#ffffff"}
+                                                    onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} />
+                                                <input type="text" className={inputClass} placeholder="#ffffff"
+                                                    value={form.secondary_color}
+                                                    onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} />
+                                            </div>
                                         </div>
                                     </div>
 

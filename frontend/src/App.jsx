@@ -118,6 +118,7 @@ import AdminProfile from "./Pages/Admin/Componentes/AdminPersonalData";
 import MatchDetail from "./Pages/Dashboard/Matches/MatchDetail";
 import DashFederations from "./Pages/Dashboard/Federations/Index";
 import FederationDetail from "./Pages/Dashboard/Federations/FederationDetail";
+import DashFederationFinance from "./Pages/Dashboard/Federations/DashFederationFinance";
 
 
 export default function App() {
@@ -192,6 +193,7 @@ export default function App() {
 
           {/* Ligas */}
           <Route path="/dashboard/federations" element={<DashFederations />} />
+          <Route path="/dashboard/federations/finance/:slug" element={<DashFederationFinance />} />
           <Route path="/dashboard/federations/:slug" element={<FederationDetail />} />
 
           <Route path="/dashboard/competitions" element={<DashLeagues />} />
