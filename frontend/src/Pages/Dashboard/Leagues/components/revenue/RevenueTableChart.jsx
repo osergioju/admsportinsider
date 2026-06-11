@@ -7,7 +7,8 @@ export default function RevenueTableChart({
   ligasSelecionadas,
   leagueMap,
   mainLeagueId,
-  leagueColor
+  leagueColor,
+  yearLogos = null // { [ano]: src } — logos das Copas nos cabeçalhos (home FIFA)
 }) {
   const adapted = useMemo(() => {
     if (!data || Object.keys(data).length === 0) return null;
@@ -44,7 +45,17 @@ export default function RevenueTableChart({
                 key={year}
                 className="text-right py-2 pr-4 font-[400] text-sm text-[#626262]"
               >
-                {year}
+                {yearLogos?.[year] ? (
+                  <span className="inline-flex flex-col items-center gap-1 align-bottom">
+                    <img
+                      src={yearLogos[year]}
+                      alt={`Copa do Mundo ${year}`}
+                      className="h-7 w-9 object-contain"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                    {year}
+                  </span>
+                ) : year}
               </th>
             ))}
           </tr>

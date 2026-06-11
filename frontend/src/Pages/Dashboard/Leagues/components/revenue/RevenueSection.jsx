@@ -18,9 +18,12 @@ export default function RevenueSection({
   leagueColor,
   setLeagueColor,
   selectedLeagues,
-  setSelectedLeagues
+  setSelectedLeagues,
+  title = null,
+  yearLogos = null
 }) {
   const { t } = useTranslation();
+  const sectionTitle = title || t("club.finance.revenue_by_year", "Receitas (por ano)");
 
   function handleAddLeague(liga) {
     setSelectedLeagues((prev) =>
@@ -78,11 +81,11 @@ export default function RevenueSection({
   return (
     <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
       {mainData !== undefined && !mainData.length ? (
-        <NoFinancialData title={t("club.finance.revenue_by_year", "Receitas (por ano)")} />
+        <NoFinancialData title={sectionTitle} />
       ) : mainData?.length > 0 && (
         <>
           <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
-            {t("club.finance.revenue_by_year", "Receitas (por ano)")}
+            {sectionTitle}
           </h2>
           <span className="text-xs opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")}</span>
           <ChartFilter
@@ -116,6 +119,7 @@ export default function RevenueSection({
             leagueColor={leagueColor}
             startYear={startYear}
             endYear={endYear}
+            yearLogos={yearLogos}
           />
           {selectedLeagues.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">

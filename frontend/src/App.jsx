@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "./context/AuthContext";
 
 // Básicos
 import Login from "./Pages/Auth/Login";
@@ -122,15 +124,25 @@ import DashFederationFinance from "./Pages/Dashboard/Federations/DashFederationF
 import { FeatureRoute } from "./context/FeatureFlagsContext";
 
 
+// "/" vai direto ao dashboard: logado → /dashboard, visitante → /dashboard-public
+function RootRedirect() {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return null;
+  return <Navigate to={user ? "/dashboard" : "/dashboard-public"} replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
 
+        {/* Dashboard é a primeira página — landing fica em /landing */}
+        <Route path="/" element={<RootRedirect />} />
+
         {/* ---- Abertos para todos ---- */}
         <Route element={<AuthLayout />}>
-          <Route path="/" element={<FrontPage />} />
+          <Route path="/landing" element={<FrontPage />} />
           <Route path="/legal" element={<Legal />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
