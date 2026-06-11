@@ -626,3 +626,103 @@ export async function getLeaguePrizes(req, res) {
     res.status(500).json({ error: 'Erro ao buscar premiações' });
   }
 }
+
+// ─── Página de finanças da federação (/dashboard/federations/finance/:slug) ──
+// Retorna todas as séries por indicador × ciclo, convertidas por ano.
+// Indicadores de fluxo: soma dos anos do ciclo. De estoque (balanço): valor
+// do último ano do ciclo. Anos sem taxa de câmbio usam a taxa mais recente.
+
+const OVERVIEW_FLOW_CODES = [
+  "revenue", "media", "sponsorship", "merchandising", "matchday", "other_revenue",
+  "costs", "events", "development", "governance", "administrative", "wages",
+  "net_income",
+  "world-cup_media", "other-events_media",
+  "world-cup_media-europe", "world-cup_media-asia-africa", "world-cup_media-south-america",
+  "world-cup_media-north-america", "world-cup_media-rest-world",
+  "world-cup_sponsorship", "other-events_sponsorship",
+  "world-cup_sponsorship-partner", "world-cup_sponsorship-sponsor", "world-cup_sponsorship-supporter-supplier",
+  "world-cup_ticketing", "other-events_ticketing",
+  "world-cup_hospitality", "other-events_hospitality",
+  "world-cup_licensing", "other-events_licensing",
+  "world-cup_other-revenue", "other-events_other-revenue",
+  "intercontinental-cup", "olympic-games", "quality-program", "museum",
+  "audiovisual-rights", "miscellaneous",
+];
+const OVERVIEW_STOCK_CODES = [
+  "net-debt", "short-term-debt", "long-term-debt",
+  "cash-and-financial-applications", "cash", "financial-applications",
+];
+
+export async function getFederationFinanceOverview(req, res) {
+  const { slug } = req.params;
+  const toCurrency = req.query.to || "USD";
+
+  try {
+    const fedRow = await db.query(
+      `SELECT financial_league_id FROM federations WHERE slug = $1 AND active = true LIMIT 1`,
+      [slug]
+    );
+    if (!fedRow.rows.length) return res.status(404).json({ message: "Federação não encontrada" });
+
+    const id_league = fedRow.rows[0].financial_league_id;
+    if (!id_league) return res.json({ editions: [], series: {} });
+
+    const leagueRow = await db.query(`SELECT currency_code FROM leagues WHERE id_league = $1`, [id_league]);
+    const fromCurrency = leagueRow.rows[0]?.currency_code || "USD";
+
+    const allCodes = [...OVERVIEW_FLOW_CODES, ...OVERVIEW_STOCK_CODES];
+
+    const result = await db.query(`
+      WITH rate_cte AS (
+        SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
+          EXTRACT(YEAR FROM period)::int AS year, rate
+        FROM currency_rates
+        WHERE base_currency = $2 AND reference_currency = $3
+        ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
+      ),
+      last_rate AS (
+        SELECT rate FROM currency_rates
+        WHERE base_currency = $2 AND reference_currency = $3
+        ORDER BY period DESC LIMIT 1
+      )
+      SELECT
+        ce.edition_year, ce.slug, ce.name, fi.code,
+        SUM(ef.value * COALESCE(r.rate, lr.rate, 1)) AS sum_converted,
+        SUM(CASE WHEN ef.year = ce.edition_year
+            THEN ef.value * COALESCE(r.rate, lr.rate, 1) ELSE 0 END) AS last_year_converted,
+        BOOL_OR(ef.year = ce.edition_year) AS has_last_year
+      FROM edition_financials ef
+      JOIN competition_editions ce ON ce.id_edition = ef.id_edition
+      JOIN financial_indicators fi ON fi.id = ef.id_indicator
+      LEFT JOIN rate_cte r ON r.year = ef.year
+      LEFT JOIN last_rate lr ON true
+      WHERE ce.id_league = $1 AND fi.code = ANY($4)
+      GROUP BY ce.edition_year, ce.slug, ce.name, fi.code
+      ORDER BY ce.edition_year ASC
+    `, [id_league, fromCurrency, toCurrency, allCodes]);
+
+    const stockSet = new Set(OVERVIEW_STOCK_CODES);
+    const editionsMap = new Map();
+    const series = {};
+    for (const row of result.rows) {
+      if (!editionsMap.has(row.edition_year)) {
+        editionsMap.set(row.edition_year, { slug: row.slug, name: row.name, edition_year: row.edition_year });
+      }
+      const value = stockSet.has(row.code)
+        ? (row.has_last_year ? parseFloat(row.last_year_converted) : null)
+        : parseFloat(row.sum_converted);
+      if (!series[row.code]) series[row.code] = {};
+      series[row.code][row.edition_year] = value;
+    }
+
+    return res.json({
+      fromCurrency,
+      toCurrency,
+      editions: [...editionsMap.values()],
+      series,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+}
