@@ -1749,12 +1749,12 @@ export async function updateFaq(req, res) {
       UPDATE faqs
       SET question = $1,
           answer = $2,
-          sort_order = $3,
-          is_active = $4,
+          sort_order = COALESCE($3, sort_order),
+          is_active = COALESCE($4, is_active),
           updated_at = NOW()
       WHERE id = $5
       `,
-      [question, answer, sort_order, is_active, id]
+      [question, answer, sort_order ?? null, is_active ?? null, id]
     );
 
     return res.json({ message: "FAQ atualizado com sucesso" });

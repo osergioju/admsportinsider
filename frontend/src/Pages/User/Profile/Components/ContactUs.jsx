@@ -9,6 +9,34 @@ import banner2 from "../../../../assets/img/cultura-insider.jpeg";
 import { api } from "../../../../services/api"
 import { useNavigate } from "react-router-dom";
 
+// Fora do componente: declarar dentro recriava o componente a cada render
+// (cada tecla digitada no form), remontando os cards e repetindo o fade-in
+const ContactCard = ({ icon: Icon, title, desc, info, link, delay, target }) => (
+  <a
+    target={target}
+    href={link}
+    className={`
+      flex flex-col p-6 rounded-3xl border border-gray-200 bg-white
+      hover:border-[#7F33D9]/50 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1.5
+      transition-all duration-300 group cursor-pointer h-full relative overflow-hidden
+      animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards
+    `}
+    style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
+  >
+    {/* Efeito de brilho no hover */}
+    <div className="absolute inset-0 bg-gradient-to-tr from-[#7F33D9]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+    <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[#7F33D9] group-hover:bg-[#7F33D9] group-hover:text-white transition-all duration-300 mb-4 shadow-sm group-hover:scale-110">
+      <Icon size={22} strokeWidth={2} />
+    </div>
+    <h3 className="font-bold text-[#111] text-sm mb-1">{title}</h3>
+    <p className="text-gray-500 text-xs mb-3">{desc}</p>
+    <span className="text-xs font-bold text-[#7F33D9] mt-auto break-all relative z-10 flex items-center gap-1 opacity-80 group-hover:opacity-100 lg:text-sm">
+      {info} <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" />
+    </span>
+  </a>
+);
+
 export default function ContactUs() {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
@@ -47,32 +75,6 @@ export default function ContactUs() {
     };
 
 const navigate = useNavigate();
-
-  const ContactCard = ({ icon: Icon, title, desc, info, link, delay, target }) => (
-    <a 
-      target={target}
-      href={link}
-      className={`
-        flex flex-col p-6 rounded-3xl border border-gray-200 bg-white 
-        hover:border-[#7F33D9]/50 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1.5 
-        transition-all duration-300 group cursor-pointer h-full relative overflow-hidden
-        animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards
-      `}
-      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
-    >
-      {/* Efeito de brilho no hover */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-[#7F33D9]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-      <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[#7F33D9] group-hover:bg-[#7F33D9] group-hover:text-white transition-all duration-300 mb-4 shadow-sm group-hover:scale-110">
-        <Icon size={22} strokeWidth={2} />
-      </div>
-      <h3 className="font-bold text-[#111] text-sm mb-1">{title}</h3>
-      <p className="text-gray-500 text-xs mb-3">{desc}</p>
-      <span className="text-xs font-bold text-[#7F33D9] mt-auto break-all relative z-10 flex items-center gap-1 opacity-80 group-hover:opacity-100 lg:text-sm">
-        {info} <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" />
-      </span>
-    </a>
-  );
 
   // Estilo dos Inputs
   const inputClass = "w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm outline-none focus:bg-white focus:border-[#7F33D9] focus:ring-4 focus:ring-[#7F33D9]/10 transition-all duration-300 text-[#111] placeholder-gray-400 hover:bg-gray-50";

@@ -94,13 +94,13 @@ export default function FaqAdmin() {
         resetForm();
         loadFaqs();
       } else {
-        // LÓGICA DE CRIAÇÃO CORRIGIDA:
+        // A API retorna só { message, id } — monta o item completo com o payload
         const { data: newFaq } = await api.post("/admin/faq", payload);
-        
+
         // Criamos uma lista temporária inserindo o novo item na posição desejada
         let tempData = [...faqs];
         const insertIndex = Math.min(payload.sort_order, tempData.length);
-        tempData.splice(insertIndex, 0, newFaq);
+        tempData.splice(insertIndex, 0, { ...payload, id: newFaq.id });
 
         // Sincronizamos tudo para que ninguém tenha a mesma ordem
         await syncServerOrder(tempData);
