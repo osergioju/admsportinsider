@@ -21,13 +21,13 @@ const fmtUsd2 = v => v == null ? "—" : `US$ ${v.toLocaleString("pt-BR", { mini
 /* Big numbers exibidos — chave normalizada do indicador (sem prefixo da competição) */
 const METRICS = [
     { key: "attendance-total", label: "Público total", fmt: fmtInt, hero: true },
-    { key: "attendance-average", label: "Média por jogo", fmt: fmtInt, hero: true },
-    { key: "ticketing-revenue", label: "Renda bruta", fmt: fmtUsdM, hero: true },
-    { key: "ticketing-average-price", label: "Tíquete médio", fmt: fmtUsd2, hero: true },
-    { key: "attendance-paying", label: "Pagantes", fmt: fmtInt },
-    { key: "attendance-freebies", label: "Gratuidades", fmt: fmtInt },
+    { key: "attendance-paying", label: "Pagantes", fmt: fmtInt, hero: true },
+    { key: "attendance-freebies", label: "Gratuidades", fmt: fmtInt, hero: true },
+    { key: "number-matches", label: "Jogos", fmt: v => v == null ? "—" : String(Math.round(v)), hero: true },
+    { key: "attendance-average", label: "Média de público", fmt: fmtInt },
     { key: "attendance-average-paying", label: "Média de pagantes", fmt: fmtInt },
-    { key: "number-matches", label: "Jogos", fmt: v => v == null ? "—" : String(Math.round(v)) },
+    { key: "ticketing-revenue", label: "Renda bruta", fmt: fmtUsdM },
+    { key: "ticketing-average-price", label: "Tíquete médio", fmt: fmtUsd2 },
 ];
 
 function teamImg(crest, federationSlug) {
@@ -119,6 +119,12 @@ export default function DashLeagueAttendance() {
     const rgb1 = hexToRgb(c1);
     const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
     const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
+    // Cor de destaque legível sobre fundo branco (primária clara → usa secundária)
+    const isDark = (hex) => {
+        const rgb = hexToRgb(hex);
+        return rgb ? (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255 < 0.82 : false;
+    };
+    const accent = isDark(c1) ? c1 : isDark(c2) ? c2 : "#0A0A0A";
 
     const current = data.indicators[season] ?? {};
     const compare = compareYear ? (data.indicators[compareYear] ?? {}) : null;
@@ -165,7 +171,7 @@ export default function DashLeagueAttendance() {
                         <div className="flex items-center gap-2 mt-0.5">
                             <Users size={12} style={{ color: textColor, opacity: 0.65 }} />
                             <span className="text-xs font-light" style={{ color: textColor, opacity: 0.75 }}>
-                                Público e renda por edição
+                                Público e renda
                             </span>
                         </div>
                     </div>
@@ -290,11 +296,13 @@ export default function DashLeagueAttendance() {
                                         </td>
                                         <td className="py-2.5 px-4 text-right">
                                             <span className="inline-block px-2.5 py-1 rounded-lg font-bold tabular-nums text-sm"
-                                                style={{ background: `${c1}14`, color: c1 }}>
+                                                style={{ background: `${accent}14`, color: accent }}>
                                                 {m.attendance != null ? Number(m.attendance).toLocaleString("pt-BR") : "—"}
                                             </span>
                                         </td>
-                                        <td className="py-2.5 px-4 text-xs text-gray-500 max-w-[220px] truncate">{m.stadium_name ?? "—"}</td>
+                                        <td className="py-2.5 px-4 text-xs text-gray-500 max-w-[220px] truncate">
+                                            {m.stadium_name ? m.stadium_name.split("(")[0].trim() : "—"}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

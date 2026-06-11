@@ -12,6 +12,15 @@ const formatDate = (dateString) => {
   });
 };
 
+// O WordPress não marca o idioma dos relatórios — detecta pelo título/URI
+// para não exibir o mesmo relatório duplicado em português e inglês.
+const detectLang = (rel) => {
+  const txt = `${rel.title || ""} ${rel.uri || ""}`.toLowerCase();
+  if (/[ãõçáéíóúâêô]|copa|finanças|futebol|esporte|brasileiro|relatório|mundo/.test(txt)) return "pt";
+  if (/world cup|megaevent|finance|report|football|soccer|-en\//.test(txt)) return "en";
+  return "pt";
+};
+
 /* ───────────────── Card ───────────────── */
 
 const RelatorioCard = ({ relatorio }) => {
@@ -83,7 +92,9 @@ const SkeletonCard = () => (
 /* ───────────────── Página ───────────────── */
 
 export default function Relatorios() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  // Idioma exibido: começa no idioma da ferramenta, com caixinha para trocar
+  const [lang, setLang] = useState(String(locale || "pt-BR").startsWith("en") ? "en" : "pt");
   const [relatorios, setRelatorios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -140,12 +151,18 @@ export default function Relatorios() {
           </p>
         </div>
 
-        {!loading && !error && relatorios.length > 0 && (
-          <div className="inline-flex items-center gap-2 bg-gray-100 px-4 py-1.5 rounded-full text-xs font-medium text-gray-700">
-            <span className="w-2 h-2 bg-black rounded-full" />
-            {relatorios.length} {relatorios.length === 1 ? t("reports.singular", "relatório") : t("reports.singular", "relatório") + "s"}
-          </div>
-        )}
+        {/* Caixinha de idioma — evita relatórios duplicados PT/EN */}
+        <div className="flex gap-1 bg-gray-100 rounded-full p-1 self-start">
+          {[{ code: "pt", label: "Português" }, { code: "en", label: "English" }].map(o => (
+            <button
+              key={o.code}
+              onClick={() => setLang(o.code)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${lang === o.code ? "bg-white text-[#7F33D9] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Grid */}
@@ -162,14 +179,16 @@ export default function Relatorios() {
           </div>
         ) : loading ? (
           Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
-        ) : relatorios.length === 0 ? (
+        ) : relatorios.filter(r => detectLang(r) === lang).length === 0 ? (
           <div className="col-span-full bg-white p-10 rounded-2xl border text-center text-gray-500">
             {t("reports.none_available", "Nenhum relatório disponível no momento.")}
           </div>
         ) : (
-          relatorios.map((rel) => (
-            <RelatorioCard key={rel.id} relatorio={rel} />
-          ))
+          relatorios
+            .filter(r => detectLang(r) === lang)
+            .map((rel) => (
+              <RelatorioCard key={rel.id ?? rel.uri} relatorio={rel} />
+            ))
         )}
       </div>
 

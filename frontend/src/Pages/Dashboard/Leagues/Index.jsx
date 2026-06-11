@@ -205,33 +205,6 @@ function ContinentalLeagueCard({ league, isFavorited, toggleFavorite }) {
   );
 }
 
-// ─── Card de continente ───────────────────────────────────────────────────────
-
-function ContinentCard({ name, confederation, count, logoUrl, onClick }) {
-  const { t } = useTranslation();
-  return (
-    <button onClick={onClick} className="group text-left w-full">
-      <div className="bg-white border border-gray-100 rounded-2xl p-3.5 flex items-center gap-3 hover:border-[#7F33D9]/40 hover:shadow-sm transition-all duration-200">
-        {logoUrl
-          ? <img src={logoUrl} className="w-10 h-10 object-contain flex-shrink-0" alt={name} onError={e => e.currentTarget.style.display='none'} />
-          : <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Globe size={16} className="text-[#7F33D9]" />
-            </div>
-        }
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#7F33D9] transition-colors leading-tight">
-            {name}{confederation ? ` — ${confederation}` : ""}
-          </p>
-          <p className="text-[11px] text-gray-400 mt-0.5">
-            {count} {count === 1 ? t("leagues.singular", "competição") : t("leagues.plural", "competições")}
-          </p>
-        </div>
-        <ChevronRight size={14} className="text-gray-300 group-hover:text-[#7F33D9] transition-colors flex-shrink-0" />
-      </div>
-    </button>
-  );
-}
-
 // ─── Card de país ─────────────────────────────────────────────────────────────
 
 function CountryCard({ country, count, onClick }) {
@@ -276,29 +249,19 @@ export default function DashLeagues() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [selectedContinent, setSelectedContinent] = useState(null);
 
   const debounceRef = useRef(null);
 
-  // ── Agrupa ligas continentais por região ────────────────────────────────
-  const continentGroups = useMemo(() => {
-    const map = {};
-    continentalLeagues.forEach(league => {
-      const meta = parseMeta(league.structure_json);
-      const region = meta.continent || "Internacional";
-      const confederation = meta.confederation || league.fed_acronym || null;
-      // Logo: structure_json > continent_logo_url > logo da federação via slug
-      const logoUrl = meta.continent_logo_url
-        || league.continent_logo_url
-        || league.fed_logo_url
-        || (league.fed_slug ? federationLogo(league.fed_slug, "thumb") : null);
-      if (!map[region]) map[region] = { name: region, confederation, logoUrl, leagues: [] };
-      if (!map[region].logoUrl && logoUrl) map[region].logoUrl = logoUrl;
-      if (!map[region].confederation && confederation) map[region].confederation = confederation;
-      map[region].leagues.push(league);
-    });
-    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name, "pt"));
-  }, [continentalLeagues]);
+  // ── Separa por esfera: mundiais (FIFA) × continentais ──────────────────
+  // Sem agrupamento intermediário — acesso direto à competição em 1 clique
+  const worldLeagues = useMemo(
+    () => continentalLeagues.filter(l => l.fed_sphere === "global"),
+    [continentalLeagues]
+  );
+  const continentalOnly = useMemo(
+    () => continentalLeagues.filter(l => l.fed_sphere !== "global"),
+    [continentalLeagues]
+  );
 
   // ── Carrega países e ligas continentais (uma vez) ───────────────────────
   useEffect(() => {
@@ -360,7 +323,6 @@ export default function DashLeagues() {
     setSearchInput("");
     setDebouncedSearch("");
     setSelectedCountry(null);
-    setSelectedContinent(null);
     setPage(1);
     setLeagues([]);
   }
@@ -434,50 +396,73 @@ export default function DashLeagues() {
         )}
       </div>
 
-      {/* ── View: exploração ────────────────────────────────────────────── */}
-      {!inResultsView && !selectedContinent && (
+      {/* ── View: exploração — acesso direto, sem cliques intermediários ── */}
+      {!inResultsView && (
         <div className="space-y-6">
 
-          {/* Competições Continentais — agrupadas por região */}
-          {(countriesLoading || continentalLeagues.length > 0) && (
-            <div>
-              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
-                {t("leagues.continental_competitions", "Competições continentais")}
-              </p>
-              {countriesLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-[58px] bg-gray-100 rounded-2xl animate-pulse" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
-                  {continentGroups.map(group => (
-                    <ContinentCard
-                      key={group.name}
-                      name={group.name}
-                      confederation={group.confederation}
-                      count={group.leagues.length}
-                      logoUrl={group.logoUrl}
-                      onClick={() => setSelectedContinent(group)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Explorar por país */}
+          {/* Competições mundiais */}
           <div>
             <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
-              {t("ui.explore_by_country", "Explorar por país")}
+              {t("leagues.world_competitions", "Competições mundiais")}
             </p>
             {countriesLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {Array.from({ length: 15 }).map((_, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="h-[58px] bg-gray-100 rounded-2xl animate-pulse" />
                 ))}
               </div>
+            ) : worldLeagues.length === 0 ? (
+              <p className="text-sm text-gray-400 px-1">{t("leagues.nothing_yet", "Nada por enquanto.")}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {worldLeagues.map(league => (
+                  <ContinentalLeagueCard
+                    key={league.id_league}
+                    league={league}
+                    isFavorited={isFavorited}
+                    toggleFavorite={toggleFavorite}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Competições continentais */}
+          <div>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
+              {t("leagues.continental_competitions", "Competições continentais")}
+            </p>
+            {countriesLoading ? (
+              <p className="text-sm text-gray-400 px-1">…</p>
+            ) : continentalOnly.length === 0 ? (
+              <p className="text-sm text-gray-400 px-1">{t("leagues.nothing_yet", "Nada por enquanto.")}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {continentalOnly.map(league => (
+                  <ContinentalLeagueCard
+                    key={league.id_league}
+                    league={league}
+                    isFavorited={isFavorited}
+                    toggleFavorite={toggleFavorite}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Competições nacionais — explorar por país */}
+          <div>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-1">
+              {t("leagues.national_competitions", "Competições nacionais")}
+            </p>
+            {countriesLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="h-[58px] bg-gray-100 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : leagueCountries.length === 0 ? (
+              <p className="text-sm text-gray-400 px-1">{t("leagues.nothing_yet", "Nada por enquanto.")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {leagueCountries.map(c => (
@@ -490,47 +475,6 @@ export default function DashLeagues() {
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* ── View: ligas de um continente ────────────────────────────────── */}
-      {!inResultsView && selectedContinent && (
-        <div>
-          {/* Cabeçalho */}
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => setSelectedContinent(null)}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#7F33D9] transition font-medium"
-            >
-              <ChevronLeft size={16} />
-              {t("ui.back", "Voltar")}
-            </button>
-            <div className="w-px h-4 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <Globe size={14} className="text-[#7F33D9]" />
-              <span className="text-sm font-medium text-gray-700">{selectedContinent.name}</span>
-              {selectedContinent.confederation && (
-                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                  {selectedContinent.confederation}
-                </span>
-              )}
-            </div>
-            <span className="text-sm text-gray-400 ml-auto">
-              {selectedContinent.leagues.length} {selectedContinent.leagues.length === 1 ? t("leagues.singular", "competição") : t("leagues.plural", "competições")}
-            </span>
-          </div>
-
-          {/* Grid de ligas — mesmo estilo compacto */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {selectedContinent.leagues.map(league => (
-              <ContinentalLeagueCard
-                key={league.id_league}
-                league={league}
-                isFavorited={isFavorited}
-                toggleFavorite={toggleFavorite}
-              />
-            ))}
           </div>
         </div>
       )}

@@ -57,7 +57,7 @@ function AnnualBarChart({ rows, color }) {
                 return `<b>${labels[p.dataIndex]}</b><br/>${p.marker} ${fmt(p.value)}`;
             },
         },
-        grid: { left: 8, right: 8, top: 10, bottom: 24, containLabel: true },
+        grid: { left: 8, right: 8, top: 30, bottom: 24, containLabel: true },
         xAxis: {
             type: "category",
             data: labels,
@@ -125,6 +125,11 @@ export default function DashLeagueUniques() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => { injectStyles(); }, []);
+
+    // Slug antigo da Copa do Mundo → novo (em inglês)
+    useEffect(() => {
+        if (slug === "copa-do-mundo") navigate("/dashboard/competitions/world-cup", { replace: true });
+    }, [slug, navigate]);
 
     useEffect(() => {
         async function loadDashboard() {
@@ -246,8 +251,8 @@ export default function DashLeagueUniques() {
         const rgb = hexToRgb(hex);
         return rgb ? (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255 < 0.82 : false;
     };
-    const chartColorPrimary = isDarkEnough(c1) ? c1 : "#10b981";
-    const chartColorSecondary = (c2 !== c1 && isDarkEnough(c2)) ? c2 : chartColorPrimary === c1 ? "#10b981" : chartColorPrimary;
+    const chartColorPrimary = isDarkEnough(c1) ? c1 : "#946E1C";
+    const chartColorSecondary = (c2 !== c1 && isDarkEnough(c2)) ? c2 : chartColorPrimary === c1 ? "#946E1C" : chartColorPrimary;
 
     // Indicadores anuais (premiações e público)
     const prizesData = annualIndicators?.["world-cup_prizes_total"] || [];
@@ -282,7 +287,7 @@ export default function DashLeagueUniques() {
     // Nav cards
     const navCards = [
         {
-            title: t("leagues.sports_results", "Resultado esportivo"),
+            title: t("leagues.sports_results", "Resultados esportivos"),
             desc: t("leagues.sports_desc", "Desempenho dos clubes na competição, histórico de partidas e estatísticas por temporada."),
             route: `/dashboard/competitions/sports/${slug}`,
             Icon: Trophy,
@@ -432,7 +437,7 @@ export default function DashLeagueUniques() {
                                 <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                                     <h2
                                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                                        className="mb-3 text-xl font-light lg:text-2xl relative pl-2 lg:pl-6"
                                     >
                                         <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
                                         Premiações
@@ -440,7 +445,7 @@ export default function DashLeagueUniques() {
                                     {sj.prizes_text && (
                                         <p
                                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                            className="text-lg font-light lg:text-xl xl:text-2xl"
+                                            className="text-sm font-light lg:text-base"
                                         >
                                             {sj.prizes_text}
                                         </p>
@@ -459,7 +464,7 @@ export default function DashLeagueUniques() {
                                 <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                                     <h2
                                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                                        className="mb-3 text-xl font-light lg:text-2xl relative pl-2 lg:pl-6"
                                     >
                                         <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
                                         Público
@@ -467,7 +472,7 @@ export default function DashLeagueUniques() {
                                     {sj.attendance_text && (
                                         <p
                                             style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                            className="text-lg font-light lg:text-xl xl:text-2xl"
+                                            className="text-sm font-light lg:text-base"
                                         >
                                             {sj.attendance_text}
                                         </p>

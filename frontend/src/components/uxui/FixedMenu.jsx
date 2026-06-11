@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { useContext } from "react";
-import { Home, Shield, Trophy, PersonStanding, Globe } from "lucide-react";
+import { Home, Shield, Trophy, ShieldUser } from "lucide-react";
 import { AuthContext } from "../../context/AuthContext";
+import { useFeatureFlags } from "../../context/FeatureFlagsContext";
 
 export default function FixedMenu() {
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const { isEnabled } = useFeatureFlags();
 
   const isActive = (path) => location.pathname.startsWith(path);
 
@@ -16,24 +18,24 @@ export default function FixedMenu() {
       label: "Início",
       active: location.pathname === "/dashboard" || location.pathname === "/dashboard-public",
     },
-    {
+    ...(isEnabled("clubs") ? [{
       to: "/dashboard/clubs",
       icon: Shield,
       label: "Clubes",
       active: isActive("/dashboard/clubs"),
-    },
-    {
-      to: "/dashboard/leagues",
+    }] : []),
+    ...(isEnabled("federations") ? [{
+      to: "/dashboard/federations",
+      icon: ShieldUser,
+      label: "Federações",
+      active: isActive("/dashboard/federations"),
+    }] : []),
+    ...(isEnabled("competitions") ? [{
+      to: "/dashboard/competitions",
       icon: Trophy,
-      label: "Ligas",
-      active: isActive("/dashboard/competitions") || isActive("/dashboard/competitions/"),
-    },
-    {
-      to: "/dashboard/countries",
-      icon: Globe,
-      label: "Países",
-      active: isActive("/dashboard/countries") || isActive("/dashboard/countries/"),
-    }
+      label: "Competições",
+      active: isActive("/dashboard/competitions"),
+    }] : []),
   ];
 
   return (

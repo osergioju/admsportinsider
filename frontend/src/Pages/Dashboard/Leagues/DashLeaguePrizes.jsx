@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { ArrowLeft, X, Plus, Award, Loader2 } from "lucide-react";
 import { federationLogo } from "../../../utils/federationUrl";
+import { worldCupLogo } from "../../../utils/worldCupLogo";
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 
@@ -19,6 +20,19 @@ function fmtMi(v, prefix = "") {
     if (v == null) return "—";
     if (Math.abs(v) >= 1000) return `${prefix}${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} bi`;
     return `${prefix}${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+}
+
+/* Quadrinhos da tabela: apenas o número, sem "mi" */
+function fmtNumOnly(v) {
+    if (v == null) return "—";
+    return v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+}
+
+/* Linha de somatória: "US$ 28 milhões" por extenso */
+function fmtFull(v, prefix = "") {
+    if (v == null) return "—";
+    if (Math.abs(v) >= 1000) return `${prefix}${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} bilhões`;
+    return `${prefix}${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} milhões`;
 }
 
 /* ─── Ordem das linhas da tabela (chaves normalizadas) ─────────── */
@@ -81,9 +95,10 @@ export default function DashLeaguePrizes() {
     const convert = v => v == null ? null : v * (RATES[currency] ?? 1);
     const prefix = CURRENCY_PREFIX[currency] ?? "";
 
-    /* Logo da edição: setada na gestão da liga (config da temporada); fallback liga */
+    /* Logo da edição: config da temporada > logo oficial da Copa daquele ano > liga */
     const leagueLogo = lg.logo_url || (lg.slug ? `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp` : null);
-    const editionLogoOf = (yr) => sj[String(yr)]?.edition_logo || leagueLogo;
+    const isWorldCup = lg.slug === "world-cup";
+    const editionLogoOf = (yr) => sj[String(yr)]?.edition_logo || (isWorldCup ? worldCupLogo(yr) : leagueLogo);
 
     const c1 = lg.primary_color || lg.fed_color1 || "#001F5B";
     const c2 = lg.secondary_color || lg.fed_color2 || c1;
@@ -135,7 +150,7 @@ export default function DashLeaguePrizes() {
                         <div className="flex items-center gap-2 mt-0.5">
                             <Award size={12} style={{ color: textColor, opacity: 0.65 }} />
                             <span className="text-xs font-light" style={{ color: textColor, opacity: 0.75 }}>
-                                Premiações por edição
+                                Premiações
                             </span>
                         </div>
                     </div>
@@ -209,6 +224,14 @@ export default function DashLeaguePrizes() {
                                                 {data.editions[yr].name}
                                             </span>
                                         )}
+                                        {isWorldCup && (
+                                            <img
+                                                src={worldCupLogo(yr)}
+                                                alt={`Copa do Mundo ${yr}`}
+                                                className="h-8 w-10 object-contain mx-auto mt-1.5"
+                                                onError={e => { e.currentTarget.style.display = "none"; }}
+                                            />
+                                        )}
                                     </th>
                                 ))}
                             </tr>
@@ -228,8 +251,8 @@ export default function DashLeaguePrizes() {
                                             return (
                                                 <td key={yr} className="py-3 px-4 text-xs tabular-nums whitespace-nowrap text-center">
                                                     {val != null && val !== 0 ? (
-                                                        <span className="inline-block px-2.5 py-1.5 rounded-lg bg-gray-100/70 font-mono text-gray-700 text-sm font-medium">
-                                                            {fmtMi(convert(val))}
+                                                        <span className="inline-block px-2.5 py-1.5 rounded-lg bg-gray-100/70 text-gray-700 text-sm font-medium tabular-nums">
+                                                            {fmtNumOnly(convert(val))}
                                                         </span>
                                                     ) : (
                                                         <span className="text-gray-200 text-sm">—</span>
@@ -249,7 +272,7 @@ export default function DashLeaguePrizes() {
                                 </td>
                                 {visibleYears.map(yr => (
                                     <td key={yr} className="text-center py-3.5 px-4 text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: textColor }}>
-                                        {valueOf(yr, TOTAL_KEY) != null ? fmtMi(convert(valueOf(yr, TOTAL_KEY)), prefix) : "—"}
+                                        {valueOf(yr, TOTAL_KEY) != null ? fmtFull(convert(valueOf(yr, TOTAL_KEY)), prefix) : "—"}
                                     </td>
                                 ))}
                             </tr>
@@ -370,7 +393,7 @@ export default function DashLeaguePrizes() {
                                                             />
                                                         </div>
                                                         <span className="flex-1 text-xs text-gray-600 leading-none truncate">{t.name}</span>
-                                                        <span className="text-xs font-mono font-medium text-gray-700 tabular-nums shrink-0">
+                                                        <span className="text-xs font-medium text-gray-700 tabular-nums shrink-0">
                                                             {fmtMi(convert(t.total))}
                                                         </span>
                                                     </div>
