@@ -1501,7 +1501,7 @@ import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById,
 import { previewFederationFinancial, importFederationFinancial, getEditionsByLeague, getFederationCycleFinancials } from "../controllers/federationFinancial.controller.js";
 
 import { adminGuard } from "../middlewares/auth.middleware.js";
-import { getMaintenanceOverview, toggleCountry, toggleLeague, toggleFederation, bulkToggle } from "../controllers/maintenance.controller.js";
+import { getMaintenanceOverview, toggleCountry, toggleLeague, toggleFederation, bulkToggle, getSystemFeatures, toggleSystemFeature } from "../controllers/maintenance.controller.js";
 const router = Router();
 
 //router.use(adminGuard);
@@ -1528,6 +1528,8 @@ router.put("/maintenance/country/:id/toggle",    adminGuard, toggleCountry);
 router.put("/maintenance/league/:id/toggle",     adminGuard, toggleLeague);
 router.put("/maintenance/federation/:id/toggle", adminGuard, toggleFederation);
 router.post("/maintenance/bulk",                 adminGuard, bulkToggle);
+router.get("/maintenance/system",                adminGuard, getSystemFeatures);
+router.put("/maintenance/system/:key",           adminGuard, toggleSystemFeature);
 
 // FEDERAÇÕES - GESTÃO CRUD
 router.get("/federations", getAllFederations);

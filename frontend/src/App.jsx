@@ -119,6 +119,7 @@ import MatchDetail from "./Pages/Dashboard/Matches/MatchDetail";
 import DashFederations from "./Pages/Dashboard/Federations/Index";
 import FederationDetail from "./Pages/Dashboard/Federations/FederationDetail";
 import DashFederationFinance from "./Pages/Dashboard/Federations/DashFederationFinance";
+import { FeatureRoute } from "./context/FeatureFlagsContext";
 
 
 export default function App() {
@@ -148,28 +149,42 @@ export default function App() {
             <Route element={<RoleRoute allowedRoles={["user", "admin_master"]} />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/user" element={<UserIndex />} />
-              <Route path="/faq" element={<Faq />} />
-              <Route path="/fale-conosco" element={<ContactUs />} />
+              <Route element={<FeatureRoute featureKey="faq" />}>
+                <Route path="/faq" element={<Faq />} />
+              </Route>
+              <Route element={<FeatureRoute featureKey="contact" />}>
+                <Route path="/fale-conosco" element={<ContactUs />} />
+              </Route>
               <Route path="/me/notifications" element={<PageNotifications />} />
 
               {/* Aqui é pro usuário compeltar o cadastro dele no site */}
               <Route path="/onboarding/preferences" element={<Onboarding />} />
 
-              <Route path="me/profile" element={<ProfileDetails />} />
-              <Route path="me/financial" element={<SubscriptionManagement />} />
-              <Route path="me/plans" element={<PlansFinancial />} />
-              <Route path="me/subscription" element={<SubscriptionPlan />} />
+              <Route element={<FeatureRoute featureKey="profile" />}>
+                <Route path="me/profile" element={<ProfileDetails />} />
+              </Route>
+              <Route element={<FeatureRoute featureKey="financial" />}>
+                <Route path="me/financial" element={<SubscriptionManagement />} />
+                <Route path="me/plans" element={<PlansFinancial />} />
+                <Route path="me/subscription" element={<SubscriptionPlan />} />
+              </Route>
 
 
               {/* Favoritos */}
-              <Route path="/dashboard/clubs/favorites" element={<ClubsFavorites />} />
-              <Route path="/dashboard/competitions/favorites" element={<LeaguesFavorites />} />
+              <Route element={<FeatureRoute featureKey="clubs.favorites" />}>
+                <Route path="/dashboard/clubs/favorites" element={<ClubsFavorites />} />
+              </Route>
+              <Route element={<FeatureRoute featureKey="competitions.favorites" />}>
+                <Route path="/dashboard/competitions/favorites" element={<LeaguesFavorites />} />
+              </Route>
 
               {/* Meu Dashboard */}
               <Route path="/dashboard/meu-dashboard" element={<MeuDashboard />} />
 
               {/* Relatórios */}
-              <Route path="/dashboard/relatorios" element={<Relatorios />} />
+              <Route element={<FeatureRoute featureKey="reports" />}>
+                <Route path="/dashboard/relatorios" element={<Relatorios />} />
+              </Route>
             </Route>
 
           </Route>
@@ -180,28 +195,36 @@ export default function App() {
           <Route path="/dashboard-public" element={<Dashboard />} />
 
           {/* Clubes */}
-          <Route path="/dashboard/clubs" element={<DashClubs />} />
-          <Route path="/dashboard/clubs/:id" element={<PrePageClubs />} />
-          <Route path="/dashboard/clubs/:id/:slug" element={<PrePageClubs />} />
-          <Route path="/dashboard/clubs/finance/:id" element={<DashClubUniques />} />
-          <Route path="/dashboard/clubs/competitions/:id" element={<CompetitionsClubs />} />
-          <Route path="/dashboard/clubs/club-players/:id" element={<ClubPlayers />} />
+          <Route element={<FeatureRoute featureKey="clubs" />}>
+            <Route path="/dashboard/clubs" element={<DashClubs />} />
+            <Route path="/dashboard/clubs/:id" element={<PrePageClubs />} />
+            <Route path="/dashboard/clubs/:id/:slug" element={<PrePageClubs />} />
+            <Route path="/dashboard/clubs/finance/:id" element={<DashClubUniques />} />
+            <Route path="/dashboard/clubs/competitions/:id" element={<CompetitionsClubs />} />
+            <Route path="/dashboard/clubs/club-players/:id" element={<ClubPlayers />} />
+          </Route>
 
           {/* Países */}
-          <Route path="/dashboard/countries" element={<DashCountries />} />
-          <Route path="/dashboard/countries/:id" element={<CountryDetail />} />
+          <Route element={<FeatureRoute featureKey="countries" />}>
+            <Route path="/dashboard/countries" element={<DashCountries />} />
+            <Route path="/dashboard/countries/:id" element={<CountryDetail />} />
+          </Route>
 
           {/* Ligas */}
-          <Route path="/dashboard/federations" element={<DashFederations />} />
-          <Route path="/dashboard/federations/finance/:slug" element={<DashFederationFinance />} />
-          <Route path="/dashboard/federations/:slug" element={<FederationDetail />} />
+          <Route element={<FeatureRoute featureKey="federations" />}>
+            <Route path="/dashboard/federations" element={<DashFederations />} />
+            <Route path="/dashboard/federations/finance/:slug" element={<DashFederationFinance />} />
+            <Route path="/dashboard/federations/:slug" element={<FederationDetail />} />
+          </Route>
 
-          <Route path="/dashboard/competitions" element={<DashLeagues />} />
-          <Route path="/dashboard/competitions/finance/:slug" element={<DashLeagueFinance />} />
-          <Route path="/dashboard/competitions/sports/:slug" element={<DashLeagueSports />} />
-          <Route path="/dashboard/competitions/prizes/:slug" element={<DashLeaguePrizes />} />
-          <Route path="/dashboard/competitions/attendance/:slug" element={<DashLeagueAttendance />} />
-          <Route path="/dashboard/competitions/:slug" element={<DashLeagueUniques />} />
+          <Route element={<FeatureRoute featureKey="competitions" />}>
+            <Route path="/dashboard/competitions" element={<DashLeagues />} />
+            <Route path="/dashboard/competitions/finance/:slug" element={<DashLeagueFinance />} />
+            <Route path="/dashboard/competitions/sports/:slug" element={<DashLeagueSports />} />
+            <Route path="/dashboard/competitions/prizes/:slug" element={<DashLeaguePrizes />} />
+            <Route path="/dashboard/competitions/attendance/:slug" element={<DashLeagueAttendance />} />
+            <Route path="/dashboard/competitions/:slug" element={<DashLeagueUniques />} />
+          </Route>
 
           {/* Jogadores */}
           <Route path="/dashboard/players" element={<PlayersList />} />

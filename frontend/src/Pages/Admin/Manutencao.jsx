@@ -3,7 +3,7 @@ import { api } from "../../services/api";
 import {
   AlertTriangle, Search, X, Globe, Trophy, Shield,
   ChevronDown, ChevronUp, Loader2, CheckCircle2,
-  ToggleLeft, ToggleRight, Zap, RefreshCw
+  ToggleLeft, ToggleRight, Zap, RefreshCw, MonitorCog, CornerDownRight
 } from "lucide-react";
 
 // ─── Toggle Switch ────────────────────────────────────────────────────────────
@@ -62,20 +62,37 @@ export default function Manutencao() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
   const [toggling, setToggling] = useState({}); // { "country_7": true }
-  const [tab, setTab]         = useState("countries"); // countries | leagues | federations
+  const [tab, setTab]         = useState("countries"); // countries | leagues | federations | system
   const [confirm, setConfirm]       = useState(null); // { type, id, name, active, cascade, affected }
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [sysFeatures, setSysFeatures] = useState(null); // [{ key, label, group, parent, active }]
 
   async function load() {
     setLoading(true);
     try {
-      const { data: d } = await api.get("/admin/maintenance/overview");
+      const [{ data: d }, { data: sys }] = await Promise.all([
+        api.get("/admin/maintenance/overview"),
+        api.get("/admin/maintenance/system"),
+      ]);
       setData(d);
+      setSysFeatures(sys.features || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }
 
   useEffect(() => { load(); }, []);
+
+  // ─ Manutenção do Sistema (páginas/menus do usuário) ─
+
+  async function toggleSystemFeature(key, active) {
+    const tkey = `system_${key}`;
+    setToggling(p => ({ ...p, [tkey]: true }));
+    try {
+      await api.put(`/admin/maintenance/system/${key}`, { active });
+      setSysFeatures(prev => prev.map(f => f.key === key ? { ...f, active } : f));
+    } catch { alert("Erro ao alternar funcionalidade."); }
+    finally { setToggling(p => { const n = { ...p }; delete n[tkey]; return n; }); }
+  }
 
   // ─ Toggle handlers ─
 
@@ -232,6 +249,7 @@ export default function Manutencao() {
             { key: "countries",   label: "Países",       count: data?.countries?.length || 0 },
             { key: "leagues",     label: "Competições",  count: data?.leagues?.length || 0 },
             { key: "federations", label: "Federações",   count: data?.federations?.length || 0 },
+            { key: "system",      label: "Sistema",      count: sysFeatures?.length || 0 },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${tab === t.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
@@ -354,6 +372,61 @@ export default function Manutencao() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* ── Sistema (páginas/menus do usuário) ── */}
+      {tab === "system" && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 bg-purple-50 border border-purple-100 rounded-2xl px-5 py-4">
+            <MonitorCog size={18} className="text-[#7F33D9] shrink-0 mt-0.5" />
+            <p className="text-xs text-purple-900/70 leading-relaxed">
+              Controle o que aparece para o usuário: desativar um item <strong>esconde o menu e bloqueia o acesso direto pela URL</strong>.
+              Desativar um item principal desativa também os subitens em cascata.
+            </p>
+          </div>
+
+          {["Menu principal", "Minha conta", "Suporte"].map(group => {
+            const items = (sysFeatures || []).filter(f =>
+              f.group === group &&
+              (f.label.toLowerCase().includes(q) || f.key.toLowerCase().includes(q) || !q)
+            );
+            if (!items.length) return null;
+            const actives = items.filter(i => i.active).length;
+            return (
+              <div key={group} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/60">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{group}</p>
+                  <p className="text-xs text-gray-400">{actives} de {items.length} ativos</p>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {items.map(f => {
+                    const tkey = `system_${f.key}`;
+                    const parentOff = f.parent && sysFeatures.some(p => p.key === f.parent && !p.active);
+                    const effectiveOff = !f.active || parentOff;
+                    return (
+                      <div key={f.key} className={`flex items-center gap-4 px-5 py-3.5 transition-colors ${effectiveOff ? "bg-red-50/40" : "hover:bg-gray-50/50"}`}>
+                        {f.parent && <CornerDownRight size={14} className="text-gray-300 shrink-0 ml-4" />}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold truncate ${effectiveOff ? "text-gray-400 line-through" : "text-gray-800"}`}>{f.label}</p>
+                          <p className="text-[11px] text-gray-400">
+                            <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-mono">{f.key}</span>
+                            {!f.active && <span className="ml-2 text-red-400 font-semibold">● desativado</span>}
+                            {f.active && parentOff && <span className="ml-2 text-orange-400 font-semibold">● oculto pelo item principal</span>}
+                          </p>
+                        </div>
+                        <Toggle
+                          active={f.active}
+                          loading={!!toggling[tkey]}
+                          onChange={(next) => toggleSystemFeature(f.key, next)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { useTranslation } from "../../../context/TranslationContext";
 import { useContext, useState } from "react";
 import { AuthContext } from "../../../context/AuthContext";
+import { useFeatureFlags } from "../../../context/FeatureFlagsContext";
 import { User, ArrowUpRight, Cog, CircleDollarSign, ArrowDown, Trash } from "lucide-react";
 import PersonalData from "./Components/PersonalData";
 import Subscriptions from "./Components/Subscriptions";
@@ -10,6 +11,7 @@ import PrivacyDelete from "./Components/PrivacyDelete";
 export default function ProfileDetails() {
   const { t } = useTranslation();
   const { user } = useContext(AuthContext);
+  const { isEnabled } = useFeatureFlags();
   const [openModal, setOpenModal] = useState(false);
   const [modalType, setModalType] = useState(null);
 
@@ -42,6 +44,7 @@ export default function ProfileDetails() {
       </div>
 
       {/* --- CARD 1: Informações pessoais --- */}
+      {isEnabled("profile.personal") && (
       <div className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
@@ -85,8 +88,10 @@ export default function ProfileDetails() {
           </div>
         </div>
       </div>
+      )}
 
       {/* --- CARD 2: Configurações --- */}
+      {isEnabled("profile.preferences") && (
       <div className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -116,8 +121,10 @@ export default function ProfileDetails() {
           </div>
         </div>
       </div>
+      )}
 
       {/* --- CARD 3: Plano --- */}
+      {isEnabled("profile.subscriptions") && (
       <div className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm mb-8 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -147,8 +154,10 @@ export default function ProfileDetails() {
           </div>
         </div>
       </div>
+      )}
 
       {/* --- AÇÕES --- */}
+      {isEnabled("profile.delete") && (
       <div className="flex flex-col sm:flex-row justify-end gap-4 mb-10 pt-4 border-t border-gray-200">
         <button
           onClick={() => open("delete")}
@@ -158,6 +167,7 @@ export default function ProfileDetails() {
           {t("profile.delete_account", "Apagar conta")}
         </button>
       </div>
+      )}
 
       {/* ===== MODAL ===== */}
       {openModal && (

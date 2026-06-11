@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useTranslation } from "../context/TranslationContext";
+import { useFeatureFlags } from "../context/FeatureFlagsContext";
 import brand from "../assets/svg/brand-full.svg";
 import MenuItem from "../components/uxui/MenuItem";
 import SubItem from "../components/uxui/SubMenu";
@@ -24,6 +25,7 @@ export default function DashboardLayout() {
 
     const { logout, user, loading } = useContext(AuthContext);
     const { t, publicLocale, setPublicLocale, LOCALES } = useTranslation();
+    const { isEnabled } = useFeatureFlags();
     const location = useLocation();
     const isPublic =
         location.pathname === "/dashboard-public" ||
@@ -121,6 +123,7 @@ export default function DashboardLayout() {
                         </div>
 
                         {/* Dropdown Ligas */}
+                        {isEnabled("competitions") && (
                         <li>
                             <button onClick={() => setOpenLigas(!openLigas)} className={menuItemStyle}>
                                 <div className="flex items-center gap-3">
@@ -132,7 +135,7 @@ export default function DashboardLayout() {
                             {openLigas && (
                                 <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                     <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/competitions" label={t("menu.leagues_all", "Todas as competições")} />
-                                    {user && (
+                                    {user && isEnabled("competitions.favorites") && (
                                         <SubItem
                                             onClick={() => setOpenMenu(false)}
                                             to="/dashboard/competitions/favorites"
@@ -142,8 +145,10 @@ export default function DashboardLayout() {
                                 </ul>
                             )}
                         </li>
+                        )}
 
                         {/* Dropdown Clubes */}
+                        {isEnabled("clubs") && (
                         <li>
                             <button onClick={() => setOpenClubes(!openClubes)} className={menuItemStyle}>
                                 <div className="flex items-center gap-3">
@@ -160,7 +165,7 @@ export default function DashboardLayout() {
                                         label={t("menu.clubs_all", "Todos os clubes")}
                                     />
 
-                                    {user && (
+                                    {user && isEnabled("clubs.favorites") && (
                                         <SubItem
                                             onClick={() => setOpenMenu(false)}
                                             to="/dashboard/clubs/favorites"
@@ -170,8 +175,10 @@ export default function DashboardLayout() {
                                 </ul>
                             )}
                         </li>
+                        )}
 
                         {/* Dropdown Federações */}
+                        {isEnabled("federations") && (
                         <li>
                             <button onClick={() => setOpenFeds(!openFeds)} className={menuItemStyle}>
                                 <div className="flex items-center gap-3">
@@ -183,35 +190,42 @@ export default function DashboardLayout() {
                             {openFeds && (
                                 <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                     <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations" label={t("menu.federations_all", "Todas as federações")} />
-                                    {user && (
+                                    {user && isEnabled("federations.favorites") && (
                                         <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations?tab=favs" label={t("menu.favorites", "Favoritas")} />
                                     )}
                                 </ul>
                             )}
                         </li>
+                        )}
 
                         {/* Países */}
+                        {isEnabled("countries") && (
                         <div className="group">
                             <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.5} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.countries", "Países")}</span>} className={menuItemStyle} />
                         </div>
+                        )}
 
                         {/* Outros itens 
                         <div className="group">
                             <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} />
                         </div>
                         */}
+                        {isEnabled("reports") && (
                         <div className="group">
                             <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} />
                         </div>
+                        )}
                     </ul>
                 </div>
 
                 {/* SEÇÃO: MINHA CONTA */}
                 {
                     user ? (
+                        (isEnabled("profile") || isEnabled("financial")) && (
                         <div>
                             <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.my_account", "Minha conta")}</span>
                             <ul className="space-y-1">
+                                {isEnabled("profile") && (
                                 <div className="group">
                                     <MenuItem
                                         to="/me/profile"
@@ -221,6 +235,8 @@ export default function DashboardLayout() {
                                         label={<span className={textStyle}>{t("menu.profile", "Perfil")}</span>}
                                     />
                                 </div>
+                                )}
+                                {isEnabled("financial") && (
                                 <div className="group">
                                     <MenuItem
                                         to="/me/financial"
@@ -230,8 +246,10 @@ export default function DashboardLayout() {
                                         label={<span className={textStyle}>{t("menu.financial", "Financeiro")}</span>}
                                     />
                                 </div>
+                                )}
                             </ul>
                         </div>
+                        )
                     ) : (
                         <div className="mt-4 pt-4 border-t px-4">
                             <LinkButton to="/register" text={t("ui.create_account", "Crie sua conta")}></LinkButton>
@@ -240,10 +258,11 @@ export default function DashboardLayout() {
                 }
 
                 {/* SEÇÃO: SUPORTE */}
-                {user ? (
+                {user && (isEnabled("faq") || isEnabled("contact")) ? (
                     <div>
                         <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.support", "Suporte")}</span>
                         <ul className="space-y-1">
+                            {isEnabled("faq") && (
                             <div className="group">
                                 <MenuItem
                                     to="/faq"
@@ -253,6 +272,8 @@ export default function DashboardLayout() {
                                     label={<span className={textStyle}>{t("menu.faq", "Perguntas frequentes")}</span>}
                                 />
                             </div>
+                            )}
+                            {isEnabled("contact") && (
                             <div className="group">
                                 <MenuItem
                                     to="/fale-conosco"
@@ -262,6 +283,7 @@ export default function DashboardLayout() {
                                     label={<span className={textStyle}>{t("menu.contact", "Fale conosco")}</span>}
                                 />
                             </div>
+                            )}
                         </ul>
                     </div>
                 ) : null}
