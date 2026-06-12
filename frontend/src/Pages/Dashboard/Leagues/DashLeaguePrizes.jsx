@@ -107,6 +107,22 @@ export default function DashLeaguePrizes() {
     const labelOf = (key, fallback) => data.labels[key] ?? fallback;
     const valueOf = (yr, key) => data.indicators[yr]?.[key] ?? null;
 
+    /* Linhas da tabela: lista fixa (Copa do Mundo) + chaves por posição/fase de
+       outras competições (Intercontinental usa 1st-place, Copa de Clubes per-phase),
+       ordenadas por valor decrescente — réplica do ranking de posições */
+    const fixedKeys = new Set(POSITION_KEYS.map(([k]) => k));
+    const latestVal = (k) => {
+        for (let i = years.length - 1; i >= 0; i--) {
+            const v = valueOf(years[i], k);
+            if (v != null) return v;
+        }
+        return -Infinity;
+    };
+    const dynamicKeys = Object.keys(data.labels ?? {})
+        .filter(k => /(_per-position|_per-phase|_groups)$/.test(k) && !fixedKeys.has(k) && !k.startsWith("prizes_"))
+        .sort((a, b) => latestVal(b) - latestVal(a));
+    const positionRows = [...POSITION_KEYS, ...dynamicKeys.map(k => [k, labelOf(k, k)])];
+
     function addToCompare(yr) {
         const y = Number(yr);
         if (!y || compared.includes(y) || compared.length >= 4) return;
@@ -232,7 +248,7 @@ export default function DashLeaguePrizes() {
                             </tr>
                         </thead>
                         <tbody>
-                            {POSITION_KEYS.map(([key, fallback], i) => {
+                            {positionRows.map(([key, fallback], i) => {
                                 const bg = i % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]";
                                 // pula linhas que não têm valor em nenhuma edição visível
                                 if (!years.some(yr => valueOf(yr, key) != null)) return null;
