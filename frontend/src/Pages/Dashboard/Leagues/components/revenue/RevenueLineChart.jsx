@@ -1,11 +1,21 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueLineData } from "./revenueLeague.adapter";
 
-// Paddings fixos do grid no modo integrado — a tabela abaixo usa os mesmos
-// valores para alinhar cada coluna ao ponto correspondente do gráfico
+// Paddings do grid no modo integrado — a tabela abaixo usa os mesmos valores
+// para alinhar cada coluna ao ponto correspondente do gráfico.
+// No mobile o eixo Y é compacto ("80k"), então sobra mais largura.
 const GRID_LEFT = 64;
 const GRID_RIGHT = 16;
+const GRID_LEFT_MOBILE = 38;
+const GRID_RIGHT_MOBILE = 10;
+
+// Valor em milhões → string compacta no eixo/tabela mobile (80.000 → "80k")
+function compactM(v) {
+  const a = Math.abs(v);
+  if (a >= 1000) return `${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k`;
+  return v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+}
 
 export default function RevenueLineChart({
   data,
