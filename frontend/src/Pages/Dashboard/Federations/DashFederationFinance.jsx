@@ -5,6 +5,7 @@ import ReactECharts from "echarts-for-react";
 import { api } from "../../../services/api";
 import { federationLogo } from "../../../utils/federationUrl";
 import { useTranslation } from "../../../context/TranslationContext";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 // ─── Helpers de cor ───────────────────────────────────────────────────────────
 
@@ -341,7 +342,7 @@ export default function DashFederationFinance() {
   }
 
   if (!federation) {
-    return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;
+    return <PageLoader />;
   }
 
   // ── Cores / header ──

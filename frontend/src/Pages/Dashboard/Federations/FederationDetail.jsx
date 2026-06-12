@@ -7,6 +7,7 @@ import { api } from "../../../services/api";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
 import { AuthContext } from "../../../context/AuthContext";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 // ─── Helpers de cor ───────────────────────────────────────────────────────────
 
@@ -198,7 +199,7 @@ export default function FederationDetail() {
     );
   }
 
-  if (loading || !federation) return null;
+  if (loading || !federation) return <PageLoader />;
 
   // ── Cores da federação ─────────────────────────────────────────────────────
   const [c1, c2, c3] = resolveColors(federation.primary_color, federation.secondary_color, federation.tertiary_color);

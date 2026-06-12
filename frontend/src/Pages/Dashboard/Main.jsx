@@ -2,7 +2,7 @@ import HomeBanners from "../../components/uxui/banner"
 import NotasSection from "./../Dashboard/Notas/NotasSection"
 import RevenueSection from "./Leagues/components/revenue/RevenueSection"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { api } from "../../services/api"
 import { worldCupLogo } from "../../utils/worldCupLogo"
 
@@ -20,41 +20,31 @@ export default function Main() {
   const [leagueColor, setLeagueColor] = useState({ [FIFA_LEAGUE_ID]: { color_one: FIFA_COLOR } });
 
   const [revenueData, setRevenueData] = useState({});
-  const revenueDataRef = useRef({});
-  useEffect(() => { revenueDataRef.current = revenueData; }, [revenueData]);
+
+  // Apenas as moedas da página de finanças da FIFA: dólar, euro, real e libra
+  const ALLOWED_CURRENCIES = ["USD", "EUR", "BRL", "GBP"];
 
   useEffect(() => {
     api.get(`/dashboard/leagues/${FIFA_LEAGUE_ID}/financials/currencies`)
-      .then(({ data }) => setCurrencies(data || []))
+      .then(({ data }) => setCurrencies((data || []).filter(c => ALLOWED_CURRENCIES.includes(c.code))))
       .catch(() => setCurrencies([]));
   }, []);
 
-  async function fetchRevenue(leagues, cur, force) {
-    const existing = revenueDataRef.current;
-    const toFetch = force ? [...leagues] : leagues.filter((id) => !existing[id]);
-    if (toFetch.length === 0) return;
-    try {
-      // Sem filtro de ano: a liga principal (FIFA) é por edições/ciclos
-      const responses = await Promise.all(
-        toFetch.map((leagueId) =>
-          api.get(`/dashboard/leagues/${leagueId}/financials/revenues?to=${cur}`)
-        )
-      );
-      const newData = {};
-      responses.forEach((res, i) => { newData[toFetch[i]] = res.data.data; });
-      setRevenueData((prev) => (force ? newData : { ...prev, ...newData }));
-    } catch (err) {
-      console.error("Erro ao buscar receitas:", err);
-    }
-  }
-
+  // Mesmo endpoint da página de finanças da FIFA — conversão por ano idêntica
   useEffect(() => {
-    fetchRevenue([FIFA_LEAGUE_ID, ...selectedLeagues], currency, true);
+    api.get(`/dashboard/federations/fifa/finance-overview?to=${currency}`)
+      .then(({ data }) => {
+        const items = (data.editions || []).map(e => ({
+          code: "revenue",
+          year: e.edition_year,
+          value: data.series?.revenue?.[e.edition_year] ?? null,
+          converted_value: data.series?.revenue?.[e.edition_year] ?? null,
+          edition_name: e.name,
+        }));
+        setRevenueData({ [FIFA_LEAGUE_ID]: items });
+      })
+      .catch((err) => console.error("Erro ao buscar receitas:", err));
   }, [currency]);
-
-  useEffect(() => {
-    fetchRevenue([FIFA_LEAGUE_ID, ...selectedLeagues], currency, false);
-  }, [selectedLeagues]);
 
   // Logos das Copas por ciclo (apenas anos presentes nos dados da FIFA)
   const yearLogos = useMemo(() => {
@@ -91,6 +81,7 @@ export default function Main() {
           setCurrency={setCurrency}
           currencies={currencies}
           yearLogos={yearLogos}
+          showCompare={false}
         />
       </div>
 

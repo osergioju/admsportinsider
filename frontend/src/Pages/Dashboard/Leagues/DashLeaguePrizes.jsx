@@ -4,6 +4,7 @@ import { api } from "../../../services/api";
 import { ArrowLeft, X, Plus, Award, Loader2 } from "lucide-react";
 import { federationLogo } from "../../../utils/federationUrl";
 import { worldCupLogo } from "../../../utils/worldCupLogo";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 
@@ -82,11 +83,7 @@ export default function DashLeaguePrizes() {
         load();
     }, [slug]);
 
-    if (!league || !data) return (
-        <div className="flex items-center justify-center py-20 text-gray-300 gap-2">
-            <Loader2 className="animate-spin w-5 h-5" /> <span className="text-sm">Carregando…</span>
-        </div>
-    );
+    if (!league || !data) return <PageLoader />;
 
     const lg = league;
     const years = data.years;

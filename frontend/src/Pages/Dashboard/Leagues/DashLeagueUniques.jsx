@@ -9,6 +9,7 @@ import RevenueLineChart from "./components/revenue/RevenueLineChart";
 import NetResultLineChart from "./components/netResult/NetResultLineChart";
 import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
 import NoFinancialData from "./components/NoFinancialData";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 /* ─── Utilitários de cor ───────────────────────────────────────── */
 
@@ -164,7 +165,7 @@ export default function DashLeagueUniques() {
         loadDashboard();
     }, [slug]);
 
-    if (loading || !theLeague) return null;
+    if (loading || !theLeague) return <PageLoader />;
 
     /* ─── Helpers financeiros ──────────────────────────────────── */
     function formatMoney(value, currency) {

@@ -20,7 +20,8 @@ export default function RevenueSection({
   selectedLeagues,
   setSelectedLeagues,
   title = null,
-  yearLogos = null
+  yearLogos = null,
+  showCompare = true
 }) {
   const { t } = useTranslation();
   const sectionTitle = title || t("club.finance.revenue_by_year", "Receitas (por ano)");
@@ -100,6 +101,7 @@ export default function RevenueSection({
             onChangeEndYear={setEndYear}
             availableYears={availableYears}
             yearSelectionMode="multiple"
+            showCompare={showCompare}
           />
           <RevenueLineChart
             data={data}

@@ -26,7 +26,7 @@ export async function getFavorites(req, res) {
 /**
  * POST /dashboard/favorites/toggle
  * Adiciona ou remove um favorito (toggle)
- * Body: { entity_id: number, entity_type: "club" | "league" }
+ * Body: { entity_id: number, entity_type: "club" | "league" | "federation" }
  */
 export async function toggleFavorite(req, res) {
   try {
@@ -37,7 +37,7 @@ export async function toggleFavorite(req, res) {
       return res.status(400).json({ message: "entity_id e entity_type são obrigatórios" });
     }
 
-    if (!["club", "league"].includes(entity_type)) {
+    if (!["club", "league", "federation"].includes(entity_type)) {
       return res.status(400).json({ message: "entity_type inválido" });
     }
 

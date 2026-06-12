@@ -412,7 +412,7 @@ export default function DashLeagues() {
                 ))}
               </div>
             ) : worldLeagues.length === 0 ? (
-              <p className="text-sm text-gray-400 px-1">{t("leagues.nothing_yet", "Nada por enquanto.")}</p>
+              <p className="text-sm text-gray-400 px-1">{t("leagues.coming_soon", "Em breve.")}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {worldLeagues.map(league => (
@@ -435,7 +435,7 @@ export default function DashLeagues() {
             {countriesLoading ? (
               <p className="text-sm text-gray-400 px-1">…</p>
             ) : continentalOnly.length === 0 ? (
-              <p className="text-sm text-gray-400 px-1">{t("leagues.nothing_yet", "Nada por enquanto.")}</p>
+              <p className="text-sm text-gray-400 px-1">{t("leagues.coming_soon", "Em breve.")}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {continentalOnly.map(league => (
@@ -462,7 +462,7 @@ export default function DashLeagues() {
                 ))}
               </div>
             ) : leagueCountries.length === 0 ? (
-              <p className="text-sm text-gray-400 px-1">{t("leagues.nothing_yet", "Nada por enquanto.")}</p>
+              <p className="text-sm text-gray-400 px-1">{t("leagues.coming_soon", "Em breve.")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {leagueCountries.map(c => (

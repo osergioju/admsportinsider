@@ -10,6 +10,7 @@ import {
 import RevenueLineChart from "./components/revenue/RevenueLineChart";
 import NetResultLineChart from "./components/netResult/NetResultLineChart";
 import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 function NoFinancialData({ title }) {
     const { t } = useTranslation();
@@ -122,7 +123,7 @@ export default function PrePageClubs() {
         loadDashboard();
     }, [id]);
 
-    if (loading || !theClub) return null;
+    if (loading || !theClub) return <PageLoader />;
 
     /* ─── Helpers financeiros ──────────────────────────────────── */
     function formatMoney(value, currency) {

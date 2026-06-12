@@ -29,6 +29,7 @@ import DebtsSection from "./components/debts/DebtsSection";
 
 import { AuthContext } from "../../../context/AuthContext";
 import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 export default function DashLeagueFinance() {
   const { t } = useTranslation();
@@ -152,7 +153,7 @@ export default function DashLeagueFinance() {
   ]);
 
   if (loading || !theLeague) {
-    return <p className="text-sm text-gray-500">{t("ui.loading_dashboard", "Carregando dashboard…")}</p>;
+    return <PageLoader />;
   }
 
   const lg = theLeague.league;

@@ -16,10 +16,12 @@ export async function getEntityCurrency(db, { type, id, fallback }) {
     }
 
     if (type === "league") {
+      // Prioriza a moeda configurada na liga (ligas sem país, ex: FIFA Financeiro
+      // em USD); senão usa a moeda do país da liga
       query = `
-        SELECT ccy.code
+        SELECT COALESCE(l.currency_code, ccy.code) AS code
         FROM leagues l
-        JOIN currencies ccy ON ccy.id_country = l.id_country
+        LEFT JOIN currencies ccy ON ccy.id_country = l.id_country
         WHERE l.id_league = $1
         LIMIT 1
       `;
@@ -29,7 +31,7 @@ export async function getEntityCurrency(db, { type, id, fallback }) {
 
     const result = await db.query(query, [id]);
 
-    return result.rows.length ? result.rows[0].code : fallback;
+    return result.rows.length && result.rows[0].code ? result.rows[0].code : fallback;
 
   } catch (err) {
     console.error(`Erro ao buscar moeda (${type}):`, err);
@@ -39,7 +41,12 @@ export async function getEntityCurrency(db, { type, id, fallback }) {
 
 async function getUserFinancialContext(req) {
   if (!req.user) {
-    return { locale: "pt-BR", fromCurrency: "BRL", toCurrency: "BRL" };
+    // Visitante: respeita ?from/?to da URL (senão o seletor de moeda não funciona deslogado)
+    return {
+      locale: "pt-BR",
+      fromCurrency: req.query.from || "BRL",
+      toCurrency: req.query.to || "BRL",
+    };
   }
   const userId = req.user.id;
 
@@ -896,6 +903,12 @@ export async function getLeagueRevenues(req, res) {
         WHERE base_currency = $3
           AND reference_currency = $4
         ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
+      ),
+      -- Anos sem taxa (projeções futuras) usam a taxa mais recente disponível
+      last_rate AS (
+        SELECT rate FROM currency_rates
+        WHERE base_currency = $3 AND reference_currency = $4
+        ORDER BY period DESC LIMIT 1
       )
       SELECT
         lf.year,
@@ -903,13 +916,14 @@ export async function getLeagueRevenues(req, res) {
         COALESCE(fit.name, fi.name_pt) AS name,
         lf.edition_name,
         lf.value,
-        COALESCE(r.rate, 1) AS rate,
-        (lf.value * COALESCE(r.rate, 1)) AS converted_value
+        COALESCE(r.rate, lr.rate, 1) AS rate,
+        (lf.value * COALESCE(r.rate, lr.rate, 1)) AS converted_value
       FROM unified_league_financials lf
       JOIN financial_indicators fi ON fi.id = lf.id_indicator
       LEFT JOIN financial_indicator_translations fit
         ON fit.financial_indicator_id = fi.id AND fit.locale = $2
       LEFT JOIN rate_cte r ON r.year = lf.year
+      LEFT JOIN last_rate lr ON true
       WHERE lf.id_league = $1
         AND fi.code IN ('revenue', 'recurring_revenue', 'costs')
         ${yearFilter}

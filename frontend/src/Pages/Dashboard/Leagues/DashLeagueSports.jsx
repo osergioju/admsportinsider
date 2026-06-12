@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { api } from "../../../services/api";
 import LeagueSportsSection from "./LeagueSportsSection";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 function hexToRgb(hex) {
     if (!hex) return null;
@@ -34,7 +35,7 @@ export default function DashLeagueSports() {
             .finally(() => setLoading(false));
     }, [slug]);
 
-    if (loading || !theLeague) return null;
+    if (loading || !theLeague) return <PageLoader />;
 
     const lg = theLeague.league;
     const sj = lg.structure_json ?? {};

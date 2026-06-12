@@ -30,6 +30,7 @@ export default function ChartFilter({
   selectedYears: selectedYearsProp,
   onChangeSelectedYears,
   yearSelectionMode = "multiple",
+  showCompare = true,
 }) {
   const { t } = useTranslation();
   const currencyList = currencies.length > 0 ? currencies : FALLBACK_CURRENCIES;
@@ -126,6 +127,7 @@ export default function ChartFilter({
         <div className="flex items-center gap-2">
 
           {/* Busca de liga */}
+          {showCompare && (
           <div className="relative" data-league-search>
             <input
               type="text"
@@ -225,6 +227,7 @@ export default function ChartFilter({
               </div>
             )}
           </div>
+          )}
 
           {/* Seletor de moeda */}
           <select

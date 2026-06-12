@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { ArrowLeft, Users, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
 import { federationLogo } from "../../../utils/federationUrl";
+import PageLoader from "../../../components/uxui/PageLoader";
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 
@@ -111,7 +112,7 @@ export default function DashLeagueAttendance() {
         return arr;
     }, [matches, sortKey, sortDir]);
 
-    if (!league || !data) return null;
+    if (!league || !data) return <PageLoader />;
 
     const lg = league;
     const c1 = lg.primary_color || lg.fed_color1 || "#001F5B";
