@@ -82,6 +82,7 @@ export default function Main() {
           currencies={currencies}
           yearLogos={yearLogos}
           showCompare={false}
+          integratedTable
         />
       </div>
 

@@ -2,6 +2,11 @@ import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptRevenueLineData } from "./revenueLeague.adapter";
 
+// Paddings fixos do grid no modo integrado — a tabela abaixo usa os mesmos
+// valores para alinhar cada coluna ao ponto correspondente do gráfico
+const GRID_LEFT = 64;
+const GRID_RIGHT = 16;
+
 export default function RevenueLineChart({
   data,
   mainLeagueId,
@@ -9,7 +14,9 @@ export default function RevenueLineChart({
   leagueMap,
   leagueColor,
   startYear,
-  endYear
+  endYear,
+  integratedTable = false,
+  yearLogos = null
 }) {
 
 
@@ -69,8 +76,11 @@ export default function RevenueLineChart({
         const header = isEditionName
           ? `<b>${label} (${year})</b><br/>`
           : `<b>${year}</b><br/>`;
+        const fmtVal = (v) => integratedTable
+          ? Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+          : (v / 10).toFixed(1);
         return header + params
-          .map(p => `${p.marker} ${p.seriesName}: ${(p.value / 10).toFixed(1)}`)
+          .map(p => `${p.marker} ${p.seriesName}: ${fmtVal(p.value)}`)
           .join("<br/>");
       }
     },
@@ -88,20 +98,18 @@ export default function RevenueLineChart({
       }
     },
 
-    grid: {
-      left: 0,
-      right: 0,
-      bottom: 0,
-      top: 50,
-      containLabel: true
-    },
+    grid: integratedTable
+      ? { left: GRID_LEFT, right: GRID_RIGHT, bottom: 8, top: 50, containLabel: false }
+      : { left: 0, right: 0, bottom: 0, top: 50, containLabel: true },
 
     xAxis: {
       type: "category",
       data: adapted.xAxisLabels || adapted.years,
+      // No modo integrado os anos ficam na tabela alinhada logo abaixo
+      boundaryGap: integratedTable ? true : false,
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: {
+      axisLabel: integratedTable ? { show: false } : {
         color: "#666",
         fontSize: 12,
         fontFamily: "Effra Trial"
@@ -113,7 +121,9 @@ export default function RevenueLineChart({
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        formatter: (value) => `${(value / 100).toFixed()}M`,
+        formatter: integratedTable
+          ? (value) => value.toLocaleString("pt-BR")
+          : (value) => `${(value / 100).toFixed()}M`,
         color: "#666",
         fontFamily: "Effra Trial"
       },
@@ -141,12 +151,71 @@ export default function RevenueLineChart({
 
 
   return (
-    <div className="w-full max-w-full h-[250px] lg:h-[360px] overflow-hidden">
-      <ReactECharts
-        option={option}
-        style={{ width: "100%", height: "100%" }}
-        notMerge
-      />
+    <div className="w-full max-w-full overflow-hidden">
+      <div className="w-full h-[250px] lg:h-[360px]">
+        <ReactECharts
+          option={option}
+          style={{ width: "100%", height: "100%" }}
+          notMerge
+        />
+      </div>
+
+      {/* ── Tabela integrada: colunas alinhadas aos pontos do gráfico ── */}
+      {integratedTable && (
+        <div style={{ paddingLeft: GRID_LEFT, paddingRight: GRID_RIGHT }}>
+
+          {/* Cabeçalho: logo + ano + sede */}
+          <div className="flex border-t border-gray-100 pt-3 pb-2">
+            {adapted.years.map((y, i) => {
+              const label = adapted.xAxisLabels?.[i];
+              const hasName = label && label !== String(y);
+              return (
+                <div key={y} className="flex-1 min-w-0 flex flex-col items-center gap-1">
+                  {yearLogos?.[y] && (
+                    <img
+                      src={yearLogos[y]}
+                      alt={`Copa do Mundo ${y}`}
+                      className="h-8 w-10 object-contain"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
+                  <span className="text-xs font-semibold text-[#626262]">{y}</span>
+                  {hasName && (
+                    <span className="text-[9px] leading-tight text-gray-400 text-center px-0.5 max-w-full truncate" title={label}>
+                      {label}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Uma linha de valores por liga */}
+          {adapted.series.map((serie) => (
+            <div key={serie.id}>
+              {adapted.series.length > 1 && (
+                <div className="flex items-center gap-1.5 pt-1.5">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: serie.color }} />
+                  <span className="text-[11px] text-gray-500 font-medium">{serie.name}</span>
+                </div>
+              )}
+              <div className="flex py-2 border-t border-gray-50">
+                {serie.data.map((v, i) => (
+                  <div
+                    key={`${serie.id}-${adapted.years[i]}`}
+                    className="flex-1 min-w-0 text-center text-xs tabular-nums font-medium"
+                    style={{ color: serie.color }}
+                  >
+                    {v == null || Number(v) === 0
+                      ? <span className="text-gray-300">—</span>
+                      : Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

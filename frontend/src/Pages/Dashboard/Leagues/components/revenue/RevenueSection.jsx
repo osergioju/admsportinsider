@@ -21,7 +21,8 @@ export default function RevenueSection({
   setSelectedLeagues,
   title = null,
   yearLogos = null,
-  showCompare = true
+  showCompare = true,
+  integratedTable = false
 }) {
   const { t } = useTranslation();
   const sectionTitle = title || t("club.finance.revenue_by_year", "Receitas (por ano)");
@@ -111,18 +112,24 @@ export default function RevenueSection({
             leagueColor={leagueColor}
             startYear={startYear}
             endYear={endYear}
-          />
-          <div className="h-6"></div>
-          <RevenueTableChart
-            data={data}
-            ligasSelecionadas={selectedLeagues}
-            leagueMap={leagueMap}
-            mainLeagueId={mainLeagueId}
-            leagueColor={leagueColor}
-            startYear={startYear}
-            endYear={endYear}
+            integratedTable={integratedTable}
             yearLogos={yearLogos}
           />
+          {!integratedTable && (
+            <>
+              <div className="h-6"></div>
+              <RevenueTableChart
+                data={data}
+                ligasSelecionadas={selectedLeagues}
+                leagueMap={leagueMap}
+                mainLeagueId={mainLeagueId}
+                leagueColor={leagueColor}
+                startYear={startYear}
+                endYear={endYear}
+                yearLogos={yearLogos}
+              />
+            </>
+          )}
           {selectedLeagues.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {selectedLeagues.map((leagueId) => (
