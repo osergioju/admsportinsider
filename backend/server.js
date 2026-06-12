@@ -43,8 +43,16 @@ const options = {
 const swaggerSpec = swaggerJsdoc(options);
 
 dotenv.config();
-startNotificationCron();
-startSubscriptionExpiringCron();
+
+// DISABLE_CRONS=true no .env local impede que ambientes de dev
+// disparem notificações/assinaturas contra o banco de produção.
+// No PM2 em cluster, só a instância 0 roda os crons (NODE_APP_INSTANCE
+// é definido pelo PM2; fora dele a var não existe e os crons rodam normal).
+const isPrimaryInstance = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0";
+if (process.env.DISABLE_CRONS !== "true" && isPrimaryInstance) {
+  startNotificationCron();
+  startSubscriptionExpiringCron();
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;

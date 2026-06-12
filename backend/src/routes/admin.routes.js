@@ -1502,7 +1502,18 @@ import { previewFederationFinancial, importFederationFinancial, getEditionsByLea
 
 import { adminGuard } from "../middlewares/auth.middleware.js";
 import { getMaintenanceOverview, toggleCountry, toggleLeague, toggleFederation, bulkToggle, getSystemFeatures, toggleSystemFeature } from "../controllers/maintenance.controller.js";
+import { clearApiCache } from "../middlewares/apiCache.middleware.js";
 const router = Router();
+
+// Qualquer escrita no admin (imports, CRUDs) invalida o cache do dashboard público
+router.use((req, res, next) => {
+  if (req.method !== "GET") {
+    res.on("finish", () => {
+      if (res.statusCode < 400) clearApiCache();
+    });
+  }
+  next();
+});
 
 //router.use(adminGuard);
 

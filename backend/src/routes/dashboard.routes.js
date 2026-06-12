@@ -44,8 +44,13 @@ import { getLeaguePrizes } from "../controllers/federationFinancial.controller.j
 import { financialContext } from "../middlewares/financialContext.middleware.js";
 import { clubsGroupedByCountry, clubsSearch, getClubById, getLeagueById, leaguesSearch, getContinentalLeagues, getDashboardFederations, getDashboardFederationBySlug } from "../controllers/admin.controller.js";
 import { getFederationCycleFinancials, getLeagueCycleFinancials, getFederationFinanceOverview } from "../controllers/federationFinancial.controller.js";
+import { apiCache } from "../middlewares/apiCache.middleware.js";
 
 const router = Router();
+
+// Cache de 5 min para GETs anônimos (logado sempre passa direto).
+// Invalidado automaticamente por qualquer escrita no /admin (imports etc).
+router.use(apiCache(300));
 
 /* ===============================
    DASHBOARD GERAL
