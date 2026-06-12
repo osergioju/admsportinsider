@@ -81,7 +81,7 @@ export default function RevenueSection({
   const mainData = data?.[mainLeagueId];
 
   return (
-    <div className="w-full bg-white lg:p-10 p-6 rounded-xl">
+    <div className="w-full bg-white lg:p-10 p-4 md:p-6 rounded-xl">
       {mainData !== undefined && !mainData.length ? (
         <NoFinancialData title={sectionTitle} />
       ) : mainData?.length > 0 && (

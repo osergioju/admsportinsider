@@ -6,6 +6,9 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 
 const LIMITE_LIGAS = 4;
 
+const isMobile = window.innerWidth <= 768;
+
+
 const FALLBACK_CURRENCIES = [
   { code: "USD", symbol: "US$", name: "Dólar (USD)" },
   { code: "BRL", symbol: "R$", name: "Real (BRL)" },
@@ -128,105 +131,105 @@ export default function ChartFilter({
 
           {/* Busca de liga */}
           {showCompare && (
-          <div className="relative" data-league-search>
-            <input
-              type="text"
-              value={busca}
-              disabled={atLimite}
-              onChange={(e) => { setBusca(e.target.value); setIsOpen(true); }}
-              onFocus={() => setIsOpen(true)}
-              placeholder={atLimite ? t("leagues.limit_reached", "Limite atingido") : t("leagues.compare_placeholder", "Comparar liga…")}
-              style={{
-                fontFamily: "inherit",
-                fontSize: 13,
-                padding: "7px 12px 7px 30px",
-                borderRadius: 24,
-                border: "1px solid #e8e8e4",
-                background: "#fafaf8",
-                color: atLimite ? "#bbb" : "#333",
-                width: 175,
-                outline: "none",
-                cursor: atLimite ? "not-allowed" : "text",
-              }}
-            />
-            {/* ícone lupa */}
-            <span
-              style={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#bbb",
-                fontSize: 14,
-                pointerEvents: "none",
-              }}
-            >
-              ⌕
-            </span>
-
-            {/* Dropdown */}
-            {isOpen && busca && (
-              <div
+            <div className="relative" data-league-search>
+              <input
+                type="text"
+                value={busca}
+                disabled={atLimite}
+                onChange={(e) => { setBusca(e.target.value); setIsOpen(true); }}
+                onFocus={() => setIsOpen(true)}
+                placeholder={atLimite ? t("leagues.limit_reached", "Limite atingido") : t("leagues.compare_placeholder", "Comparar liga…")}
+                style={{
+                  fontFamily: "inherit",
+                  fontSize: 13,
+                  padding: "7px 12px 7px 30px",
+                  borderRadius: 24,
+                  border: "1px solid #e8e8e4",
+                  background: "#fafaf8",
+                  color: atLimite ? "#bbb" : "#333",
+                  width: 175,
+                  outline: "none",
+                  cursor: atLimite ? "not-allowed" : "text",
+                }}
+              />
+              {/* ícone lupa */}
+              <span
                 style={{
                   position: "absolute",
-                  zIndex: 30,
-                  marginTop: 6,
-                  width: "100%",
-                  background: "#fff",
-                  border: "1px solid #e8e8e4",
-                  borderRadius: 12,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-                  overflow: "hidden",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#bbb",
+                  fontSize: 14,
+                  pointerEvents: "none",
                 }}
               >
-                {loading ? (
-                  <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        width: 12,
-                        height: 12,
-                        border: "2px solid #ddd",
-                        borderTopColor: "#7f34d9",
-                        borderRadius: "50%",
-                        animation: "spin 0.6s linear infinite",
-                      }}
-                    />
-                    {t("leagues.searching", "Buscando ligas...")}
-                  </div>
-                ) : ligasFiltradas.length > 0 ? (
-                  <ul style={{ maxHeight: 192, overflowY: "auto", listStyle: "none" }}>
-                    {ligasFiltradas.map((liga) => (
-                      <li
-                        key={liga.id_league}
-                        onClick={() => handleAdd(liga)}
-                        style={{ padding: "8px 14px", fontSize: 13, cursor: "pointer", transition: "background 0.12s", display: "flex", alignItems: "center", gap: 8 }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "#f5f0fc"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                      >
-                        {liga.logo_url && (
-                          <img src={liga.logo_url} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
-                        )}
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: "block", fontWeight: 500, color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{liga.name}</span>
-                          {liga.country_name && (
-                            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", marginTop: 1 }}>
-                              {liga.flag_url && <img src={liga.flag_url} alt="" style={{ width: 13, height: 10, objectFit: "cover", borderRadius: 1 }} />}
-                              {liga.country_name}
-                            </span>
+                ⌕
+              </span>
+
+              {/* Dropdown */}
+              {isOpen && busca && (
+                <div
+                  style={{
+                    position: "absolute",
+                    zIndex: 30,
+                    marginTop: 6,
+                    width: "100%",
+                    background: "#fff",
+                    border: "1px solid #e8e8e4",
+                    borderRadius: 12,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {loading ? (
+                    <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa", display: "flex", alignItems: "center", gap: 8 }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: 12,
+                          height: 12,
+                          border: "2px solid #ddd",
+                          borderTopColor: "#7f34d9",
+                          borderRadius: "50%",
+                          animation: "spin 0.6s linear infinite",
+                        }}
+                      />
+                      {t("leagues.searching", "Buscando ligas...")}
+                    </div>
+                  ) : ligasFiltradas.length > 0 ? (
+                    <ul style={{ maxHeight: 192, overflowY: "auto", listStyle: "none" }}>
+                      {ligasFiltradas.map((liga) => (
+                        <li
+                          key={liga.id_league}
+                          onClick={() => handleAdd(liga)}
+                          style={{ padding: "8px 14px", fontSize: 13, cursor: "pointer", transition: "background 0.12s", display: "flex", alignItems: "center", gap: 8 }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#f5f0fc"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          {liga.logo_url && (
+                            <img src={liga.logo_url} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
                           )}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa" }}>
-                    {t("leagues.not_found", "Nenhuma liga encontrada")}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: "block", fontWeight: 500, color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{liga.name}</span>
+                            {liga.country_name && (
+                              <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", marginTop: 1 }}>
+                                {liga.flag_url && <img src={liga.flag_url} alt="" style={{ width: 13, height: 10, objectFit: "cover", borderRadius: 1 }} />}
+                                {liga.country_name}
+                              </span>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ padding: "10px 14px", fontSize: 13, color: "#aaa" }}>
+                      {t("leagues.not_found", "Nenhuma liga encontrada")}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Seletor de moeda */}
@@ -276,9 +279,9 @@ export default function ChartFilter({
                   onClick={() => toggleYear(year)}
                   style={{
                     fontFamily: "inherit",
-                    fontSize: 12,
+                    fontSize: isMobile ? 10 : 12,
                     fontWeight: active ? 500 : 400,
-                    padding: "4px 13px",
+                    padding: "3px 10px",
                     borderRadius: 20,
                     border: active ? "1px solid #e0dfd9" : "none",
                     cursor: "pointer",
