@@ -184,7 +184,7 @@ export default function NotasSection() {
         </div>
 
         {!loading && !error && conteudos.length > 0 && (
-          <span className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full text-xs font-medium text-gray-500">
+          <span className="hidden items-center gap-1.5 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full text-xs font-medium text-gray-500">
             <span className="w-1.5 h-1.5 rounded-full bg-[#7f34d9]" />
             {conteudos.length}{" "}
             {conteudos.length === 1

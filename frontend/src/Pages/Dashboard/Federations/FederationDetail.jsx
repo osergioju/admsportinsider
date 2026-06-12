@@ -1,4 +1,5 @@
 import { useEffect, useState, useContext } from "react";
+import NotasSection from "./../../Dashboard/Notas/NotasSection"
 import { useParams, useNavigate } from "react-router-dom";
 import { Heart, Shield, Trophy, ChevronLeft, ArrowRight, MapPin, Calendar, TrendingUp } from "lucide-react";
 import { federationLogo } from "../../../utils/federationUrl";
@@ -288,13 +289,13 @@ export default function FederationDetail() {
       {/* ── Header com gradiente ─────────────────────────────────────────── */}
       <div className="rounded-2xl mb-4 relative overflow-hidden" style={{ background }}>
 
-        {/* Overlay */}
+        {/* Overlay
         <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)" }} />
-
-        {/* Glow orbs */}
+        */}
+        {/* Glow orbs 
         <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl" style={{ background: glowPrimary }} />
         <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
-
+        */}
         <div className="relative z-10 px-5 sm:px-6 pt-4 pb-8">
           <div className="flex items-start gap-4 lg:p-5 flex-wrap">
 
@@ -308,12 +309,12 @@ export default function FederationDetail() {
 
             {/* Nome + nome completo + info */}
             <div className="flex-1 min-w-0 border-b pb-4 pl-2" style={{ borderColor }}>
-              <h1 className="font-light drop-shadow-md leading-tight text-xl sm:text-2xl" style={{ color: textColor }}>
+              <h1 className="font-light drop-shadow-md leading-tight text-xl sm:text-2xl lg:text-3xl xl:text-4xl" style={{ color: textColor }}>
                 {fedName}
               </h1>
               {federation.full_name && (
                 <span
-                  className="inline-block mt-1 text-xs border px-5 py-2 font-[300] rounded-full"
+                  className="lg:text-sm xl:text-base inline-block mt-1 text-xs border px-5 py-2 font-[300] rounded-full"
                   style={{ color: textColor, borderColor }}
                 >
                   {federation.full_name}
@@ -447,7 +448,19 @@ export default function FederationDetail() {
                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                         className="text-lg font-light lg:text-xl xl:text-2xl"
                       >
-                        {`A ${fedName} projeta receita de ${fmtCycleValue(latestRev, currency)} entre ${latestCycle.start} e ${latestCycle.end}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(0)}% em relação ao período anterior` : ""}.`}
+                        <>
+                          A {fedName} projeta receita de{" "}
+                          <b className="font-[600]">{fmtCycleValue(latestRev, currency)}</b>
+                          {" entre "}
+                          {latestCycle.start} e {latestCycle.end}
+                          {revPct != null && (
+                            <>
+                              , <span className="font-[600]">{revPct >= 0 ? "aumento" : "redução"} de{" "}
+                                {Math.abs(revPct).toFixed(0)}%</span>  em relação ao período anterior
+                            </>
+                          )}
+                          .
+                        </>
                       </p>
                     )}
                   </div>
@@ -477,7 +490,25 @@ export default function FederationDetail() {
                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
                         className="text-lg font-light lg:text-xl xl:text-2xl"
                       >
-                        {`A ${fedName} projeta ${latestNet >= 0 ? "lucro" : "prejuízo"} de ${fmtCycleValue(Math.abs(latestNet), currency)} entre ${latestCycle.start} e ${latestCycle.end}${prevNet != null ? `, ${latestNet >= prevNet ? "acima" : "abaixo"} do ${prevNet >= 0 ? "lucro" : "prejuízo"} de ${fmtCycleValue(Math.abs(prevNet), currency)} registrado no período anterior` : ""}.`}
+                        <>
+                          A {fedName} projeta{" "}
+                          <b className="font-[600]">
+                            {latestNet >= 0 ? "lucro" : "prejuízo"} de{" "}
+                            {fmtCycleValue(Math.abs(latestNet), currency)}
+                          </b>{" "}
+                          entre {latestCycle.start} e {latestCycle.end}
+                          {prevNet != null && (
+                            <>
+                              , {latestNet >= prevNet ? "acima" : "abaixo"} do{" "}
+                              <b className="font-[600]">
+                                {prevNet >= 0 ? "lucro" : "prejuízo"} de{" "}
+                                {fmtCycleValue(Math.abs(prevNet), currency)}
+                              </b>{" "}
+                              registrado no período anterior
+                            </>
+                          )}
+                          .
+                        </>
                       </p>
                     )}
                   </div>
@@ -487,6 +518,8 @@ export default function FederationDetail() {
           )}
         </div>
       )}
+
+      <NotasSection />
     </div>
   );
 }

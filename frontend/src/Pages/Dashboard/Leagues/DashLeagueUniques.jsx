@@ -195,9 +195,9 @@ export default function DashLeagueUniques() {
 
     // Cores da liga → fallback para federação vinculada
     const [c1, c2, c3] = resolveColors(
-        lg.primary_color   || lg.fed_color1,
+        lg.primary_color || lg.fed_color1,
         lg.secondary_color || lg.fed_color2,
-        lg.tertiary_color  || lg.fed_color3
+        lg.tertiary_color || lg.fed_color3
     );
 
     const rgb1 = hexToRgb(c1);
@@ -218,7 +218,7 @@ export default function DashLeagueUniques() {
         : glowPrimary;
 
     const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
-    const textColor  = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
+    const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
     const borderColor = lum1 > 0.5 ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.4)";
 
     const fCurrency = financials?.currency || "BRL";
@@ -325,7 +325,7 @@ export default function DashLeagueUniques() {
                 <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
 
                 <div className="relative z-10 px-5 sm:px-6 pt-4 pb-8">
-                    <div className="flex items-center gap-4 lg:p-5 flex-wrap">
+                    <div className="flex lg:items-center gap-4 lg:p-5 flex-wrap">
 
                         {/* Logo */}
                         <div className="shrink-0 w-14 h-14 lg:w-30 lg:h-30 xl:w-40 xl:h-40 flex items-center justify-center">
@@ -342,7 +342,7 @@ export default function DashLeagueUniques() {
                         {/* Nome + meta + nav cards */}
                         <div className="flex-1 min-w-0 border-b pb-4 pl-2" style={{ borderColor }}>
                             <h1
-                                className="text-white font-light drop-shadow-md leading-tight truncate text-xl sm:text-2xl"
+                                className="text-white font-light drop-shadow-md leading-tight truncate text-xl sm:text-2xl lg:text-3xl xl:text-4xl"
                                 style={{ color: textColor }}
                             >
                                 {competitionTitle}
@@ -351,7 +351,7 @@ export default function DashLeagueUniques() {
                             {/* Badge com nome completo */}
                             {fullName && (
                                 <span
-                                    className="inline-block mt-1 text-xs border px-5 py-2 font-[300] rounded-full"
+                                    className="inline-block lg:text-sm xl:text-base mt-1 text-xs border px-5 py-2 font-[300] rounded-full"
                                     style={{ color: textColor, borderColor }}
                                 >
                                     {fullName}
@@ -390,14 +390,14 @@ export default function DashLeagueUniques() {
                                     {navCards.map((card) => (
                                         <div
                                             key={card.title}
-                                            className="fed-comp-card flex items-center justify-between border rounded-2xl p-2 px-4 pr-2 lg:p-4 lg:px-5 cursor-pointer bg-white"
+                                            className="fed-comp-card flex items-center justify-between rounded-2xl p-2 px-4 pr-2 lg:p-4 lg:px-5 cursor-pointer bg-black/40"
                                             onClick={() => card.isAnchor ? scrollToSection(card.route) : navigate(card.route)}
                                         >
-                                            <h2 className="text-[#0A0A0A] font-[400] text-[14px] lg:text-[15px] leading-tight">
+                                            <h2 className="text-[#ffffff] font-[400] text-[14px] lg:text-[15px] leading-tight">
                                                 {card.title}
                                             </h2>
                                             <button
-                                                className="shrink-0 cursor-pointer transition-all text-sm px-4 py-2.5 ml-2 rounded-full border border-[#1E1E1E]/40 flex items-center gap-1.5 hover:bg-gray-50"
+                                                className="bg-white shrink-0 cursor-pointer transition-all text-sm px-4 py-2.5 ml-2 rounded-full border border-[#1E1E1E]/40 flex items-center gap-1.5 hover:bg-gray-50"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     card.isAnchor ? scrollToSection(card.route) : navigate(card.route);
@@ -438,9 +438,8 @@ export default function DashLeagueUniques() {
                                 <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                                     <h2
                                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-3 text-xl font-light lg:text-2xl relative pl-2 lg:pl-6"
+                                        className="mb-3 text-xl font-light lg:text-2xl relative"
                                     >
-                                        <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
                                         Premiações
                                     </h2>
                                     {sj.prizes_text && (
@@ -465,9 +464,8 @@ export default function DashLeagueUniques() {
                                 <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                                     <h2
                                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-3 text-xl font-light lg:text-2xl relative pl-2 lg:pl-6"
+                                        className="mb-3 text-xl font-light lg:text-2xl relative"
                                     >
-                                        <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
                                         Público
                                     </h2>
                                     {sj.attendance_text && (

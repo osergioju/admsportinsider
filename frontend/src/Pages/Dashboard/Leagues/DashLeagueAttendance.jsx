@@ -16,7 +16,7 @@ function hexToRgb(hex) {
 }
 
 const fmtInt = v => v == null ? "—" : Math.round(v).toLocaleString("pt-BR");
-const fmtUsdM = v => v == null ? "—" : `US$ ${(v / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+const fmtUsdM = v => v == null ? "—" : `US$ ${(v / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} milhões`;
 const fmtUsd2 = v => v == null ? "—" : `US$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /* Big numbers exibidos — chave normalizada do indicador (sem prefixo da competição) */
@@ -212,10 +212,9 @@ export default function DashLeagueAttendance() {
                         <button
                             key={yr}
                             onClick={() => { setSeason(yr); if (compareYear === yr) setCompareYear(null); }}
-                            className="text-xs px-3.5 py-1.5 rounded-full font-medium transition-all border"
-                            style={season === yr
-                                ? { background: c1, color: textColor, borderColor: c1 }
-                                : { background: "transparent", color: "#6b7280", borderColor: "#e5e7eb" }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${season === yr
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
                         >
                             {yr}
                         </button>

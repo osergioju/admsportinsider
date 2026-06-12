@@ -78,7 +78,7 @@ export const getRelatorios = async (req, res) => {
 
 export const getNotas = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const pageSize = parseInt(req.query.pageSize) || 10; // reduzi (boa prática)
+  const pageSize = parseInt(req.query.pageSize) || 8; // reduzi (boa prática)
 
   try {
     const fetchCount = page * pageSize;

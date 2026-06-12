@@ -20,7 +20,7 @@ function hexToRgb(hex) {
 function fmtMi(v, prefix = "") {
     if (v == null) return "—";
     if (Math.abs(v) >= 1000) return `${prefix}${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} bi`;
-    return `${prefix}${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+    return `${prefix}${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`;
 }
 
 /* Quadrinhos da tabela: apenas o número, sem "mi" */
@@ -38,15 +38,15 @@ function fmtFull(v, prefix = "") {
 
 /* ─── Ordem das linhas da tabela (chaves normalizadas) ─────────── */
 const POSITION_KEYS = [
-    ["performance-champion_per-position",          "Campeão"],
-    ["performance-runner-up_per-position",         "Vice-campeão"],
-    ["performance-3rd-place_per-position",         "3º lugar"],
-    ["performance-4th-place_per-position",         "4º lugar"],
-    ["performance-5th-to-8th-place_per-position",  "5º a 8º lugar (cada)"],
+    ["performance-champion_per-position", "Campeão"],
+    ["performance-runner-up_per-position", "Vice-campeão"],
+    ["performance-3rd-place_per-position", "3º lugar"],
+    ["performance-4th-place_per-position", "4º lugar"],
+    ["performance-5th-to-8th-place_per-position", "5º a 8º lugar (cada)"],
     ["performance-9th-to-16th-place_per-position", "9º a 16º lugar (cada)"],
-    ["performance-17th-to-32th-place_per-position","17º a 32º lugar (cada)"],
-    ["performance-33th-to-48th-place_per-position","33º a 48º lugar (cada)"],
-    ["preparation-fee_per-position",               "Preparação (cada)"],
+    ["performance-17th-to-32th-place_per-position", "17º a 32º lugar (cada)"],
+    ["performance-33th-to-48th-place_per-position", "33º a 48º lugar (cada)"],
+    ["preparation-fee_per-position", "Preparação (cada)"],
 ];
 const TOTAL_KEY = "prizes_total";
 
@@ -183,10 +183,9 @@ export default function DashLeaguePrizes() {
                     <div className="flex flex-wrap gap-2 pb-4 border-b border-gray-100">
                         <button
                             onClick={() => setActiveYear(null)}
-                            className="text-xs px-3.5 py-1.5 rounded-full font-medium transition-all border"
-                            style={!activeYear
-                                ? { background: c1, color: textColor, borderColor: c1 }
-                                : { background: "transparent", color: "#6b7280", borderColor: "#e5e7eb" }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${!activeYear
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
                         >
                             Todas
                         </button>
@@ -194,10 +193,9 @@ export default function DashLeaguePrizes() {
                             <button
                                 key={yr}
                                 onClick={() => setActiveYear(prev => prev === yr ? null : yr)}
-                                className="text-xs px-3.5 py-1.5 rounded-full font-medium transition-all border"
-                                style={activeYear === yr
-                                    ? { background: c1, color: textColor, borderColor: c1 }
-                                    : { background: "transparent", color: "#6b7280", borderColor: "#e5e7eb" }}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${activeYear === yr
+                                    ? "bg-gray-900 text-white"
+                                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
                             >
                                 {yr}
                             </button>
@@ -214,7 +212,7 @@ export default function DashLeaguePrizes() {
                                     Posição
                                 </th>
                                 {visibleYears.map(yr => (
-                                    <th key={yr} className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wide py-3 px-4 min-w-[120px] align-top">
+                                    <th key={yr} className="text-center text-[11px] lg:text-[14px] font-semibold text-gray-400 uppercase tracking-wide py-3 px-4 min-w-[120px] align-top">
                                         <span className="block">{yr}</span>
                                         {data.editions[yr]?.name && (
                                             <span className="block text-[10px] text-gray-300 font-normal normal-case tracking-normal mt-0.5">
@@ -235,7 +233,7 @@ export default function DashLeaguePrizes() {
                         </thead>
                         <tbody>
                             {POSITION_KEYS.map(([key, fallback], i) => {
-                                const bg = i % 2 === 0 ? "bg-white" : "bg-gray-50/40";
+                                const bg = i % 2 === 0 ? "bg-white" : "bg-[#fcfcfd]";
                                 // pula linhas que não têm valor em nenhuma edição visível
                                 if (!years.some(yr => valueOf(yr, key) != null)) return null;
                                 return (
@@ -265,7 +263,7 @@ export default function DashLeaguePrizes() {
                             <tr className="border-t-2 border-gray-200" style={{ background: c1 }}>
                                 <td className="sticky left-0 z-10 text-[11px] font-bold py-3.5 px-6 border-r whitespace-nowrap"
                                     style={{ background: c1, color: textColor, borderColor: "rgba(255,255,255,0.12)" }}>
-                                    Pool total
+                                    Total
                                 </td>
                                 {visibleYears.map(yr => (
                                     <td key={yr} className="text-center py-3.5 px-4 text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: textColor }}>
@@ -282,9 +280,10 @@ export default function DashLeaguePrizes() {
             {/* ── COMPARATIVO ──────────────────────────────────── */}
             <div className="bg-white rounded-2xl mb-4 px-6 py-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-                    <div>
-                        <h2 className="text-base font-semibold text-gray-800">Comparativo de edições</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">Compare até 4 edições lado a lado · premiação recebida por seleção</p>
+                    <div className="lg:flex items-center gap-4">
+                        <h2 className="text-base font-semibold text-gray-800">Comparativo de temporadas</h2>
+                        <span className="w-1 h-1 inline-block bg-black rounded-full"></span>
+                        <p className="text-sm text-gray-800">Compare até quatro edições</p>
                     </div>
                     {years.filter(y => !compared.includes(y)).length > 0 && compared.length < 4 && (
                         <div className="flex items-center gap-2">
@@ -317,18 +316,19 @@ export default function DashLeaguePrizes() {
                         Selecione ao menos uma edição para comparar
                     </div>
                 ) : (
-                    <div className={`grid gap-4 ${
-                        compared.length === 1 ? "grid-cols-1 max-w-sm"
+                    <div className={`grid gap-4 ${compared.length === 1 ? "grid-cols-1 max-w-sm"
                         : compared.length === 2 ? "sm:grid-cols-2"
-                        : compared.length === 3 ? "sm:grid-cols-3"
-                        : "grid-cols-2 lg:grid-cols-4"
-                    }`}>
+                            : compared.length === 3 ? "sm:grid-cols-3"
+                                : "grid-cols-2 lg:grid-cols-4"
+                        }`}>
+
                         {compared.map(yr => {
                             const edition = data.editions[yr] ?? { name: String(yr) };
                             const pool = valueOf(yr, TOTAL_KEY);
                             const teams = (data.teams[yr] ?? [])
                                 .filter(t => (t.total ?? 0) > 0)
                                 .sort((a, b) => (a.standing ?? 999) - (b.standing ?? 999) || (b.total ?? 0) - (a.total ?? 0));
+
 
                             return (
                                 <div key={yr} className="border border-gray-100 rounded-2xl overflow-hidden flex flex-col">
@@ -346,10 +346,11 @@ export default function DashLeaguePrizes() {
                                         <p className="text-[11px] mb-0.5" style={{ color: textColor, opacity: 0.6 }}>
                                             {edition.name}
                                         </p>
-                                        <span className="text-2xl font-light" style={{ color: textColor }}>{yr}</span>
+                                        <span className="text-2xl font-light" style={{ color: textColor }}>{yr}</span><br></br>
+                                        <p style={{ color: textColor, opacity: 0.6, fontSize: "12px" }}>em milhões - {prefix}</p>
                                         {pool != null && (
                                             <p className="text-[11px] mt-1 font-light" style={{ color: textColor, opacity: 0.65 }}>
-                                                Pool total: {fmtMi(convert(pool), prefix)}
+                                                Total: {fmtMi(convert(pool), prefix)}
                                             </p>
                                         )}
                                     </div>
@@ -391,7 +392,7 @@ export default function DashLeaguePrizes() {
                                                         </div>
                                                         <span className="flex-1 text-xs text-gray-600 leading-none truncate">{t.name}</span>
                                                         <span className="text-xs font-medium text-gray-700 tabular-nums shrink-0">
-                                                            {fmtMi(convert(t.total))}
+                                                            {t.total}
                                                         </span>
                                                     </div>
                                                 ))}

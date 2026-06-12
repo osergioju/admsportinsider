@@ -92,8 +92,8 @@ export default function RevenueLineChart({
         fontWeight: "normal"
       },
       formatter: (params) => {
-        const idx   = params[0]?.dataIndex;
-        const year  = adapted.years?.[idx];
+        const idx = params[0]?.dataIndex;
+        const year = adapted.years?.[idx];
         const label = adapted.xAxisLabels?.[idx] || params[0]?.axisValue;
         const isEditionName = label && label !== String(year);
         const header = isEditionName
@@ -108,6 +108,7 @@ export default function RevenueLineChart({
       }
     },
     legend: {
+      show: false,
       top: 0,
       right: 0,
       icon: "roundRect",
@@ -189,7 +190,7 @@ export default function RevenueLineChart({
         <div style={{ paddingLeft: gridLeft, paddingRight: gridRight }}>
 
           {/* Cabeçalho: logo + ano (+ sede só no desktop) */}
-          <div className="flex border-t border-gray-100 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
+          <div className="flex border-t border-gray-100 pt-2 sm:pt-3 pb-1.5 lg:pb-0 sm:pb-2">
             {adapted.years.map((y, i) => {
               const label = adapted.xAxisLabels?.[i];
               const hasName = label && label !== String(y);
@@ -206,7 +207,7 @@ export default function RevenueLineChart({
                   <span className="text-[10px] sm:text-xs font-semibold text-[#626262]">{y}</span>
                   {/* Sede só no desktop (no mobile truncava para "Cor..." e apertava tudo) */}
                   {hasName && (
-                    <span className="hidden sm:block text-[9px] leading-tight text-gray-400 text-center px-0.5 max-w-full truncate" title={label}>
+                    <span className="hidden sm:block text-[9px] lg:text-[11px] leading-tight text-gray-400 text-center px-0.5 lg:px-2 max-w-full" title={label}>
                       {label}
                     </span>
                   )}
@@ -228,14 +229,14 @@ export default function RevenueLineChart({
                 {serie.data.map((v, i) => (
                   <div
                     key={`${serie.id}-${adapted.years[i]}`}
-                    className="flex-1 min-w-0 text-center text-[10px] sm:text-xs tabular-nums font-medium px-px"
+                    className="lg:font-bold flex-1 min-w-0 text-center text-[10px] sm:text-xs lg:text-sm tabular-nums font-medium px-px"
                     style={{ color: serie.color }}
                   >
                     {v == null || Number(v) === 0
                       ? <span className="text-gray-300">—</span>
                       : (isMobile
-                          ? compactM(Number(v))
-                          : Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 }))}
+                        ? compactM(Number(v))
+                        : Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 0 }))}
                   </div>
                 ))}
               </div>

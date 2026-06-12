@@ -123,10 +123,10 @@ export default function ChartFilter({
   }
 
   return (
-    <div className="w-full flex items-start flex-wrap gap-2 justify-between mb-2 z-20 mt-4">
+    <div className="w-full flex items-start flex-wrap gap-4 lg:gap-0 justify-between mb-2 z-20 mt-4">
 
       {/* ── Linha principal ── */}
-      <div className="xl:w-1/2 w-full flex flex-wrap items-center gap-3">
+      <div className="xl:w-1/2 w-full bg- flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
 
           {/* Busca de liga */}
@@ -259,7 +259,7 @@ export default function ChartFilter({
 
       {/* ── Pills de ano ── */}
       {years.length > 0 && (
-        <div className="xl:w-1/2 w-full flex items-center flex-wrap">
+        <div className="xl:w-1/2 w-full flex items-center lg:justify-end flex-wrap">
           <div />
 
           <div
