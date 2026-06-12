@@ -374,7 +374,7 @@ export default function DashLeaguePrizes() {
                                     {/* Seleções e valores recebidos */}
                                     <div className="px-4 pb-4 flex-1 overflow-y-auto max-h-80">
                                         {teams.length === 0 ? (
-                                            <p className="text-xs text-gray-300 text-center py-6">Sem dados por seleção</p>
+                                            <p className="text-xs text-gray-300 text-center py-6">Sem dados por time</p>
                                         ) : (
                                             <div className="space-y-1.5">
                                                 {teams.map((t, ti) => (

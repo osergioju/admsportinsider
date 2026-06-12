@@ -166,6 +166,7 @@ function parseMeta(raw) {
 
 function ContinentalLeagueCard({ league, isFavorited, toggleFavorite }) {
   const meta = parseMeta(league.structure_json);
+  const confederation = (meta.confederation || league.fed_acronym || "").toUpperCase();
 
   return (
     <Link to={`/dashboard/competitions/${league.slug || league.id_league}`} className="group block">
@@ -180,8 +181,8 @@ function ContinentalLeagueCard({ league, isFavorited, toggleFavorite }) {
           <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#7F33D9] transition-colors leading-tight">
             {league.name}
           </p>
-          {meta.confederation && (
-            <p className="text-[11px] text-gray-400 mt-0.5">{meta.confederation}</p>
+          {confederation && (
+            <p className="text-[11px] text-gray-400 mt-0.5">{confederation}</p>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">

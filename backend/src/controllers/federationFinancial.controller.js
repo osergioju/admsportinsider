@@ -186,7 +186,7 @@ export async function importFederationFinancial(req, res) {
     let editionIds = {};
 
     // 0. Classifica as linhas: indicadores normais × linhas por-time (planilha de
-    //    premiações usa slug de federação como code nas seções "Times"/"Material de apoio")
+    //    premiações usa slug de federação OU de clube como code nas seções "Times")
     const fedRes = await db.query(`
       SELECT f.id_federation, f.slug, f.name, c.name AS country_name
       FROM federations f LEFT JOIN countries c ON c.id_country = f.id_country
@@ -198,6 +198,21 @@ export async function importFederationFinancial(req, res) {
       if (f.slug) fedBySlug.set(f.slug, f.id_federation);
       if (f.name) fedByName.set(normFed(f.name), f.id_federation);
       if (f.country_name && !fedByName.has(normFed(f.country_name))) fedByName.set(normFed(f.country_name), f.id_federation);
+    }
+
+    const clubRes = await db.query(`SELECT id_club, slug, name FROM clubs`);
+    const clubBySlug = new Map();
+    const clubByName = new Map();
+    for (const c of clubRes.rows) {
+      if (c.slug) clubBySlug.set(c.slug, c.id_club);
+      if (c.name) clubByName.set(normFed(c.name), c.id_club);
+    }
+
+    // Competição de clubes resolve times como clube primeiro; de seleções, como federação
+    let leagueTeamType = "national";
+    if (id_league) {
+      const tt = await db.query(`SELECT team_type FROM leagues WHERE id_league = $1`, [id_league]);
+      leagueTeamType = tt.rows[0]?.team_type || "national";
     }
     const TEAM_SECTIONS = [
       [/prizes-per-team_total$/, "total"],
@@ -214,10 +229,19 @@ export async function importFederationFinancial(req, res) {
       if (section) { currentTeamCategory = section[1]; finInds.push(ind); continue; }
       // Linha dentro de seção por-time que não é cabeçalho agregado (códigos
       // agregados contêm o prefixo da competição, ex: 'world-cup_...')
-      const idFed = fedBySlug.get(ind.code) ?? fedByName.get(normFed(ind.name ?? "")) ?? null;
-      const isTeamRow = currentTeamCategory != null && (idFed != null || !ind.code.includes("cup_"));
+      let idFed = fedBySlug.get(ind.code) ?? fedByName.get(normFed(ind.name ?? "")) ?? null;
+      let idClub = clubBySlug.get(ind.code) ?? clubByName.get(normFed(ind.name ?? "")) ?? null;
+      // Resolve pelo tipo da competição (evita homônimos: seleção Costa Rica × clube Costa Rica EC)
+      if (idFed != null && idClub != null) {
+        if (leagueTeamType === "clubs") idFed = null; else idClub = null;
+      } else if (leagueTeamType === "clubs" && idFed != null && idClub == null) {
+        idClub = null; idFed = null; // federação em liga de clubes: não classifica, cai em skipped
+      } else if (leagueTeamType !== "clubs" && idClub != null && idFed == null) {
+        idClub = null; // clube em liga de seleções: idem
+      }
+      const isTeamRow = currentTeamCategory != null && (idFed != null || idClub != null || !ind.code.includes("cup_"));
       if (isTeamRow) {
-        if (idFed != null) teamRows.push({ idFed, category: currentTeamCategory, values: ind.values });
+        if (idFed != null || idClub != null) teamRows.push({ idFed, idClub, category: currentTeamCategory, values: ind.values });
         else teamRowsSkipped.push(ind.name ?? ind.code);
         continue;
       }
@@ -287,8 +311,8 @@ export async function importFederationFinancial(req, res) {
         editionIds[ed.slug] = r.rows[0].id_edition;
       }
 
-      // 2b. Premiações por seleção → edition_team_prizes
-      const teamPrizeMap = new Map(); // `${id_edition}|${id_federation}` → linha consolidada
+      // 2b. Premiações por time (federação OU clube) → edition_team_prizes
+      const teamPrizeMap = new Map(); // `${id_edition}|fed:X|club:Y` → linha consolidada
       for (const tr of teamRows) {
         for (const ed of editions) {
           const id_edition = editionIds[ed.slug];
@@ -297,23 +321,26 @@ export async function importFederationFinancial(req, res) {
           if (raw == null || raw === "N/A" || raw === "") continue;
           const numVal = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", "."));
           if (isNaN(numVal)) continue;
-          const key = `${id_edition}|${tr.idFed}`;
-          if (!teamPrizeMap.has(key)) teamPrizeMap.set(key, { id_edition, id_federation: tr.idFed, year, total: null, performance: null, fixed: null, standing: null });
+          const key = `${id_edition}|fed:${tr.idFed}|club:${tr.idClub}`;
+          if (!teamPrizeMap.has(key)) teamPrizeMap.set(key, { id_edition, id_federation: tr.idFed ?? null, id_club: tr.idClub ?? null, year, total: null, performance: null, fixed: null, standing: null });
           teamPrizeMap.get(key)[tr.category] = tr.category === "standing" ? Math.round(numVal) : numVal;
         }
       }
       for (const tp of teamPrizeMap.values()) {
         teamPrizesSaved++;
+        const conflictTarget = tp.id_club != null
+          ? "(id_edition, id_club) WHERE id_club IS NOT NULL"
+          : "(id_edition, id_federation)";
         await client.query(
-          `INSERT INTO edition_team_prizes (id_edition, id_federation, year, total, performance, fixed, standing)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (id_edition, id_federation) DO UPDATE SET
+          `INSERT INTO edition_team_prizes (id_edition, id_federation, id_club, year, total, performance, fixed, standing)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT ${conflictTarget} DO UPDATE SET
              year        = COALESCE(EXCLUDED.year, edition_team_prizes.year),
              total       = COALESCE(EXCLUDED.total, edition_team_prizes.total),
              performance = COALESCE(EXCLUDED.performance, edition_team_prizes.performance),
              fixed       = COALESCE(EXCLUDED.fixed, edition_team_prizes.fixed),
              standing    = COALESCE(EXCLUDED.standing, edition_team_prizes.standing)`,
-          [tp.id_edition, tp.id_federation, tp.year, tp.total, tp.performance, tp.fixed, tp.standing]
+          [tp.id_edition, tp.id_federation, tp.id_club, tp.year, tp.total, tp.performance, tp.fixed, tp.standing]
         );
       }
 
@@ -594,16 +621,18 @@ export async function getLeaguePrizes(req, res) {
       if (r.name_pt) labels[key] = r.name_pt;
     }
 
-    // Premiação por seleção, com escudo da federação e bandeira do país
+    // Premiação por time: seleção (federação + bandeira) ou clube (escudo)
     const teamsRes = await db.query(`
       SELECT etp.year, etp.total, etp.performance, etp.fixed, etp.standing,
              f.slug AS federation_slug, f.acronym AS federation_acronym,
              f.name AS federation_name, f.active AS federation_active,
-             c.flag_url
+             c.flag_url,
+             cl.id_club, cl.slug AS club_slug, cl.name AS club_name, cl.crest_url AS club_crest
       FROM edition_team_prizes etp
       JOIN competition_editions ce ON ce.id_edition = etp.id_edition
-      JOIN federations f ON f.id_federation = etp.id_federation
+      LEFT JOIN federations f ON f.id_federation = etp.id_federation
       LEFT JOIN countries c ON c.id_country = f.id_country
+      LEFT JOIN clubs cl ON cl.id_club = etp.id_club
       WHERE ce.id_league = $1
       ORDER BY etp.year, etp.total DESC NULLS LAST
     `, [leagueId]);
@@ -614,9 +643,11 @@ export async function getLeaguePrizes(req, res) {
       teams[t.year].push({
         federation_slug: t.federation_slug,
         federation_acronym: t.federation_acronym,
-        name: t.federation_name,
+        name: t.club_name ?? t.federation_name,
         federation_active: t.federation_active ?? false,
-        flag_url: t.flag_url,
+        flag_url: t.club_crest ?? t.flag_url,
+        id_club: t.id_club,
+        club_slug: t.club_slug,
         total: t.total != null ? parseFloat(t.total) : null,
         performance: t.performance != null ? parseFloat(t.performance) : null,
         fixed: t.fixed != null ? parseFloat(t.fixed) : null,
