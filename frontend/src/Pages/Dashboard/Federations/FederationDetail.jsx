@@ -144,7 +144,7 @@ function CycleBarChart({ editions, field, color }) {
 
 // ─── Seletor de moeda ─────────────────────────────────────────────────────────
 
-const CURRENCIES = ["USD", "BRL", "EUR", "GBP", "JPY"];
+const CURRENCIES = ["USD", "BRL", "EUR", "GBP"];
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
@@ -213,7 +213,6 @@ export default function FederationDetail() {
     linear-gradient(135deg, ${c1}, ${c2}, ${c3})
   `.trim();
 
-  const backgroundLine = `linear-gradient(to bottom, ${c1}, ${c3}, ${c2}, transparent)`;
 
   const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
   const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
@@ -226,7 +225,6 @@ export default function FederationDetail() {
     ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)`
     : glowPrimary;
 
-  const colorWOpacity = lighten(c1, 0.7);
   const chartColor = pickChartColor(federation.primary_color, federation.secondary_color, federation.tertiary_color);
 
   // ── Dados financeiros ──────────────────────────────────────────────────────
@@ -353,7 +351,7 @@ export default function FederationDetail() {
                     <button
                       onClick={() => navigate(`/dashboard/federations/finance/${slug}`)}
                       className="flex items-center gap-2 cursor-pointer text-[#0A0A0A] font-[400] text-sm lg:text-[15px] py-3 px-5 rounded-full transition-all hover:brightness-[1.05]"
-                      style={{ background: `linear-gradient(to right, #ffffff, ${colorWOpacity})` }}
+                      style={{ background: "#ffffff" }}
                     >
                       <TrendingUp size={15} />
                       Indicadores financeiros
@@ -438,15 +436,14 @@ export default function FederationDetail() {
                   <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                     <h2
                       style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                      className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                      className="mb-4 text-3xl font-light lg:text-4xl relative"
                     >
-                      <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
                       Receitas por ciclo
                     </h2>
                     {latestEd && latestCycle && latestRev != null && (
                       <p
                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                        className="text-lg font-light lg:text-xl xl:text-2xl"
+                        className="text-sm font-light lg:text-base"
                       >
                         <>
                           A {fedName} projeta receita de{" "}
@@ -474,21 +471,20 @@ export default function FederationDetail() {
                     <CycleBarChart
                       editions={editions}
                       field="net_income_converted"
-                      color={latestNet != null && latestNet >= 0 ? "#10b981" : "#ef4444"}
+                      color={latestNet != null && latestNet >= 0 ? "#946E1C" : "#ef4444"}
                     />
                   </div>
                   <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                     <h2
                       style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                      className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
+                      className="mb-4 text-3xl font-light lg:text-4xl relative"
                     >
-                      <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
                       Resultado líquido
                     </h2>
                     {latestEd && latestCycle && latestNet != null && (
                       <p
                         style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                        className="text-lg font-light lg:text-xl xl:text-2xl"
+                        className="text-sm font-light lg:text-base"
                       >
                         <>
                           A {fedName} projeta{" "}

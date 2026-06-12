@@ -146,9 +146,6 @@ export default function Relatorios() {
           <h1 className="text-xl font-bold text-gray-900">
             {t("reports.title", "Relatórios")}
           </h1>
-          <p className="text-sm text-gray-500">
-            {t("reports.subtitle", "Análises e documentos exclusivos disponíveis para download")}
-          </p>
         </div>
 
         {/* Caixinha de idioma — evita relatórios duplicados PT/EN */}

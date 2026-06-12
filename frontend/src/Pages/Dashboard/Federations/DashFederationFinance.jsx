@@ -62,6 +62,7 @@ function fmtNum(v) {
 }
 
 const cycleLabel = (y) => `${y - 3}-${y}`;
+const cycleRangeLabel = (y) => `${y - 3} a ${y}`;
 
 // ─── Moedas (apenas as 4 pedidas pelo cliente) ────────────────────────────────
 
@@ -105,12 +106,21 @@ function LineCycles({ editions, values, color, starYears = [] }) {
   return <ReactECharts option={option} style={{ height: 260 }} />;
 }
 
+// Quebra o label em linhas por palavra (evita corte fora da área visível)
+function wrapLabel(text, max = 14) {
+  const words = String(text).split(" ");
+  const lines = [];
+  let cur = "";
+  for (const w of words) {
+    if (cur && (cur + " " + w).length > max) { lines.push(cur); cur = w; }
+    else cur = cur ? cur + " " + w : w;
+  }
+  if (cur) lines.push(cur);
+  return lines.join("\n");
+}
+
 // Barras por categoria — composição de um único ciclo
 function CategoryBars({ items, color }) {
-  const gradient = {
-    type: "linear", x: 0, y: 0, x2: 0, y2: 1,
-    colorStops: [{ offset: 0, color }, { offset: 1, color: lighten(color, 0.8) }],
-  };
   const option = {
     tooltip: {
       trigger: "axis",
@@ -123,7 +133,7 @@ function CategoryBars({ items, color }) {
     xAxis: {
       type: "category",
       data: items.map(i => i.label),
-      axisLabel: { ...AXIS_LABEL, interval: 0, width: 78, overflow: "break", lineHeight: 13 },
+      axisLabel: { ...AXIS_LABEL, interval: 0, lineHeight: 12, formatter: v => wrapLabel(v) },
       axisLine: { show: false }, axisTick: { show: false },
     },
     yAxis: { type: "value", axisLabel: { ...AXIS_LABEL, formatter: v => fmtNum(v) }, splitLine: SPLIT_LINE },
@@ -131,7 +141,7 @@ function CategoryBars({ items, color }) {
       type: "bar",
       data: items.map(i => i.value),
       barMaxWidth: 46,
-      itemStyle: { color: gradient, borderRadius: [6, 6, 0, 0] },
+      itemStyle: { color, borderRadius: [6, 6, 0, 0] },
       label: { show: true, position: "top", fontSize: 9, color: "#6b7280", formatter: p => fmtNum(p.value) },
     }],
   };
@@ -232,7 +242,7 @@ function CycleCard({ title, editions, defaultYear, footnote, children }) {
       <div className="flex items-start justify-between gap-x-3 gap-y-2 mb-1 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold text-[#111] leading-tight">{title}</h2>
-          <p className="text-[11px] text-gray-400">em milhões · ciclo {cycleLabel(year)}</p>
+          <p className="text-[11px] text-gray-400">em milhões · {cycleRangeLabel(year)}</p>
         </div>
         <div className="flex gap-0.5 bg-gray-100 rounded-full p-0.5 flex-wrap shrink-0">
           {editions.map(e => (
@@ -241,7 +251,7 @@ function CycleCard({ title, editions, defaultYear, footnote, children }) {
               onClick={() => setYear(e.edition_year)}
               title={`${cycleLabel(e.edition_year)} · ${e.name || ""}`}
               className={`px-2 py-1 rounded-full text-[11px] font-semibold transition-all ${
-                year === e.edition_year ? "bg-white text-[#7F33D9] shadow-sm" : "text-gray-500 hover:text-gray-700"
+                year === e.edition_year ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {e.edition_year}
@@ -346,18 +356,15 @@ export default function DashFederationFinance() {
   }
 
   // ── Cores / header ──
+  // Testeira no novo padrão: cor sólida escura + letras brancas
   const [c1, c2, c3] = resolveColors(federation.primary_color, federation.secondary_color, federation.tertiary_color);
-  const rgb1 = hexToRgb(c1);
-  const rgb2 = hexToRgb(c2);
-  const glowPrimary = rgb1 ? `radial-gradient(circle, rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.45) 0%, transparent 70%)` : "rgba(0,0,0,0.2)";
-  const glowSecondary = rgb2 ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)` : glowPrimary;
-  const headerBg = `
-    radial-gradient(circle at 20% 30%, ${c1} 0%, transparent 60%),
-    radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
-    linear-gradient(135deg, ${c1}, ${c2}, ${c3})
-  `;
-  const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
-  const headerText = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
+  const isDark = (hex) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return false;
+    return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255 < 0.5;
+  };
+  const headerBg = [c1, c2, c3].find(isDark) || "#1a1a2e";
+  const headerText = "#FFFFFF";
   const chartColor = pickChartColor(federation.primary_color, federation.secondary_color, federation.tertiary_color);
 
   const fedName = federation.acronym || federation.name;
@@ -421,9 +428,6 @@ export default function DashFederationFinance() {
 
       {/* ── Header ── */}
       <div className="w-full rounded-2xl overflow-hidden relative" style={{ background: headerBg }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)" }} />
-        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl" style={{ background: glowPrimary }} />
-        <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
         <div className="relative z-10 p-6 sm:p-8 flex items-start gap-5">
           <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center p-2.5">
             {federation.slug
@@ -513,16 +517,13 @@ export default function DashFederationFinance() {
 
           {/* ── Testeira: De onde vem o dinheiro ── */}
           <div className="w-full rounded-2xl overflow-hidden relative mt-8" style={{ background: headerBg }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)" }} />
-            <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl" style={{ background: glowPrimary }} />
-            <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
             <div className="relative z-10 px-6 sm:px-8 py-6 sm:py-8">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold drop-shadow-md" style={{ color: headerText }}>
                 De onde vem o dinheiro
               </h2>
               {latest && (
                 <p className="text-xs mt-1 opacity-70" style={{ color: headerText }}>
-                  Dados até o ciclo {cycleLabel(latest)}
+                  Dados até {cycleRangeLabel(latest)}
                 </p>
               )}
             </div>

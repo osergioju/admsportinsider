@@ -1,4 +1,3 @@
-import * as echarts from "echarts";
 
 export function adaptRevenueBreakdown(
   dataByClub,
@@ -62,19 +61,10 @@ export function adaptRevenueBreakdown(
         return {
           value: v,
           itemStyle: {
-            borderRadius: isNegative 
+            borderRadius: isNegative
               ? [0, 0, 6, 6]   // negativo: arredonda embaixo
               : [6, 6, 0, 0],  // positivo: arredonda em cima
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, isNegative
-              ? [
-                  { offset: 0, color: "#ffffff" },
-                  { offset: 1, color: clubColor }
-                ]
-              : [
-                  { offset: 0, color: clubColor },
-                  { offset: 1, color: "#ffffff" }
-                ]
-            )
+            color: clubColor
           }
         };
       })
