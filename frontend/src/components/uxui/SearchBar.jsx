@@ -432,12 +432,12 @@ export default function SearchBar() {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        // Busca paralela: clubes + ligas
-        const [clubsRes, leaguesRes, countryRes, playersRes] = await Promise.allSettled([
+        // Busca paralela: clubes + ligas + países (apenas itens ativos;
+        // jogadores fora da busca por enquanto)
+        const [clubsRes, leaguesRes, countryRes] = await Promise.allSettled([
           api.post("/dashboard/clubs/search?page=1&limit=10", { name: query }),
           api.post("/dashboard/leagues/search?page=1&limit=5", { name: query }),
           api.post("/dashboard/countries/search?page=1&limit=5", { name: query }),
-          api.post("/dashboard/players/search?page=1&limit=5", { name: query }),
         ]);
 
         const clubes =
@@ -455,10 +455,7 @@ export default function SearchBar() {
             ? countryRes.value.data.countries || []
             : [];
 
-        const jogadores =
-          playersRes.status === "fulfilled"
-            ? playersRes.value.data.players || []
-            : [];
+        const jogadores = [];
 
         setResults({ ligas, clubes, paises, jogadores });
       } catch (error) {

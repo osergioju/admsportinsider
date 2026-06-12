@@ -452,7 +452,8 @@ export async function leaguesSearch(req, res) {
     const offset = (page - 1) * limit;
 
     const values = [];
-    let whereClause = `WHERE l.active = TRUE`;
+    // Liga ativa E federação vinculada ativa (modo manutenção)
+    let whereClause = `WHERE l.active = TRUE AND (f.id_federation IS NULL OR f.active = TRUE)`;
     let idx = 1;
 
     if (name) {
@@ -515,6 +516,7 @@ export async function leaguesSearch(req, res) {
       SELECT COUNT(*)
       FROM leagues l
       LEFT JOIN countries co ON co.id_country = l.id_country
+      LEFT JOIN federations f ON f.id_federation = l.id_federation
       ${whereClause};
       `,
       values
