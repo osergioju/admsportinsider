@@ -29,6 +29,19 @@ export default function RevenueLineChart({
   yearLogos = null
 }) {
 
+  // Detecta mobile para compactar grid/eixo/tabela (só importa no modo integrado)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 640 : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const onChange = (e) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const gridLeft = isMobile ? GRID_LEFT_MOBILE : GRID_LEFT;
+  const gridRight = isMobile ? GRID_RIGHT_MOBILE : GRID_RIGHT;
 
   const adapted = useMemo(() => {
     if (!data || Object.keys(data).length === 0) return null;
@@ -109,7 +122,7 @@ export default function RevenueLineChart({
     },
 
     grid: integratedTable
-      ? { left: GRID_LEFT, right: GRID_RIGHT, bottom: 8, top: 50, containLabel: false }
+      ? { left: gridLeft, right: gridRight, bottom: 8, top: 50, containLabel: false }
       : { left: 0, right: 0, bottom: 0, top: 50, containLabel: true },
 
     xAxis: {
@@ -132,9 +145,10 @@ export default function RevenueLineChart({
       axisTick: { show: false },
       axisLabel: {
         formatter: integratedTable
-          ? (value) => value.toLocaleString("pt-BR")
+          ? (value) => (isMobile ? compactM(value) : value.toLocaleString("pt-BR"))
           : (value) => `${(value / 100).toFixed()}M`,
         color: "#666",
+        fontSize: isMobile ? 10 : 12,
         fontFamily: "Effra Trial"
       },
       splitLine: {
@@ -172,26 +186,27 @@ export default function RevenueLineChart({
 
       {/* ── Tabela integrada: colunas alinhadas aos pontos do gráfico ── */}
       {integratedTable && (
-        <div style={{ paddingLeft: GRID_LEFT, paddingRight: GRID_RIGHT }}>
+        <div style={{ paddingLeft: gridLeft, paddingRight: gridRight }}>
 
-          {/* Cabeçalho: logo + ano + sede */}
-          <div className="flex border-t border-gray-100 pt-3 pb-2">
+          {/* Cabeçalho: logo + ano (+ sede só no desktop) */}
+          <div className="flex border-t border-gray-100 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
             {adapted.years.map((y, i) => {
               const label = adapted.xAxisLabels?.[i];
               const hasName = label && label !== String(y);
               return (
-                <div key={y} className="flex-1 min-w-0 flex flex-col items-center gap-1">
+                <div key={y} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 px-px">
                   {yearLogos?.[y] && (
                     <img
                       src={yearLogos[y]}
                       alt={`Copa do Mundo ${y}`}
-                      className="h-8 w-10 object-contain"
+                      className="h-6 w-7 sm:h-8 sm:w-10 object-contain"
                       onError={(e) => { e.currentTarget.style.display = "none"; }}
                     />
                   )}
-                  <span className="text-xs font-semibold text-[#626262]">{y}</span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-[#626262]">{y}</span>
+                  {/* Sede só no desktop (no mobile truncava para "Cor..." e apertava tudo) */}
                   {hasName && (
-                    <span className="text-[9px] leading-tight text-gray-400 text-center px-0.5 max-w-full truncate" title={label}>
+                    <span className="hidden sm:block text-[9px] leading-tight text-gray-400 text-center px-0.5 max-w-full truncate" title={label}>
                       {label}
                     </span>
                   )}
@@ -209,16 +224,18 @@ export default function RevenueLineChart({
                   <span className="text-[11px] text-gray-500 font-medium">{serie.name}</span>
                 </div>
               )}
-              <div className="flex py-2 border-t border-gray-50">
+              <div className="flex py-1.5 sm:py-2 border-t border-gray-50">
                 {serie.data.map((v, i) => (
                   <div
                     key={`${serie.id}-${adapted.years[i]}`}
-                    className="flex-1 min-w-0 text-center text-xs tabular-nums font-medium"
+                    className="flex-1 min-w-0 text-center text-[10px] sm:text-xs tabular-nums font-medium px-px"
                     style={{ color: serie.color }}
                   >
                     {v == null || Number(v) === 0
                       ? <span className="text-gray-300">—</span>
-                      : Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
+                      : (isMobile
+                          ? compactM(Number(v))
+                          : Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 }))}
                   </div>
                 ))}
               </div>
