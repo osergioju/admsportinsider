@@ -148,20 +148,25 @@ export async function getLeagueAnnualIndicators(req, res) {
   const codes = req.query.codes ? req.query.codes.split(",").map(s => s.trim()).filter(Boolean) : [];
   if (!codes.length) return res.json({ indicators: {} });
   try {
+    // Código exato OU sufixo de qualquer competição: 'attendance-total' casa
+    // com 'world-cup_attendance-total', 'club-world-cup_attendance-total' etc.
+    const suffixPatterns = codes.map(c => "%\\_" + c.replaceAll("_", "\\_"));
     const result = await db.query(`
       SELECT fi.code, ef.year, SUM(ef.value) AS value
       FROM edition_financials ef
       JOIN competition_editions ce ON ce.id_edition = ef.id_edition
       JOIN financial_indicators fi ON fi.id = ef.id_indicator
-      WHERE ce.id_league = $1 AND fi.code = ANY($2)
+      WHERE ce.id_league = $1 AND (fi.code = ANY($2) OR fi.code LIKE ANY($3))
       GROUP BY fi.code, ef.year
       ORDER BY fi.code, ef.year
-    `, [id, codes]);
+    `, [id, codes, suffixPatterns]);
 
     const indicators = {};
     for (const row of result.rows) {
-      if (!indicators[row.code]) indicators[row.code] = [];
-      indicators[row.code].push({ year: row.year, value: parseFloat(row.value) });
+      // Chave de retorno = código pedido (estável para o front, qualquer prefixo)
+      const key = codes.find(c => row.code === c || row.code.endsWith("_" + c)) || row.code;
+      if (!indicators[key]) indicators[key] = [];
+      indicators[key].push({ year: row.year, value: parseFloat(row.value) });
     }
     return res.json({ indicators });
   } catch (err) {

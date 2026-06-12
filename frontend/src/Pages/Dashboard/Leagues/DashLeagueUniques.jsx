@@ -144,7 +144,7 @@ export default function DashLeagueUniques() {
                     api.get(`/dashboard/leagues/${leagueId}/financials/net-result/evolution`),
                     api.get(`/dashboard/leagues/${leagueId}/financials/debts/evolution`),
                     api.get(`/dashboard/leagues/${leagueId}/financials/debts/breakdown`),
-                    api.get(`/dashboard/leagues/${leagueId}/indicators/annual?codes=world-cup_prizes_total,world-cup_attendance-total`),
+                    api.get(`/dashboard/leagues/${leagueId}/indicators/annual?codes=prizes_total,attendance-total`),
                 ]);
                 setTheLeague(res.data);
                 setFinancials({
@@ -256,8 +256,8 @@ export default function DashLeagueUniques() {
     const chartColorSecondary = (c2 !== c1 && isDarkEnough(c2)) ? c2 : chartColorPrimary === c1 ? "#946E1C" : chartColorPrimary;
 
     // Indicadores anuais (premiações e público)
-    const prizesData = annualIndicators?.["world-cup_prizes_total"] || [];
-    const attendanceData = annualIndicators?.["world-cup_attendance-total"] || [];
+    const prizesData = annualIndicators?.["prizes_total"] || [];
+    const attendanceData = annualIndicators?.["attendance-total"] || [];
     const hasPrizesSection = !!(sj.prizes_text || prizesData.length);
     const hasAttendanceSection = !!(sj.attendance_text || attendanceData.length);
     const hasSpecialSections = hasPrizesSection || hasAttendanceSection;

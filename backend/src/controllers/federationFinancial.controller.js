@@ -8,6 +8,18 @@ const SKIP_COL  = 4; // col 4 é template/referência — ignorar
 // "País-sede" ocupando a posição do status) vira "realizado"
 const VALID_STATUS = new Set(["realizado", "previsto", "estimado", "projetado", "orcado", "orçado"]);
 
+// Lista os nomes das abas do arquivo (bookSheets lê só os metadados, sem os dados)
+export async function listFederationFinancialSheets(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ message: "Arquivo não enviado." });
+    const wb = XLSX.read(req.file.buffer, { type: "buffer", bookSheets: true });
+    return res.json({ sheets: wb.SheetNames });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: err.message });
+  }
+}
+
 function parseSheet(buffer, sheetName) {
   const wb = XLSX.read(buffer, { type: "buffer" });
   let usedSheet = sheetName;
@@ -64,8 +76,10 @@ function buildEditions(rows, layout) {
       const h = editionRow[c];
       if (typeof h === "number" && h > 1900 && h < 2100) headerYear = h;
       else {
-        const m = String(slug).match(/(19|20)\d{2}/);
-        if (m) headerYear = Number(m[0]);
+        // Último ano do slug: em ciclos tipo fifa_1999-2002 a edição é a do
+        // ano FINAL (Copa de 2002), não o início do ciclo
+        const m = String(slug).match(/(19|20)\d{2}/g);
+        if (m) headerYear = Number(m[m.length - 1]);
       }
       editions[slug] = { slug, name: null, currency: currRow[c] || "USD", editionYear: headerYear, cols: [], years: [], statuses: [] };
     }
@@ -645,8 +659,9 @@ const OVERVIEW_FLOW_CODES = [
   "world-cup_hospitality", "other-events_hospitality",
   "world-cup_licensing", "other-events_licensing",
   "world-cup_other-revenue", "other-events_other-revenue",
-  "intercontinental-cup", "olympic-games", "quality-program", "museum",
-  "audiovisual-rights", "miscellaneous",
+  "intercontinental-cup_other-revenue", "olympic-games_other-revenue",
+  "quality-program_other-revenue", "museum_other-revenue",
+  "audiovisual-rights_other-revenue", "miscellaneous_other-revenue",
 ];
 const OVERVIEW_STOCK_CODES = [
   "net-debt", "short-term-debt", "long-term-debt",

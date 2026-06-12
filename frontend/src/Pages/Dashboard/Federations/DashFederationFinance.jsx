@@ -290,13 +290,13 @@ const SPONSOR_TIERS = [
 ];
 
 const OTHER_REVENUES = [
-  { label: "Copa Intercontinental", code: "intercontinental-cup" },
-  { label: "Jogos Olímpicos", code: "olympic-games" },
-  { label: "Programa de Qualidade", code: "quality-program" },
-  { label: "Museu", code: "museum" },
-  { label: "Direitos audiovisuais", code: "audiovisual-rights" },
+  { label: "Copa Intercontinental", code: "intercontinental-cup_other-revenue" },
+  { label: "Jogos Olímpicos", code: "olympic-games_other-revenue" },
+  { label: "Programa de Qualidade", code: "quality-program_other-revenue" },
+  { label: "Museu", code: "museum_other-revenue" },
+  { label: "Direitos audiovisuais", code: "audiovisual-rights_other-revenue" },
   { label: "Copa do Mundo", code: "world-cup_other-revenue" },
-  { label: "Outras receitas", code: "miscellaneous" },
+  { label: "Outras receitas", code: "miscellaneous_other-revenue" },
 ];
 
 // ─── Página ───────────────────────────────────────────────────────────────────

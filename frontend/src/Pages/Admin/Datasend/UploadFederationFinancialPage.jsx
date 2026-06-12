@@ -16,6 +16,7 @@ export default function UploadFederationFinancialPage() {
   const [file, setFile]       = useState(null);
   const [step, setStep]       = useState("upload"); // upload | preview | done
   const [sheet, setSheet]     = useState("Fifa");
+  const [sheets, setSheets]   = useState([]);
   const [leagueId, setLeagueId] = useState("");
   const [leagues, setLeagues] = useState([]);
   const [preview, setPreview] = useState(null);
@@ -33,7 +34,29 @@ export default function UploadFederationFinancialPage() {
 
   const reset = () => {
     setFile(null); setStep("upload"); setPreview(null);
-    setError(""); setResult(null); setLeagueId("");
+    setError(""); setResult(null); setLeagueId(""); setSheets([]);
+  };
+
+  // Aba divisória de seção no Excel do cliente (ex: "Premiações >>") — não tem dados
+  const isDivider = (name) => name.trim().endsWith(">>");
+
+  const handleFile = async (f) => {
+    setFile(f); setSheets([]); setError("");
+    if (!f) return;
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      const { data } = await api.post("/admin/federation-financial/sheets", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const names = data.sheets || [];
+      setSheets(names);
+      if (names.length && !names.includes(sheet)) {
+        setSheet(names.find(n => !isDivider(n)) || names[0]);
+      }
+    } catch {
+      // Sem a lista, o campo de texto continua funcionando como antes
+    }
   };
 
   const handlePreview = async () => {
@@ -104,21 +127,39 @@ export default function UploadFederationFinancialPage() {
                 ? <><FileSpreadsheet size={28} className="text-[#7F33D9]" /><span className="text-sm font-medium text-gray-700">{file.name}</span></>
                 : <><UploadCloud size={28} className="text-gray-400" /><span className="text-sm text-gray-400">Clique ou arraste o arquivo aqui</span></>
               }
-              <input type="file" accept=".xlsx,.xls" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
+              <input type="file" accept=".xlsx,.xls" className="hidden" onChange={e => handleFile(e.target.files?.[0] || null)} />
             </label>
           </div>
 
           {/* Sheet name */}
           <div>
-            <label className={labelClass}>Nome da sheet</label>
-            <input
-              type="text"
-              className={inputClass}
-              value={sheet}
-              onChange={e => setSheet(e.target.value)}
-              placeholder="ex: Fifa, Euro, Copa América"
-            />
-            <p className="text-xs text-gray-400 mt-1">Nome exato da aba do Excel com os dados financeiros. Se o arquivo tiver uma única aba, ela é usada automaticamente.</p>
+            <label className={labelClass}>Aba do Excel</label>
+            {sheets.length > 0 ? (
+              <select
+                className={inputClass}
+                value={sheet}
+                onChange={e => setSheet(e.target.value)}
+              >
+                {sheets.map(name => (
+                  <option key={name} value={name} disabled={isDivider(name)}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                className={inputClass}
+                value={sheet}
+                onChange={e => setSheet(e.target.value)}
+                placeholder="ex: Fifa, Euro, Copa América"
+              />
+            )}
+            <p className="text-xs text-gray-400 mt-1">
+              {sheets.length > 0
+                ? "Escolha a aba com os dados que quer importar."
+                : "Nome exato da aba do Excel com os dados financeiros. Se o arquivo tiver uma única aba, ela é usada automaticamente."}
+            </p>
           </div>
 
           {/* Liga vinculada (opcional) */}
