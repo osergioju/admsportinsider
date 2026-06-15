@@ -191,7 +191,7 @@ export default function DashLeagueUniques() {
 
     const lg = theLeague.league;
     const sj = lg.structure_json ?? {};
-    const shortName = sj.competition_name ?? lg.name;
+    const shortName = lg.name ?? sj.competition_name;
     const fullName = lg.description && lg.description !== shortName ? lg.description : null;
     const competitionTitle = shortName;
 
