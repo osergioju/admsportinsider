@@ -17,11 +17,11 @@ export default function GestaoLigas() {
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
     const [leagueScope, setLeagueScope] = useState("country"); // "country" | "continent"
-    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", translations: { pt: "", en: "", es: "" } });
+    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", logo_url_negative: "", translations: { pt: "", en: "", es: "" } });
     const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
-    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(null); // "logo_url" | "logo_url_negative" | null
     const [setupLeague, setSetupLeague] = useState(null); // liga sendo configurada
     const [importModalOpen, setImportModalOpen] = useState(false);
     const [customEditor, setCustomEditor] = useState(null); // { league, year }
@@ -58,7 +58,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", translations: { pt: "", en: "", es: "" } });
+        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", logo_url_negative: "", translations: { pt: "", en: "", es: "" } });
         setLeagueScope("country");
         setIsEditing(false); setModal(true);
     };
@@ -73,23 +73,24 @@ export default function GestaoLigas() {
         } catch (err) { console.error(err); }
     };
 
-    // Sobe a foto da liga para uploads/ligas (não vai para o Supabase) e
-    // preenche o logo_url com a URL retornada.
-    const handleLogoUpload = async (e) => {
+    // Sobe a foto da liga para uploads/ligas (não vai para o Supabase) e preenche
+    // o campo alvo. variant="negative" salva o escudo alternativo sem sobrescrever o principal.
+    const makeLogoUpload = (field, variant) => async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setUploadingLogo(true);
+        setUploadingLogo(field);
         try {
             const fd = new FormData();
             fd.append("file", file);
             fd.append("slug", newLeague.slug || "");
             fd.append("name", newLeague.name || "");
+            if (variant) fd.append("variant", variant);
             const { data } = await api.post("/admin/leagues/upload-logo", fd, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            setNewLeague(prev => ({ ...prev, logo_url: data.url }));
+            setNewLeague(prev => ({ ...prev, [field]: data.url }));
         } catch { alert("Erro ao enviar a foto da liga."); }
-        finally { setUploadingLogo(false); e.target.value = ""; }
+        finally { setUploadingLogo(null); e.target.value = ""; }
     };
 
     const sendLeague = async () => {
@@ -414,13 +415,35 @@ export default function GestaoLigas() {
                                         />
                                     )}
                                     <input type="text" className={inputClass} placeholder="URL da imagem" value={newLeague.logo_url} onChange={(e) => setNewLeague({ ...newLeague, logo_url: e.target.value })} />
-                                    <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${uploadingLogo ? "border-gray-200 text-gray-400" : "border-[#7F33D9] text-[#7F33D9] hover:bg-[#7F33D9]/5"}`}>
-                                        {uploadingLogo ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-                                        {uploadingLogo ? "Enviando…" : "Subir foto"}
-                                        <input type="file" accept="image/*" className="hidden" disabled={uploadingLogo} onChange={handleLogoUpload} />
+                                    <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${uploadingLogo === "logo_url" ? "border-gray-200 text-gray-400" : "border-[#7F33D9] text-[#7F33D9] hover:bg-[#7F33D9]/5"}`}>
+                                        {uploadingLogo === "logo_url" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                                        {uploadingLogo === "logo_url" ? "Enviando…" : "Subir foto"}
+                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingLogo} onChange={makeLogoUpload("logo_url")} />
                                     </label>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-1.5">A foto é salva em uploads/ligas (não no Supabase) e a URL é preenchida automaticamente.</p>
+                            </div>
+
+                            {/* Escudo alternativo (versão negativa) — usado SÓ na página da liga */}
+                            <div>
+                                <label className={labelClass}>Escudo alternativo (negativo)</label>
+                                <div className="flex items-center gap-3">
+                                    {newLeague.logo_url_negative && (
+                                        <img
+                                            src={newLeague.logo_url_negative}
+                                            alt="Escudo negativo"
+                                            className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-800 shrink-0"
+                                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                        />
+                                    )}
+                                    <input type="text" className={inputClass} placeholder="URL da imagem (opcional)" value={newLeague.logo_url_negative || ""} onChange={(e) => setNewLeague({ ...newLeague, logo_url_negative: e.target.value })} />
+                                    <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${uploadingLogo === "logo_url_negative" ? "border-gray-200 text-gray-400" : "border-[#7F33D9] text-[#7F33D9] hover:bg-[#7F33D9]/5"}`}>
+                                        {uploadingLogo === "logo_url_negative" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                                        {uploadingLogo === "logo_url_negative" ? "Enviando…" : "Subir foto"}
+                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingLogo} onChange={makeLogoUpload("logo_url_negative", "negative")} />
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1.5">Versão negativa do escudo. Aparece <b>apenas na página da liga</b>, quando existir.</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

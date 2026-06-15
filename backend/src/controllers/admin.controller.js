@@ -189,7 +189,7 @@ async function upsertLeagueTranslations(idLeague, translations) {
 }
 
 export async function createLeague(req, res) {
-  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nome é obrigatório." });
@@ -202,10 +202,10 @@ export async function createLeague(req, res) {
 
   try {
     const ins = await db.query(`
-      INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id_league
-    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType]);
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, logo_url_negative || null, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType]);
 
     await upsertLeagueTranslations(ins.rows[0].id_league, translations);
 
@@ -219,7 +219,7 @@ export async function createLeague(req, res) {
 
 export async function updateLeague(req, res) {
   const { id } = req.params;
-  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
 
   const teamType = team_type === "national" ? "national" : "clubs";
 
@@ -237,9 +237,10 @@ export async function updateLeague(req, res) {
         primary_color = $8,
         secondary_color = $9,
         currency_code = $10,
-        team_type = $11
+        team_type = $11,
+        logo_url_negative = $13
       WHERE id_league = $12
-    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType, id]);
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType, id, logo_url_negative || null]);
 
     await upsertLeagueTranslations(Number(id), translations);
 
@@ -1001,7 +1002,7 @@ export async function getDashboardFederationBySlug(req, res) {
   const locale = await resolveLocale(req);
   try {
     const fedResult = await db.query(
-      `SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
+      `SELECT id_federation, name, acronym, logo_url, logo_url_negative, slug, sort_order, sphere,
               primary_color, secondary_color, tertiary_color, full_name,
               city_name, TO_CHAR(founded_at, 'YYYY-MM-DD') AS founded_at,
               financial_league_id
@@ -1040,7 +1041,7 @@ export async function getDashboardFederationBySlug(req, res) {
 export async function getAllFederations(req, res) {
   try {
     const result = await db.query(`
-      SELECT f.id_federation, f.name, f.acronym, f.logo_url, f.slug, f.sort_order, f.sphere,
+      SELECT f.id_federation, f.name, f.acronym, f.logo_url, f.logo_url_negative, f.slug, f.sort_order, f.sphere,
              f.primary_color, f.secondary_color, f.tertiary_color, f.full_name,
              f.city_name, TO_CHAR(f.founded_at, 'YYYY-MM-DD') AS founded_at, f.active,
              f.id_country, c.name AS country_name, c.flag_url AS country_flag_url
@@ -1058,14 +1059,14 @@ export async function getAllFederations(req, res) {
 }
 
 export async function createFederation(req, res) {
-  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country, primary_color, secondary_color, tertiary_color } = req.body;
+  const { name, acronym, logo_url, logo_url_negative, sort_order, full_name, city_name, founded_at, id_country, primary_color, secondary_color, tertiary_color } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
     // Federação com país é nacional por definição (CBF, DBU...)
     const result = await db.query(
-      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug, full_name, city_name, founded_at, id_country, sphere, primary_color, secondary_color, tertiary_color) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id_federation",
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, id_country ? "nacional" : null, primary_color || null, secondary_color || null, tertiary_color || null]
+      "INSERT INTO federations (name, acronym, logo_url, sort_order, slug, full_name, city_name, founded_at, id_country, sphere, primary_color, secondary_color, tertiary_color, logo_url_negative) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id_federation",
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, id_country ? "nacional" : null, primary_color || null, secondary_color || null, tertiary_color || null, logo_url_negative || null]
     );
     return res.status(201).json({ id_federation: result.rows[0].id_federation, message: "Federação criada com sucesso!" });
   } catch (err) {
@@ -1077,7 +1078,7 @@ export async function createFederation(req, res) {
 
 export async function updateFederation(req, res) {
   const { id } = req.params;
-  const { name, acronym, logo_url, sort_order, full_name, city_name, founded_at, id_country, primary_color, secondary_color, tertiary_color } = req.body;
+  const { name, acronym, logo_url, logo_url_negative, sort_order, full_name, city_name, founded_at, id_country, primary_color, secondary_color, tertiary_color } = req.body;
   if (!name?.trim() || !acronym?.trim()) return res.status(400).json({ message: "Nome e sigla são obrigatórios." });
   try {
     const slug = acronym.trim().toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -1085,9 +1086,9 @@ export async function updateFederation(req, res) {
       `UPDATE federations SET name = $1, acronym = $2, logo_url = $3, sort_order = $4, slug = $5,
          full_name = $6, city_name = $7, founded_at = $8, id_country = $9,
          sphere = CASE WHEN $9::int IS NOT NULL AND sphere IS NULL THEN 'nacional' ELSE sphere END,
-         primary_color = $10, secondary_color = $11, tertiary_color = $12
+         primary_color = $10, secondary_color = $11, tertiary_color = $12, logo_url_negative = $14
        WHERE id_federation = $13`,
-      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, primary_color || null, secondary_color || null, tertiary_color || null, id]
+      [name.trim(), acronym.trim().toUpperCase(), logo_url || null, sort_order ?? 99, slug, full_name || null, city_name || null, founded_at || null, id_country || null, primary_color || null, secondary_color || null, tertiary_color || null, id, logo_url_negative || null]
     );
     return res.json({ message: "Federação atualizada com sucesso!" });
   } catch (err) {

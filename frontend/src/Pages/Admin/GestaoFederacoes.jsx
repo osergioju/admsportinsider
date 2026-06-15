@@ -11,12 +11,13 @@ export default function GestaoFederacoes() {
     const [countries, setCountries] = useState([]);
     const [modalMode, setModalMode] = useState(null); // null | "create" | "edit" | "delete"
     const [current, setCurrent] = useState(null);
-    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "", primary_color: "", secondary_color: "" });
+    const [form, setForm] = useState({ name: "", acronym: "", logo_url: "", logo_url_negative: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "", primary_color: "", secondary_color: "" });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState("");
     const [uploading, setUploading] = useState(false);
+    const [uploadingNeg, setUploadingNeg] = useState(false);
     const fileRef = useRef(null);
 
     async function load() {
@@ -42,14 +43,14 @@ export default function GestaoFederacoes() {
     );
 
     const openCreate = () => {
-        setForm({ name: "", acronym: "", logo_url: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "", primary_color: "", secondary_color: "" });
+        setForm({ name: "", acronym: "", logo_url: "", logo_url_negative: "", sort_order: 99, full_name: "", city_name: "", founded_at: "", id_country: "", primary_color: "", secondary_color: "" });
         setError("");
         setModalMode("create");
     };
 
     const openEdit = (f) => {
         setCurrent(f);
-        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", sort_order: f.sort_order, full_name: f.full_name || "", city_name: f.city_name || "", founded_at: f.founded_at || "", id_country: f.id_country ? String(f.id_country) : "", primary_color: f.primary_color || "", secondary_color: f.secondary_color || "" });
+        setForm({ name: f.name, acronym: f.acronym, logo_url: f.logo_url || "", logo_url_negative: f.logo_url_negative || "", sort_order: f.sort_order, full_name: f.full_name || "", city_name: f.city_name || "", founded_at: f.founded_at || "", id_country: f.id_country ? String(f.id_country) : "", primary_color: f.primary_color || "", secondary_color: f.secondary_color || "" });
         setError("");
         setModalMode("edit");
     };
@@ -86,6 +87,30 @@ export default function GestaoFederacoes() {
             setError("Erro ao fazer upload da imagem.");
         } finally {
             setUploading(false);
+        }
+    };
+
+    // Escudo alternativo (negativo) — guarda a URL retornada em logo_url_negative
+    const handleNegativeFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const slug = current?.slug || form.acronym.toLowerCase().replace(/[^a-z0-9]/g, "-");
+        if (!slug) { setError("Defina a sigla antes de fazer upload."); return; }
+        setUploadingNeg(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("slug", slug);
+            fd.append("variant", "negative");
+            const { data } = await api.post("/admin/federations/upload-logo", fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            setForm(prev => ({ ...prev, logo_url_negative: data.url }));
+        } catch {
+            setError("Erro ao fazer upload da imagem.");
+        } finally {
+            setUploadingNeg(false);
+            e.target.value = "";
         }
     };
 
@@ -267,6 +292,34 @@ export default function GestaoFederacoes() {
                                                     className="hidden"
                                                     disabled={uploading}
                                                     onChange={handleFileChange}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {/* Escudo alternativo (negativo) — usado SÓ na página da federação */}
+                                    <div>
+                                        <label className={labelClass}>Escudo alternativo (negativo)</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 shrink-0 bg-gray-800 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden">
+                                                {uploadingNeg
+                                                    ? <Loader2 size={20} className="animate-spin text-[#7F33D9]" />
+                                                    : form.logo_url_negative
+                                                        ? <img src={form.logo_url_negative} className="w-full h-full object-contain p-1" alt="Negativo" onError={e => e.currentTarget.style.display='none'} />
+                                                        : <Shield size={24} className="text-gray-500" />
+                                                }
+                                            </div>
+                                            <label className="flex-1 flex flex-col items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#7F33D9] hover:bg-purple-50/30 transition-all">
+                                                <UploadCloud size={20} className="text-gray-400" />
+                                                <span className="text-xs text-gray-500 text-center">
+                                                    {uploadingNeg ? "Enviando..." : "Versão negativa (opcional) — só aparece na página da federação"}
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    disabled={uploadingNeg}
+                                                    onChange={handleNegativeFileChange}
                                                 />
                                             </label>
                                         </div>

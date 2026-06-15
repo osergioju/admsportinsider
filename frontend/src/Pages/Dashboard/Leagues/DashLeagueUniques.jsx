@@ -335,9 +335,9 @@ export default function DashLeagueUniques() {
 
                         {/* Logo */}
                         <div className="shrink-0 w-14 h-14 lg:w-30 lg:h-30 xl:w-40 xl:h-40 flex items-center justify-center">
-                            {(lg.logo_url || lg.slug) && (
+                            {(lg.logo_url_negative || lg.logo_url || lg.slug) && (
                                 <img
-                                    src={lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
+                                    src={lg.logo_url_negative || lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
                                     alt={competitionTitle}
                                     className="w-full h-full object-contain"
                                     onError={e => e.currentTarget.style.display = "none"}

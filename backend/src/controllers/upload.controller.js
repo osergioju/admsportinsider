@@ -70,19 +70,22 @@ export async function uploadFederationLogo(req, res) {
     if (!req.file) return res.status(400).json({ message: "Nenhum arquivo enviado." });
     const slug = req.body.slug?.trim();
     if (!slug) return res.status(400).json({ message: "Slug da federação é obrigatório." });
+    // variant (ex.: "negative") → sufixo p/ não sobrescrever a logo principal
+    const variant = (req.body.variant || "").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "");
+    const fileBase = variant ? `${slug}_${variant}` : slug;
 
     const path = await import("path");
     const fs   = await import("fs");
     const dest = path.default.join(process.cwd(), "uploads", "federacoes");
     const ext  = path.default.extname(req.file.originalname).toLowerCase() || ".webp";
-    const finalName = `${slug}${ext}`;
+    const finalName = `${fileBase}${ext}`;
     const finalPath = path.default.join(dest, finalName);
 
     // Renomeia o arquivo temporário para {slug}.ext
     fs.default.renameSync(req.file.path, finalPath);
 
     const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
-    return res.status(200).json({ url: `${baseUrl}/uploads/federacoes/${finalName}` });
+    return res.status(200).json({ url: `${baseUrl}/uploads/federacoes/${finalName}?v=${Date.now()}` });
   } catch (error) {
     console.error("Erro no upload de federação:", error);
     return res.status(500).json({ message: "Erro interno no upload." });
@@ -100,7 +103,10 @@ export async function uploadLeagueLogo(req, res) {
     // com o padrão reduced_{slug}.webp que o app monta. Liga nova → slug do nome.
     const rawSlug = (req.body.slug || "").trim();
     const fromName = normalizeStr(req.body.name || "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    const base = (rawSlug ? rawSlug.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") : fromName) || `liga-${Date.now()}`;
+    const slugBase = (rawSlug ? rawSlug.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") : fromName) || `liga-${Date.now()}`;
+    // variant (ex.: "negative") → sufixo no nome p/ não sobrescrever o escudo principal
+    const variant = (req.body.variant || "").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "");
+    const base = variant ? `${slugBase}_${variant}` : slugBase;
 
     const path = await import("path");
     const fs   = await import("fs");

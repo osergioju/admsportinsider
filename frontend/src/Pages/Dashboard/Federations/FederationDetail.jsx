@@ -304,8 +304,8 @@ export default function FederationDetail() {
 
             {/* Logo */}
             <div className="shrink-0 w-14 h-14 lg:w-28 lg:h-28 xl:w-36 xl:h-36 flex items-center justify-center">
-              {federation.slug
-                ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" />
+              {(federation.logo_url_negative || federation.slug)
+                ? <img src={federation.logo_url_negative || federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" onError={e => e.currentTarget.style.display = "none"} />
                 : <Shield size={40} style={{ color: textColor, opacity: 0.6 }} />
               }
             </div>
