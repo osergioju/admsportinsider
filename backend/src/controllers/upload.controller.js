@@ -90,28 +90,46 @@ export async function uploadFederationLogo(req, res) {
 }
 
 // Logo de competição (liga). Vai para uploads/ligas (NÃO para o Supabase).
-// Aceita `slug` (liga existente) ou `name` (liga nova) — gera um nome de arquivo.
+// Salva o ORIGINAL e gera a versão reduzida em uploads/ligas/reduced/reduced_{slug}.webp,
+// que é o padrão usado pelo app (admin e dashboard) p/ exibir o escudo da liga.
 export async function uploadLeagueLogo(req, res) {
   try {
     if (!req.file) return res.status(400).json({ message: "Nenhum arquivo enviado." });
 
-    const raw = (req.body.slug || req.body.name || "").trim();
-    const base = normalizeStr(raw).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    const fileBase = base || `liga-${Date.now()}`;
+    // Usa o SLUG da liga cru (com "_", ex.: fifa_intercontinental-cup) para casar
+    // com o padrão reduced_{slug}.webp que o app monta. Liga nova → slug do nome.
+    const rawSlug = (req.body.slug || "").trim();
+    const fromName = normalizeStr(req.body.name || "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const base = (rawSlug ? rawSlug.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") : fromName) || `liga-${Date.now()}`;
 
     const path = await import("path");
     const fs   = await import("fs");
-    const dest = path.default.join(process.cwd(), "uploads", "ligas");
-    fs.default.mkdirSync(dest, { recursive: true });
+    const sharp = (await import("sharp")).default;
 
-    const ext       = path.default.extname(req.file.originalname).toLowerCase() || ".webp";
-    const finalName = `${fileBase}${ext}`;
+    const dest        = path.default.join(process.cwd(), "uploads", "ligas");
+    const reducedDir  = path.default.join(dest, "reduced");
+    fs.default.mkdirSync(reducedDir, { recursive: true });
+
+    // 1) Original
+    const ext       = path.default.extname(req.file.originalname).toLowerCase() || ".png";
+    const finalName = `${base}${ext}`;
     const finalPath = path.default.join(dest, finalName);
-
     fs.default.renameSync(req.file.path, finalPath);
 
+    // 2) Reduzido (webp) — mesmo nome que o app espera: reduced_{slug}.webp
+    const reducedName = `reduced_${base}.webp`;
+    const reducedPath = path.default.join(reducedDir, reducedName);
+    await sharp(finalPath)
+      .resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 90 })
+      .toFile(reducedPath);
+
     const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
-    return res.status(200).json({ url: `${baseUrl}/uploads/ligas/${finalName}` });
+    // logo_url aponta para o reduzido (leve/nítido) — o app já usa esse padrão
+    return res.status(200).json({
+      url: `${baseUrl}/uploads/ligas/reduced/${reducedName}`,
+      original: `${baseUrl}/uploads/ligas/${finalName}`,
+    });
   } catch (error) {
     console.error("Erro no upload de logo da liga:", error);
     return res.status(500).json({ message: "Erro interno no upload." });
