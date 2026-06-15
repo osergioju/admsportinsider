@@ -3,6 +3,7 @@ import NotasSection from "./../Dashboard/Notas/NotasSection"
 import RevenueSection from "./Leagues/components/revenue/RevenueSection"
 
 import { useState, useEffect, useMemo } from "react"
+import { Link } from "react-router-dom"
 import { api } from "../../services/api"
 import { worldCupLogo } from "../../utils/worldCupLogo"
 
@@ -87,6 +88,13 @@ export default function Main() {
       </div>
 
       <NotasSection />
+
+      {/* Rodapé discreto — links de políticas (verificação Google OAuth) */}
+      <footer className="pt-2 pb-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-gray-300">
+        <Link to="/privacidade" className="hover:text-gray-500 transition-colors">Política de Privacidade</Link>
+        <span className="text-gray-200">·</span>
+        <Link to="/legal" className="hover:text-gray-500 transition-colors">Responsabilidade legal</Link>
+      </footer>
     </div>
   );
 }
