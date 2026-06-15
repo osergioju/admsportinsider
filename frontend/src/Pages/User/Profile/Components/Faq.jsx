@@ -118,20 +118,7 @@ export default function Faq() {
         </div>
       </div>
 
-      <div className="w-full bg-[#F9F5FF] rounded-2xl border border-[#7F33D9]/20 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-white border border-[#7F33D9]/20 flex items-center justify-center text-[#7F33D9]">
-            <MessageCircle size={20} />
-          </div>
-          <div>
-            <h3 className="text-[#111] font-semibold text-sm">{t("faq.need_help", "Ainda precisa de ajuda?")}</h3>
-            <p className="text-gray-500 text-xs">{t("faq.support_text", "Nossa equipe de suporte responde em até 24h.")}</p>
-          </div>
-        </div>
-        <button className={btnPurpleClass}>
-          {t("faq.contact_support", "Falar com suporte")}
-        </button>
-      </div>
+
 
     </div>
   );
