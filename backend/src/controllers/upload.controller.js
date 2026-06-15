@@ -1,17 +1,7 @@
 import { supabase } from "../utils/supabase.js";
 import db from "../config/db.js";
 import xlsx from "xlsx";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Base das pastas de upload servidas pelo Express. server.js faz
-// app.use("/uploads", express.static(path.join(__dirname, "uploads"))) → backend/uploads.
-// Ancoramos em __dirname (backend/src/controllers → ../../uploads = backend/uploads) e NÃO
-// em process.cwd(): em produção o processo pode rodar com o cwd na raiz do repo, e aí
-// process.cwd()/uploads != backend/uploads. O arquivo era gravado fora da pasta servida
-// (upload retornava 200, mas a URL dava 404).
-const UPLOADS_DIR = path.join(__dirname, "..", "..", "uploads");
+import { UPLOADS_DIR } from "../config/paths.js";
 
 const CLUBS_START_COL = 4;
 

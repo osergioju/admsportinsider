@@ -1,9 +1,8 @@
 import multer from "multer";
 import path from "path";
-import { fileURLToPath } from "url";
+import { UPLOADS_DIR } from "../config/paths.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dest = path.join(__dirname, "../../uploads/federacoes");
+const dest = path.join(UPLOADS_DIR, "federacoes");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, dest),

@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import db from  "./src/config/db.js";
+import { UPLOADS_DIR } from "./src/config/paths.js";
 
 import authRoutes from "./src/routes/auth.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
@@ -89,7 +90,9 @@ app.use(cors({
 app.use("/stripe", stripeWebhookRoutes);
 
 // ===== ARQUIVOS ESTÁTICOS =====
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Mesma pasta usada pelos uploads (UPLOADS_DIR). Em produção quem serve /uploads é o nginx
+// (alias /var/www/uploads/), mas mantemos o express.static apontando pra mesma base p/ dev.
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 // ===== JSON NORMAL =====
 app.use(express.json());

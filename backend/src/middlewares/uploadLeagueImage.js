@@ -1,10 +1,9 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
+import { UPLOADS_DIR } from "../config/paths.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dest = path.join(__dirname, "../../uploads/ligas");
+const dest = path.join(UPLOADS_DIR, "ligas");
 fs.mkdirSync(dest, { recursive: true }); // garante a pasta (multer falha se não existir)
 
 const storage = multer.diskStorage({
