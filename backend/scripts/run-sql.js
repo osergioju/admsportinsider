@@ -15,8 +15,11 @@ const file = path.resolve(process.cwd(), arg);
 
 try {
   const sql = fs.readFileSync(file, "utf-8");
-  await db.query(sql);
-  console.log(`✅ SQL aplicado com sucesso: ${file}`);
+  const result = await db.query(sql);
+  if (result?.rows?.length) {
+    console.table(result.rows);
+  }
+  console.log(`✅ SQL aplicado com sucesso: ${file} (linhas: ${result?.rowCount ?? 0})`);
   process.exit(0);
 } catch (err) {
   console.error(`❌ Erro ao aplicar ${file}:`, err.message);
