@@ -10,6 +10,7 @@ import NetResultLineChart from "./components/netResult/NetResultLineChart";
 import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
 import NoFinancialData from "./components/NoFinancialData";
 import PageLoader from "../../../components/uxui/PageLoader";
+import NotasSection from "./../../Dashboard/Notas/NotasSection"
 
 /* ─── Utilitários de cor ───────────────────────────────────────── */
 
@@ -585,6 +586,7 @@ export default function DashLeagueUniques() {
                     </div>
                 </>
             )}
+            <NotasSection />
         </div>
     );
 }

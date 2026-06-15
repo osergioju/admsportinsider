@@ -177,9 +177,6 @@ export default function NotasSection() {
             <h2 className="text-lg font-medium text-[#0A0A0A]">
               {t("notes.title", "Notícias")}
             </h2>
-            <p className="text-xs text-[#AFAFB2]">
-              {t("notes.subtitle", "Análises e conteúdos exclusivos")}
-            </p>
           </div>
         </div>
 
