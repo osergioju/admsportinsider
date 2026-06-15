@@ -90,9 +90,9 @@ function buildValues(rowCount, colCount) {
 function normalizeStr(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim(); }
 
 export async function importMatches(req, res) {
-  const client = await db.connect();
-
+  let client;
   try {
+    client = await db.connect();
     const idLeague = Number(req.body.league);
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
     const countryMappings = req.body.countryMappings ? JSON.parse(req.body.countryMappings) : null;
@@ -102,10 +102,13 @@ export async function importMatches(req, res) {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json(sheet, { raw: false, defval: null });
 
-    // Se o CSV tem coluna "season" (ex: "2024/2025"), usa parseSeasonYear → 2025
-    // Senão usa o ano enviado pelo frontend (já detectado pelo preview)
+    // Temporada = ano da EDIÇÃO enviado pelo frontend (mesmo que teams/players usam),
+    // p/ alinhar os 3 imports. A coluna "season" do CSV (que traz o ano em que o jogo
+    // foi DISPUTADO, ex.: Mundial 2020 jogado em fev/2021) é só fallback se nada vier.
     const csvSeasonRaw = rows[0]?.season ?? null;
-    const seasonYear = csvSeasonRaw ? parseSeasonYear(csvSeasonRaw) : parseSeasonYear(req.body.season);
+    const seasonYear = req.body.season
+      ? parseSeasonYear(req.body.season)
+      : (csvSeasonRaw ? parseSeasonYear(csvSeasonRaw) : null);
 
     if (!idLeague || !seasonYear) {
       return res.status(400).json({ error: "Liga e temporada são obrigatórias" });
@@ -176,7 +179,7 @@ export async function importMatches(req, res) {
           `, [matchesLeagueCountry])
         : await client.query(`
             SELECT c.id_club, c.name, c.short_name, c.description, c.slug
-            FROM clubs c WHERE c.active = true
+            FROM clubs c
           `);
 
       const aliasesResM = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
@@ -442,11 +445,14 @@ export async function importMatches(req, res) {
     });
 
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("[importMatches]", error);
-    res.status(500).json({ success: false, error: "Erro ao importar partidas" });
+    console.error(`[importMatches] FALHA arquivo="${req.file?.originalname}" temporada="${req.body?.season}":`, error);
+    if (client) {
+      try { await client.query("ROLLBACK"); }
+      catch (rbErr) { console.error("[importMatches] ROLLBACK também falhou:", rbErr.message); }
+    }
+    res.status(500).json({ success: false, error: "Erro ao importar partidas", detail: error.message, code: error.code });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
@@ -488,9 +494,9 @@ function normalizeDate(value) {
 }
 
 export async function importPlayers(req, res) {
-  const client = await db.connect();
-
+  let client;
   try {
+    client = await db.connect();
     if (!req.file) {
       return res.status(400).json({ error: "Arquivo não enviado" });
     }
@@ -584,7 +590,7 @@ export async function importPlayers(req, res) {
 
           // Busca id_club usando slug/description matching
           const allClubsForLink = await client.query(
-            `SELECT id_club, name, slug, description FROM clubs WHERE active = true`
+            `SELECT id_club, name, slug, description FROM clubs`
           );
           const lkByName = new Map();
           const lkByDesc = new Map();
@@ -1097,7 +1103,7 @@ export async function importPlayers(req, res) {
     let aliasResultP = { saved: [], conflicts: [] };
     if (Object.keys(clubMappings).length > 0) {
       try {
-        const allClubsForAlias = await db.query(`SELECT id_club, name, slug FROM clubs WHERE active = true`);
+        const allClubsForAlias = await db.query(`SELECT id_club, name, slug FROM clubs`);
         const clubSlugToId = new Map();
         for (const c of allClubsForAlias.rows) {
           clubSlugToId.set(slugify(c.name, { lower: true, strict: true }), c.id_club);
@@ -1134,18 +1140,21 @@ export async function importPlayers(req, res) {
     });
 
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("[importPlayers]", err);
-    res.status(500).json({ error: "Erro no import players", detail: err.message });
+    console.error(`[importPlayers] FALHA arquivo="${req.file?.originalname}" temporada="${req.body?.season}":`, err);
+    if (client) {
+      try { await client.query("ROLLBACK"); }
+      catch (rbErr) { console.error("[importPlayers] ROLLBACK também falhou:", rbErr.message); }
+    }
+    res.status(500).json({ error: "Erro no import players", detail: err.message, code: err.code });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
 export async function importTeams(req, res) {
-  const client = await db.connect();
-
+  let client;
   try {
+    client = await db.connect();
     const idLeague = Number(req.body.league);
     const seasonYear = parseSeasonYear(req.body.season);
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
@@ -1161,6 +1170,8 @@ export async function importTeams(req, res) {
     const workbook = readWorkbook(req.file);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json(sheet, { raw: false, defval: null });
+
+    console.log(`[importTeams] INÍCIO arquivo="${req.file?.originalname}" liga=${idLeague} temporada=${seasonYear} linhas=${rows.length} modo=${isCountryMode ? "país" : "clubes"} poolWaiting=${db.waitingCount} poolIdle=${db.idleCount} poolTotal=${db.totalCount}`);
 
     await client.query("BEGIN");
 
@@ -1209,7 +1220,6 @@ export async function importTeams(req, res) {
           SELECT c.id_club, c.name, c.short_name, c.description, c.slug, co.name AS country_name
           FROM clubs c
           LEFT JOIN countries co ON co.id_country = c.id_country
-          WHERE c.active = true
         `);
 
     const aliasesResT = await client.query(`SELECT alias_norm, id_club FROM club_aliases`);
@@ -1611,6 +1621,8 @@ export async function importTeams(req, res) {
       catch (err) { console.error("[importTeams] alias save error:", err); }
     }
 
+    console.log(`[importTeams] OK arquivo="${req.file?.originalname}" inseridos=${inserted} pulados=${skipped.length} clubesVinculados=${matchedClubIds.length}`);
+
     res.json({
       success: true,
       inserted,
@@ -1623,11 +1635,15 @@ export async function importTeams(req, res) {
     });
 
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("[importTeams]", error);
-    res.status(500).json({ success: false, error: "Erro ao importar times", detail: error.message });
+    // Loga a causa real (stack completo) — connect/timeout/SQL aparecem aqui
+    console.error(`[importTeams] FALHA arquivo="${req.file?.originalname}" temporada="${req.body?.season}":`, error);
+    if (client) {
+      try { await client.query("ROLLBACK"); }
+      catch (rbErr) { console.error("[importTeams] ROLLBACK também falhou:", rbErr.message); }
+    }
+    res.status(500).json({ success: false, error: "Erro ao importar times", detail: error.message, code: error.code });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
@@ -1730,7 +1746,6 @@ export async function previewTeams(req, res) {
         SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, c.hidden, co.name AS country_name
         FROM clubs c
         LEFT JOIN countries co ON co.id_country = c.id_country
-        WHERE c.active = true
         ORDER BY co.name ASC, c.name ASC
       `),
       db.query(`SELECT alias_norm, id_club FROM club_aliases`),
@@ -1957,13 +1972,18 @@ export async function previewMatches(req, res) {
 
     if (!rows.length) return res.status(400).json({ error: "Arquivo sem dados" });
 
-    // 1. Se o CSV tem coluna "season" (ex: "2024/2025"), usa parseSeasonYear → 2025
-    // 2. Senão, pega o ANO MÁXIMO encontrado nas datas das partidas
-    // 3. Último recurso: regex de ano (19xx/20xx) na string da data — cobre
-    //    formatos que new Date() não parseia e timestamps ausentes
+    // 1. NOME DO ARQUIVO (...-2020-to-2020-stats.csv) — fonte mais confiável e
+    //    idêntica à dos times. Evita pegar o ano em que o jogo foi DISPUTADO:
+    //    o Mundial antigo era jogado no ano seguinte (ed. 2020 → fev/2021), o que
+    //    jogava a edição na temporada errada e fazia 2 edições colidirem.
+    // 2. Coluna "season" do CSV (ex: "2024/2025" → 2025)
+    // 3. ANO MÁXIMO encontrado nas datas das partidas
+    // 4. Último recurso: regex de ano (19xx/20xx) na string da data
     let detectedYear = null;
+    const fnMatch = String(req.file?.originalname || "").match(/(\d{4})-to-(\d{4})/);
+    if (fnMatch) detectedYear = parseSeasonYear(fnMatch[2]);
     const csvSeasonRaw = rows[0]?.season ?? null;
-    if (csvSeasonRaw) {
+    if (!detectedYear && csvSeasonRaw) {
       detectedYear = parseSeasonYear(csvSeasonRaw);
     }
     if (!detectedYear) {
@@ -1997,7 +2017,6 @@ export async function previewMatches(req, res) {
         SELECT c.id_club, c.name, c.short_name, c.description, c.slug, c.crest_url, c.hidden, co.name AS country_name
         FROM clubs c
         LEFT JOIN countries co ON co.id_country = c.id_country
-        WHERE c.active = true
         ORDER BY co.name ASC, c.name ASC
       `),
       db.query(`SELECT alias_norm, id_club FROM club_aliases`),
@@ -2185,7 +2204,6 @@ export async function previewPlayers(req, res) {
         SELECT c.id_club, c.name, c.short_name, c.slug, c.description, c.crest_url, c.hidden, co.name AS country_name
         FROM clubs c
         LEFT JOIN countries co ON co.id_country = c.id_country
-        WHERE c.active = true
         ORDER BY c.name ASC
       `),
       db.query(`SELECT alias_norm, id_club FROM club_aliases`),

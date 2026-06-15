@@ -437,7 +437,8 @@ export async function getFederationCycleFinancials(req, res) {
     const id_league   = leagueRow.rows[0].id_league;
     const fromCurrency = leagueRow.rows[0].currency_code || "USD";
 
-    // CTE de câmbio: melhor taxa disponível por ano
+    // CTE de câmbio: melhor taxa disponível por ano (+ última taxa conhecida
+    // como fallback p/ anos futuros sem cotação, ex. ciclos 2026/2030)
     const result = await db.query(`
       WITH rate_cte AS (
         SELECT DISTINCT ON (EXTRACT(YEAR FROM period)::int)
@@ -448,6 +449,11 @@ export async function getFederationCycleFinancials(req, res) {
           AND reference_currency = $3
         ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       ),
+      last_rate AS (
+        SELECT rate FROM currency_rates
+        WHERE base_currency = $2 AND reference_currency = $3
+        ORDER BY period DESC LIMIT 1
+      ),
       -- Soma anual convertida por edição
       annual_sums AS (
         SELECT
@@ -456,12 +462,13 @@ export async function getFederationCycleFinancials(req, res) {
           ce.name,
           ce.edition_year,
           fi.code,
-          SUM(ef.value * COALESCE(r.rate, 1)) AS converted_sum,
+          SUM(ef.value * COALESCE(r.rate, lr.rate, 1)) AS converted_sum,
           SUM(ef.value) AS raw_sum
         FROM edition_financials ef
         JOIN competition_editions ce ON ce.id_edition = ef.id_edition
         JOIN financial_indicators fi ON fi.id = ef.id_indicator
         LEFT JOIN rate_cte r ON r.year = ef.year
+        LEFT JOIN last_rate lr ON true
         WHERE ce.id_league = $1
           AND fi.code IN ('revenue','costs','net_income')
         GROUP BY ce.id_edition, ce.slug, ce.name, ce.edition_year, fi.code
@@ -470,12 +477,13 @@ export async function getFederationCycleFinancials(req, res) {
       debt_last AS (
         SELECT
           ce.id_edition,
-          ef.value * COALESCE(r.rate, 1) AS converted_value,
+          ef.value * COALESCE(r.rate, lr.rate, 1) AS converted_value,
           ef.value AS raw_value
         FROM edition_financials ef
         JOIN competition_editions ce ON ce.id_edition = ef.id_edition
         JOIN financial_indicators fi ON fi.id = ef.id_indicator
         LEFT JOIN rate_cte r ON r.year = ef.year
+        LEFT JOIN last_rate lr ON true
         WHERE ce.id_league = $1
           AND fi.code = 'net_debt'
           AND ef.year = ce.edition_year
@@ -527,26 +535,33 @@ export async function getLeagueCycleFinancials(req, res) {
         WHERE base_currency = $2 AND reference_currency = $3
         ORDER BY EXTRACT(YEAR FROM period)::int, period DESC
       ),
+      last_rate AS (
+        SELECT rate FROM currency_rates
+        WHERE base_currency = $2 AND reference_currency = $3
+        ORDER BY period DESC LIMIT 1
+      ),
       annual_sums AS (
         SELECT ce.id_edition, ce.slug, ce.name, ce.edition_year, fi.code,
-          SUM(ef.value * COALESCE(r.rate, 1)) AS converted_sum,
+          SUM(ef.value * COALESCE(r.rate, lr.rate, 1)) AS converted_sum,
           SUM(ef.value) AS raw_sum
         FROM edition_financials ef
         JOIN competition_editions ce ON ce.id_edition = ef.id_edition
         JOIN financial_indicators fi ON fi.id = ef.id_indicator
         LEFT JOIN rate_cte r ON r.year = ef.year
+        LEFT JOIN last_rate lr ON true
         WHERE ce.id_league = $1
           AND fi.code IN ('revenue','costs','net_income')
         GROUP BY ce.id_edition, ce.slug, ce.name, ce.edition_year, fi.code
       ),
       debt_last AS (
         SELECT ce.id_edition,
-          ef.value * COALESCE(r.rate, 1) AS converted_value,
+          ef.value * COALESCE(r.rate, lr.rate, 1) AS converted_value,
           ef.value AS raw_value
         FROM edition_financials ef
         JOIN competition_editions ce ON ce.id_edition = ef.id_edition
         JOIN financial_indicators fi ON fi.id = ef.id_indicator
         LEFT JOIN rate_cte r ON r.year = ef.year
+        LEFT JOIN last_rate lr ON true
         WHERE ce.id_league = $1
           AND fi.code = 'net_debt'
           AND ef.year = ce.edition_year

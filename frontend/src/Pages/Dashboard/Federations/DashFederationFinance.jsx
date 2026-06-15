@@ -90,14 +90,15 @@ function LineCycles({ editions, values, color, starYears = [] }) {
         return `<b>${labels[p.dataIndex]}</b> · ${names[p.dataIndex]}<br/>${p.marker} ${fmtNum(p.value)} mi`;
       },
     },
-    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 16, top: 38, bottom: 8, containLabel: true },
     xAxis: { type: "category", data: labels, axisLabel: AXIS_LABEL, axisLine: { show: false }, axisTick: { show: false } },
-    yAxis: { type: "value", axisLabel: { ...AXIS_LABEL, formatter: v => fmtNum(v) }, splitLine: SPLIT_LINE },
+    yAxis: { type: "value", axisLabel: { ...AXIS_LABEL, formatter: v => fmtNum(v) }, splitLine: SPLIT_LINE, max: v => (v.max > 0 ? v.max * 1.12 : undefined) },
     series: [{
       type: "line",
       data: values,
       symbol: "circle",
       symbolSize: 7,
+      clip: false,
       lineStyle: { width: 2.5, color },
       itemStyle: { color },
       label: { show: true, position: "top", fontSize: 9, color: "#6b7280", formatter: p => fmtNum(p.value) },
@@ -129,18 +130,19 @@ function CategoryBars({ items, color }) {
         return `<b>${items[p.dataIndex].label}</b><br/>${p.marker} ${fmtNum(p.value)} mi`;
       },
     },
-    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 16, top: 38, bottom: 8, containLabel: true },
     xAxis: {
       type: "category",
       data: items.map(i => i.label),
       axisLabel: { ...AXIS_LABEL, interval: 0, lineHeight: 12, formatter: v => wrapLabel(v) },
       axisLine: { show: false }, axisTick: { show: false },
     },
-    yAxis: { type: "value", axisLabel: { ...AXIS_LABEL, formatter: v => fmtNum(v) }, splitLine: SPLIT_LINE },
+    yAxis: { type: "value", axisLabel: { ...AXIS_LABEL, formatter: v => fmtNum(v) }, splitLine: SPLIT_LINE, max: v => (v.max > 0 ? v.max * 1.12 : undefined) },
     series: [{
       type: "bar",
       data: items.map(i => i.value),
       barMaxWidth: 46,
+      clip: false,
       itemStyle: { color, borderRadius: [6, 6, 0, 0] },
       label: { show: true, position: "top", fontSize: 9, color: "#6b7280", formatter: p => fmtNum(p.value) },
     }],
@@ -191,11 +193,12 @@ function NetIncomeBars({ editions, values, color }) {
         return `<b>${labels[p.dataIndex]}</b> · ${names[p.dataIndex]}<br/>${p.marker} ${fmtNum(p.value)} mi`;
       },
     },
-    grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 16, top: 38, bottom: 20, containLabel: true },
     xAxis: { type: "category", data: labels, axisLabel: AXIS_LABEL, axisLine: { show: false }, axisTick: { show: false } },
     yAxis: { type: "value", axisLabel: { ...AXIS_LABEL, formatter: v => fmtNum(v) }, splitLine: SPLIT_LINE },
     series: [{
       type: "bar",
+      clip: false,
       data: values.map(v => ({
         value: v,
         itemStyle: { color: v != null && v < 0 ? "#ef4444" : color, borderRadius: v != null && v < 0 ? [0, 0, 6, 6] : [6, 6, 0, 0] },
@@ -431,7 +434,7 @@ export default function DashFederationFinance() {
         <div className="relative z-10 p-6 sm:p-8 flex items-start gap-5">
           <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center p-2.5">
             {federation.slug
-              ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain drop-shadow-lg" />
+              ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" style={{ filter: "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)" }} />
               : <Shield size={40} className="text-white/60" />
             }
           </div>

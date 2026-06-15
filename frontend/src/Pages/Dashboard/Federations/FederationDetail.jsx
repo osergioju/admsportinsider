@@ -58,12 +58,15 @@ function parseCycleYears(edition) {
   return { start: end - 3, end };
 }
 
+const CURRENCY_SYMBOL = { USD: "US$", BRL: "R$", EUR: "€", GBP: "£" };
+
 function fmtCycleValue(v, currency) {
   if (v == null || isNaN(v)) return "—";
+  const cur = CURRENCY_SYMBOL[currency] ?? currency;
   const abs = Math.abs(v);
   const sign = v < 0 ? "-" : "";
-  if (abs >= 1000) return `${currency} ${sign}${(abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} bilhões`;
-  return `${currency} ${sign}${abs.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} milhões`;
+  if (abs >= 1000) return `${cur} ${sign}${(abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} bilhões`;
+  return `${cur} ${sign}${abs.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} milhões`;
 }
 
 function calcPct(latest, prev) {
@@ -117,7 +120,7 @@ function CycleBarChart({ editions, field, color }) {
         return `<b>${labels[p.dataIndex]}</b><br/>${p.marker} ${fmt(p.value)}`;
       },
     },
-    grid: { left: 8, right: 8, top: 10, bottom: 24, containLabel: true },
+    grid: { left: 8, right: 8, top: 28, bottom: 24, containLabel: true },
     xAxis: {
       type: "category",
       data: labels,
@@ -129,11 +132,13 @@ function CycleBarChart({ editions, field, color }) {
       type: "value",
       axisLabel: { formatter: (v) => fmt(v), fontSize: 10, color: "#9ca3af" },
       splitLine: { lineStyle: { color: "#f3f4f6" } },
+      max: (v) => (v.max > 0 ? v.max * 1.12 : undefined),
     },
     series: [{
       type: "bar",
       data: values,
       barMaxWidth: 70,
+      clip: false,
       itemStyle: { color, borderRadius: [6, 6, 0, 0] },
       label: { show: true, position: "top", formatter: (p) => fmt(p.value), fontSize: 10, color: "#6b7280" },
     }],
@@ -300,7 +305,7 @@ export default function FederationDetail() {
             {/* Logo */}
             <div className="shrink-0 w-14 h-14 lg:w-28 lg:h-28 xl:w-36 xl:h-36 flex items-center justify-center">
               {federation.slug
-                ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain drop-shadow-lg" />
+                ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" style={{ filter: "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)" }} />
                 : <Shield size={40} style={{ color: textColor, opacity: 0.6 }} />
               }
             </div>

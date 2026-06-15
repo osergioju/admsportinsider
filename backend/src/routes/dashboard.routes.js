@@ -112,16 +112,16 @@ router.get("/clubs/:id/financials/available-years", optionalAuth, financialConte
 router.get("/clubs/:id/financials/currencies", optionalAuth, getAvailableCurrencies);
 
 
-router.get("/leagues/continental", getContinentalLeagues);
+router.get("/leagues/continental", optionalAuth, getContinentalLeagues);
 router.get("/leagues/:id/cycle-financials", getLeagueCycleFinancials);
 
 // FEDERAÇÕES
 router.get("/federations", getDashboardFederations);
-router.get("/federations/:slug", getDashboardFederationBySlug);
+router.get("/federations/:slug", optionalAuth, getDashboardFederationBySlug);
 router.get("/federations/:slug/cycle-financials", getFederationCycleFinancials);
 router.get("/federations/:slug/finance-overview", getFederationFinanceOverview);
-router.get("/leagues/:id/info", getLeagueById);
-router.post("/leagues/search", leaguesSearch);
+router.get("/leagues/:id/info", optionalAuth, getLeagueById);
+router.post("/leagues/search", optionalAuth, leaguesSearch);
 
 /* ===============================
    LEAGUES — PÁGINA ÚNICA

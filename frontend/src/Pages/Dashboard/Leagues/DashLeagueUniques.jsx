@@ -32,7 +32,7 @@ function resolveColors(primary, secondary, tertiary) {
 
 /* ─── Gráfico de barras por ano ─────────────────────────────────── */
 
-function AnnualBarChart({ rows, color }) {
+function AnnualBarChart({ rows, color, millions = false }) {
     if (!rows?.length) return (
         <div className="flex items-center justify-center h-48 text-gray-300 text-sm">
             Sem dados disponíveis
@@ -45,6 +45,11 @@ function AnnualBarChart({ rows, color }) {
     const fmt = (v) => {
         if (v == null) return "—";
         const abs = Math.abs(v);
+        // millions: o valor já vem em milhões (ex: premiações) — só anexa a unidade
+        if (millions) {
+            if (abs >= 1_000) return `${(v / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}B`;
+            return `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M`;
+        }
         if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
         if (abs >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
         return String(Math.round(v));
@@ -256,8 +261,9 @@ export default function DashLeagueUniques() {
     const chartColorSecondary = (c2 !== c1 && isDarkEnough(c2)) ? c2 : chartColorPrimary === c1 ? "#946E1C" : chartColorPrimary;
 
     // Indicadores anuais (premiações e público)
-    const prizesData = annualIndicators?.["prizes_total"] || [];
-    const attendanceData = annualIndicators?.["attendance-total"] || [];
+    // Anos zerados são edições futuras sem dado (ex: CWC 2029) — fora do gráfico
+    const prizesData = (annualIndicators?.["prizes_total"] || []).filter(r => r.value);
+    const attendanceData = (annualIndicators?.["attendance-total"] || []).filter(r => r.value);
     const hasPrizesSection = !!(sj.prizes_text || prizesData.length);
     const hasAttendanceSection = !!(sj.attendance_text || attendanceData.length);
     const hasSpecialSections = hasPrizesSection || hasAttendanceSection;
@@ -333,7 +339,8 @@ export default function DashLeagueUniques() {
                                 <img
                                     src={lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
                                     alt={competitionTitle}
-                                    className="w-full h-full object-contain drop-shadow-lg"
+                                    className="w-full h-full object-contain"
+                                    style={{ filter: "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)" }}
                                     onError={e => e.currentTarget.style.display = "none"}
                                 />
                             )}
@@ -433,7 +440,7 @@ export default function DashLeagueUniques() {
                         <div id="premiacoes" className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
                             <div className="flex flex-wrap w-full items-center">
                                 <div className="w-full lg:w-1/2">
-                                    <AnnualBarChart rows={prizesData} color={chartColorPrimary} />
+                                    <AnnualBarChart rows={prizesData} color={chartColorPrimary} millions />
                                 </div>
                                 <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
                                     <h2
@@ -443,10 +450,7 @@ export default function DashLeagueUniques() {
                                         Premiações
                                     </h2>
                                     {sj.prizes_text && (
-                                        <p
-                                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                            className="text-sm font-light lg:text-base"
-                                        >
+                                        <p className="text-sm font-light lg:text-base text-black">
                                             {sj.prizes_text}
                                         </p>
                                     )}
@@ -469,10 +473,7 @@ export default function DashLeagueUniques() {
                                         Público
                                     </h2>
                                     {sj.attendance_text && (
-                                        <p
-                                            style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                            className="text-sm font-light lg:text-base"
-                                        >
+                                        <p className="text-sm font-light lg:text-base text-black">
                                             {sj.attendance_text}
                                         </p>
                                     )}

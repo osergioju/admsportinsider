@@ -17,7 +17,7 @@ export default function GestaoLigas() {
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
     const [leagueScope, setLeagueScope] = useState("country"); // "country" | "continent"
-    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs" });
+    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", translations: { pt: "", en: "", es: "" } });
     const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -57,7 +57,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs" });
+        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", translations: { pt: "", en: "", es: "" } });
         setLeagueScope("country");
         setIsEditing(false); setModal(true);
     };
@@ -66,7 +66,7 @@ export default function GestaoLigas() {
         try {
             const { data } = await api.get(`/admin/leagues/${id}`);
             setCurrentLeague(data.league);
-            setNewLeague({ ...data.league, team_type: data.league.team_type || "clubs" });
+            setNewLeague({ ...data.league, team_type: data.league.team_type || "clubs", translations: { pt: "", en: "", es: "", ...(data.league.translations || {}) } });
             setLeagueScope(data.league.id_continent ? "continent" : "country");
             setIsEditing(true); setModal(true);
         } catch (err) { console.error(err); }
@@ -360,6 +360,23 @@ export default function GestaoLigas() {
                             <div>
                                 <label className={labelClass}>Nome</label>
                                 <input type="text" className={inputClass} value={newLeague.name} onChange={(e) => setNewLeague({ ...newLeague, name: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Nome por idioma</label>
+                                <p className="text-xs text-gray-400 mb-2">Como a competição aparece conforme o idioma do usuário. Em branco usa o "Nome" acima.</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    {[["pt", "Português"], ["en", "English"], ["es", "Español"]].map(([loc, lbl]) => (
+                                        <div key={loc}>
+                                            <span className="block text-[11px] font-medium text-gray-500 mb-1">{lbl}</span>
+                                            <input
+                                                type="text"
+                                                className={inputClass}
+                                                value={newLeague.translations?.[loc] || ""}
+                                                onChange={(e) => setNewLeague({ ...newLeague, translations: { ...(newLeague.translations || {}), [loc]: e.target.value } })}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                             <div>
                                 <label className={labelClass}>Descrição</label>

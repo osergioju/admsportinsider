@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { resolveLocale } from "../utils/locale.js";
 import XLSX from "xlsx";
 import { reSendMail } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
@@ -120,11 +121,13 @@ export async function getAllLeagues(req, res) {
 
 export async function getLeagueById(req, res) {
   const { id } = req.params;
+  const locale = await resolveLocale(req);
 
   try {
     const result = await db.query(`
     SELECT
       l.*,
+      COALESCE(lt.name, l.name) AS name,
       c.name AS country_name,
       c.flag_url,
       c.flag_color1,
@@ -146,14 +149,23 @@ export async function getLeagueById(req, res) {
     LEFT JOIN countries c ON c.id_country = l.id_country
     LEFT JOIN continents ct ON ct.id_continent = l.id_continent
     LEFT JOIN federations f ON f.id_federation = l.id_federation
+    LEFT JOIN league_translations lt ON lt.id_league = l.id_league AND lt.locale = $2
     WHERE (CASE WHEN $1 ~ '^\\d+$' THEN l.id_league = $1::integer ELSE l.slug = $1 END)
-  `, [id]);
+  `, [id, locale]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Liga não encontrada" });
     }
 
-    return res.json({ league: result.rows[0] });
+    // Traduções cruas (pt/en/es) para o editor do admin
+    const trRes = await db.query(
+      `SELECT locale, name FROM league_translations WHERE id_league = $1`,
+      [result.rows[0].id_league]
+    );
+    const translations = {};
+    for (const r of trRes.rows) translations[r.locale] = r.name;
+
+    return res.json({ league: { ...result.rows[0], translations } });
 
   } catch (err) {
     console.error(err);
@@ -161,8 +173,23 @@ export async function getLeagueById(req, res) {
   }
 }
 
+// Salva os nomes por idioma da competição (pt/en/es) em league_translations.
+async function upsertLeagueTranslations(idLeague, translations) {
+  if (!translations || typeof translations !== "object") return;
+  const entries = [["pt", translations.pt], ["en", translations.en], ["es", translations.es]]
+    .filter(([, v]) => typeof v === "string" && v.trim());
+  for (const [locale, nm] of entries) {
+    await db.query(
+      `INSERT INTO league_translations (id_league, locale, name)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (id_league, locale) DO UPDATE SET name = EXCLUDED.name`,
+      [idLeague, locale, nm.trim()]
+    );
+  }
+}
+
 export async function createLeague(req, res) {
-  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nome é obrigatório." });
@@ -174,10 +201,13 @@ export async function createLeague(req, res) {
   const teamType = team_type === "national" ? "national" : "clubs";
 
   try {
-    await db.query(`
+    const ins = await db.query(`
       INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING id_league
     `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType]);
+
+    await upsertLeagueTranslations(ins.rows[0].id_league, translations);
 
     return res.status(201).json({ message: "Liga cadastrada com sucesso!" });
 
@@ -189,7 +219,7 @@ export async function createLeague(req, res) {
 
 export async function updateLeague(req, res) {
   const { id } = req.params;
-  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
 
   const teamType = team_type === "national" ? "national" : "clubs";
 
@@ -210,6 +240,8 @@ export async function updateLeague(req, res) {
         team_type = $11
       WHERE id_league = $12
     `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType, id]);
+
+    await upsertLeagueTranslations(Number(id), translations);
 
     return res.json({ message: "Liga atualizada com sucesso!" });
 
@@ -446,19 +478,22 @@ export async function clubsGroupedByCountry(req, res) {
 export async function leaguesSearch(req, res) {
   try {
     const { name, country } = req.body;
+    const locale = await resolveLocale(req);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
 
-    const values = [];
+    // $1 = locale (usado no JOIN de tradução); demais filtros a partir de $2
+    const values = [locale];
     // Liga ativa E federação vinculada ativa (modo manutenção)
     let whereClause = `WHERE l.active = TRUE AND (f.id_federation IS NULL OR f.active = TRUE)`;
-    let idx = 1;
+    let idx = 2;
 
     if (name) {
       whereClause += ` AND (
         unaccent(l.name) ILIKE unaccent($${idx})
+        OR unaccent(lt.name) ILIKE unaccent($${idx})
         OR unaccent(l.description) ILIKE unaccent($${idx})
         OR unaccent(co.name) ILIKE unaccent($${idx})
       )`;
@@ -472,12 +507,17 @@ export async function leaguesSearch(req, res) {
       idx++;
     }
 
+    const joinClause = `
+      LEFT JOIN countries co ON co.id_country = l.id_country
+      LEFT JOIN federations f ON f.id_federation = l.id_federation
+      LEFT JOIN league_translations lt ON lt.id_league = l.id_league AND lt.locale = $1`;
+
     // Query principal
     const leaguesQuery = await db.query(
       `
-      SELECT 
+      SELECT
         l.id_league,
-        l.name,
+        COALESCE(lt.name, l.name) AS name,
         l.description,
         l.logo_url,
         l.active,
@@ -499,12 +539,10 @@ export async function leaguesSearch(req, res) {
         f.tertiary_color AS fed_color3,
         f.logo_url AS federation_logo_url
 
-      FROM leagues l
-      LEFT JOIN countries co ON co.id_country = l.id_country
-      LEFT JOIN federations f ON f.id_federation = l.id_federation
+      FROM leagues l${joinClause}
 
       ${whereClause}
-      ORDER BY l.name ASC
+      ORDER BY COALESCE(lt.name, l.name) ASC
       LIMIT $${idx} OFFSET $${idx + 1};
       `,
       [...values, limit, offset]
@@ -514,9 +552,7 @@ export async function leaguesSearch(req, res) {
     const countQuery = await db.query(
       `
       SELECT COUNT(*)
-      FROM leagues l
-      LEFT JOIN countries co ON co.id_country = l.id_country
-      LEFT JOIN federations f ON f.id_federation = l.id_federation
+      FROM leagues l${joinClause}
       ${whereClause};
       `,
       values
@@ -539,9 +575,10 @@ export async function leaguesSearch(req, res) {
 
 export async function getContinentalLeagues(req, res) {
   try {
+    const locale = await resolveLocale(req);
     const result = await db.query(`
       SELECT
-        l.id_league, l.name, l.logo_url, l.slug, l.active, l.structure_json,
+        l.id_league, COALESCE(lt.name, l.name) AS name, l.logo_url, l.slug, l.active, l.structure_json,
         l.id_federation,
         f.logo_url  AS fed_logo_url,
         f.slug      AS fed_slug,
@@ -552,11 +589,12 @@ export async function getContinentalLeagues(req, res) {
         f.tertiary_color  AS fed_color3
       FROM leagues l
       LEFT JOIN federations f ON f.id_federation = l.id_federation
+      LEFT JOIN league_translations lt ON lt.id_league = l.id_league AND lt.locale = $1
       WHERE l.active = TRUE
         AND l.id_country IS NULL
         AND l.is_competition = TRUE
-      ORDER BY l.name ASC
-    `);
+      ORDER BY COALESCE(lt.name, l.name) ASC
+    `, [locale]);
     return res.json({ leagues: result.rows });
   } catch (err) {
     console.error("Erro ao buscar ligas continentais:", err);
@@ -960,6 +998,7 @@ export async function getDashboardFederations(req, res) {
 
 export async function getDashboardFederationBySlug(req, res) {
   const { slug } = req.params;
+  const locale = await resolveLocale(req);
   try {
     const fedResult = await db.query(
       `SELECT id_federation, name, acronym, logo_url, slug, sort_order, sphere,
@@ -979,16 +1018,17 @@ export async function getDashboardFederationBySlug(req, res) {
 
     const leaguesResult = await db.query(`
       SELECT
-        l.id_league, l.name, l.slug, l.logo_url, l.description,
+        l.id_league, COALESCE(lt.name, l.name) AS name, l.slug, l.logo_url, l.description,
         l.id_country, l.id_continent,
         c.name AS country_name, c.flag_url,
         ct.name AS continent_name
       FROM leagues l
       LEFT JOIN countries c ON c.id_country = l.id_country
       LEFT JOIN continents ct ON ct.id_continent = l.id_continent
+      LEFT JOIN league_translations lt ON lt.id_league = l.id_league AND lt.locale = $2
       WHERE l.id_federation = $1 AND l.active = true ${countryFilter}
-      ORDER BY l.name ASC
-    `, [federation.id_federation]);
+      ORDER BY COALESCE(lt.name, l.name) ASC
+    `, [federation.id_federation, locale]);
 
     return res.json({ federation, leagues: leaguesResult.rows });
   } catch (err) {

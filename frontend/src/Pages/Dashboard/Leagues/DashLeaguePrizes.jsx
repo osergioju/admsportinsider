@@ -36,6 +36,18 @@ function fmtFull(v, prefix = "") {
     return `${prefix}${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} milhões`;
 }
 
+/* Escudo do time da premiação: federação (webp da federação), ou clube.
+   Para clubes o backend manda o SLUG do escudo em flag_url (ex.: "brazil_gremio"),
+   não uma URL pronta — então montamos a URL do clube aqui. */
+const CLUB_CREST_BASE = "https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_";
+function teamImg(t) {
+    if (t.federation_slug) return federationLogo(t.federation_slug, "medium");
+    if (t.id_club && t.flag_url) return `${CLUB_CREST_BASE}${t.flag_url}.webp`;
+    return (t.flag_url && t.flag_url.startsWith("http")) ? t.flag_url : null;
+}
+/* Borda branca sólida (contorno via drop-shadow em 4 direções, sem blur) */
+const LOGO_SHADOW = "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)";
+
 /* ─── Ordem das linhas da tabela (chaves normalizadas) ─────────── */
 const POSITION_KEYS = [
     ["performance-champion_per-position", "Campeão"],
@@ -111,17 +123,34 @@ export default function DashLeaguePrizes() {
        outras competições (Intercontinental usa 1st-place, Copa de Clubes per-phase),
        ordenadas por valor decrescente — réplica do ranking de posições */
     const fixedKeys = new Set(POSITION_KEYS.map(([k]) => k));
+    // Último valor REAL (não-zero) — edições futuras/sem dados gravam 0 e não
+    // podem zerar o ranking (senão todas as posições empatam e a ordem embaralha)
     const latestVal = (k) => {
         for (let i = years.length - 1; i >= 0; i--) {
             const v = valueOf(years[i], k);
-            if (v != null) return v;
+            if (v != null && v !== 0) return v;
         }
         return -Infinity;
     };
-    const dynamicKeys = Object.keys(data.labels ?? {})
-        .filter(k => /(_per-position|_per-phase|_groups)$/.test(k) && !fixedKeys.has(k) && !k.startsWith("prizes_"))
-        .sort((a, b) => latestVal(b) - latestVal(a));
-    const positionRows = [...POSITION_KEYS, ...dynamicKeys.map(k => [k, labelOf(k, k)])];
+    const allPosKeys = Object.keys(data.labels ?? {})
+        .filter(k => /(_per-position|_per-phase|_groups)$/.test(k) && !k.startsWith("prizes_"));
+    // Competição com posições numéricas (1º, 2º, …, Nº) — ex.: Intercontinental.
+    // Os códigos 3rd/4th-place coincidem com a lista fixa da Copa do Mundo, então
+    // NÃO usamos POSITION_KEYS aqui: ordenamos TODAS as posições por valor desc.
+    const usesNumericPositions = allPosKeys.some(k => /performance-1st-place_per-position$/.test(k));
+
+    let positionRows;
+    if (usesNumericPositions) {
+        positionRows = allPosKeys
+            .sort((a, b) => latestVal(b) - latestVal(a))
+            .map(k => [k, labelOf(k, k)]);
+    } else {
+        // Copa do Mundo: ordem curada (POSITION_KEYS) + demais chaves por valor
+        const dynamicKeys = allPosKeys
+            .filter(k => !fixedKeys.has(k))
+            .sort((a, b) => latestVal(b) - latestVal(a));
+        positionRows = [...POSITION_KEYS, ...dynamicKeys.map(k => [k, labelOf(k, k)])];
+    }
 
     function addToCompare(yr) {
         const y = Number(yr);
@@ -153,7 +182,8 @@ export default function DashLeaguePrizes() {
                     </button>
                     {leagueLogo && (
                         <img src={leagueLogo} alt={lg.name}
-                            className="w-10 h-10 object-contain drop-shadow"
+                            className="w-10 h-10 object-contain"
+                            style={{ filter: LOGO_SHADOW }}
                             onError={e => e.currentTarget.style.display = "none"} />
                     )}
                     <div className="flex-1 min-w-0">
@@ -353,20 +383,22 @@ export default function DashLeaguePrizes() {
                                     <div className="relative px-4 pt-4 pb-14"
                                         style={{ background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)` }}>
                                         <button
+                                            type="button"
+                                            aria-label={`Remover ${yr} da comparação`}
                                             onClick={() => removeFromCompare(yr)}
-                                            className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                                            className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full cursor-pointer hover:bg-white/20 transition-colors"
                                             style={{ color: textColor }}
                                         >
-                                            <X size={12} />
+                                            <X size={15} />
                                         </button>
                                         <p className="text-[11px] mb-0.5" style={{ color: textColor, opacity: 0.6 }}>
                                             {edition.name}
                                         </p>
                                         <span className="text-2xl font-light" style={{ color: textColor }}>{yr}</span><br></br>
-                                        <p style={{ color: textColor, opacity: 0.6, fontSize: "12px" }}>em milhões - {prefix}</p>
+                                        <p style={{ color: textColor, opacity: 0.6, fontSize: "12px" }}>em milhões ({currency})</p>
                                         {pool != null && (
                                             <p className="text-[11px] mt-1 font-light" style={{ color: textColor, opacity: 0.65 }}>
-                                                Total: {fmtMi(convert(pool), prefix)}
+                                                Total: {fmtFull(convert(pool), prefix)}
                                             </p>
                                         )}
                                     </div>
@@ -400,10 +432,14 @@ export default function DashLeaguePrizes() {
                                                         </span>
                                                         <div className="w-5 h-5 rounded-full overflow-hidden border border-gray-100 shrink-0 bg-gray-50 flex items-center justify-center">
                                                             <img
-                                                                src={federationLogo(t.federation_slug, "medium") ?? t.flag_url}
+                                                                src={teamImg(t) ?? ""}
                                                                 alt=""
                                                                 className="w-full h-full object-contain"
-                                                                onError={e => { if (t.flag_url && e.currentTarget.src !== t.flag_url) e.currentTarget.src = t.flag_url; else e.currentTarget.style.opacity = "0"; }}
+                                                                onError={e => {
+                                                                    const flag = t.flag_url && t.flag_url.startsWith("http") ? t.flag_url : null;
+                                                                    if (flag && e.currentTarget.src !== flag) e.currentTarget.src = flag;
+                                                                    else e.currentTarget.style.opacity = "0";
+                                                                }}
                                                             />
                                                         </div>
                                                         <span className="flex-1 text-xs text-gray-600 leading-none truncate">{t.name}</span>
