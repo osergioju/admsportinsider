@@ -24,7 +24,10 @@ export default function Faq() {
   };
 
   useEffect(() => {
-    api.get("/user/faq").then(res => setFaqData(res.data));
+    // _t = cache-buster: evita resposta velha cacheada na borda (Cloudflare)
+    api.get("/user/faq", { params: { _t: Date.now() } })
+      .then(res => setFaqData(Array.isArray(res.data) ? res.data : []))
+      .catch(err => console.error("Erro ao carregar FAQ:", err));
   }, []);
 
   const filteredFaqs = faqData.filter(item => 

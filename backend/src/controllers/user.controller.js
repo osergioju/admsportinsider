@@ -469,6 +469,10 @@ export async function updatePassword(req, res) {
 
 export async function getFaqs(req, res) {
   try {
+    // Conteúdo dinâmico (admin edita) — não pode ficar cacheado na borda (Cloudflare),
+    // senão o /faq mostra a lista antiga depois de cadastrar/ativar perguntas.
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+
     const result = await db.query(`
       SELECT id, question, answer
       FROM faqs
