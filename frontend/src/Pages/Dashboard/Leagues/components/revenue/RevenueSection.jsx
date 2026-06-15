@@ -89,7 +89,7 @@ export default function RevenueSection({
           <h2 className="mb-1 text-[#0A0A0A] font-[400] text-xl">
             {sectionTitle}
           </h2>
-          <span className="text-xs lg:text-sm xl:text-base opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")} <i className="w-1 h-1 inline-block bg-black rounded-full -translate-y-[2px] mx-1"></i> comparação entre ciclos de quatro anos</span>
+          <span className="text-xs lg:text-sm xl:text-base opacity-30 inline-block mb-1 -translate-y-1">{t("club.finance.in_millions", "em milhões")} <i className="w-1 h-1 inline-block bg-black rounded-full -translate-y-[2px] mx-2"></i> {t("club.finance.in_millions_disclaimer", "comparação entre ciclos de quatro anos")}</span>
           <ChartFilter
             ligasSelecionadas={selectedLeagues}
             onAddLeague={handleAddLeague}

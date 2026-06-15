@@ -69,7 +69,7 @@ export default function Main() {
       {/* Gráfico principal: Receitas da Fifa por ciclo da Copa do Mundo */}
       <div className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <RevenueSection
-          title="Receitas da Fifa (por ciclo da Copa do Mundo)"
+          title="Receitas da Fifa"
           data={revenueData}
           selectedLeagues={selectedLeagues}
           setSelectedLeagues={setSelectedLeagues}
