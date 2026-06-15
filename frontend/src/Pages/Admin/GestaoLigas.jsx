@@ -161,7 +161,7 @@ export default function GestaoLigas() {
                                 >
                                     {(league.logo_url || league.slug) ? (
                                         <img
-                                            src={`https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
+                                            src={league.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${league.slug}.webp`}
                                             className="w-full h-full object-contain drop-shadow-sm"
                                             alt={league.name} Só o
                                             onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling?.classList.remove("hidden"); }}

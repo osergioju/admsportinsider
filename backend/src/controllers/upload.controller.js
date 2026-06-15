@@ -125,10 +125,13 @@ export async function uploadLeagueLogo(req, res) {
       .toFile(reducedPath);
 
     const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
-    // logo_url aponta para o reduzido (leve/nítido) — o app já usa esse padrão
+    // logo_url aponta para o reduzido (leve/nítido) — o app já usa esse padrão.
+    // O ?v={timestamp} é cache-buster: como o arquivo é sobrescrito com o mesmo
+    // nome, sem isso o navegador/CDN continuaria servindo a versão antiga.
+    const v = Date.now();
     return res.status(200).json({
-      url: `${baseUrl}/uploads/ligas/reduced/${reducedName}`,
-      original: `${baseUrl}/uploads/ligas/${finalName}`,
+      url: `${baseUrl}/uploads/ligas/reduced/${reducedName}?v=${v}`,
+      original: `${baseUrl}/uploads/ligas/${finalName}?v=${v}`,
     });
   } catch (error) {
     console.error("Erro no upload de logo da liga:", error);
