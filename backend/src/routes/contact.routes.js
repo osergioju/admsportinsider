@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { sendContact } from "../controllers/contact.controller.js";
 import { getPublicSystemFeatures } from "../controllers/maintenance.controller.js";
+import { getPublicLegalSections } from "../controllers/legal.controller.js";
 import db from "../config/db.js";
 
 const router = Router();
@@ -9,6 +10,9 @@ router.post("/contact", sendContact);
 
 // Feature flags de páginas/menus (Manutenção do Sistema) — sem auth
 router.get("/system-features", getPublicSystemFeatures);
+
+// Seções da página /legal — sem auth (página pública)
+router.get("/legal", getPublicLegalSections);
 
 // Traduções públicas — sem auth, locale via query param (?locale=en-US)
 router.get("/translations", async (req, res) => {

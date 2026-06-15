@@ -17,7 +17,7 @@ export default function GestaoLigas() {
     const [isEditing, setIsEditing] = useState(false);
     const [currentLeague, setCurrentLeague] = useState(null);
     const [leagueScope, setLeagueScope] = useState("country"); // "country" | "continent"
-    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", logo_url_negative: "", translations: { pt: "", en: "", es: "" } });
+    const [newLeague, setNewLeague] = useState({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", logo_url_negative: "", prizes_text: "", attendance_text: "", translations: { pt: "", en: "", es: "" } });
     const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -58,7 +58,7 @@ export default function GestaoLigas() {
 
     // Handlers Modal
     const openCreateModal = () => {
-        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", logo_url_negative: "", translations: { pt: "", en: "", es: "" } });
+        setNewLeague({ id_country: "", id_continent: "", id_federation: "", name: "", description: "", logo_url: "", format: "", primary_color: "", secondary_color: "", currency_code: "", team_type: "clubs", logo_url_negative: "", prizes_text: "", attendance_text: "", translations: { pt: "", en: "", es: "" } });
         setLeagueScope("country");
         setIsEditing(false); setModal(true);
     };
@@ -67,7 +67,7 @@ export default function GestaoLigas() {
         try {
             const { data } = await api.get(`/admin/leagues/${id}`);
             setCurrentLeague(data.league);
-            setNewLeague({ ...data.league, team_type: data.league.team_type || "clubs", translations: { pt: "", en: "", es: "", ...(data.league.translations || {}) } });
+            setNewLeague({ ...data.league, team_type: data.league.team_type || "clubs", prizes_text: data.league.structure_json?.prizes_text || "", attendance_text: data.league.structure_json?.attendance_text || "", translations: { pt: "", en: "", es: "", ...(data.league.translations || {}) } });
             setLeagueScope(data.league.id_continent ? "continent" : "country");
             setIsEditing(true); setModal(true);
         } catch (err) { console.error(err); }
@@ -402,6 +402,14 @@ export default function GestaoLigas() {
                             <div>
                                 <label className={labelClass}>Descrição</label>
                                 <textarea className={inputClass} rows={3} value={newLeague.description} onChange={(e) => setNewLeague({ ...newLeague, description: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Premiações</label>
+                                <textarea className={inputClass} rows={3} placeholder="Texto da seção Premiações (deixe vazio para ocultar a seção na competição)" value={newLeague.prizes_text || ""} onChange={(e) => setNewLeague({ ...newLeague, prizes_text: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Público e renda</label>
+                                <textarea className={inputClass} rows={3} placeholder="Texto da seção Público e renda (deixe vazio para ocultar a seção na competição)" value={newLeague.attendance_text || ""} onChange={(e) => setNewLeague({ ...newLeague, attendance_text: e.target.value })} />
                             </div>
                             <div>
                                 <label className={labelClass}>Logo / Foto</label>

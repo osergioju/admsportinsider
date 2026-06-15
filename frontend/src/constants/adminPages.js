@@ -85,6 +85,12 @@ export const ADMIN_PAGES = [
     group: "Conteúdo",
     routes: ["/admin/faq"],
   },
+  {
+    key: "legal",
+    label: "Páginas Legais",
+    group: "Conteúdo",
+    routes: ["/admin/legal"],
+  },
 
   // ── Configuração ─────────────────────────────────────
   {

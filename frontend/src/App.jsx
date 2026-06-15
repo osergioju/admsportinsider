@@ -87,8 +87,11 @@ import FinancialTransPage from "./Pages/Admin/Regions/FinancialTransPage";
 import CommonTermsTransPage from "./Pages/Admin/Regions/CommonTermsTransPage";
 import Currencies from "./Pages/Admin/Currencies/Currencies";
 
-// Faq Admin 
+// Faq Admin
 import FaqAdmin from "./Pages/Admin/Faq/FaqAdmin";
+
+// Legal Admin
+import LegalAdmin from "./Pages/Admin/Legal/LegalAdmin";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
@@ -359,6 +362,11 @@ export default function App() {
               {/* ── FAQ ── */}
               <Route element={<AdminPermissionRoute permissionKey="faq" />}>
                 <Route path="/admin/faq" element={<FaqAdmin />} />
+              </Route>
+
+              {/* ── Páginas Legais ── */}
+              <Route element={<AdminPermissionRoute permissionKey="legal" />}>
+                <Route path="/admin/legal" element={<LegalAdmin />} />
               </Route>
 
             </Route>

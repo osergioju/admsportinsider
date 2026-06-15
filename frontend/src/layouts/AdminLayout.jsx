@@ -20,6 +20,7 @@ import {
     CircleX,
     Languages,
     MessageCircleQuestionMark,
+    FileText,
     CircleDollarSign,
     ChartArea, Zap,
     Trophy
@@ -176,7 +177,7 @@ export default function AdminLayout() {
                     </div>
 
                     {/* SEÇÃO: CONTEÚDO & DADOS */}
-                    {(canAccess("upload-financeiro") || canAccess("upload-times") || canAccess("upload-jogadores") || canAccess("upload-partidas") || canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq")) && (
+                    {(canAccess("upload-financeiro") || canAccess("upload-times") || canAccess("upload-jogadores") || canAccess("upload-partidas") || canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq") || canAccess("legal")) && (
                         <div>
                             <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Conteúdo & Dados</span>
                             <ul className="space-y-1">
@@ -208,6 +209,7 @@ export default function AdminLayout() {
                                 {canAccess("regions") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/regions" icon={<Languages strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Idioma e regiões</span>} /></div>}
                                 {canAccess("currencies") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/currencies" icon={<CircleDollarSign strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Moeda</span>} /></div>}
                                 {canAccess("faq") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/faq" icon={<MessageCircleQuestionMark strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Faqs</span>} /></div>}
+                                {canAccess("legal") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/legal" icon={<FileText strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Páginas Legais</span>} /></div>}
                             </ul>
                         </div>
                     )}

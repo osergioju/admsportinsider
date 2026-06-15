@@ -189,7 +189,7 @@ async function upsertLeagueTranslations(idLeague, translations) {
 }
 
 export async function createLeague(req, res) {
-  const { id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type, translations, prizes_text, attendance_text } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Nome é obrigatório." });
@@ -199,13 +199,17 @@ export async function createLeague(req, res) {
   }
 
   const teamType = team_type === "national" ? "national" : "clubs";
+  const structureJson = JSON.stringify({
+    ...((prizes_text ?? "").trim() ? { prizes_text: prizes_text.trim() } : {}),
+    ...((attendance_text ?? "").trim() ? { attendance_text: attendance_text.trim() } : {}),
+  });
 
   try {
     const ins = await db.query(`
-      INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      INSERT INTO leagues (id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type, structure_json)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb)
       RETURNING id_league
-    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, logo_url_negative || null, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType]);
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, logo_url_negative || null, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType, structureJson]);
 
     await upsertLeagueTranslations(ins.rows[0].id_league, translations);
 
@@ -219,7 +223,7 @@ export async function createLeague(req, res) {
 
 export async function updateLeague(req, res) {
   const { id } = req.params;
-  const { id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type, translations } = req.body;
+  const { id_country, id_continent, id_federation, name, description, logo_url, logo_url_negative, format, primary_color, secondary_color, currency_code, team_type, translations, prizes_text, attendance_text } = req.body;
 
   const teamType = team_type === "national" ? "national" : "clubs";
 
@@ -238,9 +242,11 @@ export async function updateLeague(req, res) {
         secondary_color = $9,
         currency_code = $10,
         team_type = $11,
-        logo_url_negative = $13
+        logo_url_negative = $13,
+        structure_json = COALESCE(structure_json, '{}'::jsonb)
+                         || jsonb_build_object('prizes_text', $14::text, 'attendance_text', $15::text)
       WHERE id_league = $12
-    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType, id, logo_url_negative || null]);
+    `, [id_country || null, id_continent || null, id_federation || null, name, description, logo_url, format || null, primary_color || null, secondary_color || null, currency_code || null, teamType, id, logo_url_negative || null, (prizes_text ?? "").trim(), (attendance_text ?? "").trim()]);
 
     await upsertLeagueTranslations(Number(id), translations);
 
@@ -1808,23 +1814,15 @@ export async function updateFaq(req, res) {
 }
 
 /**
- * DELETAR (soft delete)
+ * DELETAR (hard delete — remove do banco de vez)
  */
 export async function deleteFaq(req, res) {
   const { id } = req.params;
 
   try {
-    await db.query(
-      `
-      UPDATE faqs
-      SET is_active = false,
-          updated_at = NOW()
-      WHERE id = $1
-      `,
-      [id]
-    );
+    await db.query(`DELETE FROM faqs WHERE id = $1`, [id]);
 
-    return res.json({ message: "FAQ desativado com sucesso" });
+    return res.json({ message: "FAQ excluído com sucesso" });
   } catch (error) {
     console.error("Erro ao remover FAQ:", error);
     return res.status(500).json({ message: "Erro ao remover FAQ" });

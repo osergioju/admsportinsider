@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import SportinsiderIcon from "../assets/svg/brand-white.svg";
 import { ArrowUpRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../services/api";
 
+// Fallback caso a API não responda — espelha o seed de schema/12_add_legal_sections.sql
 const SECTIONS = [
     {
         tag: "Natureza da informação",
@@ -29,6 +31,17 @@ const SECTIONS = [
 
 export default function Legal() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [sections, setSections] = useState(SECTIONS);
+
+    useEffect(() => {
+        api.get("/public/legal")
+            .then(res => {
+                if (Array.isArray(res.data) && res.data.length) {
+                    setSections(res.data.map(s => ({ tag: s.tag, paragraphs: s.paragraphs || [] })));
+                }
+            })
+            .catch(() => { /* mantém o fallback hardcoded */ });
+    }, []);
 
     return (
         <div className="w-full bg-[#030015] min-h-screen">
@@ -97,7 +110,7 @@ export default function Legal() {
                 />
 
                 <div className="relative z-10 max-w-3xl mx-auto px-6 py-20 space-y-12">
-                    {SECTIONS.map((s, idx) => (
+                    {sections.map((s, idx) => (
                         <div key={s.tag}>
                             {idx > 0 && <div className="h-px bg-gray-200 mb-12" />}
                             <p className="text-[#8033D9] font-medium text-sm mb-4 uppercase tracking-wide">

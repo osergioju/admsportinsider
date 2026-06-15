@@ -1488,6 +1488,7 @@
  */
 import { Router } from "express";
 import { previewClubImport, uploadClubXlsx, previewLeagueImport, uploadLeagueXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, bulkDisableClubs, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason, getAllContinents, createContinent, updateContinent, disableContinent, getAllFederations, createFederation, updateFederation, disableFederation, getTournamentSuggestions, bulkAssignPhases, getGroupClubs, saveGroupClubs, searchStadiums, listHospitality, upsertHospitality, deleteHospitality, createHiddenClub, getLeagueMatches } from "../controllers/admin.controller.js";
+import { getAllLegalSections, createLegalSection, updateLegalSection, deleteLegalSection, updateLegalOrder } from "../controllers/legal.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1670,6 +1671,13 @@ router.post("/faq", adminGuard, createFaq);
 router.put("/faq/:id", adminGuard, updateFaq);
 router.delete("/faq/:id", adminGuard, deleteFaq);
 router.patch("/faq/order", updateFaqOrder);
+
+// Páginas legais (/legal)
+router.get("/legal", getAllLegalSections);
+router.post("/legal", adminGuard, createLegalSection);
+router.patch("/legal/order", updateLegalOrder);
+router.put("/legal/:id", adminGuard, updateLegalSection);
+router.delete("/legal/:id", adminGuard, deleteLegalSection);
 
 
 export default router;
