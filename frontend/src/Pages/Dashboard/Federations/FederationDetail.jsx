@@ -292,13 +292,11 @@ export default function FederationDetail() {
       {/* ── Header com gradiente ─────────────────────────────────────────── */}
       <div className="rounded-2xl mb-4 relative overflow-hidden" style={{ background }}>
 
-        {/* Overlay
+        {/* Overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)" }} />
-        */}
-        {/* Glow orbs 
+        {/* Glow orbs */}
         <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none blur-3xl" style={{ background: glowPrimary }} />
         <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full pointer-events-none blur-3xl" style={{ background: glowSecondary }} />
-        */}
         <div className="relative z-10 px-5 sm:px-6 pt-4 pb-8">
           <div className="flex items-start gap-4 lg:p-5 flex-wrap">
 
