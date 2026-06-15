@@ -25,9 +25,18 @@ export default function Faq() {
 
   useEffect(() => {
     // _t = cache-buster: evita resposta velha cacheada na borda (Cloudflare)
+    console.log("🔎 [FAQ] baseURL da API:", api.defaults.baseURL);
+    console.log("🔎 [FAQ] chamando:", (api.defaults.baseURL || "") + "/user/faq");
     api.get("/user/faq", { params: { _t: Date.now() } })
-      .then(res => setFaqData(Array.isArray(res.data) ? res.data : []))
-      .catch(err => console.error("Erro ao carregar FAQ:", err));
+      .then(res => {
+        console.log("📦 [FAQ] status:", res.status, " | X-Cache:", res.headers?.["x-cache"], " | cf-cache-status:", res.headers?.["cf-cache-status"]);
+        console.log("📋 [FAQ] resposta crua do banco:", res.data);
+        const arr = Array.isArray(res.data) ? res.data : [];
+        console.log("📋 [FAQ] total de perguntas recebidas:", arr.length);
+        console.table(arr.map(f => ({ id: f.id, pergunta: f.question })));
+        setFaqData(arr);
+      })
+      .catch(err => console.error("❌ [FAQ] erro ao carregar:", err?.response?.status, err?.message, err));
   }, []);
 
   const filteredFaqs = faqData.filter(item => 
