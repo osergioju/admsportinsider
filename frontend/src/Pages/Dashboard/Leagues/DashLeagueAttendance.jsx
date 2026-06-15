@@ -163,7 +163,7 @@ export default function DashLeagueAttendance() {
                         <img src={lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
                             alt={lg.name}
                             className="w-10 h-10 object-contain"
-                            style={{ filter: "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)" }}
+                            style={{ filter: "" }}
                             onError={e => e.currentTarget.style.display = "none"} />
                     )}
                     <div className="flex-1 min-w-0">

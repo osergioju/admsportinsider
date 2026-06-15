@@ -305,7 +305,7 @@ export default function FederationDetail() {
             {/* Logo */}
             <div className="shrink-0 w-14 h-14 lg:w-28 lg:h-28 xl:w-36 xl:h-36 flex items-center justify-center">
               {federation.slug
-                ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" style={{ filter: "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)" }} />
+                ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" />
                 : <Shield size={40} style={{ color: textColor, opacity: 0.6 }} />
               }
             </div>
@@ -413,7 +413,7 @@ export default function FederationDetail() {
                 <button
                   key={c}
                   onClick={() => setCurrency(c)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${currency === c ? "bg-white text-[#7F33D9] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${currency === c ? "bg-black text-[#ffffff] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                 >
                   {c}
                 </button>

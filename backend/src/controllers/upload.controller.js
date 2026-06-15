@@ -89,6 +89,35 @@ export async function uploadFederationLogo(req, res) {
   }
 }
 
+// Logo de competição (liga). Vai para uploads/ligas (NÃO para o Supabase).
+// Aceita `slug` (liga existente) ou `name` (liga nova) — gera um nome de arquivo.
+export async function uploadLeagueLogo(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ message: "Nenhum arquivo enviado." });
+
+    const raw = (req.body.slug || req.body.name || "").trim();
+    const base = normalizeStr(raw).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const fileBase = base || `liga-${Date.now()}`;
+
+    const path = await import("path");
+    const fs   = await import("fs");
+    const dest = path.default.join(process.cwd(), "uploads", "ligas");
+    fs.default.mkdirSync(dest, { recursive: true });
+
+    const ext       = path.default.extname(req.file.originalname).toLowerCase() || ".webp";
+    const finalName = `${fileBase}${ext}`;
+    const finalPath = path.default.join(dest, finalName);
+
+    fs.default.renameSync(req.file.path, finalPath);
+
+    const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
+    return res.status(200).json({ url: `${baseUrl}/uploads/ligas/${finalName}` });
+  } catch (error) {
+    console.error("Erro no upload de logo da liga:", error);
+    return res.status(500).json({ message: "Erro interno no upload." });
+  }
+}
+
 // Analiza o xlsx pra mapear
 export async function analyzeXlsx(req, res) {
   try {

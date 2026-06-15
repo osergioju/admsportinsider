@@ -21,6 +21,7 @@ export default function GestaoLigas() {
     const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
     const [setupLeague, setSetupLeague] = useState(null); // liga sendo configurada
     const [importModalOpen, setImportModalOpen] = useState(false);
     const [customEditor, setCustomEditor] = useState(null); // { league, year }
@@ -70,6 +71,25 @@ export default function GestaoLigas() {
             setLeagueScope(data.league.id_continent ? "continent" : "country");
             setIsEditing(true); setModal(true);
         } catch (err) { console.error(err); }
+    };
+
+    // Sobe a foto da liga para uploads/ligas (não vai para o Supabase) e
+    // preenche o logo_url com a URL retornada.
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingLogo(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("slug", newLeague.slug || "");
+            fd.append("name", newLeague.name || "");
+            const { data } = await api.post("/admin/leagues/upload-logo", fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            setNewLeague(prev => ({ ...prev, logo_url: data.url }));
+        } catch { alert("Erro ao enviar a foto da liga."); }
+        finally { setUploadingLogo(false); e.target.value = ""; }
     };
 
     const sendLeague = async () => {
@@ -383,8 +403,24 @@ export default function GestaoLigas() {
                                 <textarea className={inputClass} rows={3} value={newLeague.description} onChange={(e) => setNewLeague({ ...newLeague, description: e.target.value })} />
                             </div>
                             <div>
-                                <label className={labelClass}>Logo URL</label>
-                                <input type="text" className={inputClass} value={newLeague.logo_url} onChange={(e) => setNewLeague({ ...newLeague, logo_url: e.target.value })} />
+                                <label className={labelClass}>Logo / Foto</label>
+                                <div className="flex items-center gap-3">
+                                    {newLeague.logo_url && (
+                                        <img
+                                            src={newLeague.logo_url}
+                                            alt="Logo"
+                                            className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-gray-50 shrink-0"
+                                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                        />
+                                    )}
+                                    <input type="text" className={inputClass} placeholder="URL da imagem" value={newLeague.logo_url} onChange={(e) => setNewLeague({ ...newLeague, logo_url: e.target.value })} />
+                                    <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${uploadingLogo ? "border-gray-200 text-gray-400" : "border-[#7F33D9] text-[#7F33D9] hover:bg-[#7F33D9]/5"}`}>
+                                        {uploadingLogo ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                                        {uploadingLogo ? "Enviando…" : "Subir foto"}
+                                        <input type="file" accept="image/*" className="hidden" disabled={uploadingLogo} onChange={handleLogoUpload} />
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1.5">A foto é salva em uploads/ligas (não no Supabase) e a URL é preenchida automaticamente.</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

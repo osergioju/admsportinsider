@@ -1494,7 +1494,8 @@ import { uploadXlsx } from "../middlewares/uploadXlsx.js";
 import { uploadImage } from "../middlewares/uploadImage.js";
 import { uploadFederationImage } from "../middlewares/uploadFederationImage.js";
 import { uploadEditionImage } from "../middlewares/uploadEditionImage.js";
-import { uploadClubLogo, uploadFederationLogo, uploadEditionLogo } from "../controllers/upload.controller.js";
+import { uploadLeagueImage } from "../middlewares/uploadLeagueImage.js";
+import { uploadClubLogo, uploadFederationLogo, uploadEditionLogo, uploadLeagueLogo } from "../controllers/upload.controller.js";
 import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
 import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage, reorderBanners } from "../controllers/banner.controller.js";
 import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations, getCommonTermsByRegion, saveCommonTermsTranslations } from "../controllers/adminRegionsController.js";
@@ -1621,6 +1622,7 @@ router.post("/create-user", adminGuard, createUser); // Criar usuaário
 router.post("/upload-club-logo", uploadImage, uploadClubLogo);
 router.post("/federations/upload-logo", adminGuard, uploadFederationImage, uploadFederationLogo);
 router.post("/editions/upload-logo", adminGuard, uploadEditionImage, uploadEditionLogo);
+router.post("/leagues/upload-logo", adminGuard, uploadLeagueImage, uploadLeagueLogo);
 
 // FINANCEIRO DE COMPETIÇÕES DE FEDERAÇÃO (Copa do Mundo, Copa América, Euro...)
 router.post("/federation-financial/sheets", adminGuard, uploadXlsx, listFederationFinancialSheets);

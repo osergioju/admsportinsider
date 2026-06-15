@@ -340,7 +340,6 @@ export default function DashLeagueUniques() {
                                     src={lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
                                     alt={competitionTitle}
                                     className="w-full h-full object-contain"
-                                    style={{ filter: "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)" }}
                                     onError={e => e.currentTarget.style.display = "none"}
                                 />
                             )}

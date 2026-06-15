@@ -253,9 +253,8 @@ function CycleCard({ title, editions, defaultYear, footnote, children }) {
               key={e.edition_year}
               onClick={() => setYear(e.edition_year)}
               title={`${cycleLabel(e.edition_year)} · ${e.name || ""}`}
-              className={`px-2 py-1 rounded-full text-[11px] font-semibold transition-all ${
-                year === e.edition_year ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`px-2 py-1 rounded-full text-[11px] font-semibold transition-all ${year === e.edition_year ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
+                }`}
             >
               {e.edition_year}
             </button>
@@ -434,7 +433,7 @@ export default function DashFederationFinance() {
         <div className="relative z-10 p-6 sm:p-8 flex items-start gap-5">
           <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center p-2.5">
             {federation.slug
-              ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" style={{ filter: "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)" }} />
+              ? <img src={federationLogo(federation.slug, "medium")} alt={federation.name} className="w-full h-full object-contain" style={{ filter: "" }} />
               : <Shield size={40} className="text-white/60" />
             }
           </div>
@@ -458,7 +457,7 @@ export default function DashFederationFinance() {
             <button
               key={c.code}
               onClick={() => setCurrency(c.code)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${currency === c.code ? "bg-white text-[#7F33D9] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${currency === c.code ? "bg-black text-[#ffffff] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
             >
               {c.label}
             </button>

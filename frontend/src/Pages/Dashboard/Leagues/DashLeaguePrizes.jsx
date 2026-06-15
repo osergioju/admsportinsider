@@ -46,7 +46,7 @@ function teamImg(t) {
     return (t.flag_url && t.flag_url.startsWith("http")) ? t.flag_url : null;
 }
 /* Borda branca sólida (contorno via drop-shadow em 4 direções, sem blur) */
-const LOGO_SHADOW = "drop-shadow(rgb(255, 255, 255) 0.5px 0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) 0.5px -0.5px 0px) drop-shadow(rgb(255, 255, 255) -0.5px 0.5px 0px)";
+const LOGO_SHADOW = "";
 
 /* ─── Ordem das linhas da tabela (chaves normalizadas) ─────────── */
 const POSITION_KEYS = [

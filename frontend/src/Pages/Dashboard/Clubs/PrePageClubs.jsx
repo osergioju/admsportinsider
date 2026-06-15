@@ -253,7 +253,7 @@ export default function PrePageClubs() {
                             <img
                                 src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${theClub.club.crest_url}.webp`}
                                 alt={clubName}
-                                className="w-full h-full object-contain drop-shadow-lg"
+                                className="w-full h-full object-contain"
                             />
                         </div>
 
