@@ -266,7 +266,7 @@ export default function ChartFilter({
             style={{
               display: "flex",
               gap: 4,
-              background: "#f5f4f0",
+              background: "#ffffff",
               borderRadius: 24,
               padding: 4,
             }}
@@ -285,8 +285,8 @@ export default function ChartFilter({
                     borderRadius: 20,
                     border: active ? "1px solid #e0dfd9" : "none",
                     cursor: "pointer",
-                    background: active ? "#fff" : "transparent",
-                    color: active ? "#111" : "#999",
+                    background: active ? "#000000" : "transparent",
+                    color: active ? "#ffffff" : "#999",
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
                     transition: "all 0.15s",
                   }}
