@@ -45,7 +45,7 @@ export default function DashLeagueSports() {
     const rgb1 = hexToRgb(c1);
     const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
     const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
-    const leagueLogo = lg.logo_url || (lg.slug ? `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp` : null);
+    const leagueLogo = lg.logo_url_negative || lg.logo_url || (lg.slug ? `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp` : null);
 
     return (
         <div className="space-y-6">

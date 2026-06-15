@@ -106,6 +106,8 @@ export default function DashLeaguePrizes() {
 
     /* Logo da edição: config da temporada > logo oficial da Copa daquele ano > liga */
     const leagueLogo = lg.logo_url || (lg.slug ? `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp` : null);
+    // Logo do header (fundo escuro) → prioriza a versão negativa, se houver.
+    const headerLogo = lg.logo_url_negative || leagueLogo;
     const isWorldCup = lg.slug === "world-cup";
     const editionLogoOf = (yr) => sj[String(yr)]?.edition_logo || (isWorldCup ? worldCupLogo(yr) : leagueLogo);
 
@@ -180,8 +182,8 @@ export default function DashLeaguePrizes() {
                     >
                         <ArrowLeft size={15} />
                     </button>
-                    {leagueLogo && (
-                        <img src={leagueLogo} alt={lg.name}
+                    {headerLogo && (
+                        <img src={headerLogo} alt={lg.name}
                             className="w-10 h-10 object-contain"
                             style={{ filter: LOGO_SHADOW }}
                             onError={e => e.currentTarget.style.display = "none"} />

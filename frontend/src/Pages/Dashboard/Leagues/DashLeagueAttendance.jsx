@@ -159,8 +159,8 @@ export default function DashLeagueAttendance() {
                     >
                         <ArrowLeft size={15} />
                     </button>
-                    {(lg.logo_url || lg.slug) && (
-                        <img src={lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
+                    {(lg.logo_url_negative || lg.logo_url || lg.slug) && (
+                        <img src={lg.logo_url_negative || lg.logo_url || `https://pro.sportinsider.com.br/uploads/ligas/reduced/reduced_${lg.slug}.webp`}
                             alt={lg.name}
                             className="w-10 h-10 object-contain"
                             style={{ filter: "" }}
