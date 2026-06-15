@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { api } from "../../../../services/api";
 import { useTranslation } from "../../../../context/TranslationContext";
-import { 
-  HelpCircle, 
-  Plus, 
-  Minus, 
-  MessageCircle, 
-  Search 
+import {
+  HelpCircle,
+  Plus,
+  Minus,
+  MessageCircle,
+  Search
 } from "lucide-react";
 
 export default function Faq() {
@@ -15,11 +15,11 @@ export default function Faq() {
   const [searchTerm, setSearchTerm] = useState("");
   const [faqData, setFaqData] = useState([]);
 
-  const toggleFAQ = (index) => { 
-    setOpenIndices((prev) => 
-      prev.includes(index) 
+  const toggleFAQ = (index) => {
+    setOpenIndices((prev) =>
+      prev.includes(index)
         ? prev.filter((i) => i !== index)
-        : [...prev, index]     
+        : [...prev, index]
     );
   };
 
@@ -39,7 +39,7 @@ export default function Faq() {
       .catch(err => console.error("❌ [FAQ] erro ao carregar:", err?.response?.status, err?.message, err));
   }, []);
 
-  const filteredFaqs = faqData.filter(item => 
+  const filteredFaqs = faqData.filter(item =>
     item.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.answer.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -48,7 +48,7 @@ export default function Faq() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#111]">{t("faq.title", "Perguntas Frequentes")}</h1>
         <p className="text-gray-500 text-sm mt-1">{t("faq.subtitle", "Tire suas dúvidas sobre a plataforma e funcionalidades.")}</p>
@@ -68,10 +68,10 @@ export default function Faq() {
       </div>
 
       <div className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
-        
+
         <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-[#7F33D9]/10 flex items-center justify-center">
-              <HelpCircle size={20} className="text-[#7F33D9]" />
+            <HelpCircle size={20} className="text-[#7F33D9]" />
           </div>
           <h2 className="text-lg font-semibold text-[#111]">{t("faq.general_doubts", "Dúvidas Gerais")}</h2>
         </div>
@@ -90,7 +90,7 @@ export default function Faq() {
                     <span className={`text-sm font-medium transition-colors ${isOpen ? "text-[#7F33D9]" : "text-[#111]"}`}>
                       {item.question}
                     </span>
-                    
+
                     <span className="text-[#7F33D9] transition-transform duration-300 ease-out group-hover:scale-125">
                       {isOpen ? (
                         <Minus size={24} strokeWidth={2.5} />
@@ -99,7 +99,7 @@ export default function Faq() {
                       )}
                     </span>
                   </button>
-                  
+
                   <div
                     className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
                   >
