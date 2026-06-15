@@ -1,6 +1,17 @@
 import { supabase } from "../utils/supabase.js";
 import db from "../config/db.js";
 import xlsx from "xlsx";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Base das pastas de upload servidas pelo Express. server.js faz
+// app.use("/uploads", express.static(path.join(__dirname, "uploads"))) → backend/uploads.
+// Ancoramos em __dirname (backend/src/controllers → ../../uploads = backend/uploads) e NÃO
+// em process.cwd(): em produção o processo pode rodar com o cwd na raiz do repo, e aí
+// process.cwd()/uploads != backend/uploads. O arquivo era gravado fora da pasta servida
+// (upload retornava 200, mas a URL dava 404).
+const UPLOADS_DIR = path.join(__dirname, "..", "..", "uploads");
 
 const CLUBS_START_COL = 4;
 
@@ -76,7 +87,7 @@ export async function uploadFederationLogo(req, res) {
 
     const path = await import("path");
     const fs   = await import("fs");
-    const dest = path.default.join(process.cwd(), "uploads", "federacoes");
+    const dest = path.default.join(UPLOADS_DIR, "federacoes");
     const ext  = path.default.extname(req.file.originalname).toLowerCase() || ".webp";
     const finalName = `${fileBase}${ext}`;
     const finalPath = path.default.join(dest, finalName);
@@ -112,7 +123,7 @@ export async function uploadLeagueLogo(req, res) {
     const fs   = await import("fs");
     const sharp = (await import("sharp")).default;
 
-    const dest        = path.default.join(process.cwd(), "uploads", "ligas");
+    const dest        = path.default.join(UPLOADS_DIR, "ligas");
     const reducedDir  = path.default.join(dest, "reduced");
     fs.default.mkdirSync(reducedDir, { recursive: true });
 
@@ -1575,7 +1586,7 @@ export async function uploadEditionLogo(req, res) {
 
     const path = await import("path");
     const fs   = await import("fs");
-    const dest = path.default.join(process.cwd(), "uploads", "edicoes");
+    const dest = path.default.join(UPLOADS_DIR, "edicoes");
     fs.default.mkdirSync(dest, { recursive: true });
     const ext  = path.default.extname(req.file.originalname).toLowerCase() || ".webp";
     const finalName = `${slug}${ext}`;

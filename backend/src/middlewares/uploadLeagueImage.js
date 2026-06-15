@@ -4,7 +4,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dest = path.join(__dirname, "../../../uploads/ligas");
+const dest = path.join(__dirname, "../../uploads/ligas");
 fs.mkdirSync(dest, { recursive: true }); // garante a pasta (multer falha se não existir)
 
 const storage = multer.diskStorage({
