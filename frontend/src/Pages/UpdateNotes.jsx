@@ -10,46 +10,21 @@ function formatDate(d) {
     return new Date(d).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-// Fallback caso a API não responda — espelha o seed de schema/12_add_legal_sections.sql
-const SECTIONS = [
-    {
-        tag: "Natureza da informação",
-        paragraphs: [
-            "Todos os dados expostos têm origem em comunicados oficiais e documentos públicos das entidades esportivas, sobretudo demonstrações contábeis de clubes e federações, exceto quando indicada outra fonte em casos eventuais.",
-            "Demonstrações contábeis refletem os dados apurados pelas próprias entidades esportivas. A depender da legislação de cada país, pode haver verificação por parte de auditoria externa independente, mas o parecer pode não estar disponível.",
-        ],
-    },
-    {
-        tag: "Responsabilidade legal",
-        paragraphs: [
-            "O Sport Insider não fornece garantia quanto à precisão ou integridade das informações contidas em tais documentos, e não assume qualquer responsabilidade sobre os resultados de decisões baseadas nesses dados.",
-            "Investidores, executivos e demais stakeholders interessados no PRO precisam sempre realizar suas próprias investigações e análises, e são aconselhados a buscar aconselhamento profissional nas áreas jurídica, financeira e tributária.",
-            "Nada nesta ferramenta deve ser interpretado ou considerado como garantia ou representação quanto ao futuro, nem deve substituir o processo de due diligence que um investidor realiza antes de decidir como alocar seus investimentos.",
-        ],
-    },
-    {
-        tag: "Eventos subsequentes",
-        paragraphs: [
-            "Todos os dados expostos refletem as informações disponíveis até a publicação do respectivo documento, como o encerramento do exercício fiscal de uma demonstração contábil. O Sport Insider não tem obrigação legal de atualizar ou revisar novas informações que possam ser publicadas após a data inicial.",
-        ],
-    },
-];
-
-export default function Legal() {
+export default function UpdateNotes() {
     const [menuOpen, setMenuOpen] = useState(false);
-    const [sections, setSections] = useState(SECTIONS);
+    const [notes, setNotes] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(null);
 
     useEffect(() => {
-        api.get("/public/legal")
+        api.get("/public/update-notes")
             .then(res => {
-                if (Array.isArray(res.data) && res.data.length) {
-                    setSections(res.data.map(s => ({ tag: s.tag, body_html: s.body_html, paragraphs: s.paragraphs || [] })));
+                if (Array.isArray(res.data)) {
+                    setNotes(res.data.map(s => ({ tag: s.tag, body_html: s.body_html, paragraphs: s.paragraphs || [] })));
                     const max = res.data.reduce((m, s) => (s.updated_at && (!m || s.updated_at > m) ? s.updated_at : m), null);
                     setLastUpdated(max);
                 }
             })
-            .catch(() => { /* mantém o fallback hardcoded */ });
+            .catch(() => { /* página sem notas ainda */ });
     }, []);
 
     return (
@@ -99,7 +74,7 @@ export default function Legal() {
                     Sport Insider PRO
                 </p>
                 <h1 className="font-medium text-3xl lg:text-5xl xl:text-6xl leading-tight bg-gradient-to-r from-[#ffffff3a] to-[#ffffff] bg-clip-text text-transparent">
-                    Responsabilidade legal
+                    Notas de atualização
                 </h1>
                 {lastUpdated && (
                     <p className="mt-4 text-[#ffffff66] font-light text-sm">
@@ -107,15 +82,13 @@ export default function Legal() {
                     </p>
                 )}
                 <p className="mt-6 text-[#ffffffa6] font-light text-base lg:text-xl max-w-2xl mx-auto leading-relaxed">
-                    O <span className="text-white font-medium">PRO</span> é a ferramenta desenvolvida pelo{" "}
-                    <span className="text-white font-medium">Sport Insider</span> para auxiliar na prática
-                    profissional de pessoas interessadas no mercado esportivo — seja executivos das áreas
-                    jurídica, financeira, de marketing ou de futebol, seja investidores.
+                    Acompanhe aqui as novidades, melhorias e correções de cada versão do{" "}
+                    <span className="text-white font-medium">PRO</span>.
                 </p>
             </div>
 
             {/* ── CONTEÚDO (seção clara, como na FrontPage) ─────── */}
-            <div className="bg-[#F5F0F0] w-full relative overflow-hidden">
+            <div className="bg-[#F5F0F0] w-full relative overflow-hidden min-h-[40vh]">
 
                 {/* Grid de fundo sutil */}
                 <div
@@ -130,8 +103,10 @@ export default function Legal() {
                     .legal-content a{color:#8033D9;text-decoration:underline;}
                     .legal-content p{margin:0;}`}</style>
                 <div className="relative z-10 max-w-3xl mx-auto px-6 py-20 space-y-12">
-                    {sections.map((s, idx) => (
-                        <div key={s.tag}>
+                    {notes.length === 0 ? (
+                        <p className="text-center text-gray-400 text-sm">Nenhuma nota de atualização publicada ainda.</p>
+                    ) : notes.map((s, idx) => (
+                        <div key={`${s.tag}-${idx}`}>
                             {idx > 0 && <div className="h-px bg-gray-200 mb-12" />}
                             <p className="text-[#8033D9] font-medium text-sm mb-4 uppercase tracking-wide">
                                 {s.tag}

@@ -809,7 +809,7 @@ export default function FrontPage() {
 
                         {/* Links legais do rodapé */}
                         <div className="mt-16 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[#ffffff66] text-xs">
-                            <Link to="/privacidade" className="hover:text-white transition-colors">Política de Privacidade</Link>
+                            <Link to="/privacy" className="hover:text-white transition-colors">Política de Privacidade</Link>
                             <span className="text-[#ffffff33]">·</span>
                             <Link to="/legal" className="hover:text-white transition-colors">Responsabilidade legal</Link>
                         </div>

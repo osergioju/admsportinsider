@@ -163,9 +163,9 @@ export default function AdminLayout() {
                                     {openDados && (
                                         <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-paises" label="Países" />
-                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-continentes" label="Continentes / Regiões" />
+                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-continentes" label="Continentes" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-federacoes" label="Federações" />
-                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-ligas" label="Ligas" />
+                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-ligas" label="Competições" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-clubes" label="Clubes" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-jogadores" label="Jogadores" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/hospitalidade" label="Hospitalidade" />
@@ -177,7 +177,7 @@ export default function AdminLayout() {
                     </div>
 
                     {/* SEÇÃO: CONTEÚDO & DADOS */}
-                    {(canAccess("upload-financeiro") || canAccess("upload-times") || canAccess("upload-jogadores") || canAccess("upload-partidas") || canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq") || canAccess("legal")) && (
+                    {(canAccess("upload-financeiro") || canAccess("upload-times") || canAccess("upload-jogadores") || canAccess("upload-partidas") || canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq") || canAccess("legal") || canAccess("update-notes")) && (
                         <div>
                             <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Conteúdo & Dados</span>
                             <ul className="space-y-1">
@@ -210,6 +210,7 @@ export default function AdminLayout() {
                                 {canAccess("currencies") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/currencies" icon={<CircleDollarSign strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Moeda</span>} /></div>}
                                 {canAccess("faq") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/faq" icon={<MessageCircleQuestionMark strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Faqs</span>} /></div>}
                                 {canAccess("legal") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/legal" icon={<FileText strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Páginas Legais</span>} /></div>}
+                                {canAccess("update-notes") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/update-notes" icon={<FileText strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Notas de Atualização</span>} /></div>}
                             </ul>
                         </div>
                     )}

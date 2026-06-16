@@ -91,6 +91,12 @@ export const ADMIN_PAGES = [
     group: "Conteúdo",
     routes: ["/admin/legal"],
   },
+  {
+    key: "update-notes",
+    label: "Notas de Atualização",
+    group: "Conteúdo",
+    routes: ["/admin/update-notes"],
+  },
 
   // ── Configuração ─────────────────────────────────────
   {

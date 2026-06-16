@@ -301,6 +301,12 @@ export default function DashboardLayout() {
                     </button>
                 </div>
             ) : null}
+
+            {/* Políticas — texto discreto, sem ícone (são políticas, visual diferente) */}
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2 px-1">
+                <Link onClick={() => setOpenMenu(false)} to="/legal" className="text-xs text-gray-400 hover:text-[#7F33D9] transition-colors">Responsabilidade legal</Link>
+                <Link onClick={() => setOpenMenu(false)} to="/privacy" className="text-xs text-gray-400 hover:text-[#7F33D9] transition-colors">Política de Privacidade</Link>
+            </div>
         </div>
     );
 

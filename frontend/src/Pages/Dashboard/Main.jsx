@@ -89,11 +89,9 @@ export default function Main() {
 
       <NotasSection />
 
-      {/* Rodapé discreto — links de políticas (verificação Google OAuth) */}
+      {/* Rodapé discreto — notas de atualização (políticas migraram p/ a sidebar) */}
       <footer className="pt-2 pb-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-gray-300">
-        <Link to="/privacidade" className="hover:text-gray-500 transition-colors">Política de Privacidade</Link>
-        <span className="text-gray-200">·</span>
-        <Link to="/legal" className="hover:text-gray-500 transition-colors">Responsabilidade legal</Link>
+        <Link to="/update-notes" className="hover:text-gray-500 transition-colors">Notas de atualização</Link>
       </footer>
     </div>
   );

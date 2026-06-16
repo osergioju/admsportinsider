@@ -13,6 +13,7 @@ import NotFound from "./Pages/Errors/NotFound";
 import FrontPage from "./Pages/FrontPage";
 import Legal from "./Pages/Legal";
 import Privacidade from "./Pages/Privacidade";
+import UpdateNotes from "./Pages/UpdateNotes";
 import ResetPassConfirm from "./Pages/Auth/ResetPassConfirm";
 import GoogleCallback from "./Pages/Auth/GoogleCallback";
 
@@ -93,6 +94,9 @@ import FaqAdmin from "./Pages/Admin/Faq/FaqAdmin";
 // Legal Admin
 import LegalAdmin from "./Pages/Admin/Legal/LegalAdmin";
 
+// Update Notes Admin
+import UpdateNotesAdmin from "./Pages/Admin/UpdateNotes/UpdateNotesAdmin";
+
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -148,7 +152,9 @@ export default function App() {
         <Route element={<AuthLayout />}>
           <Route path="/landing" element={<FrontPage />} />
           <Route path="/legal" element={<Legal />} />
-          <Route path="/privacidade" element={<Privacidade />} />
+          <Route path="/privacy" element={<Privacidade />} />
+          <Route path="/privacidade" element={<Navigate to="/privacy" replace />} />
+          <Route path="/update-notes" element={<UpdateNotes />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/pricing" element={<Pricing />} />
@@ -367,6 +373,11 @@ export default function App() {
               {/* ── Páginas Legais ── */}
               <Route element={<AdminPermissionRoute permissionKey="legal" />}>
                 <Route path="/admin/legal" element={<LegalAdmin />} />
+              </Route>
+
+              {/* ── Notas de Atualização ── */}
+              <Route element={<AdminPermissionRoute permissionKey="update-notes" />}>
+                <Route path="/admin/update-notes" element={<UpdateNotesAdmin />} />
               </Route>
 
             </Route>

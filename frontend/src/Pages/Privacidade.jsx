@@ -150,7 +150,7 @@ export default function Privacidade() {
             {/* ── HERO ─────────────────────────────────────────── */}
             <div className="pt-20 pb-16 px-6 text-center">
                 <p className="text-[#8033D9] font-medium text-sm lg:text-base mb-4 tracking-wide uppercase">
-                    Sport Insider
+                    Sport Insider PRO
                 </p>
                 <h1 className="font-medium text-3xl lg:text-5xl xl:text-6xl leading-tight bg-gradient-to-r from-[#ffffff3a] to-[#ffffff] bg-clip-text text-transparent">
                     Política de Privacidade
