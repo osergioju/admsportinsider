@@ -346,6 +346,7 @@ export async function importFederationFinancial(req, res) {
 
       // 3. Monta registros financeiros em memória (apenas indicadores normais)
       const financialRows = [];
+      const clearKeys = []; // (id_edition, id_indicator, year) que vieram EM BRANCO ou "-" → limpar
       for (const ed of editions) {
         const id_edition = editionIds[ed.slug];
         for (const ind of finInds) {
@@ -357,7 +358,14 @@ export async function importFederationFinancial(req, res) {
             // da edição, mesmo que o "Exercício" fiscal seja outro (ex: Copa 2018
             // com exercício 2015). Múltiplas colunas (balanço FIFA) mantém o ano fiscal.
             const year = (ed.cols.length === 1 && ed.editionYear != null) ? ed.editionYear : ed.years[i];
-            if (raw == null || raw === "N/A" || raw === "" || year == null) continue;
+            if (year == null) continue;
+
+            // Célula em branco ou traço ("-", "–", "—") = limpar o valor que está no site.
+            const isBlank = raw == null || (typeof raw === "string" && raw.trim() === "");
+            const isDash  = typeof raw === "string" && /^[-–—]+$/.test(raw.trim());
+            if (isBlank || isDash) { clearKeys.push([id_edition, id_indicator, year]); continue; }
+
+            if (raw === "N/A") continue; // N/A não mexe (mantém o existente)
             const numVal = typeof raw === "number" ? raw : parseFloat(String(raw).replace(",", "."));
             if (isNaN(numVal)) continue;
             financialRows.push([id_edition, id_indicator, year, numVal, ed.statuses[i] || "realizado"]);
@@ -385,6 +393,21 @@ export async function importFederationFinancial(req, res) {
           batch.flat()
         );
         totalRows += batch.length;
+      }
+
+      // 6. Limpa os valores que vieram EM BRANCO ou "-" na planilha (cliente quer
+      //    que a célula vazia substitua/remova o que está no site). Só apaga as
+      //    chaves que NÃO receberam um valor em outra coluna da mesma edição.
+      const upsertedKeys = new Set(uniqueRows.map(r => `${r[0]}|${r[1]}|${r[2]}`));
+      const toClear = clearKeys.filter(k => !upsertedKeys.has(`${k[0]}|${k[1]}|${k[2]}`));
+      for (let offset = 0; offset < toClear.length; offset += BATCH) {
+        const batch = toClear.slice(offset, offset + BATCH);
+        const vals  = batch.map((_, i) => `($${i*3+1},$${i*3+2},$${i*3+3})`).join(",");
+        await client.query(
+          `DELETE FROM edition_financials
+           WHERE (id_edition, id_indicator, year) IN (${vals})`,
+          batch.flat()
+        );
       }
 
       await client.query("COMMIT");

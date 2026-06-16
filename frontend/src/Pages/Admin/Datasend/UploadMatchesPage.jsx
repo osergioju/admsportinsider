@@ -111,13 +111,30 @@ export default function UploadMatchesPage() {
 
   async function handleImport() {
     if (!league) return alert("Selecione uma competição.");
+    const season = seasonOverride || preview.detectedYear;
+
+    // Já existem partidas dessa liga+temporada? Pergunta se quer substituir.
+    let replace = false;
+    try {
+      const { data: c } = await api.get(`/upload/import/matches/${league}/seasons/${season}/count`);
+      if (c?.count > 0) {
+        const ok = window.confirm(
+          `Já existem ${c.count} partida(s) dessa competição na temporada ${season}.\n\n` +
+          `OK = SUBSTITUIR (apaga as atuais e importa do zero — recomendado p/ mata-mata).\n` +
+          `Cancelar = MESCLAR (atualiza as iguais e adiciona as novas).`
+        );
+        replace = ok;
+      }
+    } catch { /* se a contagem falhar, segue sem substituir (mescla) */ }
+
     const activeMappings = Object.fromEntries(
       Object.entries(clubMappings).filter(([, v]) => v !== "")
     );
     const form = new FormData();
     form.append("file", file);
     form.append("league", league);
-    form.append("season", seasonOverride || preview.detectedYear);
+    form.append("season", season);
+    form.append("replace", replace ? "true" : "false");
     if (Object.keys(activeMappings).length > 0)
       form.append("clubMappings", JSON.stringify(activeMappings));
     try {

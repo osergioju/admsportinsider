@@ -7,6 +7,7 @@ import {
   previewLeaguesBulk, importLeaguesBulk,
   deleteTeamStats,
   deleteMatches,
+  countMatches,
 } from "../controllers/import.controller.js";
 import { adminGuard } from "../middlewares/auth.middleware.js";
 
@@ -42,6 +43,9 @@ router.post("/import/leagues",         uploadXlsx, importLeaguesBulk);
 
 // Apaga stats de times de uma liga+temporada
 router.delete("/import/teams/:leagueId/seasons/:year", deleteTeamStats);
+
+// Conta partidas existentes de uma liga+temporada (p/ perguntar "substituir?")
+router.get("/import/matches/:leagueId/seasons/:year/count", countMatches);
 
 // Apaga partidas de uma liga+temporada
 router.delete("/import/matches/:leagueId/seasons/:year", deleteMatches);

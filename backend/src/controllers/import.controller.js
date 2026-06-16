@@ -94,6 +94,7 @@ export async function importMatches(req, res) {
   try {
     client = await db.connect();
     const idLeague = Number(req.body.league);
+    const replace = req.body.replace === "true" || req.body.replace === true;
     const clubMappings = req.body.clubMappings ? JSON.parse(req.body.clubMappings) : {};
     const countryMappings = req.body.countryMappings ? JSON.parse(req.body.countryMappings) : null;
     const isCountryMode = countryMappings !== null;
@@ -135,6 +136,22 @@ export async function importMatches(req, res) {
       idSeason = newSeason.rows[0].id_season;
     } else {
       idSeason = seasonRes.rows[0].id_season;
+    }
+
+    // Substituir: apaga as partidas existentes da liga+temporada antes de inserir.
+    // Dentro da mesma transação → atômico (se a importação falhar, nada é perdido).
+    // Resolve de vez o problema de duplicação de mata-mata (sem game_week).
+    if (replace) {
+      await client.query(
+        `DELETE FROM match_stats WHERE id_match IN (
+           SELECT id_match FROM matches WHERE id_league = $1 AND id_season = $2
+         )`,
+        [idLeague, idSeason]
+      );
+      await client.query(
+        `DELETE FROM matches WHERE id_league = $1 AND id_season = $2`,
+        [idLeague, idSeason]
+      );
     }
 
     /* ------------------------------------------------------------------
@@ -2532,6 +2549,27 @@ export async function importLeaguesBulk(req, res) {
     return res.status(500).json({ error: "Erro na importação em massa." });
   } finally {
     client.release();
+  }
+}
+
+// Quantas partidas já existem p/ uma liga+temporada (usado p/ perguntar "substituir?").
+export async function countMatches(req, res) {
+  const idLeague = Number(req.params.leagueId);
+  const seasonYear = Number(req.params.year);
+  if (!idLeague || !seasonYear) return res.status(400).json({ error: "Liga e ano são obrigatórios" });
+
+  try {
+    const seasonRes = await db.query(`SELECT id_season FROM seasons WHERE year = $1`, [seasonYear]);
+    if (!seasonRes.rows.length) return res.json({ count: 0 });
+
+    const { rows } = await db.query(
+      `SELECT COUNT(*)::int AS count FROM matches WHERE id_league = $1 AND id_season = $2`,
+      [idLeague, seasonRes.rows[0].id_season]
+    );
+    return res.json({ count: rows[0].count });
+  } catch (err) {
+    console.error("[countMatches]", err);
+    return res.status(500).json({ error: "Erro ao contar partidas" });
   }
 }
 

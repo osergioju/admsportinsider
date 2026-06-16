@@ -1,6 +1,10 @@
-import { supabase } from "../utils/supabase.js";
 import db from  "../config/db.js";
+import fs from "fs";
+import path from "path";
+import { UPLOADS_DIR } from "../config/paths.js";
 
+// Banner: salva em uploads/banners (servido pelo nginx/express), igual aos escudos de liga.
+// NÃO vai mais para o Supabase.
 export async function uploadBannerImage(req, res) {
   try {
     if (!req.file) {
@@ -8,28 +12,19 @@ export async function uploadBannerImage(req, res) {
     }
 
     const file = req.file;
-    const ext = file.originalname.split(".").pop();
+    const ext = (file.originalname.split(".").pop() || "png").toLowerCase();
     const filename = `banner_${Date.now()}.${ext}`;
 
-    const { error } = await supabase.storage
-      .from("assets")
-      .upload(filename, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      });
+    const dest = path.join(UPLOADS_DIR, "banners");
+    fs.mkdirSync(dest, { recursive: true });
+    fs.writeFileSync(path.join(dest, filename), file.buffer);
 
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Erro ao enviar imagem." });
-    }
-
-    const { data: publicUrl } = supabase.storage
-      .from("assets")
-      .getPublicUrl(filename);
+    const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
+    const v = Date.now();
 
     return res.status(200).json({
       message: "Upload realizado com sucesso!",
-      url: publicUrl.publicUrl,
+      url: `${baseUrl}/uploads/banners/${filename}?v=${v}`,
     });
 
   } catch (error) {
