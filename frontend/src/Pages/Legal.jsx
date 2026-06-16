@@ -37,7 +37,7 @@ export default function Legal() {
         api.get("/public/legal")
             .then(res => {
                 if (Array.isArray(res.data) && res.data.length) {
-                    setSections(res.data.map(s => ({ tag: s.tag, paragraphs: s.paragraphs || [] })));
+                    setSections(res.data.map(s => ({ tag: s.tag, body_html: s.body_html, paragraphs: s.paragraphs || [] })));
                 }
             })
             .catch(() => { /* mantém o fallback hardcoded */ });
@@ -109,6 +109,12 @@ export default function Legal() {
                     style={{ backgroundImage: "linear-gradient(to right, #e5e5e5 1px, transparent 1px)", backgroundSize: "6rem 100%" }}
                 />
 
+                <style>{`.legal-content h2{font-size:1.25rem;font-weight:700;color:#0A0A0A;margin:.75rem 0 .5rem;}
+                    .legal-content h3{font-size:1.1rem;font-weight:600;color:#0A0A0A;margin:.75rem 0 .5rem;}
+                    .legal-content ul{list-style:disc;padding-left:1.5rem;}
+                    .legal-content ol{list-style:decimal;padding-left:1.5rem;}
+                    .legal-content a{color:#8033D9;text-decoration:underline;}
+                    .legal-content p{margin:0;}`}</style>
                 <div className="relative z-10 max-w-3xl mx-auto px-6 py-20 space-y-12">
                     {sections.map((s, idx) => (
                         <div key={s.tag}>
@@ -116,13 +122,20 @@ export default function Legal() {
                             <p className="text-[#8033D9] font-medium text-sm mb-4 uppercase tracking-wide">
                                 {s.tag}
                             </p>
-                            <div className="space-y-4">
-                                {s.paragraphs.map((p, i) => (
-                                    <p key={i} className="text-[#0A0A0AB2] text-base lg:text-lg leading-relaxed">
-                                        {p}
-                                    </p>
-                                ))}
-                            </div>
+                            {s.body_html ? (
+                                <div
+                                    className="legal-content text-[#0A0A0AB2] text-base lg:text-lg leading-relaxed space-y-4"
+                                    dangerouslySetInnerHTML={{ __html: s.body_html }}
+                                />
+                            ) : (
+                                <div className="space-y-4">
+                                    {(s.paragraphs || []).map((p, i) => (
+                                        <p key={i} className="text-[#0A0A0AB2] text-base lg:text-lg leading-relaxed">
+                                            {p}
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

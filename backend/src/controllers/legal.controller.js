@@ -1,21 +1,17 @@
 import db from "../config/db.js";
 
-// Normaliza paragraphs para um array de strings não-vazias.
-function normalizeParagraphs(input) {
-  let arr = input;
-  if (typeof input === "string") {
-    // Aceita um textão: separa por linha em branco (parágrafos).
-    arr = input.split(/\n\s*\n/);
-  }
-  if (!Array.isArray(arr)) return [];
-  return arr.map(p => String(p).trim()).filter(Boolean);
+// Verifica se o HTML tem conteúdo de verdade (não só tags vazias tipo <p></p>).
+function htmlHasContent(html) {
+  if (typeof html !== "string") return false;
+  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim().length > 0;
 }
 
 // ─── PÚBLICO (deslogado) — usado na página /legal ────────────────────────────
 export async function getPublicLegalSections(req, res) {
   try {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate");
     const result = await db.query(`
-      SELECT id, tag, paragraphs
+      SELECT id, tag, body_html, paragraphs
       FROM legal_sections
       WHERE is_active = true
       ORDER BY sort_order ASC, id ASC
@@ -31,7 +27,7 @@ export async function getPublicLegalSections(req, res) {
 export async function getAllLegalSections(req, res) {
   try {
     const result = await db.query(`
-      SELECT id, tag, paragraphs, is_active, sort_order
+      SELECT id, tag, body_html, paragraphs, is_active, sort_order
       FROM legal_sections
       ORDER BY sort_order ASC, id ASC
     `);
@@ -43,19 +39,18 @@ export async function getAllLegalSections(req, res) {
 }
 
 export async function createLegalSection(req, res) {
-  const { tag, sort_order = 0, is_active = true } = req.body;
-  const paragraphs = normalizeParagraphs(req.body.paragraphs);
+  const { tag, body_html, sort_order = 0, is_active = true } = req.body;
 
-  if (!tag || paragraphs.length === 0) {
-    return res.status(400).json({ message: "Título e ao menos um parágrafo são obrigatórios" });
+  if (!tag || !htmlHasContent(body_html)) {
+    return res.status(400).json({ message: "Título e conteúdo são obrigatórios" });
   }
 
   try {
     const result = await db.query(
-      `INSERT INTO legal_sections (tag, paragraphs, sort_order, is_active)
-       VALUES ($1, $2::jsonb, $3, $4)
+      `INSERT INTO legal_sections (tag, body_html, sort_order, is_active)
+       VALUES ($1, $2, $3, $4)
        RETURNING id`,
-      [tag, JSON.stringify(paragraphs), sort_order, is_active]
+      [tag, body_html, sort_order, is_active]
     );
     return res.status(201).json({ message: "Seção criada com sucesso", id: result.rows[0].id });
   } catch (error) {
@@ -66,23 +61,22 @@ export async function createLegalSection(req, res) {
 
 export async function updateLegalSection(req, res) {
   const { id } = req.params;
-  const { tag, sort_order, is_active } = req.body;
-  const paragraphs = normalizeParagraphs(req.body.paragraphs);
+  const { tag, body_html, sort_order, is_active } = req.body;
 
-  if (!tag || paragraphs.length === 0) {
-    return res.status(400).json({ message: "Título e ao menos um parágrafo são obrigatórios" });
+  if (!tag || !htmlHasContent(body_html)) {
+    return res.status(400).json({ message: "Título e conteúdo são obrigatórios" });
   }
 
   try {
     await db.query(
       `UPDATE legal_sections
        SET tag = $1,
-           paragraphs = $2::jsonb,
+           body_html = $2,
            sort_order = COALESCE($3, sort_order),
            is_active = COALESCE($4, is_active),
            updated_at = NOW()
        WHERE id = $5`,
-      [tag, JSON.stringify(paragraphs), sort_order ?? null, is_active ?? null, id]
+      [tag, body_html, sort_order ?? null, is_active ?? null, id]
     );
     return res.json({ message: "Seção atualizada com sucesso" });
   } catch (error) {

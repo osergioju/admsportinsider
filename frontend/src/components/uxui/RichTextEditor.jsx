@@ -1,6 +1,21 @@
 import { useRef, useEffect } from "react";
 import { Bold, Italic, Underline, List, ListOrdered, Heading2, Heading3, Link2, Eraser } from "lucide-react";
 
+// onMouseDown preventDefault: impede o botão de roubar a seleção do texto.
+function Btn({ title, onClick, children }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      className="p-2 rounded hover:bg-gray-100 text-gray-600 hover:text-[#7F33D9] transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
+
 // WYSIWYG simples e sem dependências (contentEditable + execCommand).
 // Saída: HTML (string) via onChange. Usado no editor de Páginas Legais.
 export default function RichTextEditor({ value, onChange, placeholder = "" }) {
@@ -26,19 +41,6 @@ export default function RichTextEditor({ value, onChange, placeholder = "" }) {
     const url = window.prompt("URL do link (https://...):", "https://");
     if (url) exec("createLink", url);
   };
-
-  // onMouseDown preventDefault: impede o botão de roubar a seleção do texto.
-  const Btn = ({ title, onClick, children }) => (
-    <button
-      type="button"
-      title={title}
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className="p-2 rounded hover:bg-gray-100 text-gray-600 hover:text-[#7F33D9] transition-colors"
-    >
-      {children}
-    </button>
-  );
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden focus-within:border-[#7F33D9] focus-within:ring-1 focus-within:ring-[#7F33D9] transition-all">

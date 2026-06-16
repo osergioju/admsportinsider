@@ -24,9 +24,6 @@ export default function Faq() {
   };
 
   useEffect(() => {
-    // _t = cache-buster: evita resposta velha cacheada na borda (Cloudflare)
-    console.log("🔎 [FAQ] baseURL da API:", api.defaults.baseURL);
-    console.log("🔎 [FAQ] chamando:", (api.defaults.baseURL || "") + "/user/faq");
     api.get("/user/faq", { params: { _t: Date.now() } })
       .then(res => {
         console.log("📦 [FAQ] status:", res.status, " | X-Cache:", res.headers?.["x-cache"], " | cf-cache-status:", res.headers?.["cf-cache-status"]);
@@ -50,8 +47,8 @@ export default function Faq() {
     <div className="max-w-4xl mx-auto">
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111]">{t("faq.title", "Perguntas Frequentes")}</h1>
-        <p className="text-gray-500 text-sm mt-1">{t("faq.subtitle", "Tire suas dúvidas sobre a plataforma e funcionalidades.")}</p>
+        <h1 className="text-2xl font-bold text-[#111]">{t("faq.title", "Perguntas frequentes")}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t("faq.subtitle", "Tire suas dúvidas sobre a plataforma e funcionalidades")}</p>
       </div>
 
       <div className="relative mb-8">
@@ -73,7 +70,7 @@ export default function Faq() {
           <div className="w-10 h-10 rounded-full bg-[#7F33D9]/10 flex items-center justify-center">
             <HelpCircle size={20} className="text-[#7F33D9]" />
           </div>
-          <h2 className="text-lg font-semibold text-[#111]">{t("faq.general_doubts", "Dúvidas Gerais")}</h2>
+          <h2 className="text-lg font-semibold text-[#111]">{t("faq.general_doubts", "Dúvidas")}</h2>
         </div>
 
         <div className="divide-y divide-gray-100">
@@ -82,7 +79,7 @@ export default function Faq() {
               const isOpen = openIndices.includes(index);
 
               return (
-                <div key={index} className="group">
+                <div key={index} className="group">xxxx
                   <button
                     onClick={() => toggleFAQ(index)}
                     className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-gray-50 transition-colors focus:outline-none group"
@@ -117,9 +114,6 @@ export default function Faq() {
           )}
         </div>
       </div>
-
-
-
     </div>
   );
 }

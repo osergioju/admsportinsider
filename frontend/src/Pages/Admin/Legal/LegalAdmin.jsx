@@ -12,6 +12,19 @@ import {
   GripVertical
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import RichTextEditor from "../../../components/uxui/RichTextEditor";
+
+// Converte o legado (paragraphs: array) em HTML, p/ seções antigas sem body_html.
+function toHtml(section) {
+  if (section?.body_html) return section.body_html;
+  const arr = Array.isArray(section?.paragraphs) ? section.paragraphs : [];
+  return arr.map(p => `<p>${p}</p>`).join("");
+}
+
+// Texto puro (sem tags) p/ preview e busca.
+function toPlain(html) {
+  return (html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 export default function LegalAdmin() {
   const [sections, setSections] = useState([]);
@@ -22,7 +35,7 @@ export default function LegalAdmin() {
   // Form State
   const [editingId, setEditingId] = useState(null);
   const [tag, setTag] = useState("");
-  const [paragraphs, setParagraphs] = useState(""); // textarea: parágrafos separados por linha em branco
+  const [bodyHtml, setBodyHtml] = useState("");
   const [sortOrder, setSortOrder] = useState(0);
   const [isActive, setIsActive] = useState(true);
 
@@ -42,20 +55,12 @@ export default function LegalAdmin() {
     loadSections();
   }, []);
 
-  const toText = (arr) => (Array.isArray(arr) ? arr.join("\n\n") : (arr || ""));
-
+  // Persiste só a ordem (não mexe no conteúdo) — endpoint dedicado.
   async function syncServerOrder(updatedList) {
     try {
-      await Promise.all(
-        updatedList.map((item, index) =>
-          api.put(`/admin/legal/${item.id}`, {
-            tag: item.tag,
-            paragraphs: item.paragraphs,
-            sort_order: index,
-            is_active: item.is_active
-          })
-        )
-      );
+      await api.patch("/admin/legal/order", {
+        items: updatedList.map((item, index) => ({ id: item.id, sort_order: index }))
+      });
     } catch (error) {
       console.error("Erro ao sincronizar ordem:", error);
     }
@@ -77,7 +82,7 @@ export default function LegalAdmin() {
 
     const payload = {
       tag,
-      paragraphs, // string — o backend separa por linha em branco
+      body_html: bodyHtml,
       sort_order: Number(sortOrder),
       is_active: isActive
     };
@@ -99,7 +104,7 @@ export default function LegalAdmin() {
 
   function resetForm() {
     setTag("");
-    setParagraphs("");
+    setBodyHtml("");
     setSortOrder(sections.length);
     setEditingId(null);
     setIsActive(true);
@@ -108,7 +113,7 @@ export default function LegalAdmin() {
   function handleEdit(section) {
     setEditingId(section.id);
     setTag(section.tag);
-    setParagraphs(toText(section.paragraphs));
+    setBodyHtml(toHtml(section));
     setSortOrder(section.sort_order ?? 0);
     setIsActive(section.is_active);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -128,7 +133,7 @@ export default function LegalAdmin() {
 
   const filtered = sections.filter(s =>
     s.tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    toText(s.paragraphs).toLowerCase().includes(searchTerm.toLowerCase())
+    toPlain(toHtml(s)).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const inputClass = "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400";
@@ -183,16 +188,12 @@ export default function LegalAdmin() {
               </div>
 
               <div>
-                <label className={labelClass}>Parágrafos</label>
-                <textarea
-                  rows={8}
-                  className={inputClass}
-                  placeholder="Um parágrafo por bloco. Separe parágrafos com uma linha em branco."
-                  value={paragraphs}
-                  onChange={(e) => setParagraphs(e.target.value)}
-                  required
+                <label className={labelClass}>Conteúdo</label>
+                <RichTextEditor
+                  value={bodyHtml}
+                  onChange={setBodyHtml}
+                  placeholder="Escreva o conteúdo da seção…"
                 />
-                <p className="text-[11px] text-gray-400 mt-1 ml-1">Separe cada parágrafo com uma linha em branco.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -279,7 +280,7 @@ export default function LegalAdmin() {
                                 <GripVertical size={22} />
                               </div>
 
-                              <div className="space-y-1 flex-1">
+                              <div className="space-y-1 flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
                                     Posição {section.sort_order}
@@ -295,7 +296,7 @@ export default function LegalAdmin() {
                                   )}
                                 </div>
                                 <h3 className="text-base font-bold text-gray-900">{section.tag}</h3>
-                                <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 whitespace-pre-line">{toText(section.paragraphs)}</p>
+                                <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{toPlain(toHtml(section))}</p>
                               </div>
 
                               <div className="flex flex-col gap-2">

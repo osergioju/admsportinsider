@@ -4,31 +4,36 @@ import { AuthContext } from "./AuthContext";
 
 export const TranslationContext = createContext({
   t: (code, fallback) => fallback ?? code,
-  locale: "pt-BR",
-  publicLocale: "pt-BR",
+  locale: "pt",
+  publicLocale: "pt",
   setPublicLocale: () => {},
   loadingTranslations: false,
 });
 
+// Códigos padronizados: só o idioma, sem sufixo de região (pt, en, es).
 const LOCALES = [
-  { code: "pt-BR", label: "PT", flag: "🇧🇷" },
-  { code: "en-US", label: "EN", flag: "🇺🇸" },
-  { code: "ES",    label: "ES", flag: "🇪🇸" },
+  { code: "pt", label: "PT", flag: "🇧🇷" },
+  { code: "en", label: "EN", flag: "🇺🇸" },
+  { code: "es", label: "ES", flag: "🇪🇸" },
 ];
+
+// Normaliza valores antigos salvos (ex.: "pt-BR" no localStorage) → "pt".
+const normalizeLocale = (l) => (l || "pt").split("-")[0].toLowerCase();
 
 export function TranslationProvider({ children }) {
   const { user, loading: authLoading } = useContext(AuthContext);
   const [translations, setTranslations] = useState({});
   const [loadingTranslations, setLoadingTranslations] = useState(false);
   const [publicLocale, setPublicLocaleState] = useState(
-    () => localStorage.getItem("publicLocale") || "pt-BR"
+    () => normalizeLocale(localStorage.getItem("publicLocale"))
   );
 
-  const locale = user?.region_code ?? publicLocale;
+  const locale = normalizeLocale(user?.region_code ?? publicLocale);
 
   function setPublicLocale(code) {
-    localStorage.setItem("publicLocale", code);
-    setPublicLocaleState(code);
+    const norm = normalizeLocale(code);
+    localStorage.setItem("publicLocale", norm);
+    setPublicLocaleState(norm);
   }
 
   useEffect(() => {
