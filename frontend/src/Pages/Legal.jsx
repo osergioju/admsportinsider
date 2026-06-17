@@ -10,6 +10,9 @@ function formatDate(d) {
     return new Date(d).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+// Fallback exibido quando a API não retorna updated_at (mantém o padrão da página /privacidade)
+const FALLBACK_UPDATED = "2026-06-15";
+
 // Fallback caso a API não responda — espelha o seed de schema/12_add_legal_sections.sql
 const SECTIONS = [
     {
@@ -101,11 +104,9 @@ export default function Legal() {
                 <h1 className="font-medium text-3xl lg:text-5xl xl:text-6xl leading-tight bg-gradient-to-r from-[#ffffff3a] to-[#ffffff] bg-clip-text text-transparent">
                     Responsabilidade legal
                 </h1>
-                {lastUpdated && (
-                    <p className="mt-4 text-[#ffffff66] font-light text-sm">
-                        Última atualização: {formatDate(lastUpdated)}
-                    </p>
-                )}
+                <p className="mt-4 text-[#ffffff66] font-light text-sm">
+                    Última atualização: {formatDate(lastUpdated || FALLBACK_UPDATED)}
+                </p>
                 <p className="mt-6 text-[#ffffffa6] font-light text-base lg:text-xl max-w-2xl mx-auto leading-relaxed">
                     O <span className="text-white font-medium">PRO</span> é a ferramenta desenvolvida pelo{" "}
                     <span className="text-white font-medium">Sport Insider</span> para auxiliar na prática
