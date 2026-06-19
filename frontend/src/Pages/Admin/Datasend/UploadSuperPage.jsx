@@ -226,6 +226,8 @@ export default function UploadSuperPage() {
   const [playersCountryMappings, setPlayersCountryMappings] = useState({});
   const [playersPreviewCountries, setPlayersPreviewCountries] = useState([]);
   const [registerModal, setRegisterModal] = useState(null);
+  // Modal "substituir dados existentes?": { seasons:[...], label, resolve }
+  const [replacePrompt, setReplacePrompt] = useState(null);
   const [playersLoading, setPlayersLoading] = useState(false);
   const [playersImportingIdx, setPlayersImportingIdx] = useState(0);
   const [playersResults, setPlayersResults] = useState([]);
@@ -513,8 +515,43 @@ export default function UploadSuperPage() {
   }
 
   // ── Import Teams: sequential loop ───────────────────────────────────────────
+  // Pergunta ao backend quais das temporadas já têm dados desse tipo.
+  async function checkExisting(type, league, seasons) {
+    const uniq = [...new Set(seasons.map((s) => Number(s)).filter(Boolean))];
+    if (!league || !uniq.length) return [];
+    try {
+      const { data } = await api.post("/upload/import/check-existing", {
+        league, type, seasons: uniq,
+      });
+      return (data?.existing ?? []).map(Number);
+    } catch {
+      // Se a verificação falhar, não bloqueia o import (segue sem substituir).
+      return [];
+    }
+  }
+
+  // Abre o modal e resolve com 'replace' | 'keep' | 'cancel'.
+  function askReplace(seasons, label) {
+    return new Promise((resolve) => setReplacePrompt({ seasons, label, resolve }));
+  }
+  function answerReplace(decision) {
+    if (replacePrompt) replacePrompt.resolve(decision);
+    setReplacePrompt(null);
+  }
+
   async function handleImportTeams() {
     if (!teamsLeague) return alert("Selecione uma competição.");
+    // Detecta temporadas já existentes e pergunta se quer substituir.
+    const teamsSeasonOf = (p) => Number(p?.csvSeason);
+    const teamsExisting = await checkExisting(
+      "teams", teamsLeague,
+      teamsPreviews.slice(0, teamsFiles.length).map(teamsSeasonOf)
+    );
+    let teamsDecision = "keep";
+    if (teamsExisting.length) {
+      teamsDecision = await askReplace(teamsExisting, "times");
+      if (teamsDecision === "cancel") return;
+    }
     setTeamsLoading(true);
     const results = [];
     const total = Math.min(teamsFiles.length, teamsPreviews.length);
@@ -527,6 +564,9 @@ export default function UploadSuperPage() {
         form.append("file", teamsFiles[i]);
         form.append("league", teamsLeague);
         form.append("season", preview.csvSeason);
+        if (teamsDecision === "replace" && teamsExisting.includes(teamsSeasonOf(preview))) {
+          form.append("replace", "true");
+        }
         if (teamsIsCountryMode) {
           const activeMappings = Object.fromEntries(
             Object.entries(teamsCountryMappings).filter(([, v]) => v !== "")
@@ -553,6 +593,16 @@ export default function UploadSuperPage() {
   // ── Import Players: sequential loop ─────────────────────────────────────────
   async function handleImportPlayers() {
     if (!playersLeagueId) return alert("Selecione a liga.");
+    const playersSeasonOf = (p) => Number(p?.csvSeason);
+    const playersExisting = await checkExisting(
+      "players", playersLeagueId,
+      playersPreviews.slice(0, playersFiles.length).map(playersSeasonOf)
+    );
+    let playersDecision = "keep";
+    if (playersExisting.length) {
+      playersDecision = await askReplace(playersExisting, "jogadores");
+      if (playersDecision === "cancel") return;
+    }
     setPlayersLoading(true);
     const results = [];
     const total = Math.min(playersFiles.length, playersPreviews.length);
@@ -571,6 +621,9 @@ export default function UploadSuperPage() {
         const form = new FormData();
         form.append("file", playersFiles[i]);
         form.append("leagueId", playersLeagueId);
+        if (playersDecision === "replace" && playersExisting.includes(playersSeasonOf(preview))) {
+          form.append("replace", "true");
+        }
         if (playersIsCountryMode) {
           // Envia mapeamentos de seleções (id_country string values)
           const activeCountry = Object.fromEntries(
@@ -606,6 +659,16 @@ export default function UploadSuperPage() {
     if (missingIdx >= 0) {
       return alert(`Não foi possível detectar o ano do arquivo "${matchesFiles[missingIdx]?.name}". Preencha o campo de ano dele antes de importar.`);
     }
+    const matchesSeasonOf = (i) => Number(matchesSeasonOverrides[i] || matchesPreviews[i]?.detectedYear);
+    const matchesExisting = await checkExisting(
+      "matches", matchesLeague,
+      matchesPreviews.slice(0, matchesFiles.length).map((_, i) => matchesSeasonOf(i))
+    );
+    let matchesDecision = "keep";
+    if (matchesExisting.length) {
+      matchesDecision = await askReplace(matchesExisting, "partidas");
+      if (matchesDecision === "cancel") return;
+    }
     setMatchesLoading(true);
     const results = [];
     const total = Math.min(matchesFiles.length, matchesPreviews.length);
@@ -618,6 +681,9 @@ export default function UploadSuperPage() {
         form.append("file", matchesFiles[i]);
         form.append("league", matchesLeague);
         form.append("season", matchesSeasonOverrides[i] || preview.detectedYear);
+        if (matchesDecision === "replace" && matchesExisting.includes(matchesSeasonOf(i))) {
+          form.append("replace", "true");
+        }
         if (matchesIsCountryMode) {
           const activeCountryMappings = Object.fromEntries(
             Object.entries(matchesCountryMappings).filter(([, v]) => v !== "")
@@ -1518,11 +1584,13 @@ export default function UploadSuperPage() {
                 <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Partidas</p>
               </div>
               {matchesResults.map((r, i) => {
+                const details = r.skippedDetails ?? [];
                 const clubsNotFound = [...new Set(
-                  (r.skippedDetails ?? [])
+                  details
                     .filter(d => d.reason === "club_not_found")
                     .flatMap(d => [d.home, d.away].filter(Boolean))
                 )];
+                const missingName = details.filter(d => d.reason === "missing_team_name").length;
                 return (
                   <div key={i} className={`p-3 rounded-2xl border ${r.importError ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-100"}`}>
                     <div className="flex items-center gap-3">
@@ -1545,6 +1613,14 @@ export default function UploadSuperPage() {
                         </div>
                       </div>
                     )}
+                    {!r.importError && missingName > 0 && (
+                      <div className="mt-2 pt-2 border-t border-orange-100">
+                        <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wide mb-1">{missingName} partida(s) sem nome de time</p>
+                        <p className="text-[10px] text-gray-500 leading-relaxed">
+                          O arquivo não tem as colunas <code className="bg-gray-100 px-1 rounded">home_team_name</code> / <code className="bg-gray-100 px-1 rounded">away_team_name</code> preenchidas — provavelmente o cabeçalho/formato desse XLSX é diferente do CSV da FootyStats. Confira a 1ª linha da planilha.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1564,6 +1640,53 @@ export default function UploadSuperPage() {
           onClose={() => setRegisterModal(null)}
           onCreated={(newCountry) => handleCountryCreated(registerModal.csvNat, newCountry)}
         />
+      )}
+
+      {replacePrompt && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertTriangle size={18} className="text-amber-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800">Dados já existem</h3>
+            </div>
+            <p className="text-sm text-gray-600 font-light mb-2">
+              Estas temporadas de <strong>{replacePrompt.label}</strong> já têm dados cadastrados:
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {[...replacePrompt.seasons].sort((a, b) => a - b).map((y) => (
+                <span key={y} className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">{y}</span>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 font-light mb-5">
+              <strong>Substituir</strong> apaga os dados dessas temporadas e reimporta do zero.{" "}
+              <strong>Manter</strong> reaproveita os registros existentes (atualiza/upsert) sem apagar.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => answerReplace("replace")}
+                className="w-full px-5 py-3 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all"
+              >
+                Substituir essas temporadas
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => answerReplace("keep")}
+                  className="flex-1 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-full text-sm font-bold hover:bg-gray-200 transition-all"
+                >
+                  Manter (upsert)
+                </button>
+                <button
+                  onClick={() => answerReplace("cancel")}
+                  className="flex-1 px-5 py-2.5 bg-white border border-gray-200 text-gray-500 rounded-full text-sm font-bold hover:bg-gray-50 transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

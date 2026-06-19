@@ -8,6 +8,7 @@ import {
   deleteTeamStats,
   deleteMatches,
   countMatches,
+  checkExistingSeasons,
 } from "../controllers/import.controller.js";
 import { adminGuard } from "../middlewares/auth.middleware.js";
 
@@ -46,6 +47,9 @@ router.delete("/import/teams/:leagueId/seasons/:year", deleteTeamStats);
 
 // Conta partidas existentes de uma liga+temporada (p/ perguntar "substituir?")
 router.get("/import/matches/:leagueId/seasons/:year/count", countMatches);
+
+// Verifica quais temporadas (de uma lista) já têm dados — p/ perguntar "substituir?"
+router.post("/import/check-existing", checkExistingSeasons);
 
 // Apaga partidas de uma liga+temporada
 router.delete("/import/matches/:leagueId/seasons/:year", deleteMatches);

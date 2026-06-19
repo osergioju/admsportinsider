@@ -1,0 +1,372 @@
+{
+  "2018": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Playoff",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Quartas de final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Disputa de 5º lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Semi Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Terceiro Lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "2019": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Playoff",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Quartas de final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Disputa de 5º lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Semi Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Terceiro Lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "2020": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Playoff",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Quartas de final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Semi Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Terceiro Lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "2021": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Playoff",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Quartas de final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Semi Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Disputa de 5º lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Semi Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Terceiro Lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "2022": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Playoff",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Quartas de final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Semi Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Terceiro Lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "2023": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Playoff",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Quartas de final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Semi Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 2
+      },
+      {
+        "nome": "Terceiro Lugar",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "gol_fora",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "2024": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Primeira fase",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Segunda fase",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Derby das Américas",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Copa Challenger",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "2025": {
+    "tipo": "mata_mata",
+    "fases": [
+      {
+        "nome": "Primeira fase",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Segunda fase",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Derby das Américas",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Copa Challenger",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      },
+      {
+        "nome": "Final",
+        "tipo": "mata_mata",
+        "formato": "turno_unico",
+        "desempate": "penalties",
+        "confrontos": 1
+      }
+    ],
+    "relegation_spots": 0,
+    "continental_spots": 0
+  },
+  "esfera": "Global",
+  "continent": "Mundo",
+  "prizes_text": "A Copa Intercontinental distribui US$ 16,5 milhões em premiações aos clubes participantes a cada edição.",
+  "confederation": "Fifa",
+  "attendance_text": "O recorde de público da Copa Intercontinental é da edição de 2008, que recebeu 355.515 pessoas nos estádios.",
+  "competition_name": "Intercontinental Cup"
+}

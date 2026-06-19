@@ -64,6 +64,24 @@ function unwrapFullyQuotedLines(text) {
   }).join("\n");
 }
 
+// Alguns arquivos chegam com TODO o CSV empacotado numa ÚNICA coluna: o cabeçalho
+// inteiro (com vírgulas) vira o nome de 1 coluna e cada linha de dados é 1 célula
+// com a linha CSV completa (visto em .xlsx de Mundial de Clubes 2005-2024). Resultado:
+// home_team_name/away_team_name não existem → todas as partidas "ignoradas".
+// Detecta (1 coluna cujo header parece um CSV inteiro) e remonta como CSV de verdade.
+function unpackSingleColumnSheet(workbook) {
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) return workbook;
+  const grid = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: null, blankrows: false });
+  if (!grid.length) return workbook;
+  const headerRow = grid[0];
+  const headerCell = headerRow && headerRow.length === 1 ? String(headerRow[0] ?? "") : null;
+  // Heurística: 1 só coluna cujo cabeçalho tem muitas vírgulas (é um CSV inteiro).
+  if (!headerCell || (headerCell.match(/,/g) || []).length < 5) return workbook;
+  const text = grid.map((r) => (r[0] == null ? "" : String(r[0]))).join("\n");
+  return xlsx.read(text, { type: "string" });
+}
+
 // CSV files sent as buffer are read as Latin-1 by xlsx by default.
 // This helper forces UTF-8 decoding for CSV so accented chars (ã, ê, etc.) are preserved.
 function readWorkbook(file) {
@@ -71,10 +89,11 @@ function readWorkbook(file) {
     || file.mimetype === "application/csv"
     || file.originalname.toLowerCase().endsWith(".csv");
 
-  if (isCSV) {
-    return xlsx.read(unwrapFullyQuotedLines(file.buffer.toString("utf8")), { type: "string" });
-  }
-  return xlsx.read(file.buffer, { type: "buffer", cellDates: true });
+  const wb = isCSV
+    ? xlsx.read(unwrapFullyQuotedLines(file.buffer.toString("utf8")), { type: "string" })
+    : xlsx.read(file.buffer, { type: "buffer", cellDates: true });
+
+  return unpackSingleColumnSheet(wb);
 }
 
 // Builds a parameterized VALUES string for bulk inserts.
@@ -137,6 +156,16 @@ export async function importMatches(req, res) {
     } else {
       idSeason = seasonRes.rows[0].id_season;
     }
+
+    // Garante competition_seasons (id_league, id_season). É essa linha que faz a
+    // temporada aparecer no seletor da página pública da liga (getLeagueSports).
+    // Sem ela, uma temporada SÓ com partidas (sem CSV de times/jogadores) não
+    // aparece. Por isso as edições antigas só com partidas não eram exibidas.
+    await client.query(
+      `INSERT INTO competition_seasons (id_league, id_season) VALUES ($1, $2)
+       ON CONFLICT (id_league, id_season) DO NOTHING`,
+      [idLeague, idSeason]
+    );
 
     // Substituir: apaga as partidas existentes da liga+temporada antes de inserir.
     // Dentro da mesma transação → atômico (se a importação falhar, nada é perdido).
@@ -403,6 +432,28 @@ export async function importMatches(req, res) {
       `, statsParams);
     };
 
+    // Para linhas sem game_week mas COM timestamp: o "ON CONFLICT DO NOTHING" só
+    // devolve no RETURNING as linhas recém-inseridas — as que já existiam ficam
+    // de fora e desalinhariam o match_stats (id_match nulo → estouro). Por isso
+    // buscamos o id_match de CADA linha pela chave natural depois do insert.
+    const fetchMatchIdsByTimestamp = async (chunkRows) => {
+      const ids = [];
+      for (const r of chunkRows) {
+        const q = isCountryMode
+          ? `SELECT id_match FROM matches
+             WHERE id_league = $1 AND id_season = $2
+               AND home_country_id = $3 AND away_country_id = $4
+               AND match_timestamp = $5 LIMIT 1`
+          : `SELECT id_match FROM matches
+             WHERE id_league = $1 AND id_season = $2
+               AND home_club_id = $3 AND away_club_id = $4
+               AND match_timestamp = $5 LIMIT 1`;
+        const r5 = await client.query(q, [r[0], r[1], r[2], r[3], r[4]]);
+        ids.push(r5.rows[0]?.id_match ?? null);
+      }
+      return ids;
+    };
+
     // Grupo 1: com game_week → constraint uq_match (ou uq_country_match_gw em country mode)
     for (const chunkRows of chunk(rowsWithGW, 100)) {
       const matchIds = await insertMatchChunk(chunkRows, conflictWithGW);
@@ -427,11 +478,19 @@ export async function importMatches(req, res) {
       const withoutTs = chunkRows.filter(r => r[4] == null);
 
       if (withTs.length) {
-        // Sem game_week: usa DO NOTHING para segurança.
-        // Para upsert completo em reimport, criar o índice em migration_match_timestamp_index.sql
-        const matchIds = await insertMatchChunk(withTs, `ON CONFLICT DO NOTHING`);
-        await insertStatsChunk(withTs, matchIds);
-        inserted += withTs.length;
+        // Sem game_week, mas com timestamp: insere ignorando conflitos (índice
+        // parcial por timestamp). Como o RETURNING do DO NOTHING não cobre as
+        // linhas que já existiam, resolvemos o id_match de cada linha pela chave
+        // natural e só gravamos stats das que casaram (evita id_match nulo).
+        await insertMatchChunk(withTs, `ON CONFLICT DO NOTHING`);
+        const matchIds = await fetchMatchIdsByTimestamp(withTs);
+        const pairs = withTs
+          .map((r, idx) => [r, matchIds[idx]])
+          .filter(([, id]) => id != null);
+        if (pairs.length) {
+          await insertStatsChunk(pairs.map(([r]) => r), pairs.map(([, id]) => id));
+        }
+        inserted += pairs.length;
       }
 
       if (withoutTs.length) {
@@ -535,6 +594,25 @@ export async function importPlayers(req, res) {
     const isCountryMode = countryMappings !== null; // country mode quando countryMappings está presente
 
     await client.query("BEGIN");
+
+    // Substituir: antes de reinserir, apaga player_seasons (+ stats) desta liga
+    // nas temporadas presentes no arquivo. Sem isso o reimport só faz upsert e
+    // deixa "fantasmas" de jogadores que saíram do elenco. Cobre clubes e seleções.
+    const replace = req.body.replace === "true" || req.body.replace === true;
+    if (replace && idLeague) {
+      const replaceYears = [...new Set(rows.map(r => parseSeasonYear(r.season)).filter(Boolean))];
+      if (replaceYears.length) {
+        const psFilter = `
+          SELECT ps.id_player_season FROM player_seasons ps
+          LEFT JOIN club_league_seasons    cls  ON cls.id_club_league_season     = ps.id_club_league_season
+          LEFT JOIN country_league_seasons ctls ON ctls.id_country_league_season = ps.id_country_league_season
+          JOIN seasons s ON s.id_season = COALESCE(cls.id_season, ctls.id_season)
+          WHERE COALESCE(cls.id_league, ctls.id_league) = $1 AND s.year = ANY($2)
+        `;
+        await client.query(`DELETE FROM player_stats   WHERE id_player_season IN (${psFilter})`, [idLeague, replaceYears]);
+        await client.query(`DELETE FROM player_seasons WHERE id_player_season IN (${psFilter})`, [idLeague, replaceYears]);
+      }
+    }
 
     /* ------------------------------------------------------------------
        CACHE COUNTRIES
@@ -1215,6 +1293,16 @@ export async function importTeams(req, res) {
       [idLeague, idSeason]
     );
     const idCompetitionSeason = compSeasonRes.rows[0].id_competition_season;
+
+    // Substituir: apaga as stats de times desta liga+temporada antes de reinserir
+    // (dentro da transação → atômico). Funciona para clubes e seleções (mesma tabela).
+    const replace = req.body.replace === "true" || req.body.replace === true;
+    if (replace) {
+      await client.query(
+        `DELETE FROM club_competition_stats WHERE id_competition_season = $1`,
+        [idCompetitionSeason]
+      );
+    }
 
     /* ------------------------------------------------------------------
        CLUBS CACHE — todos os clubes do país da liga (ou todos se continental)
@@ -2628,5 +2716,49 @@ export async function deleteTeamStats(req, res) {
   } catch (err) {
     console.error("[deleteTeamStats]", err);
     return res.status(500).json({ error: "Erro ao apagar stats" });
+  }
+}
+
+// Verifica, para uma liga + lista de anos, quais temporadas JÁ têm dados de um
+// tipo (teams | players | matches). Usado pelo super upload para perguntar
+// "substituir?" antes de importar. Retorna { existing: [anos...] }.
+export async function checkExistingSeasons(req, res) {
+  const idLeague = Number(req.body.league);
+  const type = req.body.type;
+  let seasons = req.body.seasons;
+  if (typeof seasons === "string") {
+    try { seasons = JSON.parse(seasons); } catch { seasons = []; }
+  }
+  seasons = (seasons || []).map(Number).filter(Boolean);
+  if (!idLeague || !seasons.length) return res.json({ existing: [] });
+
+  let q;
+  if (type === "matches") {
+    q = `SELECT DISTINCT s.year
+         FROM matches m JOIN seasons s ON s.id_season = m.id_season
+         WHERE m.id_league = $1 AND s.year = ANY($2)`;
+  } else if (type === "teams") {
+    q = `SELECT DISTINCT s.year
+         FROM club_competition_stats ccs
+         JOIN competition_seasons cs ON cs.id_competition_season = ccs.id_competition_season
+         JOIN seasons s ON s.id_season = cs.id_season
+         WHERE cs.id_league = $1 AND s.year = ANY($2)`;
+  } else if (type === "players") {
+    q = `SELECT DISTINCT s.year
+         FROM player_seasons ps
+         LEFT JOIN club_league_seasons    cls  ON cls.id_club_league_season     = ps.id_club_league_season
+         LEFT JOIN country_league_seasons ctls ON ctls.id_country_league_season = ps.id_country_league_season
+         JOIN seasons s ON s.id_season = COALESCE(cls.id_season, ctls.id_season)
+         WHERE COALESCE(cls.id_league, ctls.id_league) = $1 AND s.year = ANY($2)`;
+  } else {
+    return res.status(400).json({ error: "type inválido (use teams | players | matches)" });
+  }
+
+  try {
+    const { rows } = await db.query(q, [idLeague, seasons]);
+    return res.json({ existing: rows.map(r => Number(r.year)) });
+  } catch (err) {
+    console.error("[checkExistingSeasons]", err);
+    return res.status(500).json({ error: "Erro ao verificar temporadas existentes" });
   }
 }
