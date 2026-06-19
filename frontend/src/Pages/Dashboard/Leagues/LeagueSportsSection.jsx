@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { clubUrl, teamCrestSources } from "../../../utils/clubUrl";
-import { Loader2, Trophy, ChevronsDown, ArrowRight } from "lucide-react";
+import { Loader2, Trophy, ChevronsDown, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
 import TeamCrest from "../../../components/uxui/TeamCrest";
 
@@ -20,6 +20,58 @@ function ClubLink({ id, slug, hidden, className, children, federationSlug, isCou
 // TeamCrest agora é compartilhado (utils/clubUrl + components/uxui/TeamCrest):
 // resolve federação → crest_url → slug e cai de uma fonte p/ outra no onError,
 // sem checagem de 404. Importado no topo do arquivo.
+
+// Seletor de temporada: strip rolável horizontal com setinhas que SÓ aparecem
+// quando há overflow (tela menor / muitos anos, ex.: Intercontinental 2005-2025).
+// Sem overflow (poucos anos / tela larga) as setas somem.
+function SeasonSelector({ seasons, season, onSelect }) {
+  const ref = useRef(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const update = () => {
+    const el = ref.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const raf = requestAnimationFrame(update); // evita setState síncrono no effect
+    el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [seasons]);
+
+  const scrollBy = (dir) => ref.current?.scrollBy({ left: dir * 140, behavior: "smooth" });
+  const arrowCls = "shrink-0 p-1 text-gray-400 hover:text-gray-900 disabled:opacity-0 disabled:pointer-events-none transition-opacity";
+
+  return (
+    <div className="flex items-center pl-1 border-l border-gray-100 min-w-0">
+      <button type="button" aria-label="Anos anteriores" onClick={() => scrollBy(-1)} disabled={!canLeft} className={arrowCls}>
+        <ChevronLeft size={18} />
+      </button>
+      <div ref={ref} className="flex items-center gap-0.5 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {seasons.map((y) => (
+          <button key={y} type="button" onClick={() => onSelect(y)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap shrink-0 transition-all
+              ${season === y ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}>
+            {y}
+          </button>
+        ))}
+      </div>
+      <button type="button" aria-label="Anos seguintes" onClick={() => scrollBy(1)} disabled={!canRight} className={arrowCls}>
+        <ChevronRight size={18} />
+      </button>
+    </div>
+  );
+}
 
 const fmtDate = d => d
   ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" })
@@ -1523,19 +1575,13 @@ export default function LeagueSportsSection({ leagueId }) {
               </button>
             ))}
           </div>
-          {/* Season selector */}
+          {/* Season selector — strip rolável com setinhas no overflow (mobile) */}
           {(seasons ?? []).length > 0 && (
-            <div className="flex items-center gap-0.5 px-2 border-l border-gray-100 shrink-0">
-              {(seasons ?? []).map(y => (
-                <button key={y} onClick={() => { setSeason(y); setMainTab(null); }}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all
-                    ${season === y
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}>
-                  {y}
-                </button>
-              ))}
-            </div>
+            <SeasonSelector
+              seasons={seasons}
+              season={season}
+              onSelect={(y) => { setSeason(y); setMainTab(null); }}
+            />
           )}
         </div>
       </div>

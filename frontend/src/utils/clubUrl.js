@@ -15,11 +15,10 @@ export function clubCrestBySlug(slug) {
   return slug ? `${CDN}/uploads/clubes/reduced/reduced_${slug}.webp` : null;
 }
 
-// Melhor URL ÚNICA do escudo do clube: crest_url salvo no banco tem prioridade;
-// senão cai na convenção por slug. Espelha o leagueLogo(logo_url, slug).
+// Melhor URL ÚNICA do escudo do clube (1ª fonte candidata). Cobre crest_url URL
+// completa (upload novo), crest_url legado (slug nu) e slug. Espelha leagueLogo.
 export function clubLogo(crest_url, slug) {
-  if (crest_url) return crest_url;
-  return clubCrestBySlug(slug);
+  return teamCrestSources({ crest_url, slug })[0] ?? null;
 }
 
 // Lista ORDENADA de fontes candidatas do escudo, para o <img> cair de uma para a
@@ -31,7 +30,10 @@ export function teamCrestSources(t) {
   const out = [];
   if (t.federation_slug) out.push(federationLogo(t.federation_slug, "medium"));
   const crest = t.crest ?? t.crest_url;
-  if (crest && String(crest).startsWith("http")) out.push(crest);
-  if (t.slug) out.push(clubCrestBySlug(t.slug));
+  const crestStr = crest != null ? String(crest) : "";
+  if (crestStr.startsWith("http")) out.push(crestStr);          // upload novo / migrado / externo
+  if (t.slug) out.push(clubCrestBySlug(t.slug));                // convenção por slug
+  // crest_url legado guardava só o SLUG NU (ex.: "mexico_leon") → reduced_{slug}.webp
+  if (crestStr && !crestStr.startsWith("http")) out.push(clubCrestBySlug(crestStr));
   return [...new Set(out.filter(Boolean))];
 }

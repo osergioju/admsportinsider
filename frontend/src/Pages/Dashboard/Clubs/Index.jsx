@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
-import { clubUrl } from "../../../utils/clubUrl";
+import { clubUrl, clubLogo } from "../../../utils/clubUrl";
 import { ChevronLeft, ChevronRight, Search, X, Heart } from "lucide-react";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
@@ -156,7 +156,7 @@ function ClubCard({ club, isFavorited, toggleFavorite }) {
           >
             {club.crest_url ? (
               <img
-                src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${club.crest_url}.webp`}
+                src={clubLogo(club.crest_url, club.slug)}
                 alt={club.name}
                 className="w-12 h-12 object-contain"
               />

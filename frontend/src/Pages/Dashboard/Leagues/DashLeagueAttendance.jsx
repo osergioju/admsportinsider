@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { ArrowLeft, Users, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
-import { federationLogo } from "../../../utils/federationUrl";
+import TeamCrest from "../../../components/uxui/TeamCrest";
 import PageLoader from "../../../components/uxui/PageLoader";
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
@@ -31,21 +31,11 @@ const METRICS = [
     { key: "ticketing-average-price", label: "Tíquete médio", fmt: fmtUsd2 },
 ];
 
-function teamImg(crest, federationSlug) {
-    if (federationSlug) return federationLogo(federationSlug, "medium");
-    if (crest && String(crest).startsWith("http")) return crest; // bandeira (fallback)
-    if (crest) return `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${crest}.webp`;
-    return null;
-}
-
 function TeamCell({ name, crest, federationSlug, align = "left" }) {
-    const src = teamImg(crest, federationSlug);
     return (
         <div className={`flex items-center gap-2 min-w-0 ${align === "right" ? "justify-end" : ""}`}>
             {align === "right" && <span className="text-sm text-gray-700 truncate">{name}</span>}
-            {src
-                ? <img src={src} alt="" className="w-5 h-5 object-contain shrink-0" onError={e => { e.currentTarget.style.visibility = "hidden"; }} />
-                : <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />}
+            <TeamCrest team={{ crest, federation_slug: federationSlug }} size="w-5 h-5" />
             {align === "left" && <span className="text-sm text-gray-700 truncate">{name}</span>}
         </div>
     );

@@ -1,0 +1,84 @@
+{
+  "countries": [
+    {
+      "id_country": 314,
+      "name": "Curaçau",
+      "flag_url": "https://flagcdn.com/cw.svg",
+      "active": false,
+      "flag_color1": null,
+      "flag_color2": null,
+      "flag_color3": null
+    },
+    {
+      "id_country": 423,
+      "name": "Nova Caledónia",
+      "flag_url": "https://flagcdn.com/nc.svg",
+      "active": false,
+      "flag_color1": null,
+      "flag_color2": null,
+      "flag_color3": null
+    },
+    {
+      "id_country": 442,
+      "name": "Papua Nova Guiné",
+      "flag_url": "https://flagcdn.com/pg.svg",
+      "active": false,
+      "flag_color1": null,
+      "flag_color2": null,
+      "flag_color3": null
+    },
+    {
+      "id_country": 498,
+      "name": "Curaçao",
+      "flag_url": "https://flagcdn.com/cw.svg",
+      "active": false,
+      "flag_color1": null,
+      "flag_color2": null,
+      "flag_color3": null
+    },
+    {
+      "id_country": 501,
+      "name": "Pápua Nova Guiné",
+      "flag_url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Flag_of_Papua_New_Guinea.svg",
+      "active": false,
+      "flag_color1": null,
+      "flag_color2": null,
+      "flag_color3": null
+    },
+    {
+      "id_country": 502,
+      "name": "Nova Caledônia",
+      "flag_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Flag_of_France.svg/1280px-Flag_of_France.svg.png",
+      "active": false,
+      "flag_color1": null,
+      "flag_color2": null,
+      "flag_color3": null
+    }
+  ],
+  "translations": [
+    {
+      "id": 127,
+      "id_country": 314,
+      "locale": "en",
+      "name": "Curaçao"
+    },
+    {
+      "id": 128,
+      "id_country": 314,
+      "locale": "es",
+      "name": "Curazao"
+    },
+    {
+      "id": 505,
+      "id_country": 423,
+      "locale": "en",
+      "name": "New Caledonia"
+    },
+    {
+      "id": 506,
+      "id_country": 423,
+      "locale": "es",
+      "name": "Nueva Caledonia"
+    }
+  ]
+}

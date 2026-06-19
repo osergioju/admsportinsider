@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 import { Landmark } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
+import { clubLogo } from "../../../utils/clubUrl";
 
 // Sections
 import RevenueSection from "./components/revenue/RevenueSection";
@@ -345,7 +346,7 @@ export default function DashClubUniques() {
               className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center p-2.5"
             >
               <img
-                src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + theClub.club.crest_url + `.webp`}
+                src={clubLogo(theClub.club.crest_url, theClub.club.slug)}
                 alt={theClub.club.name}
                 className="w-full h-full object-contain drop-shadow-lg"
               />

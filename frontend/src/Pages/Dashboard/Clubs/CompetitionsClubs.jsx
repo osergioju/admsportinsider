@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { clubUrl } from "../../../utils/clubUrl";
+import TeamCrest from "../../../components/uxui/TeamCrest";
 import { Loader2, ChevronDown, Trophy, ChevronsDown } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
 
@@ -535,7 +536,7 @@ function StandingsTable({ rows, clubId }) {
             <tr key={t.id ?? i} className={`border-t border-gray-50 ${t.isMain ? "bg-violet-50 font-bold" : "hover:bg-gray-50/60"}`}>
               <td className={`px-2 py-2.5 text-center font-bold ${t.isMain ? "text-violet-600" : "text-gray-400"}`}>{t.pos ?? i + 1}</td>
               <td className={`px-2 py-2.5 flex items-center gap-2 ${t.isMain ? "text-violet-700" : "text-gray-700"}`}>
-                {t.crest ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${t.crest}.webp`} alt="" className="w-4 h-4 object-contain" /> : <div className="w-4 h-4" />}
+                <TeamCrest team={t} size="w-4 h-4" />
                 {t.name}
               </td>
               <td className={`px-2 py-2.5 text-center font-bold ${t.isMain ? "text-violet-700" : "text-gray-800"}`}>{t.pts}</td>

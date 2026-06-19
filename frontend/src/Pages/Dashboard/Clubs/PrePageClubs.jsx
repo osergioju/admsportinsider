@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
 import { formatFinancial } from "../../../utils/formatFinancial";
+import { clubLogo } from "../../../utils/clubUrl";
 import {
     TrendingUp,
     Trophy, Users, ArrowRight, EyeOff,
@@ -251,7 +252,7 @@ export default function PrePageClubs() {
                     <div className="flex items-start  gap-4 lg:p-5 flex-wrap">
                         <div className="shrink-0 w-14 h-14 lg:w-30 lg:h-30 xl:w-40 xl:h-40 flex items-center justify-center">
                             <img
-                                src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${theClub.club.crest_url}.webp`}
+                                src={clubLogo(theClub.club.crest_url, theClub.club.slug)}
                                 alt={clubName}
                                 className="w-full h-full object-contain"
                             />
