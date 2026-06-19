@@ -77,6 +77,8 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
         try {
             const fd = new FormData();
             fd.append("file", file);
+            if (newClub?.name) fd.append("name", newClub.name);
+            if (newClub?.slug) fd.append("slug", newClub.slug);
             const res = await api.post("/admin/upload-club-logo", fd, {
                 headers: { "Content-Type": "multipart/form-data" },
             });

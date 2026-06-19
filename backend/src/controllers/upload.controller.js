@@ -1,4 +1,3 @@
-import { supabase } from "../utils/supabase.js";
 import db from "../config/db.js";
 import xlsx from "xlsx";
 import { UPLOADS_DIR } from "../config/paths.js";
@@ -28,40 +27,51 @@ function parsePlans(raw) {
 }
 
 
-// Sobe o logo do clube
+// Logo do clube. Vai para uploads/clubes (NÃO mais para o Supabase) e gera a
+// versão reduzida em uploads/clubes/reduced/reduced_{slug}.webp — mesmo padrão
+// das logos de liga. crest_url passa a apontar para o reduzido (leve/nítido),
+// igual às exibições de escudo no dashboard.
 export async function uploadClubLogo(req, res) {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Nenhum arquivo enviado." });
     }
 
-    const file = req.file;
-    const ext = file.originalname.split(".").pop();
-    const filename = `club_${Date.now()}.${ext}`;
+    const path  = await import("path");
+    const fs    = await import("fs");
+    const sharp = (await import("sharp")).default;
 
-    const { data, error } = await supabase.storage
-      .from("assets")
-      .upload(filename, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      });
+    // Nome base: slug do clube (se enviado) ou slug do nome; senão timestamp.
+    const rawSlug  = (req.body.slug || "").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+    const fromName = normalizeStr(req.body.name || "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const base     = rawSlug || fromName || `club-${Date.now()}`;
 
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Erro ao enviar arquivo." });
-    }
+    const dest       = path.default.join(UPLOADS_DIR, "clubes");
+    const reducedDir = path.default.join(dest, "reduced");
+    fs.default.mkdirSync(reducedDir, { recursive: true });
 
-    const { data: publicUrl } = supabase.storage
-      .from("assets")
-      .getPublicUrl(filename);
+    // 1) Original
+    const ext       = path.default.extname(req.file.originalname).toLowerCase() || ".png";
+    const finalName = `${base}${ext}`;
+    fs.default.writeFileSync(path.default.join(dest, finalName), req.file.buffer);
 
+    // 2) Reduzido (webp) — uploads/clubes/reduced/reduced_{slug}.webp
+    const reducedName = `reduced_${base}.webp`;
+    await sharp(req.file.buffer)
+      .resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 90 })
+      .toFile(path.default.join(reducedDir, reducedName));
+
+    const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
+    // ?v={timestamp} = cache-buster (arquivo sobrescrito com mesmo nome).
+    const v = Date.now();
     return res.status(200).json({
       message: "Upload realizado com sucesso!",
-      url: publicUrl.publicUrl,
+      url: `${baseUrl}/uploads/clubes/reduced/${reducedName}?v=${v}`,
+      original: `${baseUrl}/uploads/clubes/${finalName}?v=${v}`,
     });
-
   } catch (error) {
-    console.error("Erro no upload:", error);
+    console.error("Erro no upload de logo do clube:", error);
     return res.status(500).json({ message: "Erro interno no upload." });
   }
 }
