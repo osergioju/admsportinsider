@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
-import { clubUrl } from "../../../utils/clubUrl";
+import { clubUrl, teamCrestSources } from "../../../utils/clubUrl";
 import { Loader2, Trophy, ChevronsDown, ArrowRight } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
-import { federationLogo } from "../../../utils/federationUrl";
+import TeamCrest from "../../../components/uxui/TeamCrest";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -17,23 +17,9 @@ function ClubLink({ id, slug, hidden, className, children, federationSlug, isCou
   return <Link to={clubUrl(id, slug)} className={className}>{children}</Link>;
 }
 
-// Resolve a imagem de um time: seleções usam o escudo da federação (CBF, DFB...);
-// clubes usam o escudo do clube; bandeira do país é o último fallback.
-function teamImg(t) {
-  if (!t) return null;
-  if (t.federation_slug) return federationLogo(t.federation_slug, "medium");
-  if (t.crest && String(t.crest).startsWith("http")) return t.crest; // bandeira (seleção sem federação)
-  if (t.slug) return `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${t.slug}.webp`;
-  if (t.crest) return `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_plus/reduced_reduced_${t.crest}.webp`;
-  return null;
-}
-
-function TeamCrest({ team, size = "w-5 h-5" }) {
-  const src = teamImg(team);
-  return src
-    ? <img src={src} alt="" className={`${size} object-contain shrink-0`} onError={e => { e.currentTarget.style.visibility = "hidden"; }} />
-    : <div className={`${size} rounded-full bg-gray-100 shrink-0`} />;
-}
+// TeamCrest agora é compartilhado (utils/clubUrl + components/uxui/TeamCrest):
+// resolve federação → crest_url → slug e cai de uma fonte p/ outra no onError,
+// sem checagem de 404. Importado no topo do arquivo.
 
 const fmtDate = d => d
   ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" })
@@ -1582,7 +1568,7 @@ export default function LeagueSportsSection({ leagueId }) {
               <ClubLink id={leader.id} slug={leader.slug} hidden={leader.hidden} federationSlug={leader.federation_slug} isCountry={leader.is_country} federationActive={leader.federation_active}
                 className="flex items-center gap-2 min-w-0 group">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider shrink-0 hidden lg:block">CAMPEÃO</span>
-                {teamImg(leader)
+                {teamCrestSources(leader).length
                   ? <TeamCrest team={leader} />
                   : <Trophy size={16} className="text-gray-300 shrink-0" />
                 }
