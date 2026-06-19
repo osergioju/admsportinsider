@@ -325,17 +325,17 @@ export async function getAllClubs(req, res) {
       co.flag_url
 
     FROM clubs c
-    JOIN countries co
+    LEFT JOIN countries co
       ON co.id_country = c.id_country
 
-    WHERE c.active = TRUE
     ORDER BY c.name ASC
     LIMIT $1 OFFSET $2;
     `, [limit, offset]);
 
-    // Contagem total p/ paginação
+    // Admin enxerga TODOS os clubes (ativos e inativos; com ou sem país).
+    // active = só visibilidade pública; LEFT JOIN p/ não sumir clube sem país.
     const countQuery = await db.query(`
-      SELECT COUNT(*) FROM clubs WHERE active = TRUE
+      SELECT COUNT(*) FROM clubs
     `);
 
     const total = parseInt(countQuery.rows[0].count);

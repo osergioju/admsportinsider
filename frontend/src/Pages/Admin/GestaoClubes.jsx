@@ -392,7 +392,7 @@ export default function GestaoClubes() {
     const loadData = async () => {
         try {
             const [clubsResp, countriesResp] = await Promise.all([
-                api.get("/admin/clubs?limit=2000"),
+                api.get("/admin/clubs?limit=5000"),
                 api.get("/admin/countries?limit=300"),
             ]);
             setAllClubs(clubsResp.data.clubs);
