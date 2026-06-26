@@ -1552,6 +1552,7 @@ export async function importTeams(req, res) {
         toInt(row["goals_conceded_half_time"]),
         toInt(row["goals_conceded_half_time_home"]),
         toInt(row["goals_conceded_half_time_away"]),
+        toInt(row["first_team_to_score_count"]),
       ]);
     }
 
@@ -1657,7 +1658,8 @@ export async function importTeams(req, res) {
           ht_drawing_total, ht_drawing_home, ht_drawing_away,
           ht_losing_total, ht_losing_home, ht_losing_away,
           ht_goals_scored_total, ht_goals_scored_home, ht_goals_scored_away,
-          ht_goals_conceded_total, ht_goals_conceded_home, ht_goals_conceded_away
+          ht_goals_conceded_total, ht_goals_conceded_home, ht_goals_conceded_away,
+          first_team_to_score_count
         )
         VALUES ${values}
         ON CONFLICT ${conflictClause} DO UPDATE SET
@@ -1711,7 +1713,8 @@ export async function importTeams(req, res) {
           ht_goals_scored_away     = EXCLUDED.ht_goals_scored_away,
           ht_goals_conceded_total  = EXCLUDED.ht_goals_conceded_total,
           ht_goals_conceded_home   = EXCLUDED.ht_goals_conceded_home,
-          ht_goals_conceded_away   = EXCLUDED.ht_goals_conceded_away
+          ht_goals_conceded_away   = EXCLUDED.ht_goals_conceded_away,
+          first_team_to_score_count = EXCLUDED.first_team_to_score_count
       `, params);
 
       inserted += chunkRows.length;

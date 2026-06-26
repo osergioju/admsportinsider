@@ -1096,7 +1096,90 @@ export async function getLeagueSports(req, res) {
       red: r.red_cards,
     }));
 
-    res.json({ league, seasons, season, standings, matches, discipline, phaseMappingStatus, groupClubs });
+    // ── Estatísticas por time (Ofensivo / Defensivo / Controle) ───────────────
+    // Lê direto de club_competition_stats da temporada (clube OU país/seleção)
+    const teamStatsRes = await db.query(`
+      SELECT
+        COALESCE(c.id_club, co.id_country) AS id,
+        COALESCE(c.name, co.name) AS name,
+        COALESCE(c.crest_url, co.flag_url) AS crest,
+        c.slug AS club_slug, c.hidden AS club_hidden,
+        (ccs.id_country IS NOT NULL) AS is_country,
+        f.slug AS federation_slug, f.active AS federation_active,
+        ccs.matches_total, ccs.goals_for_total, ccs.goals_against_total,
+        ccs.shots_total, ccs.shots_on_target_total,
+        ccs.xg_for_avg, ccs.xg_against_avg,
+        ccs.goals_scored_per_match, ccs.goals_conceded_per_match,
+        ccs.clean_sheets_total, ccs.clean_sheet_percentage,
+        ccs.possession_total, ccs.first_team_to_score_count,
+        ccs.ht_winning_total, ccs.ht_drawing_total, ccs.ht_losing_total,
+        ccs.wins_total, ccs.draws_total, ccs.losses_total
+      FROM club_competition_stats ccs
+      LEFT JOIN clubs c ON c.id_club = ccs.id_club
+      LEFT JOIN countries co ON co.id_country = ccs.id_country
+      LEFT JOIN federations f ON f.id_country = ccs.id_country AND f.sphere = 'nacional'
+      WHERE ccs.id_competition_season = $1
+        AND (ccs.id_club IS NOT NULL OR ccs.id_country IS NOT NULL)
+    `, [idCS]);
+
+    const numOrNull = v => (v == null ? null : Number(v));
+    const teamStats = teamStatsRes.rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      crest: r.crest,
+      slug: r.club_slug ?? null,
+      hidden: r.club_hidden ?? false,
+      is_country: r.is_country ?? false,
+      federation_slug: r.federation_slug ?? null,
+      federation_active: r.federation_active ?? false,
+      matches_played: numOrNull(r.matches_total),
+      goals_scored: numOrNull(r.goals_for_total),
+      goals_conceded: numOrNull(r.goals_against_total),
+      shots: numOrNull(r.shots_total),
+      shots_on_target: numOrNull(r.shots_on_target_total),
+      xg_for: numOrNull(r.xg_for_avg),
+      xg_against: numOrNull(r.xg_against_avg),
+      goals_scored_per_match: numOrNull(r.goals_scored_per_match),
+      goals_conceded_per_match: numOrNull(r.goals_conceded_per_match),
+      clean_sheets: numOrNull(r.clean_sheets_total),
+      clean_sheet_percentage: numOrNull(r.clean_sheet_percentage),
+      possession: numOrNull(r.possession_total),
+      first_to_score: numOrNull(r.first_team_to_score_count),
+      leading_at_half_time: numOrNull(r.ht_winning_total),
+      draw_at_half_time: numOrNull(r.ht_drawing_total),
+      losing_at_half_time: numOrNull(r.ht_losing_total),
+      wins: numOrNull(r.wins_total),
+      draws: numOrNull(r.draws_total),
+      losses: numOrNull(r.losses_total),
+    }));
+
+    // ── Estatísticas individuais (Artilharia / Assistências) ──────────────────
+    const playersStatsRes = await db.query(`
+      SELECT
+        p.id_player, p.full_name,
+        c.id_club, c.name AS club_name, c.crest_url AS club_crest, c.slug AS club_slug, c.hidden AS club_hidden,
+        pst.minutes_total, pst.goals, pst.assists,
+        pst.penalties_scored, pst.penalties_missed
+      FROM player_seasons ps
+      JOIN club_league_seasons cls ON cls.id_club_league_season = ps.id_club_league_season
+      JOIN players p ON p.id_player = ps.id_player
+      JOIN clubs c ON c.id_club = cls.id_club
+      LEFT JOIN player_stats pst ON pst.id_player_season = ps.id_player_season
+      WHERE cls.id_league = $1 AND cls.id_season = $2
+    `, [leagueId, idSeason]);
+
+    const players = playersStatsRes.rows.map(r => ({
+      id: r.id_player,
+      name: r.full_name,
+      club: { id: r.id_club, name: r.club_name, crest: r.club_crest, slug: r.club_slug ?? null, hidden: r.club_hidden ?? false },
+      minutes_played: numOrNull(r.minutes_total),
+      goals: numOrNull(r.goals),
+      assists: numOrNull(r.assists),
+      penalty_goals: numOrNull(r.penalties_scored),
+      penalty_misses: numOrNull(r.penalties_missed),
+    }));
+
+    res.json({ league, seasons, season, standings, matches, discipline, teamStats, players, phaseMappingStatus, groupClubs });
   } catch (err) {
     console.error('[getLeagueSports]', err);
     res.status(500).json({ error: 'Erro ao buscar dados da liga' });

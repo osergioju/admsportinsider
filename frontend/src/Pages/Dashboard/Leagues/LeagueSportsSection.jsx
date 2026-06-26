@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { clubUrl, teamCrestSources } from "../../../utils/clubUrl";
-import { Loader2, Trophy, ChevronsDown, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Trophy, ChevronsDown, ArrowRight, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, Calendar } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
 import TeamCrest from "../../../components/uxui/TeamCrest";
 
@@ -21,54 +21,65 @@ function ClubLink({ id, slug, hidden, className, children, federationSlug, isCou
 // resolve federação → crest_url → slug e cai de uma fonte p/ outra no onError,
 // sem checagem de 404. Importado no topo do arquivo.
 
-// Seletor de temporada: strip rolável horizontal com setinhas que SÓ aparecem
-// quando há overflow (tela menor / muitos anos, ex.: Intercontinental 2005-2025).
-// Sem overflow (poucos anos / tela larga) as setas somem.
+// Seletor de temporada: dropdown compacto que mostra o ano atual e abre um painel
+// com os anos em grade (escala bem de 2 a 20+ temporadas, ex.: Intercontinental
+// 2005-2025, sem virar uma régua horizontal interminável). Fecha ao clicar fora
+// ou apertar Esc; abre já rolado até o ano selecionado.
 function SeasonSelector({ seasons, season, onSelect }) {
-  const ref = useRef(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-
-  const update = () => {
-    const el = ref.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 4);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  };
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const listRef = useRef(null);
+  const current = season ?? seasons[0];
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const raf = requestAnimationFrame(update); // evita setState síncrono no effect
-    el.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+    if (!open) return;
+    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    // Centraliza o ano ativo na abertura
+    const raf = requestAnimationFrame(() => {
+      listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+    });
     return () => {
       cancelAnimationFrame(raf);
-      el.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
     };
-  }, [seasons]);
+  }, [open]);
 
-  const scrollBy = (dir) => ref.current?.scrollBy({ left: dir * 140, behavior: "smooth" });
-  const arrowCls = "shrink-0 p-1 text-gray-400 hover:text-gray-900 disabled:opacity-0 disabled:pointer-events-none transition-opacity";
+  if (!seasons?.length) return null;
 
   return (
-    <div className="flex items-center pl-1 border-l border-gray-100 min-w-0">
-      <button type="button" aria-label="Anos anteriores" onClick={() => scrollBy(-1)} disabled={!canLeft} className={arrowCls}>
-        <ChevronLeft size={18} />
+    <div ref={wrapRef} className="relative shrink-0 pr-1.5 pl-1">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}
+        className={`flex items-center gap-2 pl-2.5 pr-2 py-1.5 rounded-lg text-sm font-bold transition-colors
+          ${open ? "bg-gray-100 text-gray-900" : "text-gray-900 hover:bg-gray-50"}`}>
+        <Calendar size={15} className="text-gray-400 shrink-0" />
+        <span className="tabular-nums">{current}</span>
+        <ChevronDown size={15} className={`text-gray-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-      <div ref={ref} className="flex items-center gap-0.5 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {seasons.map((y) => (
-          <button key={y} type="button" onClick={() => onSelect(y)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap shrink-0 transition-all
-              ${season === y ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}>
-            {y}
-          </button>
-        ))}
-      </div>
-      <button type="button" aria-label="Anos seguintes" onClick={() => scrollBy(1)} disabled={!canRight} className={arrowCls}>
-        <ChevronRight size={18} />
-      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 z-40 w-[244px] rounded-xl border border-gray-200 bg-white shadow-xl p-2">
+          <div className="px-1.5 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            {seasons.length} temporadas
+          </div>
+          <div ref={listRef} className="grid grid-cols-3 gap-1 max-h-[236px] overflow-y-auto pr-0.5
+            [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-200">
+            {seasons.map((y) => {
+              const active = current === y;
+              return (
+                <button key={y} type="button" data-active={active} onClick={() => { onSelect(y); setOpen(false); }}
+                  className={`px-2 py-1.5 rounded-lg text-sm font-bold tabular-nums transition-all
+                    ${active ? "bg-gray-900 text-white shadow-sm" : "text-gray-600 hover:bg-gray-100"}`}>
+                  {y}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -77,67 +88,224 @@ const fmtDate = d => d
   ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" })
   : "—";
 
-// ─── Disciplinary table ───────────────────────────────────────────────────────
+// ─── Stat-table helpers (Disciplinar / Ofensivo / Defensivo / Controle / etc) ──
 
-function DisciplinaryTable({ rows, t }) {
-  if (!rows?.length) return (
-    <p className="text-sm text-center text-gray-400 py-8">{t("sports.no_discipline", "Sem dados disciplinares.")}</p>
+const DASH = "—";
+const fInt = (v) => (v == null ? DASH : String(v));
+const fDec = (v, d = 2) => (v == null ? DASH : Number(v).toFixed(d));
+const fPct = (v, d = 0) => (v == null ? DASH : `${Number(v).toFixed(d)}%`);
+const fSigned = (v, d = 2) => (v == null ? DASH : `${v > 0 ? "+" : ""}${Number(v).toFixed(d)}`);
+// Razão segura (null se denominador ausente ou zero)
+const ratio = (a, b) => (a == null || b == null || b === 0 ? null : a / b);
+
+function clubCell(row) {
+  return (
+    <ClubLink
+      id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active}
+      className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700"
+    >
+      <TeamCrest team={row} />
+      <span className="truncate">{row.name}</span>
+    </ClubLink>
   );
+}
+
+// Tabela genérica ordenável. `columns` define cada coluna além do ranking (#).
+// Cada coluna: { key, label, align, width, sortable, value(row)→number, render(row), groupStart }
+function SortableTable({ rows, columns, defaultSort, minWidth = "min-w-[640px]", emptyText }) {
+  const [sort, setSort] = useState(defaultSort);
+  const toggle = (key) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" }));
+
+  const col = columns.find((c) => c.key === sort.key);
+  const sorted = useMemo(() => {
+    if (!col?.value) return rows ?? [];
+    return [...(rows ?? [])].sort((a, b) => {
+      const av = col.value(a), bv = col.value(b);
+      const an = av == null, bn = bv == null;
+      if (an && bn) return 0;
+      if (an) return 1;      // nulos sempre por último
+      if (bn) return -1;
+      return sort.dir === "desc" ? bv - av : av - bv;
+    });
+  }, [rows, col, sort.dir]);
+
+  if (!rows?.length) return <p className="text-sm text-center text-gray-400 py-8">{emptyText}</p>;
+
   return (
     <div className="rounded-xl border border-gray-100 overflow-x-auto bg-white shadow-sm">
-      <table className="w-full text-sm min-w-[480px]">
+      <table className={`w-full text-sm table-fixed ${minWidth}`}>
         <thead>
-          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b border-gray-100">
-            <th className="py-3 px-3 text-left font-semibold w-10">#</th>
-            <th className="py-3 px-3 text-left font-semibold">Clube</th>
-            <th className="py-3 px-3 text-center font-semibold">J</th>
-            <th className="py-3 px-3 text-center font-semibold">Faltas</th>
-            <th className="py-3 px-3 text-center font-semibold">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-amber-400 shrink-0" />
-                Amarelos
-              </span>
-            </th>
-            <th className="py-3 px-3 text-center font-semibold">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-red-500 shrink-0" />
-                Vermelhos
-              </span>
-            </th>
+          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b border-gray-100 text-xs">
+            <th className="py-3 px-3 text-center font-semibold w-10">#</th>
+            {columns.map((c) => {
+              const active = sort.key === c.key;
+              return (
+                <th key={c.key}
+                  className={`py-3 px-2 font-semibold align-bottom ${c.align === "left" ? "text-left" : "text-center"} ${c.width ?? ""} ${c.groupStart ? "border-l border-gray-100" : ""}`}>
+                  {c.sortable ? (
+                    <button type="button" onClick={() => toggle(c.key)}
+                      className={`inline-flex items-center gap-1 uppercase tracking-wider transition-colors ${active ? "text-gray-700" : "hover:text-gray-600"}`}>
+                      <span className="leading-tight">{c.label}</span>
+                      {active ? (sort.dir === "desc" ? <ArrowDown size={12} className="shrink-0" /> : <ArrowUp size={12} className="shrink-0" />)
+                        : <ArrowUpDown size={12} className="shrink-0 opacity-40" />}
+                    </button>
+                  ) : (
+                    <span className="leading-tight">{c.label}</span>
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
+          {sorted.map((row, i) => (
             <tr key={row.id ?? i} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors">
-              <td className="px-3 py-3 text-center font-semibold text-gray-400">{i + 1}</td>
-              <td className="px-3 py-3">
-                <ClubLink
-                  id={row.id} slug={row.slug} hidden={row.hidden} federationSlug={row.federation_slug} isCountry={row.is_country} federationActive={row.federation_active}
-                  className="flex items-center gap-2.5 hover:text-violet-700 transition-colors font-semibold text-gray-700"
-                >
-                  <TeamCrest team={row} />
-                  {row.name}
-                </ClubLink>
-              </td>
-              <td className="px-3 py-3 text-center text-gray-500">{row.matches}</td>
-              <td className="px-3 py-3 text-center text-gray-600 font-medium">{row.fouls}</td>
-              <td className="px-3 py-3 text-center">
-                <span className="inline-flex items-center gap-1.5 font-bold text-amber-600">
-                  <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-amber-400 shrink-0" />
-                  {row.yellow}
-                </span>
-              </td>
-              <td className="px-3 py-3 text-center">
-                <span className="inline-flex items-center gap-1.5 font-bold text-red-600">
-                  <span className="w-2.5 h-3.5 rounded-[2px] inline-block bg-red-500 shrink-0" />
-                  {row.red}
-                </span>
-              </td>
+              <td className="px-3 py-3 text-center font-semibold text-gray-400 tabular-nums">{i + 1}</td>
+              {columns.map((c) => (
+                <td key={c.key}
+                  className={`px-2 py-3 ${c.align === "left" ? "" : "text-center tabular-nums"} ${c.tdClass ?? ""} ${c.groupStart ? "border-l border-gray-50" : ""}`}>
+                  {c.render(row)}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+// ─── Disciplinar ────────────────────────────────────────────────────────────
+
+function DisciplinaryTable({ rows, t }) {
+  const cardBadge = (value, color) => (
+    <span className={`inline-flex items-center gap-1.5 font-bold ${color === "amber" ? "text-amber-600" : "text-red-600"}`}>
+      <span className={`w-2.5 h-3.5 rounded-[2px] inline-block shrink-0 ${color === "amber" ? "bg-amber-400" : "bg-red-500"}`} />
+      {fInt(value)}
+    </span>
+  );
+  const columns = [
+    { key: "club", label: "Clube", align: "left", render: clubCell },
+    { key: "matches", label: "Jogos", width: "w-[110px]", render: (r) => <span className="text-gray-500">{fInt(r.matches)}</span> },
+    { key: "fouls", label: "Faltas", width: "w-[110px]", sortable: true, value: (r) => r.fouls, render: (r) => <span className="text-gray-600 font-medium">{fInt(r.fouls)}</span> },
+    { key: "yellow", label: "Amarelos", width: "w-[110px]", sortable: true, value: (r) => r.yellow, render: (r) => cardBadge(r.yellow, "amber") },
+    { key: "red", label: "Vermelhos", width: "w-[110px]", sortable: true, value: (r) => r.red, render: (r) => cardBadge(r.red, "red") },
+  ];
+  return (
+    <SortableTable rows={rows} columns={columns} defaultSort={{ key: "yellow", dir: "desc" }}
+      minWidth="min-w-[560px]" emptyText={t("sports.no_discipline", "Sem dados disciplinares.")} />
+  );
+}
+
+// ─── Ofensivo ───────────────────────────────────────────────────────────────
+
+function OffensiveTable({ rows, t }) {
+  const columns = [
+    { key: "club", label: "Clube", align: "left", render: clubCell },
+    { key: "matches_played", label: "Jogos", width: "w-[88px]", render: (r) => <span className="text-gray-500">{fInt(r.matches_played)}</span> },
+    { key: "goals_scored", label: "Gols", width: "w-[88px]", sortable: true, value: (r) => r.goals_scored, render: (r) => <span className="font-bold text-gray-800">{fInt(r.goals_scored)}</span> },
+    { key: "gpj", label: "Gols/Jogo", width: "w-[96px]", sortable: true, value: (r) => ratio(r.goals_scored, r.matches_played), render: (r) => <span className="text-gray-600">{fDec(ratio(r.goals_scored, r.matches_played))}</span> },
+    { key: "shots", label: "Chutes", width: "w-[88px]", sortable: true, value: (r) => r.shots, groupStart: true, render: (r) => <span className="text-gray-500">{fInt(r.shots)}</span> },
+    { key: "shots_on_target", label: "Chutes no Gol", width: "w-[110px]", sortable: true, value: (r) => r.shots_on_target, render: (r) => <span className="text-gray-600">{fInt(r.shots_on_target)}</span> },
+    { key: "shots_pct", label: "Chutes no Gol (%)", width: "w-[120px]", sortable: true, value: (r) => ratio(r.shots_on_target, r.shots), render: (r) => { const v = ratio(r.shots_on_target, r.shots); return <span className="text-gray-600 font-medium">{v == null ? DASH : fPct(v * 100)}</span>; } },
+    { key: "xg", label: "xG", width: "w-[80px]", sortable: true, value: (r) => r.xg_for, groupStart: true, render: (r) => <span className="text-violet-600 font-medium">{fDec(r.xg_for)}</span> },
+    { key: "gpj2", label: "Gols/Jogo", width: "w-[96px]", sortable: true, value: (r) => r.goals_scored_per_match, render: (r) => <span className="text-gray-600">{fDec(r.goals_scored_per_match)}</span> },
+    { key: "diff", label: "Diferença", width: "w-[96px]", sortable: true, value: (r) => (r.goals_scored_per_match == null || r.xg_for == null ? null : r.goals_scored_per_match - r.xg_for), render: (r) => { const v = (r.goals_scored_per_match == null || r.xg_for == null) ? null : r.goals_scored_per_match - r.xg_for; return <span className={`font-semibold ${v == null ? "text-gray-400" : v > 0 ? "text-emerald-600" : v < 0 ? "text-red-500" : "text-gray-500"}`}>{fSigned(v)}</span>; } },
+  ];
+  return (
+    <SortableTable rows={rows} columns={columns} defaultSort={{ key: "goals_scored", dir: "desc" }}
+      minWidth="min-w-[920px]" emptyText={t("sports.no_stats", "Sem estatísticas para esta temporada.")} />
+  );
+}
+
+// ─── Defensivo ──────────────────────────────────────────────────────────────
+
+function DefensiveTable({ rows, t }) {
+  const columns = [
+    { key: "club", label: "Clube", align: "left", render: clubCell },
+    { key: "matches_played", label: "Jogos", width: "w-[88px]", render: (r) => <span className="text-gray-500">{fInt(r.matches_played)}</span> },
+    { key: "goals_conceded", label: "Gols Sofridos", width: "w-[110px]", sortable: true, value: (r) => r.goals_conceded, render: (r) => <span className="font-bold text-gray-800">{fInt(r.goals_conceded)}</span> },
+    { key: "gcpj", label: "Gols/Jogo", width: "w-[96px]", sortable: true, value: (r) => ratio(r.goals_conceded, r.matches_played), render: (r) => <span className="text-gray-600">{fDec(ratio(r.goals_conceded, r.matches_played))}</span> },
+    { key: "clean_sheets", label: "Jogos Sem Sofrer Gols", width: "w-[150px]", sortable: true, value: (r) => r.clean_sheets, groupStart: true, render: (r) => <span className="text-emerald-600 font-semibold">{fInt(r.clean_sheets)}</span> },
+    { key: "cs_pct", label: "(%)", width: "w-[80px]", sortable: true, value: (r) => r.clean_sheet_percentage, render: (r) => <span className="text-gray-600">{fPct(r.clean_sheet_percentage)}</span> },
+    { key: "xg_against", label: "xG", width: "w-[80px]", sortable: true, value: (r) => r.xg_against, groupStart: true, render: (r) => <span className="text-violet-600 font-medium">{fDec(r.xg_against)}</span> },
+    { key: "gcpm", label: "Gols Sofridos/Jogo", width: "w-[130px]", sortable: true, value: (r) => r.goals_conceded_per_match, render: (r) => <span className="text-gray-600">{fDec(r.goals_conceded_per_match)}</span> },
+    { key: "diff", label: "Diferença", width: "w-[96px]", sortable: true, value: (r) => (r.goals_conceded_per_match == null || r.xg_against == null ? null : r.goals_conceded_per_match - r.xg_against), render: (r) => { const v = (r.goals_conceded_per_match == null || r.xg_against == null) ? null : r.goals_conceded_per_match - r.xg_against; return <span className={`font-semibold ${v == null ? "text-gray-400" : v < 0 ? "text-emerald-600" : v > 0 ? "text-red-500" : "text-gray-500"}`}>{fSigned(v)}</span>; } },
+  ];
+  return (
+    <SortableTable rows={rows} columns={columns} defaultSort={{ key: "goals_conceded", dir: "asc" }}
+      minWidth="min-w-[920px]" emptyText={t("sports.no_stats", "Sem estatísticas para esta temporada.")} />
+  );
+}
+
+// ─── Controle ───────────────────────────────────────────────────────────────
+
+function ControlTable({ rows, t }) {
+  const columns = [
+    { key: "club", label: "Clube", align: "left", render: clubCell },
+    { key: "possession", label: "Posse de Bola", width: "w-[120px]", sortable: true, value: (r) => r.possession, render: (r) => <span className="font-bold text-gray-800">{fPct(r.possession)}</span> },
+    { key: "first_to_score", label: "Primeiro a Fazer Gol", width: "w-[150px]", sortable: true, value: (r) => r.first_to_score, render: (r) => <span className="text-gray-600">{fInt(r.first_to_score)}</span> },
+    { key: "leading_at_half_time", label: "Vencendo no Intervalo", width: "w-[150px]", sortable: true, value: (r) => r.leading_at_half_time, groupStart: true, render: (r) => <span className="text-emerald-600 font-semibold">{fInt(r.leading_at_half_time)}</span> },
+    { key: "wins", label: "Vitórias", width: "w-[96px]", sortable: true, value: (r) => r.wins, render: (r) => <span className="text-gray-600">{fInt(r.wins)}</span> },
+    { key: "draw_at_half_time", label: "Empatando no Intervalo", width: "w-[155px]", sortable: true, value: (r) => r.draw_at_half_time, groupStart: true, render: (r) => <span className="text-gray-500 font-semibold">{fInt(r.draw_at_half_time)}</span> },
+    { key: "draws", label: "Empates", width: "w-[96px]", sortable: true, value: (r) => r.draws, render: (r) => <span className="text-gray-600">{fInt(r.draws)}</span> },
+    { key: "losing_at_half_time", label: "Perdendo no Intervalo", width: "w-[150px]", sortable: true, value: (r) => r.losing_at_half_time, groupStart: true, render: (r) => <span className="text-red-500 font-semibold">{fInt(r.losing_at_half_time)}</span> },
+    { key: "losses", label: "Derrotas", width: "w-[96px]", sortable: true, value: (r) => r.losses, render: (r) => <span className="text-gray-600">{fInt(r.losses)}</span> },
+  ];
+  return (
+    <SortableTable rows={rows} columns={columns} defaultSort={{ key: "possession", dir: "desc" }}
+      minWidth="min-w-[960px]" emptyText={t("sports.no_stats", "Sem estatísticas para esta temporada.")} />
+  );
+}
+
+// ─── Artilharia / Assistências (jogadores) ──────────────────────────────────
+
+function playerCell(row) {
+  return (
+    <Link to={`/dashboard/players/${row.id}`} className="font-semibold text-gray-700 hover:text-violet-700 transition-colors truncate block">
+      {row.name}
+    </Link>
+  );
+}
+function playerClubCell(row) {
+  const c = row.club ?? {};
+  return (
+    <ClubLink id={c.id} slug={c.slug} hidden={c.hidden} className="flex items-center gap-2 hover:text-violet-700 transition-colors text-gray-600">
+      <TeamCrest team={{ ...c, crest: c.crest }} size="w-5 h-5" />
+      <span className="truncate">{c.name}</span>
+    </ClubLink>
+  );
+}
+
+function ScorersTable({ rows, t }) {
+  const columns = [
+    { key: "player", label: "Nome", align: "left", render: playerCell },
+    { key: "club", label: "Clube", align: "left", render: playerClubCell },
+    { key: "minutes_played", label: "Minutos Jogados", width: "w-[120px]", sortable: true, value: (r) => r.minutes_played, render: (r) => <span className="text-gray-500">{fInt(r.minutes_played)}</span> },
+    { key: "goals", label: "Gols", width: "w-[80px]", sortable: true, value: (r) => r.goals, render: (r) => <span className="font-bold text-gray-800">{fInt(r.goals)}</span> },
+    { key: "penalty_goals", label: "Gols de Pênalti", width: "w-[110px]", sortable: true, value: (r) => r.penalty_goals, render: (r) => <span className="text-gray-600">{fInt(r.penalty_goals)}</span> },
+    { key: "penalty_misses", label: "Pênaltis Perdidos", width: "w-[120px]", sortable: true, value: (r) => r.penalty_misses, render: (r) => <span className="text-gray-600">{fInt(r.penalty_misses)}</span> },
+    { key: "g90", label: "Gols por 90 min", width: "w-[120px]", sortable: true, value: (r) => ratio(r.goals, ratio(r.minutes_played, 90)), render: (r) => <span className="text-violet-600 font-medium">{fDec(ratio(r.goals, ratio(r.minutes_played, 90)))}</span> },
+  ];
+  return (
+    <SortableTable rows={rows} columns={columns} defaultSort={{ key: "goals", dir: "desc" }}
+      minWidth="min-w-[860px]" emptyText={t("sports.no_scorers", "Sem dados de artilharia.")} />
+  );
+}
+
+function AssistsTable({ rows, t }) {
+  const columns = [
+    { key: "player", label: "Nome", align: "left", render: playerCell },
+    { key: "club", label: "Clube", align: "left", render: playerClubCell },
+    { key: "minutes_played", label: "Minutos Jogados", width: "w-[120px]", sortable: true, value: (r) => r.minutes_played, render: (r) => <span className="text-gray-500">{fInt(r.minutes_played)}</span> },
+    { key: "assists", label: "Assistências", width: "w-[110px]", sortable: true, value: (r) => r.assists, render: (r) => <span className="font-bold text-gray-800">{fInt(r.assists)}</span> },
+    { key: "mpa", label: "Minutos por Assistência", width: "w-[160px]", sortable: true, value: (r) => ratio(r.minutes_played, r.assists), render: (r) => <span className="text-gray-600">{fDec(ratio(r.minutes_played, r.assists), 0)}</span> },
+    { key: "gi90", label: "Envolvimento em Gols por 90 min", width: "w-[180px]", sortable: true, value: (r) => ratio((r.goals ?? 0) + (r.assists ?? 0), ratio(r.minutes_played, 90)), render: (r) => <span className="text-violet-600 font-medium">{fDec(ratio((r.goals ?? 0) + (r.assists ?? 0), ratio(r.minutes_played, 90)))}</span> },
+  ];
+  return (
+    <SortableTable rows={rows} columns={columns} defaultSort={{ key: "assists", dir: "desc" }}
+      minWidth="min-w-[920px]" emptyText={t("sports.no_assists", "Sem dados de assistências.")} />
   );
 }
 
@@ -1491,7 +1659,7 @@ export default function LeagueSportsSection({ leagueId }) {
   );
   if (!data) return null;
 
-  const { league, seasons, standings, matches, discipline, groupClubs } = data;
+  const { league, seasons, standings, matches, discipline, groupClubs, teamStats, players } = data;
   const seasonConfig = league.structure_json?.[String(season)] ?? null;
   const fmt = seasonConfig?.tipo || league.format || "pontos_corridos";
   const isKnockout = fmt !== "pontos_corridos" && fmt !== "pontos_corridos_turno_unico" && fmt !== "grupos" && fmt !== "apertura_clausura";
@@ -1546,16 +1714,30 @@ export default function LeagueSportsSection({ leagueId }) {
   if (!isKnockout) tabs.push({ key: "partidas", label: "Rodadas", badge: totalRounds });
   tabs.push({ key: "disciplinar", label: "Disciplinar" });
 
+  // Abas de estatísticas — só aparecem quando há dados na temporada
+  const hasTeamStats = (teamStats ?? []).some(s => s.matches_played != null);
+  const scorers = (players ?? []).filter(p => (p.goals ?? 0) > 0);
+  const assisters = (players ?? []).filter(p => (p.assists ?? 0) > 0);
+  if (hasTeamStats) {
+    tabs.push({ key: "ofensivo", label: "Ofensivo" });
+    tabs.push({ key: "defensivo", label: "Defensivo" });
+    tabs.push({ key: "controle", label: "Controle" });
+  }
+  if (scorers.length) tabs.push({ key: "artilharia", label: "Artilharia" });
+  if (assisters.length) tabs.push({ key: "assistencias", label: "Assistências" });
+
   const activeTab = (mainTab && tabs.some(t => t.key === mainTab)) ? mainTab : tabs[0]?.key;
 
   return (
     <div className="space-y-4">
 
       {/* Unified toolbar: main tabs + season selector */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between">
+      {/* sem overflow-hidden no wrapper: o dropdown de temporada precisa transbordar.
+          O clipping dos cantos arredondados fica no container das abas. */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm relative">
+        <div className="flex items-center justify-between gap-2">
           {/* Main tabs */}
-          <div className="flex items-center overflow-x-auto">
+          <div className="flex items-center overflow-x-auto rounded-l-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {tabs.map(tab => (
               <button key={tab.key} onClick={() => setMainTab(tab.key)}
                 className={`relative px-4 py-3 text-sm font-semibold transition-colors whitespace-nowrap shrink-0
@@ -1653,6 +1835,41 @@ export default function LeagueSportsSection({ leagueId }) {
         loading
           ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
           : <DisciplinaryTable rows={discipline ?? []} t={t} />
+      )}
+
+      {/* ── OFENSIVO ── */}
+      {activeTab === "ofensivo" && (
+        loading
+          ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
+          : <OffensiveTable rows={teamStats ?? []} t={t} />
+      )}
+
+      {/* ── DEFENSIVO ── */}
+      {activeTab === "defensivo" && (
+        loading
+          ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
+          : <DefensiveTable rows={teamStats ?? []} t={t} />
+      )}
+
+      {/* ── CONTROLE ── */}
+      {activeTab === "controle" && (
+        loading
+          ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
+          : <ControlTable rows={teamStats ?? []} t={t} />
+      )}
+
+      {/* ── ARTILHARIA ── */}
+      {activeTab === "artilharia" && (
+        loading
+          ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
+          : <ScorersTable rows={scorers} t={t} />
+      )}
+
+      {/* ── ASSISTÊNCIAS ── */}
+      {activeTab === "assistencias" && (
+        loading
+          ? <div className="flex justify-center py-8"><Loader2 className="animate-spin w-5 h-5 text-gray-400" /></div>
+          : <AssistsTable rows={assisters} t={t} />
       )}
     </div>
   );
