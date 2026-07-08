@@ -51,6 +51,9 @@ import GestaoLigas from "./Pages/Admin/GestaoLigas";
 import GestaoClubes from "./Pages/Admin/GestaoClubes";
 import GestaoJogadores from "./Pages/Admin/GestaoJogadores";
 import Manutencao from "./Pages/Admin/Manutencao";
+import ApiIntegration from "./Pages/Admin/ApiIntegration";
+import ApiResults from "./Pages/Admin/ApiResults";
+import ApiImport from "./Pages/Admin/ApiImport";
 import GestaoContinent from "./Pages/Admin/GestaoContinent";
 import GestaoFederacoes from "./Pages/Admin/GestaoFederacoes";
 import GestaoHospitalidade from "./Pages/Admin/GestaoHospitalidade";
@@ -267,6 +270,9 @@ export default function App() {
               <Route path="/admin" element={<AdminIndex />} />
               <Route path="/admin/profile" element={<AdminProfileDetails />} />
               <Route path="/admin/manutencao" element={<Manutencao />} />
+              <Route path="/admin/api" element={<ApiIntegration />} />
+              <Route path="/admin/api/resultados" element={<ApiResults />} />
+              <Route path="/admin/api/importar" element={<ApiImport />} />
 
               {/* ── Gestão de países, ligas e clubes ── */}
               <Route element={<AdminPermissionRoute permissionKey="gestao-dados" />}>

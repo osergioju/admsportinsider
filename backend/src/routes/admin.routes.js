@@ -1505,6 +1505,8 @@ import { previewFederationFinancial, importFederationFinancial, getEditionsByLea
 
 import { adminGuard } from "../middlewares/auth.middleware.js";
 import { getMaintenanceOverview, toggleCountry, toggleLeague, toggleFederation, bulkToggle, getSystemFeatures, toggleSystemFeature } from "../controllers/maintenance.controller.js";
+import { getApiSettings, saveApiToken, deleteApiToken, testApiToken, getApiCompetitions, getApiMatches } from "../controllers/apiIntegration.controller.js";
+import { getImportLeagues, mapImportLeague, getImportTeams, mapImportClubs, previewImport, runImport } from "../controllers/apiImport.controller.js";
 import { clearApiCache } from "../middlewares/apiCache.middleware.js";
 const router = Router();
 
@@ -1544,6 +1546,22 @@ router.put("/maintenance/federation/:id/toggle", adminGuard, toggleFederation);
 router.post("/maintenance/bulk",                 adminGuard, bulkToggle);
 router.get("/maintenance/system",                adminGuard, getSystemFeatures);
 router.put("/maintenance/system/:key",           adminGuard, toggleSystemFeature);
+
+// INTEGRAÇÃO COM API EXTERNA (FootyStats) — token + teste
+router.get("/api-integration",          adminGuard, getApiSettings);
+router.put("/api-integration/token",    adminGuard, saveApiToken);
+router.delete("/api-integration/token", adminGuard, deleteApiToken);
+router.post("/api-integration/test",    adminGuard, testApiToken);
+router.get("/api-integration/competitions", adminGuard, getApiCompetitions);
+router.get("/api-integration/matches",      adminGuard, getApiMatches);
+
+// IMPORT VIA API (FootyStats) — carga real de partidas/stats/jogadores
+router.get("/api-import/leagues",    adminGuard, getImportLeagues);
+router.post("/api-import/map-league", adminGuard, mapImportLeague);
+router.get("/api-import/teams",      adminGuard, getImportTeams);
+router.post("/api-import/map-clubs", adminGuard, mapImportClubs);
+router.post("/api-import/preview",   adminGuard, previewImport);
+router.post("/api-import/run",       adminGuard, runImport);
 
 // FEDERAÇÕES - GESTÃO CRUD
 router.get("/federations", getAllFederations);

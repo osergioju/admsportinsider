@@ -23,7 +23,8 @@ import {
     FileText,
     CircleDollarSign,
     ChartArea, Zap,
-    Trophy
+    Trophy,
+    PlugZap
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -147,6 +148,16 @@ export default function AdminLayout() {
                                     className={menuItemStyle}
                                     icon={<User strokeWidth={1.5} size={20} className={iconStyle} />}
                                     label={<span className={textStyle}>Meu Perfil</span>}
+                                />
+                            </div>
+
+                            <div className="group">
+                                <MenuItem
+                                    to="/admin/api"
+                                    onClick={() => setOpenMenu(false)}
+                                    className={menuItemStyle}
+                                    icon={<PlugZap strokeWidth={1.5} size={20} className={iconStyle} />}
+                                    label={<span className={textStyle}>API</span>}
                                 />
                             </div>
 
