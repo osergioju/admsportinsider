@@ -2300,11 +2300,46 @@ export async function uploadClubXlsx(req, res) {
       translationsToProcess = keepIdx.map(i => dedupedTranslations[i]);
     }
 
+    // ── Detecta clubes já existentes por nome+país mas com slug diferente ──
+    // A tabela tem 2 unique index (slug) e (lower(name), id_country). O
+    // ON CONFLICT abaixo só cobre slug — se o Excel traz um slug novo para um
+    // clube cujo nome+país já existe no banco (ex: reimport com slug
+    // atualizado), o INSERT estoura uq_club_name_country e derruba a
+    // transação inteira. Esses casos são excluídos do INSERT aqui; se
+    // options.updateSlug estiver ligado, a etapa "Atualizar slug por
+    // nome+país" abaixo já cuida de renomear o clube existente.
+    let tuplesForInsert = tuplesToProcess;
+    let skippedByIdentityConflict = 0;
+    if (tuplesToProcess.length) {
+      const namesLower = tuplesToProcess.map(t => t[1].toLowerCase());
+      const countryIdsCheck = tuplesToProcess.map(t => t[0]);
+      const { rows: existingByIdentity } = await client.query(
+        `SELECT c.id_club, c.slug, lower(c.name) AS lname, c.id_country
+         FROM clubs c
+         JOIN (SELECT unnest($1::text[]) AS lname, unnest($2::int[]) AS id_country) x
+           ON lower(c.name) = x.lname AND c.id_country = x.id_country`,
+        [namesLower, countryIdsCheck]
+      );
+      const identityMap = new Map(
+        existingByIdentity.map(r => [`${r.id_country}|${r.lname}`, r])
+      );
+
+      tuplesForInsert = [];
+      for (const t of tuplesToProcess) {
+        const existing = identityMap.get(`${t[0]}|${t[1].toLowerCase()}`);
+        if (existing && existing.slug !== t[2]) {
+          skippedByIdentityConflict++;
+          continue;
+        }
+        tuplesForInsert.push(t);
+      }
+    }
+
     let totalInserted = 0;
-    for (let off = 0; off < tuplesToProcess.length; off += BATCH_SIZE) {
+    for (let off = 0; off < tuplesForInsert.length; off += BATCH_SIZE) {
       totalInserted += await insertClubBatch(
         client,
-        tuplesToProcess.slice(off, off + BATCH_SIZE),
+        tuplesForInsert.slice(off, off + BATCH_SIZE),
         updateFields
       );
     }
@@ -2371,6 +2406,9 @@ export async function uploadClubXlsx(req, res) {
       const dupes = dedupedTuples.length - totalInserted;
       console.log(`\n🔁 ${dupes} linha(s) ignorada(s) por duplicata (ON CONFLICT).`);
     }
+    if (skippedByIdentityConflict > 0) {
+      console.log(`\n♻️  ${skippedByIdentityConflict} linha(s) ignorada(s): clube já existe com mesmo nome+país sob outro slug.`);
+    }
 
     // ── Clubs ausentes do CSV (para confirmação de desativação) ─────
     let clubs_to_disable = [];
@@ -2395,6 +2433,7 @@ export async function uploadClubXlsx(req, res) {
       total_processadas: rows.length,
       inserted: totalInserted,
       duplicatas_ignoradas: validTuples.length - totalInserted,
+      ja_existentes_outro_slug: skippedByIdentityConflict,
       skipped: errors.length,
       clubs_to_disable,
       ...(errors.length > 0 && {

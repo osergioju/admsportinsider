@@ -190,14 +190,23 @@ export async function mapImportLeague(req, res) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getImportTeams(req, res) {
   try {
-    const seasonId = Number(req.query.season_id);
     const leagueId = Number(req.query.league_id);
-    if (!seasonId || !leagueId) return res.status(400).json({ message: "Informe season_id e league_id." });
+    // Aceita várias temporadas (season_ids=1,2,3): os times viram a UNIÃO das
+    // temporadas, dedup por id da API — elencos mudam com acesso/rebaixamento.
+    const seasonIds = String(req.query.season_ids ?? req.query.season_id ?? "")
+      .split(",").map(Number).filter(Boolean);
+    if (!seasonIds.length || !leagueId) return res.status(400).json({ message: "Informe season_ids e league_id." });
 
     const token = await getToken();
     if (!token) return res.status(400).json({ message: "Nenhum token da API salvo." });
 
-    const teams = await fsGetAll(token, "league-teams", { season_id: seasonId });
+    const teamsById = new Map();
+    for (const sid of seasonIds) {
+      for (const t of await fsGetAll(token, "league-teams", { season_id: sid })) {
+        if (t?.id != null && !teamsById.has(Number(t.id))) teamsById.set(Number(t.id), t);
+      }
+    }
+    const teams = [...teamsById.values()];
 
     const lc = await db.query(`SELECT id_country FROM leagues WHERE id_league = $1`, [leagueId]);
     const leagueCountry = lc.rows[0]?.id_country ?? null;
@@ -494,38 +503,48 @@ function buildTeamStatsRow(t, idCompetitionSeason, idClub) {
   ];
 }
 
+// Normaliza o corpo para uma lista de temporadas.
+// Novo formato: { seasons: [{ seasonId, seasonYear, label }] }
+// Legado (uma só): { seasonId, seasonYear }
+function normalizeSeasons(body) {
+  if (Array.isArray(body?.seasons)) {
+    return body.seasons
+      .map((s) => ({ seasonId: Number(s?.seasonId), seasonYear: Number(s?.seasonYear), label: s?.label ?? null }))
+      .filter((s) => s.seasonId && s.seasonYear);
+  }
+  const seasonId = Number(body?.seasonId);
+  const seasonYear = Number(body?.seasonYear);
+  return seasonId && seasonYear ? [{ seasonId, seasonYear, label: null }] : [];
+}
+
+// Duas temporadas da API gravando no MESMO ano da plataforma = colisão de dados
+function findDuplicateYears(seasons) {
+  const seen = new Set(), dup = new Set();
+  for (const s of seasons) {
+    if (seen.has(s.seasonYear)) dup.add(s.seasonYear);
+    seen.add(s.seasonYear);
+  }
+  return [...dup];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /admin/api-import/preview
-// { leagueId, seasonId, seasonYear, targets:{matches,teamStats,players}, includeIncomplete }
-// DRY-RUN: nada é gravado. Mostra o que o run faria.
+// { leagueId, seasons:[{seasonId,seasonYear,label}], targets, includeIncomplete }
+// DRY-RUN: nada é gravado. Mostra o que o run faria, temporada a temporada.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function previewImport(req, res) {
-  try {
-    const leagueId = Number(req.body?.leagueId);
-    const seasonId = Number(req.body?.seasonId);
-    const seasonYear = Number(req.body?.seasonYear);
-    const targets = req.body?.targets ?? {};
-    const includeIncomplete = !!req.body?.includeIncomplete;
-    if (!leagueId || !seasonId || !seasonYear) {
-      return res.status(400).json({ message: "Informe leagueId, seasonId e seasonYear." });
-    }
-    const token = await getToken();
-    if (!token) return res.status(400).json({ message: "Nenhum token da API salvo." });
+async function previewOneSeason({ leagueId, season, targets, data }) {
+  // Season/competition_season podem ainda não existir — nesse caso tudo é novo
+  const sRes = await db.query(`SELECT id_season FROM seasons WHERE year = $1`, [season.seasonYear]);
+  const idSeason = sRes.rows[0]?.id_season ?? null;
 
-    const data = await collectData({ token, seasonId, targets, includeIncomplete });
+  const out = {
+    seasonId: season.seasonId,
+    seasonYear: season.seasonYear,
+    label: season.label ?? String(season.seasonYear),
+    unmappedCount: data.unmappedTeams.length,
+  };
 
-    // Season/competition_season podem ainda não existir — nesse caso tudo é novo
-    const sRes = await db.query(`SELECT id_season FROM seasons WHERE year = $1`, [seasonYear]);
-    const idSeason = sRes.rows[0]?.id_season ?? null;
-
-    const out = {
-      ok: true,
-      dryRun: true,
-      unmappedTeams: data.unmappedTeams,
-      canRun: data.unmappedTeams.length === 0,
-    };
-
-    if (targets.matches) {
+  if (targets.matches) {
       let existingByGw = new Set();
       let existingByTs = new Set();
       if (idSeason) {
@@ -604,7 +623,41 @@ export async function previewImport(req, res) {
       };
     }
 
-    res.json(out);
+    return out;
+}
+
+export async function previewImport(req, res) {
+  try {
+    const leagueId = Number(req.body?.leagueId);
+    const seasons = normalizeSeasons(req.body);
+    const targets = req.body?.targets ?? {};
+    const includeIncomplete = !!req.body?.includeIncomplete;
+    if (!leagueId || !seasons.length) {
+      return res.status(400).json({ message: "Informe leagueId e ao menos uma temporada (seasonId + seasonYear)." });
+    }
+    const dupYears = findDuplicateYears(seasons);
+    if (dupYears.length) {
+      return res.status(400).json({ message: `Ano repetido entre as temporadas selecionadas: ${dupYears.join(", ")}. Ajuste os anos antes de continuar.` });
+    }
+    const token = await getToken();
+    if (!token) return res.status(400).json({ message: "Nenhum token da API salvo." });
+
+    // Uma temporada por vez: coleta da API (só leitura) + comparação com a base
+    const unmappedById = new Map();
+    const seasonPreviews = [];
+    for (const s of seasons) {
+      const data = await collectData({ token, seasonId: s.seasonId, targets, includeIncomplete });
+      for (const u of data.unmappedTeams) if (!unmappedById.has(u.apiId)) unmappedById.set(u.apiId, u);
+      seasonPreviews.push(await previewOneSeason({ leagueId, season: s, targets, data }));
+    }
+
+    res.json({
+      ok: true,
+      dryRun: true,
+      unmappedTeams: [...unmappedById.values()],
+      canRun: unmappedById.size === 0,
+      seasons: seasonPreviews,
+    });
   } catch (err) {
     console.error("[previewImport]", err);
     res.status(err.isApiError ? 502 : 500).json({ message: err.isApiError ? err.message : "Erro ao gerar pré-visualização.", detail: err.message });
@@ -613,41 +666,78 @@ export async function previewImport(req, res) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /admin/api-import/run
-// { leagueId, seasonId, seasonYear, targets, includeIncomplete, mode }
+// { leagueId, seasons:[{seasonId,seasonYear,label}], targets, includeIncomplete, mode }
 // mode: 'upsert' (insere novas + atualiza existentes) | 'insert_only'
 // Bloqueia (409) se houver time referenciado sem mapeamento — nunca pula calado.
+// Grava temporada por temporada, cada uma em transação própria: se uma falhar,
+// as anteriores permanecem gravadas e as seguintes continuam.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function runImport(req, res) {
-  let client;
   try {
     const leagueId = Number(req.body?.leagueId);
-    const seasonId = Number(req.body?.seasonId);
-    const seasonYear = Number(req.body?.seasonYear);
+    const seasons = normalizeSeasons(req.body);
     const targets = req.body?.targets ?? {};
     const includeIncomplete = !!req.body?.includeIncomplete;
     const mode = req.body?.mode === "insert_only" ? "insert_only" : "upsert";
-    if (!leagueId || !seasonId || !seasonYear) {
-      return res.status(400).json({ message: "Informe leagueId, seasonId e seasonYear." });
+    if (!leagueId || !seasons.length) {
+      return res.status(400).json({ message: "Informe leagueId e ao menos uma temporada (seasonId + seasonYear)." });
     }
     if (!targets.matches && !targets.teamStats && !targets.players) {
       return res.status(400).json({ message: "Selecione ao menos um alvo (partidas, stats ou jogadores)." });
     }
+    const dupYears = findDuplicateYears(seasons);
+    if (dupYears.length) {
+      return res.status(400).json({ message: `Ano repetido entre as temporadas selecionadas: ${dupYears.join(", ")}. Ajuste os anos antes de importar.` });
+    }
     const token = await getToken();
     if (!token) return res.status(400).json({ message: "Nenhum token da API salvo." });
 
-    console.log(`[apiImport] INÍCIO liga=${leagueId} season_id=${seasonId} ano=${seasonYear} alvos=${JSON.stringify(targets)} modo=${mode}`);
-    const data = await collectData({ token, seasonId, targets, includeIncomplete });
+    console.log(`[apiImport] INÍCIO liga=${leagueId} temporadas=${seasons.map((s) => `${s.seasonId}→${s.seasonYear}`).join(",")} alvos=${JSON.stringify(targets)} modo=${mode}`);
 
-    // Decisão do usuário: time sem mapeamento NUNCA é pulado em silêncio —
-    // devolve a lista e o front manda de volta pra etapa de mapeamento.
-    if (data.unmappedTeams.length > 0) {
+    // FASE 1 — coleta tudo da API (só leitura) e valida o mapeamento de TODAS
+    // as temporadas ANTES de gravar qualquer coisa. Time sem mapa nunca é
+    // pulado em silêncio: devolve a lista e o front volta pro mapeamento.
+    const collected = [];
+    const unmappedById = new Map();
+    for (const s of seasons) {
+      const data = await collectData({ token, seasonId: s.seasonId, targets, includeIncomplete });
+      for (const u of data.unmappedTeams) if (!unmappedById.has(u.apiId)) unmappedById.set(u.apiId, u);
+      collected.push({ season: s, data });
+    }
+    if (unmappedById.size > 0) {
       return res.status(409).json({
         ok: false,
-        message: `${data.unmappedTeams.length} time(s) da API sem clube mapeado. Mapeie ou cadastre antes de importar.`,
-        unmappedTeams: data.unmappedTeams,
+        message: `${unmappedById.size} time(s) da API sem clube mapeado. Mapeie ou cadastre antes de importar.`,
+        unmappedTeams: [...unmappedById.values()],
       });
     }
 
+    // FASE 2 — grava cada temporada em transação própria
+    const results = [];
+    let allOk = true;
+    for (const { season, data } of collected) {
+      try {
+        const r = await writeOneSeason({ leagueId, seasonYear: season.seasonYear, targets, mode, data });
+        results.push({ seasonId: season.seasonId, seasonYear: season.seasonYear, label: season.label ?? String(season.seasonYear), ok: true, ...r });
+        console.log(`[apiImport] OK temporada ${season.seasonYear}:`, JSON.stringify(r));
+      } catch (err) {
+        allOk = false;
+        console.error(`[apiImport] FALHA temporada ${season.seasonYear}:`, err);
+        results.push({ seasonId: season.seasonId, seasonYear: season.seasonYear, label: season.label ?? String(season.seasonYear), ok: false, error: err.message });
+      }
+    }
+
+    res.json({ ok: allOk, mode, seasons: results });
+  } catch (err) {
+    console.error("[apiImport] FALHA:", err);
+    res.status(err.isApiError ? 502 : 500).json({ ok: false, message: err.isApiError ? err.message : "Erro ao importar dados da API.", detail: err.message });
+  }
+}
+
+// Grava UMA temporada (transação própria). Assume clubes já validados pelo run.
+async function writeOneSeason({ leagueId, seasonYear, targets, mode, data }) {
+  let client;
+  try {
     client = await db.connect();
     await client.query("BEGIN");
 
@@ -666,7 +756,7 @@ export async function runImport(req, res) {
     );
     const idCompetitionSeason = csRes.rows[0].id_competition_season;
 
-    const result = { season: { id: idSeason, year: seasonYear }, mode };
+    const result = {};
 
     // Clubes da temporada (dos times da API) — garante club_seasons/club_league_seasons
     const seasonClubIds = [...new Set(
@@ -1039,12 +1129,10 @@ export async function runImport(req, res) {
     }
 
     await client.query("COMMIT");
-    console.log(`[apiImport] OK liga=${leagueId} season_id=${seasonId}:`, JSON.stringify(result));
-    res.json({ ok: true, ...result });
+    return result;
   } catch (err) {
-    console.error("[apiImport] FALHA:", err);
-    if (client) { try { await client.query("ROLLBACK"); } catch (e) { console.error("[apiImport] ROLLBACK falhou:", e.message); } }
-    res.status(err.isApiError ? 502 : 500).json({ ok: false, message: err.isApiError ? err.message : "Erro ao importar dados da API.", detail: err.message });
+    if (client) { try { await client.query("ROLLBACK"); } catch (e) { console.error("[writeOneSeason] ROLLBACK falhou:", e.message); } }
+    throw err;
   } finally {
     if (client) client.release();
   }

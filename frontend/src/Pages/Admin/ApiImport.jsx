@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../services/api";
 import {
   DownloadCloud, Loader2, CheckCircle2, XCircle, AlertTriangle, Globe,
-  Trophy, Link2, Shield, FlaskConical, Rocket, RefreshCw, Plus, ArrowLeft,
+  Link2, Shield, FlaskConical, Rocket, RefreshCw, Plus, ArrowLeft,
 } from "lucide-react";
 
 // Imagens do FootyStats podem vir relativas ("teams/brazil.png")
@@ -23,8 +23,7 @@ export default function ApiImport() {
   const [apiLeague, setApiLeague] = useState(null);   // item de apiLeagues
   const [mappedLeagueId, setMappedLeagueId] = useState("");
   const [savingLeague, setSavingLeague] = useState(false);
-  const [season, setSeason] = useState(null);          // { id, year, label, defaultYear }
-  const [seasonYear, setSeasonYear] = useState("");
+  const [selSeasons, setSelSeasons] = useState([]);     // [{ id, year, label, defaultYear, yearInput }]
 
   // Etapa 2 — clubes
   const [teamsLoading, setTeamsLoading] = useState(false);
@@ -76,8 +75,7 @@ export default function ApiImport() {
   function pickApiLeague(l) {
     setApiLeague(l);
     setMappedLeagueId(l.mappedLeague?.id_league ?? "");
-    setSeason(null);
-    setSeasonYear("");
+    setSelSeasons([]);
     setTeamsData(null);
     setPreview(null);
     setRunResult(null);
@@ -104,22 +102,38 @@ export default function ApiImport() {
     }
   }
 
-  function pickSeason(s) {
-    setSeason(s);
-    setSeasonYear(String(s.defaultYear ?? ""));
+  function toggleSeason(s) {
+    setSelSeasons((prev) => {
+      const has = prev.some((x) => x.id === s.id);
+      const next = has
+        ? prev.filter((x) => x.id !== s.id)
+        : [...prev, { ...s, yearInput: String(s.defaultYear ?? "") }];
+      return next.sort((a, b) => Number(b.year) - Number(a.year));
+    });
     setTeamsData(null);
     setPreview(null);
     setRunResult(null);
-    loadTeams(s);
   }
 
-  async function loadTeams(s = season) {
-    if (!s || !mappedLeagueId) return;
+  function selectAllSeasons(on) {
+    setSelSeasons(on ? apiLeague.seasons.map((s) => ({ ...s, yearInput: String(s.defaultYear ?? "") })) : []);
+    setTeamsData(null);
+    setPreview(null);
+    setRunResult(null);
+  }
+
+  function setSeasonYearInput(id, v) {
+    setSelSeasons((prev) => prev.map((s) => (s.id === id ? { ...s, yearInput: v.replace(/\D/g, "") } : s)));
+    setPreview(null);
+  }
+
+  async function loadTeams() {
+    if (!selSeasons.length || !mappedLeagueId) return;
     setTeamsLoading(true);
     setClubsMsg(null);
     try {
       const { data } = await api.get("/admin/api-import/teams", {
-        params: { season_id: s.id, league_id: mappedLeagueId },
+        params: { season_ids: selSeasons.map((s) => s.id).join(","), league_id: mappedLeagueId },
       });
       setTeamsData(data);
       const initial = {};
@@ -177,6 +191,20 @@ export default function ApiImport() {
     }
   }
 
+  const seasonsPayload = useMemo(
+    () => selSeasons.map((s) => ({ seasonId: s.id, seasonYear: Number(s.yearInput), label: s.label })),
+    [selSeasons]
+  );
+  const yearsValid = selSeasons.every((s) => /^\d{4}$/.test(s.yearInput));
+  const dupYears = useMemo(() => {
+    const seen = new Set(), dup = new Set();
+    for (const s of selSeasons) {
+      if (seen.has(s.yearInput)) dup.add(s.yearInput);
+      seen.add(s.yearInput);
+    }
+    return [...dup];
+  }, [selSeasons]);
+
   async function handlePreview() {
     setPreviewing(true);
     setPreview(null);
@@ -184,8 +212,7 @@ export default function ApiImport() {
     try {
       const { data } = await api.post("/admin/api-import/preview", {
         leagueId: Number(mappedLeagueId),
-        seasonId: season.id,
-        seasonYear: Number(seasonYear),
+        seasons: seasonsPayload,
         targets, includeIncomplete,
       });
       setPreview(data);
@@ -198,14 +225,14 @@ export default function ApiImport() {
 
   async function handleRun() {
     const league = platformLeagues.find((p) => p.id_league === Number(mappedLeagueId));
-    if (!confirm(`Importar dados de "${apiLeague.name}" (${season.label}) para a liga "${league?.name}" na temporada ${seasonYear}?\n\nModo: ${mode === "upsert" ? "inserir e atualizar existentes" : "só inserir novas"}.`)) return;
+    const lista = selSeasons.map((s) => `${s.label} → ${s.yearInput}`).join(", ");
+    if (!confirm(`Importar "${apiLeague.name}" para a liga "${league?.name}"?\n\nTemporada(s): ${lista}\nModo: ${mode === "upsert" ? "inserir e atualizar existentes" : "só inserir novas"}.\n\nCada temporada é gravada separadamente.`)) return;
     setRunning(true);
     setRunResult(null);
     try {
       const { data } = await api.post("/admin/api-import/run", {
         leagueId: Number(mappedLeagueId),
-        seasonId: season.id,
-        seasonYear: Number(seasonYear),
+        seasons: seasonsPayload,
         targets, includeIncomplete, mode,
       });
       setRunResult(data);
@@ -260,9 +287,9 @@ export default function ApiImport() {
           {/* ── ETAPA 1: País → competição → liga → temporada ── */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 space-y-4">
             <div className="flex items-center gap-2.5">
-              <StepBadge n={1} done={!!(apiLeague && mappedLeagueId && season)} active={!season} />
+              <StepBadge n={1} done={!!(apiLeague && mappedLeagueId && selSeasons.length)} active={!selSeasons.length} />
               <Globe size={18} className="text-gray-400" />
-              <h2 className="font-bold text-gray-900 text-sm">Competição e temporada</h2>
+              <h2 className="font-bold text-gray-900 text-sm">Competição e temporadas</h2>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -313,21 +340,42 @@ export default function ApiImport() {
               )}
 
               {apiLeague && mappedLeagueId && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Temporada</label>
-                  <select value={season?.id ?? ""}
-                    onChange={(e) => { const s = apiLeague.seasons.find((x) => String(x.id) === e.target.value); if (s) pickSeason(s); }}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
-                    <option value="">Selecione a temporada…</option>
-                    {apiLeague.seasons.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-                  </select>
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-gray-500">
+                      Temporadas — {selSeasons.length} selecionada(s)
+                    </label>
+                    <div className="flex gap-2 text-[11px] font-semibold">
+                      <button type="button" onClick={() => selectAllSeasons(true)} className="text-violet-600 hover:text-violet-800">selecionar todas</button>
+                      <span className="text-gray-300">·</span>
+                      <button type="button" onClick={() => selectAllSeasons(false)} className="text-gray-400 hover:text-gray-600">limpar</button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {apiLeague.seasons.map((s) => {
+                      const on = selSeasons.some((x) => x.id === s.id);
+                      return (
+                        <button key={s.id} type="button" onClick={() => toggleSeason(s)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${on
+                            ? "bg-violet-600 text-white border-violet-600"
+                            : "bg-gray-50 text-gray-600 border-gray-200 hover:border-violet-300"}`}>
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selSeasons.length > 1 && (
+                    <p className="text-[11px] text-gray-400 mt-1.5">
+                      Cada temporada é importada e gravada separadamente. O ano de cada uma pode ser ajustado na etapa 3.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
           {/* ── ETAPA 2: Mapeamento de clubes ── */}
-          {season && (
+          {selSeasons.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2.5">
                 <StepBadge n={2} done={teamsData && pendingTeams.length === 0} active={!!teamsData} />
@@ -335,16 +383,26 @@ export default function ApiImport() {
                 <h2 className="font-bold text-gray-900 text-sm">Mapeamento de clubes</h2>
                 {teamsData && (
                   <span className="ml-auto text-xs text-gray-400">
-                    {teamsData.teams.length} time(s) na API · {pendingTeams.length} pendente(s)
+                    {teamsData.teams.length} time(s) em {selSeasons.length} temporada(s) · {pendingTeams.length} pendente(s)
                   </span>
                 )}
               </div>
 
               {teamsLoading ? (
                 <div className="flex items-center gap-2 text-gray-400 text-sm py-6 justify-center">
-                  <Loader2 className="animate-spin w-4 h-4" /> Buscando times da temporada…
+                  <Loader2 className="animate-spin w-4 h-4" /> Buscando times de {selSeasons.length} temporada(s)…
                 </div>
-              ) : teamsData && (
+              ) : !teamsData ? (
+                <div className="flex flex-col items-start gap-2">
+                  <p className="text-sm text-gray-500">
+                    Os times das temporadas selecionadas são unidos numa lista só (quem subiu ou caiu de divisão aparece uma vez).
+                  </p>
+                  <button onClick={() => loadTeams()}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 transition-colors">
+                    <Shield size={15} /> Carregar times das {selSeasons.length} temporada(s)
+                  </button>
+                </div>
+              ) : (
                 <>
                   <p className="text-sm text-gray-500">
                     Vincule cada time da API a um clube da plataforma. O vínculo grava o <code className="text-xs bg-gray-50 border border-gray-100 rounded px-1">ID do clube na API</code> no
@@ -453,7 +511,7 @@ export default function ApiImport() {
           )}
 
           {/* ── ETAPA 3: O que importar + preview + run ── */}
-          {season && teamsData && (
+          {selSeasons.length > 0 && teamsData && (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2.5">
                 <StepBadge n={3} done={!!runResult?.ok} active />
@@ -499,18 +557,30 @@ export default function ApiImport() {
                       </span>
                     </label>
                   ))}
-                  <div className="pt-1">
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Ano da temporada na plataforma</label>
-                    <input value={seasonYear} onChange={(e) => { setSeasonYear(e.target.value.replace(/\D/g, "")); setPreview(null); }}
-                      className="w-28 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-400" />
-                    <p className="text-[11px] text-gray-400 mt-1">Temporada {season.label} da API → gravada como {seasonYear || "?"} aqui.</p>
+                </div>
+
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-500">Ano de cada temporada na plataforma</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selSeasons.map((s) => (
+                      <div key={s.id} className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 ${dupYears.includes(s.yearInput) ? "border-red-300 bg-red-50/50" : "border-gray-200 bg-gray-50/50"}`}>
+                        <span className="text-xs text-gray-500 font-semibold">{s.label} →</span>
+                        <input value={s.yearInput} onChange={(e) => setSeasonYearInput(s.id, e.target.value)}
+                          className="w-16 bg-transparent text-sm font-mono focus:outline-none" />
+                      </div>
+                    ))}
                   </div>
+                  {dupYears.length > 0 && (
+                    <p className="text-[11px] text-red-500 font-semibold">
+                      Ano repetido ({dupYears.join(", ")}) — duas temporadas não podem gravar no mesmo ano.
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center gap-2.5 pt-1">
                 <button onClick={handlePreview}
-                  disabled={previewing || running || !selectedTargetsCount || !seasonYear}
+                  disabled={previewing || running || !selectedTargetsCount || !yearsValid || dupYears.length > 0}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 transition-colors disabled:opacity-40">
                   {previewing ? <Loader2 size={15} className="animate-spin" /> : <FlaskConical size={15} />}
                   Pré-visualizar (não grava nada)
@@ -548,36 +618,38 @@ export default function ApiImport() {
                           </div>
                         </div>
                       )}
-                      <div className="grid sm:grid-cols-3 gap-3">
-                        {preview.matches && (
-                          <div className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
-                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Trophy size={12} /> Partidas</div>
-                            <div className="text-sm text-gray-700 space-y-0.5">
-                              <div><b className="text-emerald-600">{preview.matches.toInsert}</b> nova(s)</div>
-                              <div><b className={mode === "upsert" ? "text-blue-600" : "text-gray-400"}>{preview.matches.toUpdate}</b> já existem {mode === "upsert" ? "(serão atualizadas)" : "(serão mantidas)"}</div>
-                              <div className="text-xs text-gray-400 pt-1">{preview.matches.totalApi} na API · {preview.matches.complete} finalizadas · {preview.matches.considered} consideradas</div>
-                            </div>
-                          </div>
-                        )}
-                        {preview.teamStats && (
-                          <div className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
-                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Shield size={12} /> Stats de clubes</div>
-                            <div className="text-sm text-gray-700 space-y-0.5">
-                              <div><b className="text-emerald-600">{preview.teamStats.withStats}</b> clube(s) com stats</div>
-                              <div><b className="text-blue-600">{preview.teamStats.existingRows}</b> linha(s) já na base (upsert)</div>
-                            </div>
-                          </div>
-                        )}
-                        {preview.players && (
-                          <div className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3">
-                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Jogadores</div>
-                            <div className="text-sm text-gray-700 space-y-0.5">
-                              <div><b className="text-emerald-600">{preview.players.newPlayers}</b> novo(s)</div>
-                              <div><b className="text-blue-600">{preview.players.matchedByApiId}</b> por ID · <b className="text-amber-600">{preview.players.matchedByName}</b> por nome</div>
-                              <div className="text-xs text-gray-400 pt-1">{preview.players.totalApi} na API{preview.players.withoutClub ? ` · ${preview.players.withoutClub} sem clube` : ""}</div>
-                            </div>
-                          </div>
-                        )}
+                      <div className="rounded-xl border border-gray-100 overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr className="text-gray-400 text-xs uppercase tracking-wider border-b border-gray-100">
+                              <th className="text-left font-semibold py-2 px-4">Temporada</th>
+                              {targets.matches && <th className="text-center font-semibold py-2 px-3">Partidas novas</th>}
+                              {targets.matches && <th className="text-center font-semibold py-2 px-3">{mode === "upsert" ? "Serão atualizadas" : "Já existem (mantidas)"}</th>}
+                              {targets.teamStats && <th className="text-center font-semibold py-2 px-3">Clubes c/ stats</th>}
+                              {targets.players && <th className="text-center font-semibold py-2 px-3">Jogadores (novos)</th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(preview.seasons ?? []).map((s) => (
+                              <tr key={s.seasonId} className="border-t border-gray-50">
+                                <td className="py-2 px-4 font-semibold text-gray-800">{s.label} <span className="text-xs text-gray-400 font-normal">→ {s.seasonYear}</span></td>
+                                {targets.matches && <td className="py-2 px-3 text-center text-emerald-600 font-bold tabular-nums">{s.matches?.toInsert ?? "—"}</td>}
+                                {targets.matches && <td className={`py-2 px-3 text-center font-bold tabular-nums ${mode === "upsert" ? "text-blue-600" : "text-gray-400"}`}>{s.matches?.toUpdate ?? "—"}</td>}
+                                {targets.teamStats && <td className="py-2 px-3 text-center text-gray-700 tabular-nums">{s.teamStats?.withStats ?? "—"}{s.teamStats?.existingRows ? <span className="text-xs text-gray-400"> ({s.teamStats.existingRows} na base)</span> : null}</td>}
+                                {targets.players && <td className="py-2 px-3 text-center text-gray-700 tabular-nums">{s.players ? `${s.players.totalApi} (${s.players.newPlayers})` : "—"}</td>}
+                              </tr>
+                            ))}
+                            {(preview.seasons?.length ?? 0) > 1 && (
+                              <tr className="border-t-2 border-gray-100 bg-gray-50/60 font-bold">
+                                <td className="py-2 px-4 text-gray-500 text-xs uppercase tracking-wider">Total</td>
+                                {targets.matches && <td className="py-2 px-3 text-center text-emerald-700 tabular-nums">{preview.seasons.reduce((a, s) => a + (s.matches?.toInsert ?? 0), 0)}</td>}
+                                {targets.matches && <td className="py-2 px-3 text-center text-blue-700 tabular-nums">{preview.seasons.reduce((a, s) => a + (s.matches?.toUpdate ?? 0), 0)}</td>}
+                                {targets.teamStats && <td className="py-2 px-3 text-center text-gray-700 tabular-nums">{preview.seasons.reduce((a, s) => a + (s.teamStats?.withStats ?? 0), 0)}</td>}
+                                {targets.players && <td className="py-2 px-3 text-center text-gray-700 tabular-nums">{preview.seasons.reduce((a, s) => a + (s.players?.newPlayers ?? 0), 0)}</td>}
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                       {preview.canRun && (
                         <div className="flex items-center gap-2 text-sm rounded-lg px-3 py-2 bg-emerald-50 text-emerald-700">
@@ -594,14 +666,30 @@ export default function ApiImport() {
                 <div className="space-y-2 pt-1">
                   <div className={`flex items-center gap-2 text-sm font-semibold rounded-lg px-3 py-2.5 ${runResult.ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
                     {runResult.ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                    {runResult.ok ? "Importação concluída." : runResult.message}
+                    {runResult.ok
+                      ? `Importação concluída — ${runResult.seasons?.length ?? 0} temporada(s).`
+                      : runResult.message || "Algumas temporadas falharam — veja abaixo."}
                   </div>
-                  {runResult.ok && (
-                    <ul className="text-sm text-gray-600 space-y-1 pl-1">
-                      {runResult.matches && <li>• Partidas: <b>{runResult.matches.written}</b> gravada(s){runResult.matches.skippedIncomplete ? ` · ${runResult.matches.skippedIncomplete} não finalizadas fora` : ""}</li>}
-                      {runResult.teamStats && <li>• Stats de clubes: <b>{runResult.teamStats.written}</b> linha(s)</li>}
-                      {runResult.players && <li>• Jogadores: <b>{runResult.players.new}</b> novo(s) · {runResult.players.linkedExisting} vinculado(s) · {runResult.players.seasons} vínculo(s) de temporada · {runResult.players.stats} stats{runResult.players.skippedNoClub ? ` · ${runResult.players.skippedNoClub} sem clube (pulados)` : ""}</li>}
-                    </ul>
+                  {runResult.seasons?.length > 0 && (
+                    <div className="space-y-1.5">
+                      {runResult.seasons.map((s) => (
+                        <div key={s.seasonId} className={`rounded-lg border px-3 py-2 text-sm ${s.ok ? "border-gray-100 bg-gray-50/50" : "border-red-200 bg-red-50/50"}`}>
+                          <div className="flex items-center gap-2 font-semibold text-gray-800">
+                            {s.ok ? <CheckCircle2 size={14} className="text-emerald-500" /> : <XCircle size={14} className="text-red-500" />}
+                            {s.label} <span className="text-xs text-gray-400 font-normal">→ {s.seasonYear}</span>
+                          </div>
+                          {s.ok ? (
+                            <div className="text-xs text-gray-500 mt-0.5 pl-6">
+                              {s.matches && <>Partidas: <b>{s.matches.written}</b>{s.matches.skippedIncomplete ? ` (+${s.matches.skippedIncomplete} não finalizadas fora)` : ""} · </>}
+                              {s.teamStats && <>Stats de clubes: <b>{s.teamStats.written}</b> · </>}
+                              {s.players && <>Jogadores: <b>{s.players.new}</b> novo(s), {s.players.seasons} vínculo(s), {s.players.stats} stats{s.players.skippedNoClub ? `, ${s.players.skippedNoClub} sem clube` : ""}</>}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-red-600 mt-0.5 pl-6">{s.error}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                   {runResult.unmappedTeams?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
