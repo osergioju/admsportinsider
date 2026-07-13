@@ -717,7 +717,7 @@ export async function runImport(req, res) {
     let allOk = true;
     for (const { season, data } of collected) {
       try {
-        const r = await writeOneSeason({ leagueId, seasonYear: season.seasonYear, targets, mode, data });
+        const r = await writeOneSeason({ leagueId, seasonYear: season.seasonYear, targets, mode, data, includeIncomplete });
         results.push({ seasonId: season.seasonId, seasonYear: season.seasonYear, label: season.label ?? String(season.seasonYear), ok: true, ...r });
         console.log(`[apiImport] OK temporada ${season.seasonYear}:`, JSON.stringify(r));
       } catch (err) {
@@ -735,7 +735,7 @@ export async function runImport(req, res) {
 }
 
 // Grava UMA temporada (transação própria). Assume clubes já validados pelo run.
-async function writeOneSeason({ leagueId, seasonYear, targets, mode, data }) {
+async function writeOneSeason({ leagueId, seasonYear, targets, mode, data, includeIncomplete }) {
   let client;
   try {
     client = await db.connect();
