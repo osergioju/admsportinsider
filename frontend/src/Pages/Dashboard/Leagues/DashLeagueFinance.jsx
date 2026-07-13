@@ -129,16 +129,14 @@ export default function DashLeagueFinance() {
   useEffect(() => {
     if (!mainLeagueId) return;
     if (!theLeague) return; // aguarda info da liga para saber se tem edições
-    // Ligas com edições (Copa do Mundo, Euro…) não têm filtro de ano — exibem todos os ciclos
-    const hasEditions = theLeague?.league?.has_editions;
-    const yearParams  = hasEditions ? "" : "&fromYear=2018&toYear=2025";
-    const yearParamsNR = hasEditions ? "" : "&fromYear=2021&toYear=2025";
+    // Sem filtro de ano na API: o histórico completo é buscado sempre e o
+    // recorte (De/Até) é aplicado no cliente pelos próprios gráficos.
     const builders = {
-      revenue:          (lid) => `/dashboard/leagues/${lid}/financials/revenues?to=${displayCurrency}${yearParams}`,
-      payroll:          (lid) => `/dashboard/leagues/${lid}/financials/costs/payroll?to=${displayCurrency}${yearParams}`,
+      revenue:          (lid) => `/dashboard/leagues/${lid}/financials/revenues?to=${displayCurrency}`,
+      payroll:          (lid) => `/dashboard/leagues/${lid}/financials/costs/payroll?to=${displayCurrency}`,
       costs:            (lid) => `/dashboard/leagues/${lid}/financials/costs/breakdown?to=${displayCurrency}`,
-      netResult:        (lid) => `/dashboard/leagues/${lid}/financials/net-result?to=${displayCurrency}${yearParamsNR}`,
-      netEvolution:     (lid) => `/dashboard/leagues/${lid}/financials/net-result/evolution?to=${displayCurrency}${yearParams}`,
+      netResult:        (lid) => `/dashboard/leagues/${lid}/financials/net-result?to=${displayCurrency}`,
+      netEvolution:     (lid) => `/dashboard/leagues/${lid}/financials/net-result/evolution?to=${displayCurrency}`,
       debts:            (lid) => `/dashboard/leagues/${lid}/financials/debts/breakdown?to=${displayCurrency}`,
       revenueBreakdown: (lid) => `/dashboard/leagues/${lid}/financials/revenues/breakdown?to=${displayCurrency}`,
     };
