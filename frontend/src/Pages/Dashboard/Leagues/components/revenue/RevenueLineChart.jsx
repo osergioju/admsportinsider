@@ -124,7 +124,8 @@ export default function RevenueLineChart({
 
     grid: integratedTable
       ? { left: gridLeft, right: gridRight, bottom: 8, top: 50, containLabel: false }
-      : { left: 0, right: 0, bottom: 0, top: 50, containLabel: true },
+      // right/left/bottom com folga pra não cortar a bolinha do primeiro/último ponto
+      : { left: 12, right: 12, bottom: 8, top: 50, containLabel: true },
 
     xAxis: {
       type: "category",
