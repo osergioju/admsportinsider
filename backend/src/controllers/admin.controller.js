@@ -3625,11 +3625,11 @@ export async function uploadLeagueXlsx(req, res) {
       const flat = [], phs = [];
       let idx = 1;
       for (const r of batch) {
-        phs.push(`($${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++})`);
-        flat.push(r.slug, r.name, r.description, r.organizer, r.format, r.gender);
+        phs.push(`($${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++})`);
+        flat.push(r.slug, r.name, r.description, r.organizer, r.format, r.gender, r.countryId);
       }
       const { rowCount } = await client.query(
-        `INSERT INTO leagues (slug, name, description, organizer, format, gender)
+        `INSERT INTO leagues (slug, name, description, organizer, format, gender, id_country)
          VALUES ${phs.join(",")}
          ${onConflict}`,
         flat
