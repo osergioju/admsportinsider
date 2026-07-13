@@ -1,3 +1,5 @@
+import { resolveChartColor } from "../../../../../utils/chartColor";
+
 export function adaptRevenueLineData(
   dataByClub,
   mainClubId,
@@ -34,12 +36,10 @@ export function adaptRevenueLineData(
 
   if (years.length === 0) return null;
 
-  const DEFAULT_COLOR = "#999999";
-
   const series = clubes.map((clubId) => ({
     id: clubId,
     name: clubMap?.[clubId] || `Clube ${clubId}`,
-    color: clubColorMap?.[clubId]?.color_one || DEFAULT_COLOR,
+    color: resolveChartColor(clubColorMap?.[clubId]?.color_one),
     data: years.map((year) => revenueByClubYear[clubId]?.[year] ?? 0)
   }));
 

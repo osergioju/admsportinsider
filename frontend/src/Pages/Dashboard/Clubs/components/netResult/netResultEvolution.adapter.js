@@ -1,3 +1,5 @@
+import { resolveChartColor } from "../../../../../utils/chartColor";
+
 export function adaptNetResultEvolution(
   dataByClub,
   clubesSelecionados,
@@ -34,8 +36,7 @@ export function adaptNetResultEvolution(
   // 2) Montar séries
   const series = clubIds.map((clubId) => {
     const apiData = dataByClub[clubId] || [];
-    const clubColor =
-      clubColorMap?.[clubId]?.color_one || "#999999"; // fallback seguro
+    const clubColor = resolveChartColor(clubColorMap?.[clubId]?.color_one);
 
     const sorted = [...apiData].sort((a, b) => a.year - b.year);
 

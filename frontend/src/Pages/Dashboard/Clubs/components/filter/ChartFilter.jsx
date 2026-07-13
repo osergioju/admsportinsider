@@ -6,6 +6,18 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 
 const LIMITE_CLUBES = 4;
 
+const yearSelectStyle = {
+  fontFamily: "inherit",
+  fontSize: 12,
+  padding: "4px 8px",
+  borderRadius: 20,
+  border: "1px solid #e0dfd9",
+  background: "#fff",
+  color: "#333",
+  cursor: "pointer",
+  outline: "none",
+};
+
 // ─── ChartFilter ───────────────────────────────────────────────────────────
 
 export default function ChartFilter({
@@ -82,36 +94,22 @@ export default function ChartFilter({
 
   const years = availableYears ?? [];
 
-  // Se o pai passar selectedYears explicitamente, usa ele.
-  // Caso contrário, deriva do intervalo start/end como fallback.
   const isSingle = yearSelectionMode === "single";
 
-  const selectedYears = isSingle
-    ? (selectedYearsProp?.slice(-1) || [])
-    : (
-      selectedYearsProp && selectedYearsProp.length > 0
-        ? selectedYearsProp
-        : years.filter((y) => y >= startYear && y <= endYear)
-    );
+  const selectedYear = selectedYearsProp?.slice(-1)[0] ?? endYear ?? years[years.length - 1];
 
-  function toggleYear(year) {
-    if (yearSelectionMode === "single") {
-      onChangeSelectedYears?.([year]);
-      onChangeStartYear?.(year);
-      onChangeEndYear?.(year);
-      return;
-    }
+  function handleSingleYearChange(year) {
+    onChangeSelectedYears?.([year]);
+    onChangeStartYear?.(year);
+    onChangeEndYear?.(year);
+  }
 
-    // comportamento atual (multi)
-    if (selectedYears.length <= 2 && selectedYears.includes(year)) return;
+  function handleStartYearChange(year) {
+    onChangeStartYear?.(Math.min(year, endYear ?? year));
+  }
 
-    const next = selectedYears.includes(year)
-      ? selectedYears.filter((y) => y !== year)
-      : [...selectedYears, year].sort((a, b) => a - b);
-
-    onChangeSelectedYears?.(next);
-    onChangeStartYear?.(Math.min(...next));
-    onChangeEndYear?.(Math.max(...next));
+  function handleEndYearChange(year) {
+    onChangeEndYear?.(Math.max(year, startYear ?? year));
   }
 
   return (
@@ -249,46 +247,43 @@ export default function ChartFilter({
         </div>
       </div>
 
-      {/* ── Pills de ano ── */}
+      {/* ── Seletor de ano/intervalo ── */}
       {years.length > 0 && (
-        <div className="xl:w-1/2w-full flex items-center flex-wrap">
-          {/* Slot para legenda (renderizado pelo pai acima daqui) */}
-          <div /> {/* espaçador — legenda fica no componente do gráfico */}
-
-          <div
-            style={{
-              display: "flex",
-              gap: 4,
-              background: "#f5f4f0",
-              borderRadius: 24,
-              padding: 4,
-            }}
-          >
-            {years.map((year) => {
-              const active = selectedYears.includes(year);
-              return (
-                <button
-                  key={year}
-                  onClick={() => toggleYear(year)}
-                  style={{
-                    fontFamily: "inherit",
-                    fontSize: 12,
-                    fontWeight: active ? 500 : 400,
-                    padding: "4px 13px",
-                    borderRadius: 20,
-                    border: active ? "1px solid #e0dfd9" : "none",
-                    cursor: "pointer",
-                    background: active ? "#fff" : "transparent",
-                    color: active ? "#111" : "#999",
-                    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {year}
-                </button>
-              );
-            })}
-          </div>
+        <div className="xl:w-1/2w-full flex items-center flex-wrap gap-2">
+          {isSingle ? (
+            <select
+              value={selectedYear ?? ""}
+              onChange={(e) => handleSingleYearChange(Number(e.target.value))}
+              style={yearSelectStyle}
+            >
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <span style={{ fontSize: 12, color: "#999" }}>{t("filters.from", "De")}</span>
+              <select
+                value={startYear ?? years[0]}
+                onChange={(e) => handleStartYearChange(Number(e.target.value))}
+                style={yearSelectStyle}
+              >
+                {years.filter((y) => y <= (endYear ?? years[years.length - 1])).map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              <span style={{ fontSize: 12, color: "#999" }}>{t("filters.to", "até")}</span>
+              <select
+                value={endYear ?? years[years.length - 1]}
+                onChange={(e) => handleEndYearChange(Number(e.target.value))}
+                style={yearSelectStyle}
+              >
+                {years.filter((y) => y >= (startYear ?? years[0])).map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
       )}
 

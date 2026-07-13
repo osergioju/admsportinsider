@@ -1,3 +1,5 @@
+import { resolveChartColor } from "../../../../../utils/chartColor";
+
 export function adaptPayrollLineData(
   dataByLeague,
   ligasSelecionadas,
@@ -35,8 +37,6 @@ export function adaptPayrollLineData(
   });
   const xAxisLabels = years.map(y => yearLabels[y] || String(y));
 
-  const DEFAULT_COLOR = "#999999";
-
   const series = leagueIds.map((leagueId) => {
     const apiData = dataByLeague[leagueId];
 
@@ -49,8 +49,7 @@ export function adaptPayrollLineData(
       return found ? found.converted_value : 0;
     });
 
-    const leagueColorReal =
-      leagueColor?.[String(leagueId)]?.color_one || DEFAULT_COLOR;
+    const leagueColorReal = resolveChartColor(leagueColor?.[String(leagueId)]?.color_one);
 
     return {
       name: leagueMap[leagueId] || `Liga ${leagueId}`,

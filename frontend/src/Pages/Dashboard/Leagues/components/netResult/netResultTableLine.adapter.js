@@ -1,3 +1,5 @@
+import { resolveChartColor } from "../../../../../utils/chartColor";
+
 export function adaptNetResultEvolutionByLeague(
   data,
   selectedLeagues = [],
@@ -44,7 +46,7 @@ export function adaptNetResultEvolutionByLeague(
   // 2) Montar séries
   const series = leagueIds.map((leagueId) => {
     const apiData = data[leagueId] || [];
-    const color = leagueColor?.[leagueId].color_one || "#999999";
+    const color = resolveChartColor(leagueColor?.[leagueId]?.color_one);
 
     // cria mapa { ano: valor }
     const valueByYear = apiData

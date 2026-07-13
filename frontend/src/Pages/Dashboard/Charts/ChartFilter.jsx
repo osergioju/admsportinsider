@@ -168,34 +168,27 @@ export default function ChartFilter({
         </select>
       </div>
 
-      {/* Pills de ano — seleção única */}
+      {/* Seletor de ano — seleção única */}
       {years.length > 0 && (
-        <div style={{ display: "flex", gap: 4, background: "#f5f4f0", borderRadius: 24, padding: 4 }}>
-          {years.map((year) => {
-            const active = year === selectedYear;
-            return (
-              <button
-                key={year}
-                onClick={() => onChangeYear(year)}
-                style={{
-                  fontFamily: "inherit",
-                  fontSize: 12,
-                  fontWeight: active ? 500 : 400,
-                  padding: "4px 13px",
-                  borderRadius: 20,
-                  border: active ? "1px solid #e0dfd9" : "none",
-                  cursor: "pointer",
-                  background: active ? "#fff" : "transparent",
-                  color: active ? "#111" : "#999",
-                  boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                  transition: "all 0.15s",
-                }}
-              >
-                {year}
-              </button>
-            );
-          })}
-        </div>
+        <select
+          value={selectedYear ?? ""}
+          onChange={(e) => onChangeYear(Number(e.target.value))}
+          style={{
+            fontFamily: "inherit",
+            fontSize: 12,
+            padding: "4px 8px",
+            borderRadius: 20,
+            border: "1px solid #e0dfd9",
+            background: "#fff",
+            color: "#333",
+            cursor: "pointer",
+            outline: "none",
+          }}
+        >
+          {years.map((year) => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
       )}
     </div>
   );

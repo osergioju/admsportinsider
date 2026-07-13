@@ -1,3 +1,5 @@
+import { resolveChartColor } from "../../../../../utils/chartColor";
+
 export function adaptPayrollLineData(
   dataByClub,
   clubesSelecionados,
@@ -27,8 +29,6 @@ export function adaptPayrollLineData(
 
   if (years.length === 0) return null;
 
-  const DEFAULT_COLOR = "#999999";
-
   const series = clubIds.map((clubId) => {
     const apiData = dataByClub[clubId];
 
@@ -41,8 +41,7 @@ export function adaptPayrollLineData(
       return found ? found.converted_value : 0;
     });
 
-    const clubColor =
-      clubColorMap?.[String(clubId)]?.color_one || DEFAULT_COLOR;
+    const clubColor = resolveChartColor(clubColorMap?.[String(clubId)]?.color_one);
 
     return {
       name: clubMap[clubId] || `Clube ${clubId}`,

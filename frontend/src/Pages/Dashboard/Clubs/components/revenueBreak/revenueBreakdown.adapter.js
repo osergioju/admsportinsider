@@ -1,3 +1,4 @@
+import { resolveChartColor } from "../../../../../utils/chartColor";
 
 export function adaptRevenueBreakdown(
   dataByClub,
@@ -44,11 +45,7 @@ export function adaptRevenueBreakdown(
       return found ? Number(found.converted_value) : 0;
     });
 
-    // Se o valor for negativo  
-    const DEFAULT_COLOR = "#999999";
-
-    const clubColor =
-      clubColorMap?.[String(clubId)]?.color_one || DEFAULT_COLOR;
+    const clubColor = resolveChartColor(clubColorMap?.[String(clubId)]?.color_one);
 
     return {
       name: clubMap[clubId] || `Clube ${clubId}`,

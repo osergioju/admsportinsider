@@ -1,3 +1,5 @@
+import { resolveChartColor } from "../../../../utils/chartColor";
+
 export function adaptRevenueLineData(
   dataByLeague,
   ligasSelecionadas,
@@ -21,8 +23,6 @@ export function adaptRevenueLineData(
 
   if (years.length === 0) return null;
 
-  const DEFAULT_COLOR = "#999";
-
   const series = ligasSelecionadas.map((leagueId) => {
 
     const revenueByYear = {};
@@ -38,7 +38,7 @@ export function adaptRevenueLineData(
     return {
       id: leagueId,
       name: leagueMap?.[leagueId] || `Liga ${leagueId}`,
-      color: leagueColor?.[leagueId]?.color_one || DEFAULT_COLOR,
+      color: resolveChartColor(leagueColor?.[leagueId]?.color_one),
       data: years.map((year) => revenueByYear[year] ?? 0)
     };
 

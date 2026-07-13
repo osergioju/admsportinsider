@@ -1,3 +1,4 @@
+import { resolveChartColor } from "../../../../../utils/chartColor";
 
 export function adaptRevenueBreakdown(
   dataByLeague,
@@ -43,9 +44,7 @@ export function adaptRevenueBreakdown(
       return found ? Number(found.converted_value) : 0;
     });
 
-    const DEFAULT_COLOR = "#999999";
-    const leagueColorReal =
-      leagueColor?.[String(leagueId)]?.color_one || DEFAULT_COLOR;
+    const leagueColorReal = resolveChartColor(leagueColor?.[String(leagueId)]?.color_one);
 
     return {
       name: leagueMap[leagueId] || `Liga ${leagueId}`,
