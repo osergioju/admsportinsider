@@ -1746,13 +1746,14 @@ export async function getCountries(req, res) {
         co.id_country   AS id,
         co.name         AS name,
         co.flag_url     AS flag_url,
-        COUNT(DISTINCT l.id_league) AS leagues_count,
+        COUNT(DISTINCT CASE WHEN f.id_federation IS NULL OR f.active = TRUE THEN l.id_league END) AS leagues_count,
         COUNT(DISTINCT c.id_club)   AS clubs_count
       FROM countries co
       LEFT JOIN leagues l ON l.id_country = co.id_country AND l.active = TRUE
+      LEFT JOIN federations f ON f.id_federation = l.id_federation
       LEFT JOIN clubs   c ON c.id_country = co.id_country AND c.active = TRUE
       GROUP BY co.id_country, co.name, co.flag_url
-      HAVING COUNT(DISTINCT l.id_league) > 0 OR COUNT(DISTINCT c.id_club) > 0
+      HAVING COUNT(DISTINCT CASE WHEN f.id_federation IS NULL OR f.active = TRUE THEN l.id_league END) > 0 OR COUNT(DISTINCT c.id_club) > 0
       ORDER BY co.name ASC
     `);
 

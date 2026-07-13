@@ -600,6 +600,7 @@ export async function getContinentalLeagues(req, res) {
       WHERE l.active = TRUE
         AND l.id_country IS NULL
         AND l.is_competition = TRUE
+        AND (f.id_federation IS NULL OR f.active = TRUE)
       ORDER BY COALESCE(lt.name, l.name) ASC
     `, [locale]);
     return res.json({ leagues: result.rows });
