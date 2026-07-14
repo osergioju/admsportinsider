@@ -24,7 +24,8 @@ import {
     CircleDollarSign,
     ChartArea, Zap,
     Trophy,
-    PlugZap
+    PlugZap,
+    Building2
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -33,10 +34,11 @@ export default function AdminLayout() {
     const [startX, setStartX] = useState(0);
     const [translateX, setTranslateX] = useState(0);
 
-    const [openDados, setOpenDados] = useState(false);
+    const [openDados, setOpenDados] = useState(false); // Cadastros
     const [openInsights, setOpenInsights] = useState(false);
     const [openConfig, setOpenConfig] = useState(false);
-    const [openUpload, setOpenUpload] = useState(false);
+    const [openFinanceiro, setOpenFinanceiro] = useState(false);
+    const [openEsportivo, setOpenEsportivo] = useState(false);
     const [openPlanos, setOpenPlanos] = useState(false);
 
     const { logout, user } = useContext(AuthContext);
@@ -161,13 +163,13 @@ export default function AdminLayout() {
                                 />
                             </div>
 
-                            {/* Dropdown Gestão */}
+                            {/* Dropdown Cadastros — só o CRUD/catálogo das entidades */}
                             {canAccess("gestao-dados") && (
                                 <li>
                                     <button onClick={() => setOpenDados(!openDados)} className={menuItemStyle}>
                                         <div className="flex items-center gap-3">
                                             <LayoutDashboard strokeWidth={1.5} className={iconStyle} size={20} />
-                                            <span className={textStyle}>Gestão</span>
+                                            <span className={textStyle}>Cadastros</span>
                                         </div>
                                         <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openDados ? "rotate-180 text-purple-500" : ""}`} />
                                     </button>
@@ -179,42 +181,92 @@ export default function AdminLayout() {
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-ligas" label="Competições" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-clubes" label="Clubes" />
                                             <SubItem onClick={() => setOpenMenu(false)} to="/admin/gestao-jogadores" label="Jogadores" />
-                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/hospitalidade" label="Hospitalidade" />
                                         </ul>
                                     )}
                                 </li>
                             )}
+
+                            {/* Hospitalidade — fora dos cadastros centrais, é conteúdo de estádio/hotelaria */}
+                            {canAccess("gestao-dados") && (
+                                <div className="group">
+                                    <MenuItem
+                                        to="/admin/hospitalidade"
+                                        onClick={() => setOpenMenu(false)}
+                                        className={menuItemStyle}
+                                        icon={<Building2 strokeWidth={1.5} size={20} className={iconStyle} />}
+                                        label={<span className={textStyle}>Hospitalidade</span>}
+                                    />
+                                </div>
+                            )}
                         </ul>
                     </div>
 
-                    {/* SEÇÃO: CONTEÚDO & DADOS */}
-                    {(canAccess("upload-financeiro") || canAccess("upload-times") || canAccess("upload-jogadores") || canAccess("upload-partidas") || canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq") || canAccess("legal") || canAccess("update-notes")) && (
+                    {/* SEÇÃO: DADOS FINANCEIROS */}
+                    {canAccess("upload-financeiro") && (
                         <div>
-                            <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Conteúdo & Dados</span>
+                            <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Dados financeiros</span>
                             <ul className="space-y-1">
+                                <li>
+                                    <button onClick={() => setOpenFinanceiro(!openFinanceiro)} className={menuItemStyle}>
+                                        <div className="flex items-center gap-3">
+                                            <Upload strokeWidth={1.5} className={iconStyle} size={20} />
+                                            <span className={textStyle}>Importar financeiro</span>
+                                        </div>
+                                        <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openFinanceiro ? "rotate-180 text-purple-500" : ""}`} />
+                                    </button>
+                                    {openFinanceiro && (
+                                        <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/ligas" label="Clubes e Ligas" />
+                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/federation-financial" label="Copa do Mundo / Federações" />
+                                            <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/prizes" label="Prêmios" />
+                                        </ul>
+                                    )}
+                                </li>
+                            </ul>
+                        </div>
+                    )}
 
-                                {(canAccess("upload-financeiro") || canAccess("upload-times") || canAccess("upload-jogadores") || canAccess("upload-partidas")) && (
-                                    <li>
-                                        <button onClick={() => setOpenUpload(!openUpload)} className={menuItemStyle}>
-                                            <div className="flex items-center gap-3">
-                                                <Upload strokeWidth={1.5} className={iconStyle} size={20} />
-                                                <span className={textStyle}>Upload de dados</span>
-                                            </div>
-                                            <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openUpload ? "rotate-180 text-purple-500" : ""}`} />
-                                        </button>
-                                        {openUpload && (
-                                            <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                                {canAccess("upload-financeiro") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/ligas" label="Financeiro" />}
-                                                {canAccess("upload-financeiro") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/federation-financial" label="Copa do Mundo / Federações" />}
-                                                {canAccess("upload-times") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/teams" label="Times" />}
-                                                {canAccess("upload-jogadores") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/players" label="Jogadores" />}
-                                                {canAccess("upload-partidas") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/matches" label="Partidas" />}
-                                                {canAccess("upload-times") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/super" label="Esportivo 2.0" />}
-                                            </ul>
-                                        )}
-                                    </li>
-                                )}
+                    {/* SEÇÃO: DADOS ESPORTIVOS — 4 formas de subir times/jogadores/partidas
+                        (3 individuais + 1 combinado) mais a importação via API (FootyStats) */}
+                    <div>
+                        <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Dados esportivos</span>
+                        <ul className="space-y-1">
+                            {(canAccess("upload-times") || canAccess("upload-jogadores") || canAccess("upload-partidas")) && (
+                                <li>
+                                    <button onClick={() => setOpenEsportivo(!openEsportivo)} className={menuItemStyle}>
+                                        <div className="flex items-center gap-3">
+                                            <Upload strokeWidth={1.5} className={iconStyle} size={20} />
+                                            <span className={textStyle}>Importar esportivo</span>
+                                        </div>
+                                        <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openEsportivo ? "rotate-180 text-purple-500" : ""}`} />
+                                    </button>
+                                    {openEsportivo && (
+                                        <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                            {canAccess("upload-times") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/super" label="Completo (times + jogadores + partidas)" />}
+                                            {canAccess("upload-times") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/teams" label="Só times" />}
+                                            {canAccess("upload-jogadores") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/players" label="Só jogadores" />}
+                                            {canAccess("upload-partidas") && <SubItem onClick={() => setOpenMenu(false)} to="/admin/upload/matches" label="Só partidas" />}
+                                        </ul>
+                                    )}
+                                </li>
+                            )}
+                            <div className="group">
+                                <MenuItem
+                                    to="/admin/api/importar"
+                                    onClick={() => setOpenMenu(false)}
+                                    className={menuItemStyle}
+                                    icon={<PlugZap strokeWidth={1.5} size={20} className={iconStyle} />}
+                                    label={<span className={textStyle}>Importar via API (FootyStats)</span>}
+                                />
+                            </div>
+                        </ul>
+                    </div>
 
+                    {/* SEÇÃO: CONTEÚDO DO SITE */}
+                    {(canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq") || canAccess("legal") || canAccess("update-notes")) && (
+                        <div>
+                            <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Conteúdo do site</span>
+                            <ul className="space-y-1">
                                 {canAccess("banners") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/banners" icon={<ImageIcon strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Banners</span>} /></div>}
                                 {canAccess("notifications") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/notifications" icon={<Bell strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Notificações</span>} /></div>}
                                 {canAccess("regions") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/regions" icon={<Languages strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Idioma e regiões</span>} /></div>}
