@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import ImportModal from "./ImportModal";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
+import { clubLogo } from "../../utils/clubUrl";
 
 // ---------------------------------------------------------------------------
 // Estilos reutilizáveis
@@ -226,7 +227,7 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                                 <div className="flex gap-2 items-center">
                                     <div className="w-16 h-16 shrink-0 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden">
                                         {newClub.crest_url
-                                            ? <img src={newClub.crest_url} className="w-full h-full object-cover" alt="Logo" />
+                                            ? <img src={clubLogo(newClub.crest_url, newClub.slug)} className="w-full h-full object-cover" alt="Logo" />
                                             : <Shield size={24} className="text-gray-300" />}
                                     </div>
                                     <div className="flex-1 space-y-1.5">
@@ -603,7 +604,7 @@ export default function GestaoClubes() {
                             >
                                 <div className="relative w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center p-2 border border-gray-100 group-hover:bg-white transition-colors overflow-hidden">
                                     {club.crest_url ? (
-                                        <img src={club.crest_url.startsWith("http") ? club.crest_url : `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${club.crest_url}.webp`} className="w-full h-full object-contain" alt={club.name} />
+                                        <img src={clubLogo(club.crest_url, club.slug)} className="w-full h-full object-contain" alt={club.name} />
                                     ) : (
                                         <div
                                             className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xs"

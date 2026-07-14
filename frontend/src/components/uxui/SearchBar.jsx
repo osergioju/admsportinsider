@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
-import { clubUrl } from "../../utils/clubUrl";
+import { clubUrl, clubLogo } from "../../utils/clubUrl";
 import { useTranslation } from "../../context/TranslationContext";
 
 
@@ -40,7 +40,7 @@ function ClubAvatar({ name, crestUrl }) {
         }}
       >
         <img
-          src={crestUrl.startsWith("http") ? crestUrl : `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${crestUrl}.webp`}
+          src={clubLogo(crestUrl)}
           alt={name}
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
           onError={(e) => {

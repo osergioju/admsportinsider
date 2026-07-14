@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart, SearchX, Loader2 } from "lucide-react";
 import { api } from "../../services/api"
 import { useFavorites } from "../../hooks/useFavorites";
-import { clubUrl } from "../../utils/clubUrl";
+import { clubUrl, clubLogo } from "../../utils/clubUrl";
 
 const getInitials = (name) => {
   if (!name) return "";
@@ -152,7 +152,7 @@ export default function ClubsFavorites() {
                       <div className="w-20 h-20 bg-white/10  rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover/card:scale-110 transition-transform duration-500">
                         {club.crest_url ? (
                           <img
-                            src={club.crest_url}
+                            src={clubLogo(club.crest_url, club.slug)}
                             alt={club.name}
                             className="w-14 h-14 object-contain drop-shadow-2xl"
                           />

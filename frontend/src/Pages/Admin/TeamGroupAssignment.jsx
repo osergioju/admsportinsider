@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { api } from "../../services/api";
+import { clubLogo } from "../../utils/clubUrl";
 import { X, Loader2, Check, AlertTriangle, Users, Search } from "lucide-react";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -28,7 +29,7 @@ function ClubChip({ club, onRemove }) {
   return (
     <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 group">
       {club.crest_url
-        ? <img src={club.crest_url} className="w-4 h-4 object-contain shrink-0" alt="" />
+        ? <img src={clubLogo(club.crest_url, club.slug)} className="w-4 h-4 object-contain shrink-0" alt="" />
         : <div className="w-4 h-4 rounded-sm bg-gray-100 shrink-0" />
       }
       <span className="truncate max-w-[120px]">{club.name}</span>
@@ -307,7 +308,7 @@ export default function TeamGroupAssignment({ league, onClose, onSaved }) {
                             }`}
                           >
                             {club.crest_url
-                              ? <img src={club.crest_url} className="w-4 h-4 object-contain shrink-0" alt="" />
+                              ? <img src={clubLogo(club.crest_url, club.slug)} className="w-4 h-4 object-contain shrink-0" alt="" />
                               : <div className="w-4 h-4 rounded-sm bg-gray-200 shrink-0" />
                             }
                             <span className="truncate flex-1 font-medium">{club.name}</span>
@@ -370,7 +371,7 @@ export default function TeamGroupAssignment({ league, onClose, onSaved }) {
                                 {unassigned.map(club => (
                                   <div key={club.id_club} className="flex items-center gap-1 bg-white border border-dashed border-gray-300 rounded-lg px-2 py-1">
                                     {club.crest_url
-                                      ? <img src={club.crest_url} className="w-4 h-4 object-contain" alt="" />
+                                      ? <img src={clubLogo(club.crest_url, club.slug)} className="w-4 h-4 object-contain" alt="" />
                                       : <div className="w-4 h-4 rounded-sm bg-gray-100" />
                                     }
                                     <span className="text-xs text-gray-600 font-medium">{club.name}</span>

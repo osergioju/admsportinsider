@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { api } from "../../../services/api";
+import { clubLogo } from "../../../utils/clubUrl";
 import {
   Loader2, UploadCloud, Shield, ArrowRight, CheckCircle2,
   AlertTriangle, ChevronRight, MapPin, XCircle, EyeOff, Trash2,
@@ -389,7 +390,7 @@ export default function UploadTeamsPage() {
                     <div key={conflict.id_club} className="border border-red-200 rounded-2xl p-3 bg-red-50/40 space-y-2">
                       <div className="flex items-center gap-2 text-xs text-red-700 font-bold mb-1">
                         {conflict.crest_url && (
-                          <img src={conflict.crest_url} className="w-5 h-5 object-contain rounded" alt="" />
+                          <img src={clubLogo(conflict.crest_url)} className="w-5 h-5 object-contain rounded" alt="" />
                         )}
                         Conflito → <span className="text-gray-900">{conflict.club_name}</span>
                       </div>

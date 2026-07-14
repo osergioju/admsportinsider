@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { useClubsInsights } from '../../../../hooks/useClubsInsights';
+import { clubLogo } from '../../../../utils/clubUrl';
 
 function KpiCard({ label, value, sub }) {
   return (
@@ -131,7 +132,7 @@ export default function InsightClubes() {
                 <tr key={club.id_club ?? i} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-3 font-medium text-gray-900">
                     <div className="flex items-center gap-2">
-                      {club.crest_url && <img src={club.crest_url} alt="" className="w-5 h-5 object-contain" />}
+                      {club.crest_url && <img src={clubLogo(club.crest_url)} alt="" className="w-5 h-5 object-contain" />}
                       {club.name}
                     </div>
                   </td>
