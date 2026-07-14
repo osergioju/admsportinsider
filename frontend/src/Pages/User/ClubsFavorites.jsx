@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart, SearchX, Loader2 } from "lucide-react";
 import { api } from "../../services/api"
 import { useFavorites } from "../../hooks/useFavorites";
-import { clubUrl, clubLogo } from "../../utils/clubUrl";
+import { clubUrl, clubLogo, handleCrestRetry } from "../../utils/clubUrl";
 
 const getInitials = (name) => {
   if (!name) return "";
@@ -153,6 +153,7 @@ export default function ClubsFavorites() {
                         {club.crest_url ? (
                           <img
                             src={clubLogo(club.crest_url, club.slug)}
+                            onError={handleCrestRetry}
                             alt={club.name}
                             className="w-14 h-14 object-contain drop-shadow-2xl"
                           />

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
-import { clubUrl, clubLogo } from "../../utils/clubUrl";
+import { clubUrl, clubLogo, handleCrestRetry } from "../../utils/clubUrl";
 import { useTranslation } from "../../context/TranslationContext";
 
 
@@ -44,6 +44,7 @@ function ClubAvatar({ name, crestUrl }) {
           alt={name}
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
           onError={(e) => {
+            if (!e.currentTarget.dataset.crestRetried) return handleCrestRetry(e);
             e.currentTarget.style.display = "none";
             e.currentTarget.parentElement.style.background = `linear-gradient(135deg, ${from}, ${to})`;
             e.currentTarget.parentElement.innerHTML = `<span style="color:#fff;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif">${initials}</span>`;

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 import { Landmark } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
-import { clubLogo } from "../../../utils/clubUrl";
+import { clubLogo, handleCrestRetry } from "../../../utils/clubUrl";
 
 // Sections
 import RevenueSection from "./components/revenue/RevenueSection";
@@ -347,6 +347,7 @@ export default function DashClubUniques() {
             >
               <img
                 src={clubLogo(theClub.club.crest_url, theClub.club.slug)}
+                onError={handleCrestRetry}
                 alt={theClub.club.name}
                 className="w-full h-full object-contain drop-shadow-lg"
               />

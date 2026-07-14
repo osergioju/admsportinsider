@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
 import { formatFinancial } from "../../../utils/formatFinancial";
-import { clubLogo } from "../../../utils/clubUrl";
+import { clubLogo, handleCrestRetry } from "../../../utils/clubUrl";
 import {
     TrendingUp,
     Trophy, Users, ArrowRight, EyeOff,
@@ -253,6 +253,7 @@ export default function PrePageClubs() {
                         <div className="shrink-0 w-14 h-14 lg:w-30 lg:h-30 xl:w-40 xl:h-40 flex items-center justify-center">
                             <img
                                 src={clubLogo(theClub.club.crest_url, theClub.club.slug)}
+                                onError={handleCrestRetry}
                                 alt={clubName}
                                 className="w-full h-full object-contain"
                             />

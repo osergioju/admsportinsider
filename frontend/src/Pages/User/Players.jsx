@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../../services/api";
-import { clubUrl, clubLogo } from "../../utils/clubUrl";
+import { clubUrl, clubLogo, handleCrestRetry } from "../../utils/clubUrl";
 import { ChevronLeft, ChevronDown, Loader2, Timer, Star } from "lucide-react";
 import { useTranslation } from "../../context/TranslationContext";
 
@@ -458,7 +458,7 @@ export default function Players() {
               className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-3 min-w-0">
                 {comp.club.crest_url
-                  ? <img src={clubLogo(comp.club.crest_url, comp.club.slug)} alt="" className="w-7 h-7 object-contain shrink-0" />
+                  ? <img src={clubLogo(comp.club.crest_url, comp.club.slug)} onError={handleCrestRetry} alt="" className="w-7 h-7 object-contain shrink-0" />
                   : <div className="w-7 h-7 rounded-full bg-gray-100 shrink-0" />
                 }
                 <div className="text-left min-w-0">

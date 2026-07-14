@@ -5,7 +5,7 @@ import {
   CheckCircle2, AlertTriangle, HelpCircle, Plus, Globe, ShieldOff, Shield
 } from "lucide-react";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
-import { clubLogo } from "../../utils/clubUrl";
+import { clubLogo, handleCrestRetry } from "../../utils/clubUrl";
 
 const btnPrimary =
   "flex items-center justify-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-bold hover:bg-[#6025A8] transition-all shadow-lg shadow-purple-500/20 disabled:opacity-70 disabled:cursor-not-allowed";
@@ -620,7 +620,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
                   <div key={club.id_club} className="flex items-center gap-2.5 px-3 py-2 bg-white border border-gray-100 rounded-xl">
                     <div className="w-7 h-7 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                       {club.crest_url
-                        ? <img src={clubLogo(club.crest_url)} className="w-full h-full object-contain" alt="" />
+                        ? <img src={clubLogo(club.crest_url)} onError={handleCrestRetry} className="w-full h-full object-contain" alt="" />
                         : <Shield size={13} className="text-gray-300" />}
                     </div>
                     <div className="flex-1 min-w-0">

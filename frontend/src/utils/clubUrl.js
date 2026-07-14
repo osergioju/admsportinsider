@@ -37,3 +37,16 @@ export function teamCrestSources(t) {
   if (crestStr && !crestStr.startsWith("http")) out.push(clubCrestBySlug(crestStr));
   return [...new Set(out.filter(Boolean))];
 }
+
+// onError p/ <img src={clubLogo(...)}>: refaz UMA vez com cache-buster (?v=)
+// antes de desistir. Cobre o caso raro de cache negativo do Cloudflare ter
+// guardado um 404 de um instante em que o arquivo ainda não existia no
+// servidor — sem isso o admin só via o escudo depois do cache expirar sozinho.
+// Não usar em toda renderização (mataria o cache do CDN pra sempre).
+export function handleCrestRetry(e) {
+  const img = e.currentTarget;
+  if (img.dataset.crestRetried) return;
+  img.dataset.crestRetried = "1";
+  const sep = img.src.includes("?") ? "&" : "?";
+  img.src = `${img.src}${sep}v=${Date.now()}`;
+}

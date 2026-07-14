@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
-import { clubLogo } from "../../../utils/clubUrl";
+import { clubLogo, handleCrestRetry } from "../../../utils/clubUrl";
 import { Search, X, Users, ChevronRight } from "lucide-react";
 import { useTranslation } from "../../../context/TranslationContext";
 
@@ -123,7 +123,7 @@ function PlayerCard({ player, onClick }) {
         {player.club_name && (
           <div className="flex items-center gap-2">
             {player.crest_url
-              ? <img src={clubLogo(player.crest_url)} alt="" loading="lazy" className="w-4 h-4 object-contain shrink-0" />
+              ? <img src={clubLogo(player.crest_url)} onError={handleCrestRetry} alt="" loading="lazy" className="w-4 h-4 object-contain shrink-0" />
               : <div className="w-4 h-4 rounded bg-gray-100 shrink-0" />
             }
             <span className="text-xs text-gray-600 truncate font-medium">{player.club_name}</span>

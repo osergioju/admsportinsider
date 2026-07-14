@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../../services/api";
-import { clubLogo } from "../../../utils/clubUrl";
+import { clubLogo, handleCrestRetry } from "../../../utils/clubUrl";
 import {
   Loader2, UploadCloud, FileSpreadsheet, CheckCircle2, AlertCircle,
   ArrowRight, XCircle, AlertTriangle, Shield, Plus, Trash2, Trophy,
@@ -574,7 +574,7 @@ export default function SendLeaguePage() {
                   <div className="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
                     {clubPreview.foundClubs.map(c => (
                       <div key={c.csvSlug} className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-xl border border-green-100">
-                        {c.crest_url && <img src={clubLogo(c.crest_url)} className="w-5 h-5 object-contain rounded" alt="" />}
+                        {c.crest_url && <img src={clubLogo(c.crest_url)} onError={handleCrestRetry} className="w-5 h-5 object-contain rounded" alt="" />}
                         <span className="text-xs font-mono text-gray-500">{c.csvSlug}</span>
                         <ArrowRight size={11} className="text-gray-300" />
                         <span className="text-xs font-semibold text-gray-700">{c.name}</span>
