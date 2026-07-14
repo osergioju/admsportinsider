@@ -603,7 +603,7 @@ export default function GestaoClubes() {
                             >
                                 <div className="relative w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center p-2 border border-gray-100 group-hover:bg-white transition-colors overflow-hidden">
                                     {club.crest_url ? (
-                                        <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + club.crest_url + `.webp`} className="w-full h-full object-contain" alt={club.name} />
+                                        <img src={club.crest_url.startsWith("http") ? club.crest_url : `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${club.crest_url}.webp`} className="w-full h-full object-contain" alt={club.name} />
                                     ) : (
                                         <div
                                             className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xs"

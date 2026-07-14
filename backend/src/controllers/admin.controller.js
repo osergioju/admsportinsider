@@ -778,6 +778,23 @@ export async function createClub(req, res) {
 }
 
 
+// O modal de upload devolve a URL completa do arquivo reduzido (com prefixo
+// reduced_ e ?v= de cache-buster). Se isso for salvo em crest_url como veio,
+// a renderização (que espera só o slug e monta reduced_{slug}.webp) duplica
+// o prefixo/sufixo e quebra o escudo. Aqui extraímos de volta só o slug
+// quando a URL bate com o nosso próprio padrão de upload; URLs externas
+// (ex.: thesportsdb via "Buscar Escudos") passam intactas.
+function normalizeCrestUrl(crest_url) {
+  if (!crest_url) return crest_url;
+  const wrapPattern = /^https?:\/\/[^/]+\/uploads\/clubes\/reduced\/reduced_(.+)\.webp(?:\?.*)?$/;
+  let value = String(crest_url);
+  let match;
+  while ((match = value.match(wrapPattern))) {
+    value = match[1];
+  }
+  return value;
+}
+
 export async function updateClub(req, res) {
   const id = req.params.id;
 
@@ -827,7 +844,7 @@ export async function updateClub(req, res) {
         name,
         short_name || null,
         description,
-        crest_url,
+        normalizeCrestUrl(crest_url),
         founded_at || null,
         stadium_name || null,
         stadium_capacity ? Number(stadium_capacity) : null,

@@ -40,7 +40,7 @@ function ClubAvatar({ name, crestUrl }) {
         }}
       >
         <img
-          src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_` + crestUrl + `.webp`}
+          src={crestUrl.startsWith("http") ? crestUrl : `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${crestUrl}.webp`}
           alt={name}
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
           onError={(e) => {

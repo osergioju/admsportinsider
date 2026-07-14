@@ -619,7 +619,7 @@ export default function ImportModal({ countries: initialCountries, onClose, onSu
                   <div key={club.id_club} className="flex items-center gap-2.5 px-3 py-2 bg-white border border-gray-100 rounded-xl">
                     <div className="w-7 h-7 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                       {club.crest_url
-                        ? <img src={`https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${club.crest_url}.webp`} className="w-full h-full object-contain" alt="" />
+                        ? <img src={club.crest_url.startsWith("http") ? club.crest_url : `https://pro.sportinsider.com.br/uploads/clubes/reduced/reduced_${club.crest_url}.webp`} className="w-full h-full object-contain" alt="" />
                         : <Shield size={13} className="text-gray-300" />}
                     </div>
                     <div className="flex-1 min-w-0">
