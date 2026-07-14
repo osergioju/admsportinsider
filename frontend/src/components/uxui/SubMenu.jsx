@@ -11,7 +11,7 @@ export default function SubItem({ label, to, ...props }) {
           props.onClick?.(e);
           navigate(to);
         }}
-        className="cursor-pointer text-sm text-gray-600 hover:text-[#7F33D9] transition"
+        className="text-left cursor-pointer text-sm text-gray-600 hover:text-[#7F33D9] transition"
       >
         {label}
       </button>
