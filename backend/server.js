@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import db from  "./src/config/db.js";
+import db from "./src/config/db.js";
 import { UPLOADS_DIR } from "./src/config/paths.js";
 
 import authRoutes from "./src/routes/auth.routes.js";
@@ -25,7 +25,7 @@ import favoritesRoutes from "./src/routes/favorites.routes.js";
 import { multerErrorHandler } from "./src/middlewares/multerErrorHandler.js";
 import { startNotificationCron } from "./src/jobs/notificationCron.js";
 import { startSubscriptionExpiringCron } from "./src/jobs/subscriptionExpiringCron.js";
- 
+
 // Swagger
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
@@ -64,7 +64,8 @@ app.set("trust proxy", 1);
 // ===== CORS =====
 const allowedOrigins = [
   "http://localhost:5173",
-
+  "http://localhost:5174",
+  "http://localhost:4001",
   "https://sportinsider.com",
   "https://dashboard.sportinsider.com",
   "https://dash.crtcomunicacao.com.br",

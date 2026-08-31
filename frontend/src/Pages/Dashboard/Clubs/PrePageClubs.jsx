@@ -83,18 +83,20 @@ function injectStyles() {
 
 
 /* ─── Componente principal ─────────────────────────────────────── */
-export default function PrePageClubs() {
+export default function PrePageClubs({ initialData } = {}) {
     const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [theClub, setTheClub] = useState(null);
-    const [financials, setFinancials] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [theClub, setTheClub] = useState(initialData?.theClub ?? null);
+    const [financials, setFinancials] = useState(initialData?.financials ?? null);
+    const [loading, setLoading] = useState(!initialData);
 
     useEffect(() => { injectStyles(); }, []);
 
     useEffect(() => {
+        if (initialData) return;
+
         async function loadDashboard() {
             try {
                 setLoading(true);
@@ -285,7 +287,7 @@ export default function PrePageClubs() {
                                                 style={{
                                                     color: textColor,
                                                 }}
-                                                class="text-white font-[300] flex items-center gap-2 text-base">
+                                                className="text-white font-[300] flex items-center gap-2 text-base">
                                                 <svg
                                                     style={{
                                                         stroke: textColor,
@@ -299,7 +301,7 @@ export default function PrePageClubs() {
                                                 style={{
                                                     color: textColor,
                                                 }}
-                                                class="text-lg lg:text-[20px] text-white font-[400] flex leading-none mt-2 flex-col">
+                                                className="text-lg lg:text-[20px] text-white font-[400] flex leading-none mt-2 flex-col">
                                                 {theClub.club.stadium_name}
 
                                                 {theClub.club.stadium_capacity && (
