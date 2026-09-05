@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { X, Copy, Check } from "lucide-react";
-import { api } from "../../../services/api";
+
+// Em produção o backend fica atrás de /api no mesmo domínio do PRO
+// (pro.sportinsider.com.br/api/...). Localmente a API roda direto na porta 3000.
+const PROD_EMBED_BASE = "https://pro.sportinsider.com.br/api";
+const DEV_EMBED_BASE = "http://localhost:3000";
+
+function resolveEmbedBase() {
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" ? DEV_EMBED_BASE : PROD_EMBED_BASE;
+}
 
 export default function EmbedModal({ chart, onClose }) {
   const [copied, setCopied] = useState(false);
 
   const targetId = `si-chart-${chart.embed_token}`;
-  const embedBase = api.defaults.baseURL;
+  const embedBase = resolveEmbedBase();
   const snippet = `<div id="${targetId}"></div>
 <script src="${embedBase}/public/embed/chart-embed.js" data-chart-token="${chart.embed_token}" data-target="${targetId}" async></script>`;
 
