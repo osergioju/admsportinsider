@@ -96,6 +96,7 @@ import FaqAdmin from "./Pages/Admin/Faq/FaqAdmin";
 
 // Legal Admin
 import LegalAdmin from "./Pages/Admin/Legal/LegalAdmin";
+import ChartsAdmin from "./Pages/Admin/Charts/ChartsAdmin";
 
 // Update Notes Admin
 import UpdateNotesAdmin from "./Pages/Admin/UpdateNotes/UpdateNotesAdmin";
@@ -384,6 +385,11 @@ export default function App() {
               {/* ── Notas de Atualização ── */}
               <Route element={<AdminPermissionRoute permissionKey="update-notes" />}>
                 <Route path="/admin/update-notes" element={<UpdateNotesAdmin />} />
+              </Route>
+
+              {/* ── Gerador de Gráficos ── */}
+              <Route element={<AdminPermissionRoute permissionKey="charts" />}>
+                <Route path="/admin/charts" element={<ChartsAdmin />} />
               </Route>
 
             </Route>

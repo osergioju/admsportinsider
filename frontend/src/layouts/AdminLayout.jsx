@@ -263,7 +263,7 @@ export default function AdminLayout() {
                     </div>
 
                     {/* SEÇÃO: CONTEÚDO DO SITE */}
-                    {(canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq") || canAccess("legal") || canAccess("update-notes")) && (
+                    {(canAccess("banners") || canAccess("notifications") || canAccess("regions") || canAccess("currencies") || canAccess("faq") || canAccess("legal") || canAccess("update-notes") || canAccess("charts")) && (
                         <div>
                             <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">Conteúdo do site</span>
                             <ul className="space-y-1">
@@ -274,6 +274,7 @@ export default function AdminLayout() {
                                 {canAccess("faq") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/faq" icon={<MessageCircleQuestionMark strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Faqs</span>} /></div>}
                                 {canAccess("legal") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/legal" icon={<FileText strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Páginas Legais</span>} /></div>}
                                 {canAccess("update-notes") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/update-notes" icon={<FileText strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Notas de Atualização</span>} /></div>}
+                                {canAccess("charts") && <div className="group"><MenuItem onClick={() => setOpenMenu(false)} className={menuItemStyle} to="/admin/charts" icon={<ChartArea strokeWidth={1.5} size={20} className={iconStyle} />} label={<span className={textStyle}>Gerador de Gráficos</span>} /></div>}
                             </ul>
                         </div>
                     )}

@@ -21,6 +21,7 @@ import stripeWebhookRoutes from "./src/routes/stripeWebhook.routes.js";
 import currenciesRoutes from "./src/routes/currency.routes.js";
 import contactRoutes from "./src/routes/contact.routes.js";
 import favoritesRoutes from "./src/routes/favorites.routes.js";
+import embedRoutes, { EMBED_DIR } from "./src/routes/embed.routes.js";
 
 import { multerErrorHandler } from "./src/middlewares/multerErrorHandler.js";
 import { startNotificationCron } from "./src/jobs/notificationCron.js";
@@ -75,6 +76,12 @@ const allowedOrigins = [
   "http://146.190.159.239:3000"
 ];
 
+
+// ===== EMBED PÚBLICO (vem ANTES do CORS restritivo) =====
+// Gráficos incorporados rodam em domínios de terceiros (WordPress, sites de
+// parceiros) — precisam de CORS aberto, diferente do resto da API.
+app.use("/public/embed", cors({ origin: "*" }), express.static(EMBED_DIR));
+app.use("/public", cors({ origin: "*" }), embedRoutes);
 
 app.use(cors({
   origin: (origin, callback) => {

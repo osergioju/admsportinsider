@@ -97,6 +97,12 @@ export const ADMIN_PAGES = [
     group: "Conteúdo",
     routes: ["/admin/update-notes"],
   },
+  {
+    key: "charts",
+    label: "Gerador de Gráficos",
+    group: "Conteúdo",
+    routes: ["/admin/charts"],
+  },
 
   // ── Configuração ─────────────────────────────────────
   {

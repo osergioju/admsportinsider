@@ -1490,6 +1490,7 @@ import { Router } from "express";
 import { previewClubImport, uploadClubXlsx, previewLeagueImport, uploadLeagueXlsx, getAttributeKeys, createUser, getAdminDashboard, disableCountry, createCountry, updateCountry, getAllCountries, getAllLeagues, getAllCountriesById, getAllUsers, getUserById, disableUser, enableUser, changeUserPlan, resendConfirmationEmail, updateUser, updateUserPassword, getLeagueById, createLeague, updateLeague, disableLeague, saveLeagueStructure, getAllClubs, clubsGroupedByCountry, clubsSearch, leaguesSearch, getClubById, createClub, updateClub, disableClub, bulkDisableClubs, getAllFaqs, createFaq, updateFaq, deleteFaq, updateFaqOrder, fetchTeamFromSportsDB, fetchPlayerFromSportsDB, adminGetPlayers, updatePlayerPhoto, getCustomEditorData, saveGroupAssignments, createCustomMatch, updateCustomMatch, deleteCustomMatch, generateMatchesFromGroups, addClubToSeason, removeClubFromSeason, getAllContinents, createContinent, updateContinent, disableContinent, getAllFederations, createFederation, updateFederation, disableFederation, getTournamentSuggestions, bulkAssignPhases, getGroupClubs, saveGroupClubs, searchStadiums, listHospitality, upsertHospitality, deleteHospitality, createHiddenClub, getLeagueMatches } from "../controllers/admin.controller.js";
 import { getAllLegalSections, createLegalSection, updateLegalSection, deleteLegalSection, updateLegalOrder } from "../controllers/legal.controller.js";
 import { getAllUpdateNotes, createUpdateNote, updateUpdateNote, deleteUpdateNote, updateNotesOrder } from "../controllers/updateNotes.controller.js";
+import { getDataCatalog, searchEntities, previewChart, getAllCharts, getChartById, createChart, updateChart, deleteChart, regenerateEmbedToken } from "../controllers/chartDefinitions.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1704,6 +1705,17 @@ router.post("/update-notes", adminGuard, createUpdateNote);
 router.patch("/update-notes/order", updateNotesOrder);
 router.put("/update-notes/:id", adminGuard, updateUpdateNote);
 router.delete("/update-notes/:id", adminGuard, deleteUpdateNote);
+
+// Gerador de Gráficos (/charts)
+router.get("/charts/data-catalog", getDataCatalog);
+router.get("/charts/entities", searchEntities);
+router.post("/charts/preview", previewChart);
+router.get("/charts", getAllCharts);
+router.get("/charts/:id", getChartById);
+router.post("/charts", adminGuard, createChart);
+router.put("/charts/:id", adminGuard, updateChart);
+router.delete("/charts/:id", adminGuard, deleteChart);
+router.post("/charts/:id/regenerate-token", adminGuard, regenerateEmbedToken);
 
 
 export default router;
