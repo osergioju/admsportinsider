@@ -289,7 +289,7 @@ export default function StadiumGlobe({
                 if (prefersReducedMotion) {
                     map.jumpTo({
                         center: [longitude, latitude],
-                        zoom: approximate ? 4.6 : 14.6,
+                        zoom: approximate ? 4.6 : 17,
                         pitch: approximate ? 0 : 48,
                         bearing: -14,
                     });
@@ -327,8 +327,8 @@ export default function StadiumGlobe({
                 // 3) Chega na localização exata do estádio.
                 await flyToStep({
                     center: [longitude, latitude],
-                    zoom: 14.6,
-                    pitch: 52,
+                    zoom: 17,
+                    pitch: 55,
                     bearing: -18,
                     duration: 3000,
                     curve: 1.42,

@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin } from "lucide-react";
 import StadiumGlobe from "../../components/stadium/StadiumGlobe";
 import { resolveStadiumData, geocodeStadium } from "../../data/stadiums";
 import { clubUrl, clubLogo as resolveClubLogo, handleCrestRetry } from "../../utils/clubUrl";
+import { api } from "../../services/api";
 import { useTranslation } from "../../context/TranslationContext";
 
 const STYLE_ID = "stadium-page-styles";
@@ -64,18 +65,31 @@ export default function StadiumPage() {
 
     // Estádios fora do mock local chegam com coordenada aproximada (centróide do
     // país). Antes do globo animar, tenta achar a localização exata pelo nome na
-    // Geocoding API do Mapbox — se achar, troca pra ela; se não, segue no fallback.
+    // Geocoding API do Mapbox — se achar, troca pra ela e grava no banco (via
+    // clube de origem) pra nunca mais precisar buscar de novo; se não, segue no
+    // fallback.
     useEffect(() => {
         if (!stadium?.approximate) return undefined;
 
         let cancelled = false;
         geocodeStadium(stadium).then((refined) => {
             if (cancelled) return;
-            if (refined) setStadium(refined);
+            if (refined) {
+                setStadium(refined);
+                if (clubHint?.id) {
+                    api.patch(`/dashboard/clubs/${clubHint.id}/stadium-location`, {
+                        latitude: refined.latitude,
+                        longitude: refined.longitude,
+                        country_code: refined.countryCode,
+                    }).catch(() => {
+                        // best-effort — se falhar, só perde o cache; a próxima visita tenta de novo
+                    });
+                }
+            }
             setLocating(false);
         });
         return () => { cancelled = true; };
-    }, [stadium]);
+    }, [stadium, clubHint]);
 
     useEffect(() => {
         document.title = stadium?.name ? `${stadium.name} · Sport Insider` : "Estádio · Sport Insider";

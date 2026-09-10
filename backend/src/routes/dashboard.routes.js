@@ -44,7 +44,7 @@ import { createFavorite, listFavorites } from "../controllers/dashboardFavorites
 import { getClubCompetitions, getClubPlayers, getPlayerDetail, searchPlayers, getPlayerCountries, getLeagueSports, getMatchDetail, getLeagueAttendance } from "../controllers/sports.controller.js";
 import { getLeaguePrizes } from "../controllers/federationFinancial.controller.js";
 import { financialContext } from "../middlewares/financialContext.middleware.js";
-import { clubsGroupedByCountry, clubsSearch, getClubById, getLeagueById, leaguesSearch, getContinentalLeagues, getDashboardFederations, getDashboardFederationBySlug } from "../controllers/admin.controller.js";
+import { clubsGroupedByCountry, clubsSearch, getClubById, saveStadiumLocation, getLeagueById, leaguesSearch, getContinentalLeagues, getDashboardFederations, getDashboardFederationBySlug } from "../controllers/admin.controller.js";
 import { getFederationCycleFinancials, getLeagueCycleFinancials, getFederationFinanceOverview } from "../controllers/federationFinancial.controller.js";
 import { apiCache } from "../middlewares/apiCache.middleware.js";
 
@@ -83,6 +83,7 @@ router.post("/players/search", optionalAuth, playersSearch);
 router.get("/clubs", clubsGroupedByCountry);
 router.post("/clubs/search", clubsSearch);
 router.get("/clubs/:id/info", getClubById);
+router.patch("/clubs/:id/stadium-location", saveStadiumLocation);
 
 /* ===============================
    CLUBS — PÁGINA ÚNICA

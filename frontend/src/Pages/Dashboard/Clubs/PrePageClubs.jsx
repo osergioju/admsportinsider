@@ -314,6 +314,9 @@ export default function PrePageClubs({ initialData } = {}) {
                                                             country: theClub.club.country_name,
                                                             stadium_name: theClub.club.stadium_name,
                                                             stadium_capacity: theClub.club.stadium_capacity,
+                                                            latitude: theClub.club.stadium_latitude != null ? Number(theClub.club.stadium_latitude) : null,
+                                                            longitude: theClub.club.stadium_longitude != null ? Number(theClub.club.stadium_longitude) : null,
+                                                            countryCode: theClub.club.stadium_country_code,
                                                         },
                                                     }}
                                                     className="hover:underline underline-offset-4 decoration-1 w-fit"

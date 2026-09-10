@@ -660,6 +660,47 @@ export async function getClubById(req, res) {
   }
 }
 
+// Grava a coordenada do estádio a primeira vez que o front acha ela via
+// geocoding (Mapbox Search Box), pra nunca mais precisar buscar de novo pra
+// esse clube. "Primeira escrita vence": só grava se ainda estiver vazio, pra
+// esse endpoint público não virar uma forma de qualquer um sobrescrever com
+// lixo a coordenada de um estádio já resolvido.
+export async function saveStadiumLocation(req, res) {
+  const { id } = req.params;
+  const { latitude, longitude, country_code } = req.body || {};
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+    return res.status(400).json({ message: "latitude inválida" });
+  }
+  if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+    return res.status(400).json({ message: "longitude inválida" });
+  }
+  const countryCode = typeof country_code === "string" && /^[A-Za-z]{2}$/.test(country_code)
+    ? country_code.toUpperCase()
+    : null;
+
+  try {
+    const result = await db.query(`
+      UPDATE clubs
+         SET stadium_latitude = $1,
+             stadium_longitude = $2,
+             stadium_country_code = COALESCE($3, stadium_country_code),
+             stadium_geocoded_at = NOW()
+       WHERE id_club = $4
+         AND stadium_latitude IS NULL
+      RETURNING id_club
+    `, [lat, lng, countryCode, id]);
+
+    return res.json({ saved: result.rows.length > 0 });
+  } catch (err) {
+    console.error("Erro ao salvar localização do estádio:", err);
+    return res.status(500).json({ message: "Erro ao salvar localização do estádio" });
+  }
+}
+
 
 export async function getAttributeKeys(req, res) {
   try {
