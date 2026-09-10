@@ -4,6 +4,12 @@ import { clubLogo as resolveClubLogo, handleCrestRetry } from "../../utils/clubU
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
+const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
+const SATELLITE_STYLE = "mapbox://styles/mapbox/satellite-streets-v12";
+
+const CLOSE_ZOOM_DARK = 17;
+const CLOSE_ZOOM_SATELLITE = 15.3;
+
 const STYLE_ID = "stadium-globe-styles";
 
 function injectStyles() {
@@ -112,6 +118,29 @@ function injectStyles() {
             font-size: 11px;
             color: rgba(255,255,255,0.55);
         }
+
+        .stadium-globe-style-toggle {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 3;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: rgba(30,16,50,0.55);
+            backdrop-filter: blur(16px) saturate(140%);
+            -webkit-backdrop-filter: blur(16px) saturate(140%);
+            border: 1px solid rgba(180,140,255,0.14);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+        .stadium-globe-style-toggle:hover { background: rgba(50,26,80,0.7); }
+        .stadium-globe-style-toggle:active { transform: scale(0.96); }
     `;
     document.head.appendChild(el);
 }
@@ -130,7 +159,25 @@ export default function StadiumGlobe({
     className = "",
 }) {
     const containerRef = useRef(null);
+    const mapRef = useRef(null);
+    const styleModeRef = useRef("dark");
     const [ready, setReady] = useState(false);
+    const [styleMode, setStyleMode] = useState("dark");
+
+    const toggleStyle = () => {
+        const map = mapRef.current;
+        if (!map) return;
+        const next = styleModeRef.current === "satellite" ? "dark" : "satellite";
+        styleModeRef.current = next;
+        setStyleMode(next);
+        map.setStyle(next === "satellite" ? SATELLITE_STYLE : DARK_STYLE);
+        if (!approximate && map.getZoom() > 5) {
+            map.easeTo({
+                zoom: next === "satellite" ? CLOSE_ZOOM_SATELLITE : CLOSE_ZOOM_DARK,
+                duration: 700,
+            });
+        }
+    };
 
     useEffect(() => {
         injectStyles();
@@ -153,7 +200,7 @@ export default function StadiumGlobe({
 
             map = new gl.Map({
                 container: containerRef.current,
-                style: "mapbox://styles/mapbox/dark-v11",
+                style: styleModeRef.current === "satellite" ? SATELLITE_STYLE : DARK_STYLE,
                 projection: "globe",
                 center: START_CENTER,
                 zoom: 0.35,
@@ -162,6 +209,7 @@ export default function StadiumGlobe({
                 attributionControl: false,
                 antialias: true,
             });
+            mapRef.current = map;
 
             map.addControl(new gl.AttributionControl({ compact: true }), "bottom-right");
 
@@ -172,9 +220,12 @@ export default function StadiumGlobe({
 
             let markerEl = null;
             let cardEl = null;
+            let markersCreated = false;
 
             map.on("style.load", () => {
                 if (cancelled) return;
+
+                map.setProjection("globe");
 
                 map.setFog({
                     range: [0.6, 10],
@@ -201,7 +252,9 @@ export default function StadiumGlobe({
                 // exatamente quando a câmera chega no estádio no final do voo.
                 // Cor em degradê: prédios mais altos ficam mais roxos/claros.
                 try {
-                    if (!map.getLayer("stadium-3d-buildings")) {
+                    if (styleModeRef.current === "satellite") {
+                        map.setLight({ anchor: "viewport", color: "#ffffff", intensity: 0.35 });
+                    } else if (!map.getLayer("stadium-3d-buildings")) {
                         map.addLayer({
                             id: "stadium-3d-buildings",
                             source: "composite",
@@ -236,39 +289,45 @@ export default function StadiumGlobe({
                     // fonte "composite"/"building" indisponível nesse estilo — segue sem prédios 3D
                 }
 
-                // Marker minimalista (ponto + feixe) e card flutuante, adicionados
-                // "invisíveis" desde já; a classe is-visible dispara o fade/scale via CSS
-                // quando a câmera termina de chegar (ver finish()).
-                markerEl = document.createElement("div");
-                markerEl.className = "stadium-marker";
-                markerEl.innerHTML = `
-                    <span class="stadium-marker-beam"></span>
-                    <span class="stadium-marker-pulse"></span>
-                    <span class="stadium-marker-dot"></span>
-                `;
-                new gl.Marker({ element: markerEl, anchor: "bottom" })
-                    .setLngLat([longitude, latitude])
-                    .addTo(map);
+                if (!markersCreated) {
+                    markersCreated = true;
 
-                cardEl = document.createElement("div");
-                cardEl.className = "stadium-card";
-                const crestSrc = clubLogo || (club?.crest_url ? resolveClubLogo(club.crest_url, club.slug) : null);
-                cardEl.innerHTML = `
-                    ${crestSrc ? `<img class="stadium-card-crest" src="${crestSrc}" alt="" />` : ""}
-                    <span class="stadium-card-text">
-                        <span class="stadium-card-title">${stadiumName || ""}</span>
-                        <span class="stadium-card-sub">${[city, country].filter(Boolean).join(" · ")}${approximate ? " (aprox.)" : ""}</span>
-                    </span>
-                `;
-                if (crestSrc) {
-                    cardEl.querySelector("img")?.addEventListener("error", handleCrestRetry);
+                    // Marker minimalista (ponto + feixe) e card flutuante, adicionados
+                    // "invisíveis" desde já; a classe is-visible dispara o fade/scale via CSS
+                    // quando a câmera termina de chegar (ver finish()).
+                    markerEl = document.createElement("div");
+                    markerEl.className = "stadium-marker";
+                    markerEl.innerHTML = `
+                        <span class="stadium-marker-beam"></span>
+                        <span class="stadium-marker-pulse"></span>
+                        <span class="stadium-marker-dot"></span>
+                    `;
+                    new gl.Marker({ element: markerEl, anchor: "bottom" })
+                        .setLngLat([longitude, latitude])
+                        .addTo(map);
+
+                    cardEl = document.createElement("div");
+                    cardEl.className = "stadium-card";
+                    const crestSrc = clubLogo || (club?.crest_url ? resolveClubLogo(club.crest_url, club.slug) : null);
+                    cardEl.innerHTML = `
+                        ${crestSrc ? `<img class="stadium-card-crest" src="${crestSrc}" alt="" />` : ""}
+                        <span class="stadium-card-text">
+                            <span class="stadium-card-title">${stadiumName || ""}</span>
+                            <span class="stadium-card-sub">${[city, country].filter(Boolean).join(" · ")}${approximate ? " (aprox.)" : ""}</span>
+                        </span>
+                    `;
+                    if (crestSrc) {
+                        cardEl.querySelector("img")?.addEventListener("error", handleCrestRetry);
+                    }
+                    new gl.Marker({ element: cardEl, anchor: "left", offset: [14, -34] })
+                        .setLngLat([longitude, latitude])
+                        .addTo(map);
+
+                    if (!cancelled) setReady(true);
+                    runCinematic();
+                } else {
+                    finish();
                 }
-                new gl.Marker({ element: cardEl, anchor: "left", offset: [14, -34] })
-                    .setLngLat([longitude, latitude])
-                    .addTo(map);
-
-                if (!cancelled) setReady(true);
-                runCinematic();
             });
 
             function flyToStep(opts) {
@@ -287,9 +346,10 @@ export default function StadiumGlobe({
 
             async function runCinematic() {
                 if (prefersReducedMotion) {
+                    const closeZoom = styleModeRef.current === "satellite" ? CLOSE_ZOOM_SATELLITE : CLOSE_ZOOM_DARK;
                     map.jumpTo({
                         center: [longitude, latitude],
-                        zoom: approximate ? 4.6 : 17,
+                        zoom: approximate ? 4.6 : closeZoom,
                         pitch: approximate ? 0 : 48,
                         bearing: -14,
                     });
@@ -327,7 +387,7 @@ export default function StadiumGlobe({
                 // 3) Chega na localização exata do estádio.
                 await flyToStep({
                     center: [longitude, latitude],
-                    zoom: 17,
+                    zoom: styleModeRef.current === "satellite" ? CLOSE_ZOOM_SATELLITE : CLOSE_ZOOM_DARK,
                     pitch: 55,
                     bearing: -18,
                     duration: 3000,
@@ -346,6 +406,7 @@ export default function StadiumGlobe({
             timers.forEach(clearTimeout);
             resizeObserver?.disconnect();
             map?.remove();
+            if (mapRef.current === map) mapRef.current = null;
         };
     }, [latitude, longitude, stadiumName]);
 
@@ -367,6 +428,15 @@ export default function StadiumGlobe({
                 className="absolute inset-0 pointer-events-none transition-opacity duration-700"
                 style={{ opacity: ready ? 0 : 1, background: "radial-gradient(circle at 50% 40%, #2A1050 0%, #0A0616 70%)" }}
             />
+            {ready && (
+                <button
+                    type="button"
+                    onClick={toggleStyle}
+                    className="stadium-globe-style-toggle"
+                >
+                    {styleMode === "satellite" ? "Mapa" : "Satélite"}
+                </button>
+            )}
         </div>
     );
 }
