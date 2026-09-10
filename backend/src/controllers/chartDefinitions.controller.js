@@ -74,6 +74,25 @@ export async function getAllCharts(req, res) {
   }
 }
 
+// ─── Leitura (dashboard, autenticado) — renderização interna, sem marca ──────
+export async function getChartData(req, res) {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      `SELECT title, chart_type, source_params FROM chart_definitions WHERE id = $1 AND status != 'archived'`,
+      [id]
+    );
+    if (!result.rows.length) return res.status(404).json({ message: "Gráfico não encontrado" });
+
+    const chart = result.rows[0];
+    const data = await resolveChartSeries(chart.source_params);
+    return res.json({ title: chart.title, chart_type: chart.chart_type, target_max: chart.source_params?.target_max || null, ...data });
+  } catch (error) {
+    console.error("Erro ao buscar dados do gráfico:", error);
+    return res.status(500).json({ message: "Erro ao buscar dados do gráfico" });
+  }
+}
+
 export async function getChartById(req, res) {
   const { id } = req.params;
   try {

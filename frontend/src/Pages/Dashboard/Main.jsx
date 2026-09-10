@@ -1,6 +1,8 @@
 import HomeBanners from "../../components/uxui/banner"
 import NotasSection from "./../Dashboard/Notas/NotasSection"
 import RevenueSection from "./Leagues/components/revenue/RevenueSection"
+import FinanceCarousel from "./Finance/FinanceCarousel"
+import SlotRenderer from "../../components/publications/SlotRenderer"
 
 import { useState, useEffect, useMemo } from "react"
 import { Link } from "react-router-dom"
@@ -61,33 +63,59 @@ export default function Main() {
   return (
     <div className="space-y-8">
 
-      {/* Banners */}
-      <div className="w-full grid mb-4">
-        <HomeBanners />
-      </div>
+      {/* ══════════════ HOME MODULAR (Publicações) — em avaliação ══════════════ */}
 
-      {/* Gráfico principal: Receitas da Fifa por ciclo da Copa do Mundo */}
-      <div className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <RevenueSection
-          title="Receitas da Fifa"
-          data={revenueData}
-          selectedLeagues={selectedLeagues}
-          setSelectedLeagues={setSelectedLeagues}
-          leagueMap={leagueMap}
-          setLeagueMap={setLeagueMap}
-          leagueColor={leagueColor}
-          setLeagueColor={setLeagueColor}
-          mainLeagueId={FIFA_LEAGUE_ID}
-          currency={currency}
-          setCurrency={setCurrency}
-          currencies={currencies}
-          yearLogos={yearLogos}
-          showCompare={false}
-          integratedTable
-        />
-      </div>
+      {/* Chamada grande (2 slots) */}
+      <SlotRenderer pageKey="home" zone="hero" />
+
+      {/* Carrossel automático — seção Finanças (curadoria manual em Publicações) */}
+      <FinanceCarousel />
+
+      {/* Corpo: gráfico + publicidade pequenos, big numbers (curadoria manual em Publicações) */}
+      <SlotRenderer pageKey="home" zone="body" />
 
       <NotasSection />
+
+      {/* ══════════════ FIM DO CONTEÚDO MODULAR ══════════════ */}
+
+
+      {/* ──────────────────────────────────────────────────────────────────────
+          LEGADO — layout fixo anterior, mantido só para comparação visual.
+          Remover depois que a Home modular acima estiver aprovada e populada.
+      ────────────────────────────────────────────────────────────────────── */}
+      <div className="pt-10 mt-10 border-t-4 border-dashed border-gray-200">
+        <p className="text-center text-xs font-bold uppercase tracking-widest text-gray-300 mb-6">
+          ↓ Layout antigo (referência temporária) ↓
+        </p>
+
+        <div className="space-y-8">
+          {/* Banners */}
+          <div className="w-full grid mb-4">
+            <HomeBanners />
+          </div>
+
+          {/* Gráfico principal: Receitas da Fifa por ciclo da Copa do Mundo */}
+          <div className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <RevenueSection
+              title="Receitas da Fifa"
+              data={revenueData}
+              selectedLeagues={selectedLeagues}
+              setSelectedLeagues={setSelectedLeagues}
+              leagueMap={leagueMap}
+              setLeagueMap={setLeagueMap}
+              leagueColor={leagueColor}
+              setLeagueColor={setLeagueColor}
+              mainLeagueId={FIFA_LEAGUE_ID}
+              currency={currency}
+              setCurrency={setCurrency}
+              currencies={currencies}
+              yearLogos={yearLogos}
+              showCompare={false}
+              integratedTable
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Rodapé discreto — notas de atualização (políticas migraram p/ a sidebar) */}
       <footer className="pt-2 pb-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-gray-300">

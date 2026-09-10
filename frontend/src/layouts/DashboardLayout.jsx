@@ -36,7 +36,8 @@ export default function DashboardLayout() {
         location.pathname.startsWith("/dashboard/players/") ||
         location.pathname.startsWith("/dashboard/relatorios") ||
         location.pathname.startsWith("/dashboard/relatorios/") ||
-        location.pathname.startsWith("/dashboard/countries");
+        location.pathname.startsWith("/dashboard/countries") ||
+        location.pathname.startsWith("/stadiums");
 
     useEffect(() => {
         if (loading) return;

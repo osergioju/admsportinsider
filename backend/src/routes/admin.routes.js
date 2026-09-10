@@ -1491,6 +1491,8 @@ import { previewClubImport, uploadClubXlsx, previewLeagueImport, uploadLeagueXls
 import { getAllLegalSections, createLegalSection, updateLegalSection, deleteLegalSection, updateLegalOrder } from "../controllers/legal.controller.js";
 import { getAllUpdateNotes, createUpdateNote, updateUpdateNote, deleteUpdateNote, updateNotesOrder } from "../controllers/updateNotes.controller.js";
 import { getDataCatalog, searchEntities, previewChart, getAllCharts, getChartById, createChart, updateChart, deleteChart, regenerateEmbedToken } from "../controllers/chartDefinitions.controller.js";
+import { getLayout, saveLayout } from "../controllers/publications.controller.js";
+import { getLinkPreview } from "../controllers/linkPreview.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
@@ -1716,6 +1718,11 @@ router.post("/charts", adminGuard, createChart);
 router.put("/charts/:id", adminGuard, updateChart);
 router.delete("/charts/:id", adminGuard, deleteChart);
 router.post("/charts/:id/regenerate-token", adminGuard, regenerateEmbedToken);
+
+// Publicações (/publications) — páginas modulares em árvore (grid aninhada)
+router.get("/publications/:pageKey/:zone", getLayout);
+router.put("/publications/:pageKey/:zone", adminGuard, saveLayout);
+router.post("/publications/link-preview", adminGuard, getLinkPreview);
 
 
 export default router;

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
 import { formatFinancial } from "../../../utils/formatFinancial";
 import { clubLogo, handleCrestRetry } from "../../../utils/clubUrl";
+import { getStadiumSlug } from "../../../data/stadiums";
 import {
     TrendingUp,
     Trophy, Users, ArrowRight, EyeOff,
@@ -302,7 +303,24 @@ export default function PrePageClubs({ initialData } = {}) {
                                                     color: textColor,
                                                 }}
                                                 className="text-lg lg:text-[20px] text-white font-[400] flex leading-none mt-2 flex-col">
-                                                {theClub.club.stadium_name}
+                                                <Link
+                                                    to={`/stadiums/${getStadiumSlug(theClub.club.stadium_name)}`}
+                                                    state={{
+                                                        club: {
+                                                            id: theClub.club.id_club,
+                                                            name: clubName,
+                                                            slug: theClub.club.slug,
+                                                            crest_url: theClub.club.crest_url,
+                                                            country: theClub.club.country_name,
+                                                            stadium_name: theClub.club.stadium_name,
+                                                            stadium_capacity: theClub.club.stadium_capacity,
+                                                        },
+                                                    }}
+                                                    className="hover:underline underline-offset-4 decoration-1 w-fit"
+                                                    onClick={e => e.stopPropagation()}
+                                                >
+                                                    {theClub.club.stadium_name}
+                                                </Link>
 
                                                 {theClub.club.stadium_capacity && (
                                                     <span class="text-sm font-[300] opacity-80">

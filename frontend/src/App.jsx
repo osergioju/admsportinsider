@@ -97,6 +97,7 @@ import FaqAdmin from "./Pages/Admin/Faq/FaqAdmin";
 // Legal Admin
 import LegalAdmin from "./Pages/Admin/Legal/LegalAdmin";
 import ChartsAdmin from "./Pages/Admin/Charts/ChartsAdmin";
+import PublicationsAdmin from "./Pages/Admin/Publications/PublicationsAdmin";
 
 // Update Notes Admin
 import UpdateNotesAdmin from "./Pages/Admin/UpdateNotes/UpdateNotesAdmin";
@@ -114,6 +115,7 @@ import ScrollToTop from "./components/uxui/ScrollTop";
 
 // Páginas do dashboard 
 import PrePageClubs from "./Pages/Dashboard/Clubs/PrePageClubs";
+import StadiumPage from "./Pages/Stadium/StadiumPage";
 import DashCountries from "./Pages/Dashboard/Countries/Index";
 import CountryDetail from "./Pages/Dashboard/Countries/CountryDetail";
 import PlayersList from "./Pages/Dashboard/Players/PlayersList";
@@ -226,6 +228,7 @@ export default function App() {
             <Route path="/dashboard/clubs" element={<DashClubs />} />
             <Route path="/dashboard/clubs/:id" element={<PrePageClubs />} />
             <Route path="/dashboard/clubs/:id/:slug" element={<PrePageClubs />} />
+            <Route path="/stadiums/:slug" element={<StadiumPage />} />
             <Route path="/dashboard/clubs/finance/:id" element={<DashClubUniques />} />
             <Route path="/dashboard/clubs/competitions/:id" element={<CompetitionsClubs />} />
             <Route path="/dashboard/clubs/club-players/:id" element={<ClubPlayers />} />
@@ -390,6 +393,11 @@ export default function App() {
               {/* ── Gerador de Gráficos ── */}
               <Route element={<AdminPermissionRoute permissionKey="charts" />}>
                 <Route path="/admin/charts" element={<ChartsAdmin />} />
+              </Route>
+
+              {/* ── Publicações ── */}
+              <Route element={<AdminPermissionRoute permissionKey="publications" />}>
+                <Route path="/admin/publications" element={<PublicationsAdmin />} />
               </Route>
 
             </Route>

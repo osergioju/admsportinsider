@@ -37,6 +37,8 @@ import {
 
 } from "../controllers/dashboard.controller.js";
 import { authGuard, optionalAuth } from "../middlewares/auth.middleware.js";
+import { getResolvedLayout } from "../controllers/publications.controller.js";
+import { getChartData } from "../controllers/chartDefinitions.controller.js";
 
 import { createFavorite, listFavorites } from "../controllers/dashboardFavorites.controller.js";
 import { getClubCompetitions, getClubPlayers, getPlayerDetail, searchPlayers, getPlayerCountries, getLeagueSports, getMatchDetail, getLeagueAttendance } from "../controllers/sports.controller.js";
@@ -120,6 +122,10 @@ router.get("/federations", getDashboardFederations);
 router.get("/federations/:slug", optionalAuth, getDashboardFederationBySlug);
 router.get("/federations/:slug/cycle-financials", getFederationCycleFinancials);
 router.get("/federations/:slug/finance-overview", getFederationFinanceOverview);
+
+// PUBLICAÇÕES (páginas modulares por slots)
+router.get("/publications/:pageKey/:zone", optionalAuth, getResolvedLayout);
+router.get("/charts/:id/data", optionalAuth, getChartData);
 router.get("/leagues/:id/info", optionalAuth, getLeagueById);
 router.post("/leagues/search", optionalAuth, leaguesSearch);
 

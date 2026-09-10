@@ -103,6 +103,12 @@ export const ADMIN_PAGES = [
     group: "Conteúdo",
     routes: ["/admin/charts"],
   },
+  {
+    key: "publications",
+    label: "Publicações",
+    group: "Conteúdo",
+    routes: ["/admin/publications"],
+  },
 
   // ── Configuração ─────────────────────────────────────
   {

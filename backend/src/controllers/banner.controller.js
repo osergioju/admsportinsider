@@ -42,7 +42,8 @@ export async function createBanner(req, res) {
     link_url,
     start_at,
     end_at,
-    status
+    status,
+    format
   } = req.body;
 
   if (!title || !image_desktop_url || !image_mobile_url) {
@@ -65,8 +66,9 @@ export async function createBanner(req, res) {
         start_at,
         end_at,
         status,
-        sort_order
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        sort_order,
+        format
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     `, [
       title,
       image_desktop_url,
@@ -75,7 +77,8 @@ export async function createBanner(req, res) {
       start_at || null,
       end_at || null,
       status || "draft",
-      nextOrder
+      nextOrder,
+      format === "square" ? "square" : "horizontal"
     ]);
 
     return res.status(201).json({
@@ -149,7 +152,8 @@ export async function updateBanner(req, res) {
     link_url,
     start_at,
     end_at,
-    status
+    status,
+    format
   } = req.body;
 
   try {
@@ -162,8 +166,9 @@ export async function updateBanner(req, res) {
         start_at = $5,
         end_at = $6,
         status = $7,
+        format = $8,
         updated_at = NOW()
-      WHERE id_banner = $8
+      WHERE id_banner = $9
     `, [
       title,
       image_desktop_url,
@@ -172,6 +177,7 @@ export async function updateBanner(req, res) {
       start_at || null,
       end_at || null,
       status,
+      format === "square" ? "square" : "horizontal",
       id
     ]);
 

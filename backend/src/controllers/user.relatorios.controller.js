@@ -3,6 +3,97 @@ import axios from "axios";
 const INDEX_WORDPRESS_GRAPHQL_URL = "https://index.sportinsider.com.br/graphql";
 const WORDPRESS_GRAPHQL_URL = "https://sportinsider.com.br/graphql";
 
+// ─── Carrossel de Publicações (bloco "carousel" do módulo Publicações) ───────
+// Fonte real (confirmada via GraphQL em 2026-09-05):
+// - "publicacoes" (CPT unificado) tem um campo ACF `tipo.tipo` (valores vistos:
+//   "nota", "destaque") e uma taxonomia `categorias` (slugs vistos: financas,
+//   gestao, notas, marketing, midia, sociedade, investigacao).
+// - "Finanças" não é um tipo, é a categoria de slug "financas" dentro de
+//   publicacoes (pode ter tipo nota OU destaque).
+// - "Publicação externa" é um CPT à parte (publicaEsExternas), sem o campo tipo.
+// WPGraphQL não expõe filtro nativo por esse ACF/taxonomia aqui, então
+// busca-se um lote recente e filtra-se em memória.
+const PUBLICATIONS_QUERY = `
+  query GetPublicacoes($first: Int!) {
+    publicacoes(first: $first, where: { orderby: { field: DATE, order: DESC }, status: PUBLISH }) {
+      nodes {
+        id
+        title
+        link
+        date
+        featuredImage { node { sourceUrl } }
+        tipo { tipo }
+        categorias { nodes { slug } }
+      }
+    }
+  }
+`;
+
+const EXTERNAL_PUBLICATIONS_QUERY = `
+  query GetPublicacoesExternas($first: Int!) {
+    publicaEsExternas(first: $first, where: { orderby: { field: DATE, order: DESC }, status: PUBLISH }) {
+      nodes {
+        id
+        title
+        link
+        date
+        featuredImage { node { sourceUrl } }
+      }
+    }
+  }
+`;
+
+function normalizePublication(node) {
+  return {
+    id: node.id,
+    title: node.title,
+    link: node.link,
+    date: node.date,
+    image: node.featuredImage?.node?.sourceUrl || null,
+  };
+}
+
+export const getWordpressPublications = async (req, res) => {
+  const source = req.query.source; // "nota" | "destaque" | "financas" | "externa"
+  const limit = Math.min(parseInt(req.query.limit) || 4, 20);
+
+  if (!["nota", "destaque", "financas", "externa"].includes(source)) {
+    return res.status(400).json({ message: "source inválido (use nota, destaque, financas ou externa)" });
+  }
+
+  try {
+    if (source === "externa") {
+      const { data: wpData } = await axios.post(
+        WORDPRESS_GRAPHQL_URL,
+        { query: EXTERNAL_PUBLICATIONS_QUERY, variables: { first: limit } },
+        { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+      );
+      if (wpData.errors) throw new Error(JSON.stringify(wpData.errors));
+      const items = (wpData.data.publicaEsExternas?.nodes || []).map(normalizePublication);
+      return res.json({ items });
+    }
+
+    // nota / destaque / financas — busca um lote recente e filtra em memória
+    const { data: wpData } = await axios.post(
+      WORDPRESS_GRAPHQL_URL,
+      { query: PUBLICATIONS_QUERY, variables: { first: 40 } },
+      { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+    );
+    if (wpData.errors) throw new Error(JSON.stringify(wpData.errors));
+
+    const nodes = wpData.data.publicacoes?.nodes || [];
+    const filtered =
+      source === "financas"
+        ? nodes.filter((n) => (n.categorias?.nodes || []).some((c) => c.slug === "financas"))
+        : nodes.filter((n) => n.tipo?.tipo === source);
+
+    return res.json({ items: filtered.slice(0, limit).map(normalizePublication) });
+  } catch (error) {
+    console.error("Erro ao buscar publicações do WordPress:", error.message);
+    return res.status(500).json({ message: "Erro ao buscar publicações" });
+  }
+};
+
 /**
  * BUSCAR RELATÓRIOS (paginado via GraphQL cursor)
  */

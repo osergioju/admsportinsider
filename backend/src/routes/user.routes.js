@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { updatePassword, getProfile, updateProfile, addPreferences, updatePreferences, getRegions, getCurrencies, getFaqs, getCommonTranslations, updateDisplayCurrency } from "../controllers/user.controller.js";
 import { getNotifications, markAsRead, getUnreadCount, markAllAsRead } from "../controllers/user.notification.controller.js";
-import { getRelatorios, getRelatorioById, getNotas } from "../controllers/user.relatorios.controller.js";
+import { getRelatorios, getRelatorioById, getNotas, getWordpressPublications } from "../controllers/user.relatorios.controller.js";
 import { authGuard } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
 router.get("/notas", getNotas);
+router.get("/publications", getWordpressPublications);
 
 // Aplica a proteção em todas as rotas deste arquivo
 router.use(authGuard);

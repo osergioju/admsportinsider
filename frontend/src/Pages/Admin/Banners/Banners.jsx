@@ -42,6 +42,7 @@ export default function Banners() {
     start_at: "",
     end_at: "",
     status: "draft",
+    format: "horizontal",
   });
 
   const handleFeedback = (type, text) => {
@@ -94,7 +95,7 @@ export default function Banners() {
     setIsEditing(false);
     setCurrentId(null);
     setFeedback(null);
-    setForm({ title: "", image_desktop_url: "", image_mobile_url: "", link_url: "", start_at: "", end_at: "", status: "draft" });
+    setForm({ title: "", image_desktop_url: "", image_mobile_url: "", link_url: "", start_at: "", end_at: "", status: "draft", format: "horizontal" });
     setModalOpen(true);
   }
 
@@ -336,7 +337,7 @@ export default function Banners() {
             <div className="p-8 overflow-y-auto custom-scrollbar space-y-6">
               {/* Título + Status */}
               <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <label className={labelClass}>Título Interno</label>
                   <input className={inputClass} placeholder="Ex: Promoção Verão" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
                 </div>
@@ -346,6 +347,13 @@ export default function Banners() {
                     <option value="draft">Rascunho</option>
                     <option value="scheduled">Agendado</option>
                     <option value="active">Ativo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Formato (Publicações)</label>
+                  <select className={inputClass} value={form.format || "horizontal"} onChange={(e) => setForm({ ...form, format: e.target.value })}>
+                    <option value="horizontal">Horizontal (2 slots)</option>
+                    <option value="square">Quadrado (1 slot)</option>
                   </select>
                 </div>
               </div>
