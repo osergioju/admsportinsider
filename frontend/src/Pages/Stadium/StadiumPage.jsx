@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, MapPin } from "lucide-react";
 import StadiumGlobe from "../../components/stadium/StadiumGlobe";
+import StadiumGoogleMapEmbed from "../../components/stadium/StadiumGoogleMapEmbed";
 import { resolveStadiumData, geocodeStadium } from "../../data/stadiums";
 import { clubUrl, clubLogo as resolveClubLogo, handleCrestRetry } from "../../utils/clubUrl";
 import { api } from "../../services/api";
@@ -53,6 +54,8 @@ export default function StadiumPage() {
     const [trackedInitial, setTrackedInitial] = useState(initialStadium);
     const [stadium, setStadium] = useState(initialStadium);
     const [locating, setLocating] = useState(!!initialStadium?.approximate);
+    const [mapProvider, setMapProvider] = useState("mapbox"); // "mapbox" | "google" — só pra comparação/aprovação
+    const [googleMapType, setGoogleMapType] = useState("roadmap"); // "roadmap" | "satellite" (só quando provider = google)
 
     // Troca de estádio (navegação pra outro slug): reseta o estado local pro
     // novo valor-base já no render, sem passar por efeito (evita re-render em
@@ -124,8 +127,8 @@ export default function StadiumPage() {
     return (
         <div className="w-full overflow-hidden">
 
-            {/* ── Voltar (padrão do resto do dashboard) ─────────────── */}
-            <div className="flex items-center mb-4">
+            {/* ── Voltar + toggle de mapa (comparação p/ aprovação) ─── */}
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <Link
                     to={backHref}
                     className="flex items-center gap-1 text-sm text-gray-500 hover:text-[#7F33D9] transition font-medium"
@@ -133,6 +136,43 @@ export default function StadiumPage() {
                     <ArrowLeft size={15} />
                     {backLabel}
                 </Link>
+
+                <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white border border-gray-200 text-xs font-medium">
+                    <button
+                        type="button"
+                        onClick={() => setMapProvider("mapbox")}
+                        className={`px-3 py-1.5 rounded-full transition-colors ${mapProvider === "mapbox" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
+                    >
+                        Mapbox
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setMapProvider("google")}
+                        className={`px-3 py-1.5 rounded-full transition-colors ${mapProvider === "google" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
+                    >
+                        Google Maps
+                    </button>
+
+                    {mapProvider === "google" && (
+                        <>
+                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                            <button
+                                type="button"
+                                onClick={() => setGoogleMapType("roadmap")}
+                                className={`px-3 py-1.5 rounded-full transition-colors ${googleMapType === "roadmap" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
+                            >
+                                Mapa
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setGoogleMapType("satellite")}
+                                className={`px-3 py-1.5 rounded-full transition-colors ${googleMapType === "satellite" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
+                            >
+                                Satélite
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* ── CARD PRINCIPAL — mesma linguagem visual do header do clube ── */}
@@ -234,9 +274,18 @@ export default function StadiumPage() {
                                     </p>
                                 </div>
                             </div>
+                        ) : mapProvider === "google" ? (
+                            <StadiumGoogleMapEmbed
+                                key={`google-${googleMapType}-${stadium.slug}`}
+                                latitude={stadium.latitude}
+                                longitude={stadium.longitude}
+                                stadiumName={stadium.name}
+                                mapType={googleMapType}
+                                className="absolute inset-0"
+                            />
                         ) : (
                             <StadiumGlobe
-                                key={stadium.slug}
+                                key={`mapbox-${stadium.slug}`}
                                 latitude={stadium.latitude}
                                 longitude={stadium.longitude}
                                 stadiumName={stadium.name}
