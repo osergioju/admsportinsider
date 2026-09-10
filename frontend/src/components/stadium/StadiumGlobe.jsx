@@ -196,6 +196,46 @@ export default function StadiumGlobe({
                     // estilo ainda não totalmente pronto — segue sem esconder labels
                 }
 
+                // Prédios 3D (extrudados a partir do "building" layer que já vem no
+                // estilo) — só aparecem perto do chão (minzoom 14), então "nascem"
+                // exatamente quando a câmera chega no estádio no final do voo.
+                // Cor em degradê: prédios mais altos ficam mais roxos/claros.
+                try {
+                    if (!map.getLayer("stadium-3d-buildings")) {
+                        map.addLayer({
+                            id: "stadium-3d-buildings",
+                            source: "composite",
+                            "source-layer": "building",
+                            type: "fill-extrusion",
+                            minzoom: 13.5,
+                            filter: ["==", ["get", "extrude"], "true"],
+                            paint: {
+                                "fill-extrusion-color": [
+                                    "interpolate", ["linear"], ["get", "height"],
+                                    0, "#241638",
+                                    40, "#4B2E83",
+                                    120, "#7F33D9",
+                                    250, "#B48CFF",
+                                ],
+                                "fill-extrusion-height": [
+                                    "interpolate", ["linear"], ["zoom"],
+                                    13.5, 0,
+                                    14.2, ["get", "height"],
+                                ],
+                                "fill-extrusion-base": [
+                                    "interpolate", ["linear"], ["zoom"],
+                                    13.5, 0,
+                                    14.2, ["get", "min_height"],
+                                ],
+                                "fill-extrusion-opacity": 0.88,
+                            },
+                        });
+                        map.setLight({ anchor: "viewport", color: "#B48CFF", intensity: 0.35 });
+                    }
+                } catch {
+                    // fonte "composite"/"building" indisponível nesse estilo — segue sem prédios 3D
+                }
+
                 // Marker minimalista (ponto + feixe) e card flutuante, adicionados
                 // "invisíveis" desde já; a classe is-visible dispara o fade/scale via CSS
                 // quando a câmera termina de chegar (ver finish()).
