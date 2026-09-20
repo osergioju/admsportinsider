@@ -83,6 +83,8 @@ import Notifications from "./Pages/Admin/Notificacoes/Notifications";
 
 // Banners 
 import Banners from "./Pages/Admin/Banners/Banners";
+import Media from "./Pages/Admin/Media/Media";
+import EscudosEmMassa from "./Pages/Admin/Clubes/EscudosEmMassa";
 
 // Regiões,idiomas e moedas
 import Regions from "./Pages/Admin/Regions/Regions";
@@ -285,6 +287,7 @@ export default function App() {
                 <Route path="/admin/gestao-federacoes" element={<GestaoFederacoes />} />
                 <Route path="/admin/gestao-ligas" element={<GestaoLigas />} />
                 <Route path="/admin/gestao-clubes" element={<GestaoClubes />} />
+                <Route path="/admin/gestao-clubes/escudos" element={<EscudosEmMassa />} />
                 <Route path="/admin/gestao-jogadores" element={<GestaoJogadores />} />
               </Route>
 
@@ -360,6 +363,11 @@ export default function App() {
               {/* ── Banners ── */}
               <Route element={<AdminPermissionRoute permissionKey="banners" />}>
                 <Route path="/admin/banners" element={<Banners />} />
+              </Route>
+
+              {/* ── Mídias ── */}
+              <Route element={<AdminPermissionRoute permissionKey="media" />}>
+                <Route path="/admin/media" element={<Media />} />
               </Route>
 
               {/* ── Regiões e idioma ── */}

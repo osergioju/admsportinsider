@@ -1,31 +1,49 @@
-import { useEffect } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useRedirectIfAuthenticated } from "../../services/checkUser";
-
+import { AuthContext } from "../../context/AuthContext";
 
 export default function PaymentSuccess() {
-  const { loadingAuth, user } = useRedirectIfAuthenticated();  
+  const { user, loading, refreshUser } = useContext(AuthContext);
+  const [syncing, setSyncing] = useState(true);
 
   const navigate = useNavigate();
   const [params] = useSearchParams();
-
   const sessionId = params.get("session_id");
+  const initialPlanId = useRef(user?.plan_id);
 
   useEffect(() => {
-    // fallback de segurança
-    if (!sessionId) {
-      navigate("/me/profile");
-      return;
+    if (!loading && !user) {
+      navigate("/login");
     }
+  }, [loading, user, navigate]);
 
-    const timer = setTimeout(() => {
-      navigate("/me/subscription");
-    }, 4000); // 4 segundos
+  useEffect(() => {
+    if (!sessionId || loading || !user) return;
 
-    return () => clearTimeout(timer);
-  }, [sessionId, navigate]);
+    // A ativação do plano depende do webhook do Stripe (assíncrono), então
+    // ficamos consultando /auth/me por alguns segundos até o plano refletir o pagamento.
+    let attempts = 0;
+    const maxAttempts = 8;
 
-  if (loadingAuth || user) return null;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      const updated = await refreshUser();
+
+      if ((updated && updated.plan_id !== initialPlanId.current) || attempts >= maxAttempts) {
+        clearInterval(interval);
+        setSyncing(false);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [sessionId, loading, user, refreshUser]);
+
+  if (loading || !user) return null;
+
+  if (!sessionId) {
+    navigate("/me/profile");
+    return null;
+  }
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-[#0C0718] text-white font-sans overflow-x-hidden">
@@ -50,13 +68,15 @@ export default function PaymentSuccess() {
                 Sua assinatura foi ativada com sucesso.
             </p>
             <p className="text-[#FFFFFF66] text-sm leading-relaxed max-w-xs mx-auto">
-                Você será redirecionado para os detalhes da sua conta em instantes.
+                {syncing
+                  ? "Estamos confirmando a ativação do seu plano..."
+                  : "Você já pode acessar os detalhes da sua conta."}
             </p>
           </div>
 
           {/* --- BOTÃO PRINCIPAL (Estilo da referência) --- */}
           <button
-            onClick={() => navigate("/me/subscription")}
+            onClick={() => navigate("/me/financial")}
             className="w-full h-14 rounded-full bg-[linear-gradient(109.09deg,#FFFFFF_3.35%,#E7D3FF_96.65%)] hover:opacity-90 transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-lg shadow-purple-500/10"
           >
             <span className="text-[#7F33D9] font-semibold text-lg">Ir para meu plano</span>
@@ -66,11 +86,13 @@ export default function PaymentSuccess() {
           </button>
 
           {/* --- FOOTER STATUS --- */}
-          <div className="mt-6">
-            <span className="inline-block text-xs text-[#FFFFFF40] animate-pulse">
-              Processando assinatura...
-            </span>
-          </div>
+          {syncing && (
+            <div className="mt-6">
+              <span className="inline-block text-xs text-[#FFFFFF40] animate-pulse">
+                Processando assinatura...
+              </span>
+            </div>
+          )}
 
         </div>
       </div>

@@ -15,15 +15,29 @@ function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+function normalizeEmail(email) {
+  return typeof email === "string" ? email.trim().toLowerCase() : email;
+}
+
+// Hash "de mentira" com custo igual ao usado de verdade (10). Serve só pra
+// gastar o mesmo tempo de um bcrypt.compare real quando o usuário não existe
+// ou não tem senha (conta Google) — sem isso dava pra descobrir por timing
+// quais e-mails têm conta só medindo o tempo de resposta do /login.
+const DUMMY_HASH = bcrypt.hashSync("timing-attack-mitigation", 10);
+
 // LOGIN BÁSICO
 export const login = async (req, res) => {
-  const { email, senha } = req.body;
+  const email = normalizeEmail(req.body.email);
+  const { senha } = req.body;
 
   try {
     // 1. Buscar usuário no banco
     const user = await findUserByEmail(email);
 
-    if (!user || !user.active || !user.email_verified) {
+    if (!user || !user.active || !user.email_verified || !user.password_hash) {
+      // Roda o compare mesmo sem usuário/senha real, só pra igualar o tempo
+      // de resposta ao caso de credenciais existentes e erradas.
+      await bcrypt.compare(senha || "", DUMMY_HASH);
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
@@ -69,16 +83,25 @@ export const login = async (req, res) => {
   }
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const register = async (req, res) => {
-  const { nome, email, senha, newsletter } = req.body;
+  const { nome, senha, newsletter } = req.body;
+  const email = normalizeEmail(req.body.email);
 
   // 1. Validação básica
   if (!nome || !email || !senha) {
     return res.status(400).json({ error: "Preencha todos os campos obrigatórios." });
   }
 
-  if (senha.length < 6) {
-    return res.status(400).json({ error: "A senha deve ter no mínimo 6 caracteres." });
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ error: "Informe um e-mail válido." });
+  }
+
+  // Mesmo mínimo exigido em /user/security/password, pra não ter duas
+  // políticas de senha diferentes dentro do mesmo produto.
+  if (senha.length < 8) {
+    return res.status(400).json({ error: "A senha deve ter no mínimo 8 caracteres." });
   }
 
   try {
@@ -210,31 +233,32 @@ export async function verifyMail(req, res) {
 
 
 export async function resendVerification(req, res) {
-  const { email } = req.body;
+  const email = normalizeEmail(req.body.email);
 
   if (!email) {
     return res.status(400).json({ error: "E-mail não informado." });
   }
 
+  // Resposta sempre igual (existir ou não a conta, verificado ou não) pra não
+  // dar pra descobrir por aqui quais e-mails têm conta cadastrada.
+  const genericResponse = {
+    message: "Se o e-mail existir e ainda não tiver sido confirmado, enviaremos uma nova confirmação."
+  };
+
   // 1️⃣ Busca usuário
   const { rows } = await db.query(
-    "SELECT id, email_verified FROM users WHERE email = $1",
+    "SELECT id, email_verified FROM users WHERE LOWER(email) = LOWER($1)",
     [email]
   );
 
   if (!rows.length) {
-    // segurança: não revela se existe ou não
-    return res.status(200).json({
-      message: "Se o e-mail existir, enviaremos a confirmação."
-    });
+    return res.status(200).json(genericResponse);
   }
 
   const user = rows[0];
 
   if (user.email_verified) {
-    return res.status(400).json({
-      error: "E-mail já confirmado."
-    });
+    return res.status(200).json(genericResponse);
   }
 
   // 2️⃣ Invalida tokens antigos
@@ -255,9 +279,7 @@ export async function resendVerification(req, res) {
   // 4️⃣ Envia e-mail
   await reSendMail(email, token);
 
-  return res.status(200).json({
-    message: "Novo e-mail de confirmação enviado."
-  });
+  return res.status(200).json(genericResponse);
 }
 
 // Check no middleware pra ver quem sou eu
@@ -325,6 +347,9 @@ export const me = async (req, res) => {
     delete row.currency_id;
     delete row.first_login_completed;
 
+    // Nunca devolve o hash da senha pro cliente, nem pro próprio dono da conta
+    delete row.password_hash;
+
     return res.json({
       authenticated: true,
       user: {
@@ -343,7 +368,7 @@ export const me = async (req, res) => {
 // RESET PASSWORD PADRÃO 
 export async function resetPasswordRequest(req, res) {
   try {
-    const { email } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
 
@@ -423,6 +448,13 @@ export async function resetPasswordConfirm(req, res) {
       return res.status(400).json({
         status: "error",
         message: "Token e nova senha são obrigatórios."
+      });
+    }
+
+    if (senha.length < 8) {
+      return res.status(400).json({
+        status: "error",
+        message: "A senha deve ter no mínimo 8 caracteres."
       });
     }
 

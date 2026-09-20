@@ -3,11 +3,10 @@ import { resolveLocale } from "../utils/locale.js";
 import XLSX from "xlsx";
 import { reSendMail } from "../utils/mailer.js";
 import bcrypt from "bcryptjs";
-import Stripe from "stripe";
+import stripe from "../config/stripe.js";
 import allCountries from "world-countries";
 import slugify from "slugify";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const COLS_PER_ROW = 11;
 const BATCH_SIZE = 500;
 
@@ -1303,8 +1302,23 @@ export async function getAllUsers(req, res) {
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
 
+    // Nunca usar users.* aqui: a tabela tem password_hash e não tem por que
+    // esse hash sair do banco pra ir pro JSON de um admin.
     const usersQuery = await db.query(`
-      SELECT users.*, plans.name AS plan_name
+      SELECT
+        users.id,
+        users.name,
+        users.email,
+        users.role,
+        users.active,
+        users.email_verified,
+        users.provider,
+        users.plan_id,
+        users.subscription_status,
+        users.last_login,
+        users.created_at,
+        users.updated_at,
+        plans.name AS plan_name
       FROM users
       LEFT JOIN plans ON plans.id = users.plan_id
       ORDER BY users.created_at DESC
@@ -1503,16 +1517,18 @@ export async function changeUserPlan(req, res) {
     });
   }
 
-  const PRICE_IDS = {
-    2: "price_1ScyEsGpvzwsEpHhVnmLViFU", // Premium
-    3: "price_1ScyFiGpvzwsEpHh70blpgpx", // Business
-  };
-
   try {
-    // verifica plano
-    const check = await db.query("SELECT id FROM plans WHERE id = $1", [plan_id]);
+    // verifica plano e pega o Price ID real do Stripe cadastrado no plano
+    const check = await db.query("SELECT id, pagarme_plan_id FROM plans WHERE id = $1", [plan_id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ error: "Plano não encontrado" });
+    }
+
+    const stripePriceId = check.rows[0].pagarme_plan_id;
+    if (!stripePriceId) {
+      return res.status(400).json({
+        error: "Este plano não possui um ID de preço do Stripe cadastrado"
+      });
     }
 
     // pega usuário
@@ -1538,7 +1554,7 @@ export async function changeUserPlan(req, res) {
 
     // ALTERA O PLANO NO STRIPE
     await stripe.subscriptionItems.update(subscriptionItemId, {
-      price: PRICE_IDS[plan_id],
+      price: stripePriceId,
       proration_behavior: "always_invoice" // ou "none"
     });
 

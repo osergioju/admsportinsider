@@ -1,14 +1,29 @@
 import axios from "axios";
+import crypto from "crypto";
 import db from  "../config/db.js";
 import { findUserByEmail } from "../models/user.model.js";
 import { generateAccessToken } from "../config/jwt.js";
 import { addContactToBrevo } from "../utils/mailer.js";
 
 const prod_url = process.env.PROD_URL;
+const isProd = process.env.NODE_ENV === "production";
+
 // ==============================================
 // 1) Redireciona para o Google
 // ==============================================
 export const startGoogleAuth = (req, res) => {
+  // Proteção contra CSRF de login: sem isso um atacante pode iniciar o
+  // próprio fluxo, capturar o link de callback com o `code` dele e induzir
+  // a vítima a abri-lo — a vítima acabaria logada na conta do atacante.
+  const state = crypto.randomBytes(24).toString("hex");
+
+  res.cookie("google_oauth_state", state, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax",
+    maxAge: 5 * 60 * 1000
+  });
+
   const redirectUrl =
     "https://accounts.google.com/o/oauth2/v2/auth?" +
     new URLSearchParams({
@@ -17,7 +32,8 @@ export const startGoogleAuth = (req, res) => {
       response_type: "code",
       scope: "email profile",
       access_type: "offline",
-      prompt: "consent"
+      prompt: "consent",
+      state
     });
 
   return res.redirect(redirectUrl);
@@ -27,10 +43,14 @@ export const startGoogleAuth = (req, res) => {
 // 2) Callback do Google
 // ==============================================
 export const googleAuthCallback = async (req, res) => {
-  const { code } = req.query;
+  const { code, state } = req.query;
+  const expectedState = req.cookies?.google_oauth_state;
 
-  // Deu ruim
-  if (!code) {
+  res.clearCookie("google_oauth_state");
+
+  // Sem code, sem state, ou state que não bate com o cookie que a gente
+  // mesmo setou em startGoogleAuth → provável CSRF, aborta.
+  if (!code || !state || !expectedState || state !== expectedState) {
     return res.redirect(
       prod_url + "/login?error=google_failed"
     );
@@ -63,6 +83,10 @@ export const googleAuthCallback = async (req, res) => {
     );
 
     const googleUser = googleUserResponse.data;
+
+    if (googleUser.verified_email === false) {
+      return res.redirect(prod_url + "/login?error=google_failed");
+    }
 
     const email = googleUser.email;
     const name = googleUser.name;
@@ -160,8 +184,19 @@ export const googleAuthCallback = async (req, res) => {
       role: user.role
     });
 
-    // modelo A: backend resolve tudo e manda só o token pro front
-    const redirectUrl = prod_url + `/auth/google/callback?token=${token}`;
+    // Em vez de mandar o JWT na URL (fica em histórico do navegador e em
+    // logs), gera um código de uso único de vida curta pro front trocar
+    // pelo token via POST em /auth/google/exchange.
+    const exchangeCode = crypto.randomBytes(32).toString("hex");
+    const exchangeCodeHash = crypto.createHash("sha256").update(exchangeCode).digest("hex");
+
+    await db.query(
+      `INSERT INTO oauth_login_codes (code_hash, token, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '60 seconds')`,
+      [exchangeCodeHash, token]
+    );
+
+    const redirectUrl = prod_url + `/auth/google/callback?code=${exchangeCode}`;
     return res.redirect(redirectUrl);
 
   } catch (err) {
@@ -169,5 +204,41 @@ export const googleAuthCallback = async (req, res) => {
     return res.redirect(
       prod_url + "/login?error=google_error"
     );
+  }
+};
+
+// ==============================================
+// 3) Troca do código de uso único pelo JWT
+// ==============================================
+export const exchangeGoogleCode = async (req, res) => {
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: "Código não informado." });
+  }
+
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+
+  try {
+    // UPDATE ... WHERE used_at IS NULL ... RETURNING garante troca única mesmo
+    // sob concorrência (duas requisições com o mesmo código não passam as duas).
+    const { rows } = await db.query(
+      `UPDATE oauth_login_codes
+       SET used_at = NOW()
+       WHERE code_hash = $1
+         AND used_at IS NULL
+         AND expires_at > NOW()
+       RETURNING token`,
+      [codeHash]
+    );
+
+    if (!rows.length) {
+      return res.status(400).json({ error: "Código inválido, expirado ou já utilizado." });
+    }
+
+    return res.json({ token: rows[0].token });
+  } catch (err) {
+    console.error("Erro ao trocar código do Google Auth:", err);
+    return res.status(500).json({ error: "Erro interno no servidor." });
   }
 };

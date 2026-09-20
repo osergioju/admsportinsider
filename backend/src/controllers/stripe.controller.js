@@ -1,19 +1,15 @@
-import Stripe from "stripe";
+import stripe from "../config/stripe.js";
 import db from  "../config/db.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prod_url = process.env.PROD_URL;
-const PRICE_IDS = {
-  2: "price_1ScyEsGpvzwsEpHhVnmLViFU", // Premium
-  3: "price_1ScyFiGpvzwsEpHh70blpgpx", // Business
-};
 
 export const createCheckoutSession = async (req, res) => {
   try {
-    const { userId, plan_id } = req.body;
+    const userId = req.user.id;
+    const { plan_id } = req.body;
 
-    if (!userId || !plan_id) {
-      return res.status(400).json({ error: "userId e plan_id são obrigatórios" });
+    if (!plan_id) {
+      return res.status(400).json({ error: "plan_id é obrigatório" });
     }
 
     // Buscar usuário
@@ -22,18 +18,22 @@ export const createCheckoutSession = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
-    const priceId = PRICE_IDS[plan_id];
+    const planResult = await db.query("SELECT pagarme_plan_id FROM plans WHERE id = $1 AND active = true", [plan_id]);
+    const priceId = planResult.rows[0]?.pagarme_plan_id;
     if (!priceId) return res.status(400).json({ error: "Plano inválido" });
 
     let stripeCustomerId = user.stripe_customer_id;
 
     // Criar customer se não existir
     if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.name,
-        metadata: { userId: user.id }
-      });
+      const customer = await stripe.customers.create(
+        {
+          email: user.email,
+          name: user.name,
+          metadata: { userId: user.id }
+        },
+        { idempotencyKey: `customer-create-${user.id}` }
+      );
 
       stripeCustomerId = customer.id;
 
@@ -43,24 +43,30 @@ export const createCheckoutSession = async (req, res) => {
       );
     }
 
+    // Janela de 30s: evita criar duas sessões em duplo clique/retry, sem travar tentativas futuras legítimas
+    const attemptBucket = Math.floor(Date.now() / 30000);
+
     // Criar sessão do checkout
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      customer: stripeCustomerId,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: prod_url + `/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: prod_url + `/dashboard`,
-      metadata: {
-        userId: user.id,
-        plan_id,
-      }
-    });
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: "subscription",
+        payment_method_types: ["card"],
+        customer: stripeCustomerId,
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: prod_url + `/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: prod_url + `/dashboard`,
+        metadata: {
+          userId: user.id,
+          plan_id,
+        }
+      },
+      { idempotencyKey: `checkout-${user.id}-${plan_id}-${attemptBucket}` }
+    );
 
     return res.json({ url: session.url });
 

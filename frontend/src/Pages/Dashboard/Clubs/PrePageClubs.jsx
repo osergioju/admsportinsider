@@ -13,6 +13,8 @@ import RevenueLineChart from "./components/revenue/RevenueLineChart";
 import NetResultLineChart from "./components/netResult/NetResultLineChart";
 import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
 import PageLoader from "../../../components/uxui/PageLoader";
+import ClubHeaderC from "./components/header/ClubHeaderC";
+import ClubHeaderD from "./components/header/ClubHeaderD";
 
 function NoFinancialData({ title }) {
     const { t } = useTranslation();
@@ -236,6 +238,42 @@ export default function PrePageClubs({ initialData } = {}) {
         },
     ];
 
+    // Estádio (mesmo link/estado da testeira original) — usado pelas testeiras em teste C e D.
+    const stadiumInfo = theClub.club.stadium_name ? {
+        name: theClub.club.stadium_name,
+        capacity: theClub.club.stadium_capacity,
+        to: `/stadiums/${getStadiumSlug(theClub.club.stadium_name)}`,
+        state: {
+            club: {
+                id: theClub.club.id_club,
+                name: clubName,
+                slug: theClub.club.slug,
+                crest_url: theClub.club.crest_url,
+                country: theClub.club.country_name,
+                stadium_name: theClub.club.stadium_name,
+                stadium_capacity: theClub.club.stadium_capacity,
+                latitude: theClub.club.stadium_latitude != null ? Number(theClub.club.stadium_latitude) : null,
+                longitude: theClub.club.stadium_longitude != null ? Number(theClub.club.stadium_longitude) : null,
+                countryCode: theClub.club.stadium_country_code,
+            },
+        },
+    } : null;
+    const headerProps = {
+        club: theClub.club,
+        crestSrc: clubLogo(theClub.club.crest_url, theClub.club.slug),
+        onCrestError: handleCrestRetry,
+        color1: c1,
+        color2: c2,
+        navCards,
+        showNav: !isHidden,
+        stadium: stadiumInfo,
+        // Mesma regra da testeira original: só existe se o clube tem estádio e link de hospitalidade.
+        hospitality: stadiumInfo && theClub.hospitality?.hospitality_url ? {
+            url: theClub.hospitality.hospitality_url,
+            label: theClub.hospitality.description || t("club.hospitality", "Hospitalidade e camarotes"),
+        } : null,
+    };
+
     return (
         <div className="w-full overflow-hidden">
 
@@ -441,6 +479,17 @@ export default function PrePageClubs({ initialData } = {}) {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* ── TESTE INTERNO: testeiras alternativas C e D (a original fica acima) ───────
+                Depois da decisão, manter só a escolhida e apagar as demais + os arquivos em ./components/header. */}
+            <div className="mb-4">
+                <p className="mb-1.5 ml-2 text-[11px] font-bold uppercase tracking-widest text-[#7F33D9]">Opção C · Capa de perfil (em teste)</p>
+                <ClubHeaderC {...headerProps} />
+            </div>
+            <div className="mb-4">
+                <p className="mb-1.5 ml-2 text-[11px] font-bold uppercase tracking-widest text-[#7F33D9]">Opção D · Manchete tipográfica (em teste)</p>
+                <ClubHeaderD {...headerProps} />
             </div>
 
             {/* ── Card Receita ─────────────────────────────────── */}

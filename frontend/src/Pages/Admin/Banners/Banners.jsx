@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../../services/api";
+import { IMAGE_ACCEPT, validateImageFile, uploadErrorMessage } from "../../../utils/media";
 import {
   Plus,
   Image as ImageIcon,
@@ -77,6 +78,8 @@ export default function Banners() {
 
   async function uploadImage(file, type) {
     if (!file) return;
+    const invalid = validateImageFile(file);
+    if (invalid) { handleFeedback("error", invalid); return; }
     setUploading(true);
     setFeedback(null);
     const formData = new FormData();
@@ -84,8 +87,8 @@ export default function Banners() {
     try {
       const res = await api.post("/admin/banners/upload-image", formData, { headers: { "Content-Type": "multipart/form-data" } });
       setForm((prev) => ({ ...prev, [type]: res.data.url }));
-    } catch {
-      handleFeedback("error", "Erro ao enviar imagem. Tente novamente.");
+    } catch (err) {
+      handleFeedback("error", uploadErrorMessage(err, "Erro ao enviar imagem. Tente novamente."));
     } finally {
       setUploading(false);
     }
@@ -363,7 +366,7 @@ export default function Banners() {
                 <div className="space-y-2">
                   <label className={labelClass}><Monitor size={14} className="inline mr-1" /> Desktop</label>
                   <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden">
-                    <input type="file" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => uploadImage(e.target.files[0], "image_desktop_url")} />
+                    <input type="file" accept={IMAGE_ACCEPT} className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => { uploadImage(e.target.files[0], "image_desktop_url"); e.target.value = ""; }} />
                     {form.image_desktop_url ? <img src={form.image_desktop_url} className="absolute inset-0 w-full h-full object-cover" /> : <ImageIcon className="text-gray-300" />}
                   </div>
                   <p className="text-[11px] text-gray-400 ml-1">Dimensão recomendada: 1500×200 px</p>
@@ -371,7 +374,7 @@ export default function Banners() {
                 <div className="space-y-2">
                   <label className={labelClass}><Smartphone size={14} className="inline mr-1" /> Mobile</label>
                   <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-purple-200 transition-colors cursor-pointer relative h-32 flex items-center justify-center overflow-hidden">
-                    <input type="file" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => uploadImage(e.target.files[0], "image_mobile_url")} />
+                    <input type="file" accept={IMAGE_ACCEPT} className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => { uploadImage(e.target.files[0], "image_mobile_url"); e.target.value = ""; }} />
                     {form.image_mobile_url ? <img src={form.image_mobile_url} className="absolute inset-0 w-full h-full object-cover" /> : <ImageIcon className="text-gray-300" />}
                   </div>
                   <p className="text-[11px] text-gray-400 ml-1">Dimensão recomendada: 768×200 px</p>

@@ -1,5 +1,6 @@
 import { Fragment, useState, useRef } from "react";
 import { api } from "../../services/api";
+import { IMAGE_ACCEPT, validateImageFile, uploadErrorMessage } from "../../utils/media";
 import {
   X, ChevronRight, ChevronLeft, Check, Loader2,
   Trophy, AlertTriangle, Plus, Trash2, Info, Calendar, Pencil, Copy, GripVertical
@@ -513,6 +514,8 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
   const handleEditionLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !ano) return;
+    const invalid = validateImageFile(file);
+    if (invalid) { alert(invalid); e.target.value = ""; return; }
     setUploadingLogo(true);
     try {
       const fd = new FormData();
@@ -522,7 +525,7 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setEditionLogo(data.url);
-    } catch { alert("Erro ao enviar a logo da edição."); }
+    } catch (err) { alert(uploadErrorMessage(err, "Erro ao enviar a logo da edição.")); }
     finally { setUploadingLogo(false); }
   };
 
@@ -726,7 +729,7 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
                     value={editionLogo} onChange={e => setEditionLogo(e.target.value)} />
                   <label className={`shrink-0 px-3 py-2 text-xs font-semibold rounded-lg border cursor-pointer transition-colors ${ano ? "border-[#7F33D9]/30 text-[#7F33D9] hover:bg-[#7F33D9]/5" : "border-gray-200 text-gray-300 cursor-not-allowed"}`}>
                     {uploadingLogo ? "Enviando…" : "Upload"}
-                    <input type="file" accept="image/*" className="hidden" disabled={!ano || uploadingLogo} onChange={handleEditionLogoUpload} />
+                    <input type="file" accept={IMAGE_ACCEPT} className="hidden" disabled={!ano || uploadingLogo} onChange={handleEditionLogoUpload} />
                   </label>
                 </div>
               </div>

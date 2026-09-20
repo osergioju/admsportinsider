@@ -44,6 +44,11 @@ export default function Register() {
             return;
         }
 
+        if (senha.length < 8) {
+            setError("A senha deve ter no mínimo 8 caracteres.");
+            return;
+        }
+
         if (strength < 3) {
             setError("A senha precisa ser mais forte.");
             return;

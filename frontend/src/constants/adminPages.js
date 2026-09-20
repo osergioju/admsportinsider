@@ -74,6 +74,12 @@ export const ADMIN_PAGES = [
     routes: ["/admin/banners"],
   },
   {
+    key: "media",
+    label: "Mídias (biblioteca de imagens)",
+    group: "Conteúdo",
+    routes: ["/admin/media"],
+  },
+  {
     key: "notifications",
     label: "Notificações",
     group: "Conteúdo",

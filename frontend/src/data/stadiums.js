@@ -2,7 +2,7 @@ import countries from "world-countries";
 
 // Camada de dados dos estádios. Hoje é um mock local (POC); o formato foi
 // desenhado para ser substituído por uma chamada de API sem mudar quem
-// consome (StadiumPage / StadiumGlobe só leem o objeto "stadium").
+// consome (StadiumPage / StadiumMap só leem o objeto "stadium").
 //
 // Shape de cada estádio:
 // {
@@ -144,68 +144,14 @@ function findCountryCentroid(countryName, countryCode) {
     return { latitude: country.latlng[0], longitude: country.latlng[1], countryCode: country.cca2 };
 }
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-
-/**
- * Busca a localização real do estádio pelo nome na Search Box API do Mapbox
- * (mesmo token do globo — sem custo/config extra; é a API que indexa POIs tipo
- * estádio, diferente da Geocoding API "estrutural" que só resolve endereços).
- * Usado como refinamento assíncrono pra estádios fora do mock local: a página
- * já renderiza com o fallback de centróide do país e troca pra coordenada
- * exata assim que (e se) a busca responder, antes do globo animar.
- *
- * `country` + `proximity` (nesta ordem de importância) são o que faz a busca
- * por nome acertar o estádio certo em vez de um bar/loja homônimo — por isso
- * usamos o próprio centróide do país (já calculado no fallback) como bias
- * geográfico, mesmo sem saber ainda a coordenada exata.
- */
-export async function geocodeStadium(stadium) {
-    if (!MAPBOX_TOKEN || !stadium?.name) return null;
-
-    const params = new URLSearchParams({
-        q: stadium.name,
-        access_token: MAPBOX_TOKEN,
-        limit: "1",
-        language: "pt",
-        types: "poi",
-    });
-    if (stadium.countryCode) params.set("country", stadium.countryCode);
-    if (stadium.longitude != null && stadium.latitude != null) {
-        params.set("proximity", `${stadium.longitude},${stadium.latitude}`);
-    }
-
-    try {
-        const res = await fetch(`https://api.mapbox.com/search/searchbox/v1/forward?${params}`);
-        if (!res.ok) return null;
-        const data = await res.json();
-        const feature = data?.features?.[0];
-        const coords = feature?.geometry?.coordinates;
-        if (!coords) return null;
-
-        const [longitude, latitude] = coords;
-        const ctx = feature.properties?.context || {};
-
-        return {
-            ...stadium,
-            latitude,
-            longitude,
-            city: stadium.city || ctx.place?.name || null,
-            country: stadium.country || ctx.country?.name || null,
-            countryCode: stadium.countryCode || ctx.country?.country_code?.toUpperCase() || null,
-            approximate: false,
-            geocoded: true,
-        };
-    } catch {
-        return null;
-    }
-}
-
 /**
  * Monta os dados de um estádio combinando (em ordem de prioridade):
  * 1. Registro mockado (fonte "oficial" enquanto não há API);
- * 2. Dados de contexto vindos da navegação (clube de origem);
+ * 2. Dados de contexto vindos da navegação (clube de origem), incluindo
+ *    coordenada já cacheada no banco (stadium_latitude/longitude), se houver;
  * 3. Fallback geográfico (centróide do país) quando não há coordenada exata
- *    — depois refinado por geocodeStadium(), se possível.
+ *    — o mapa então busca pelo nome do estádio (StadiumMap/buildStadiumMapQuery),
+ *    já que a própria Google Maps Embed API geocodifica a busca textual.
  *
  * Sempre retorna um objeto com o mesmo formato, ou null se não houver dado
  * mínimo (nome do estádio) para exibir a página.

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { api } from "../../services/api";
+import { IMAGE_ACCEPT, validateImageFile, uploadErrorMessage } from "../../utils/media";
 import { Trash2, Loader2, Check, Plus, Search, X, Shield, Pencil, Crown, UploadCloud } from "lucide-react";
 import { federationLogo } from "../../utils/federationUrl";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
@@ -71,6 +72,8 @@ export default function GestaoFederacoes() {
     const handleFileChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const invalid = validateImageFile(file);
+        if (invalid) { setError(invalid); if (fileRef.current) fileRef.current.value = ""; return; }
         // Slug para nomear o arquivo: usa current.slug (edição) ou acronym em lowercase (criação)
         const slug = current?.slug || form.acronym.toLowerCase().replace(/[^a-z0-9]/g, "-");
         if (!slug) { setError("Defina a sigla antes de fazer upload."); return; }
@@ -79,12 +82,13 @@ export default function GestaoFederacoes() {
             const fd = new FormData();
             fd.append("file", file);
             fd.append("slug", slug);
-            await api.post("/admin/federations/upload-logo", fd, {
+            const { data } = await api.post("/admin/federations/upload-logo", fd, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            // URL derivada do slug — não precisa guardar no form
-        } catch {
-            setError("Erro ao fazer upload da imagem.");
+            // O nome do arquivo agora é normalizado/único: a URL devolvida precisa ir pro form.
+            setForm(prev => ({ ...prev, logo_url: data.url }));
+        } catch (err) {
+            setError(uploadErrorMessage(err, "Erro ao fazer upload da imagem."));
         } finally {
             setUploading(false);
         }
@@ -94,6 +98,8 @@ export default function GestaoFederacoes() {
     const handleNegativeFileChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const invalid = validateImageFile(file);
+        if (invalid) { setError(invalid); e.target.value = ""; return; }
         const slug = current?.slug || form.acronym.toLowerCase().replace(/[^a-z0-9]/g, "-");
         if (!slug) { setError("Defina a sigla antes de fazer upload."); return; }
         setUploadingNeg(true);
@@ -106,8 +112,8 @@ export default function GestaoFederacoes() {
                 headers: { "Content-Type": "multipart/form-data" },
             });
             setForm(prev => ({ ...prev, logo_url_negative: data.url }));
-        } catch {
-            setError("Erro ao fazer upload da imagem.");
+        } catch (err) {
+            setError(uploadErrorMessage(err, "Erro ao fazer upload da imagem."));
         } finally {
             setUploadingNeg(false);
             e.target.value = "";
@@ -272,7 +278,7 @@ export default function GestaoFederacoes() {
                                                     ? <Loader2 size={20} className="animate-spin text-[#7F33D9]" />
                                                     : (current?.slug || form.acronym)
                                                         ? <img
-                                                            src={federationLogo(current?.slug || form.acronym.toLowerCase().replace(/[^a-z0-9]/g,'-'), "medium")}
+                                                            src={form.logo_url || federationLogo(current?.slug || form.acronym.toLowerCase().replace(/[^a-z0-9]/g,'-'), "medium")}
                                                             className="w-full h-full object-contain p-1"
                                                             alt="Logo"
                                                             onError={e => e.currentTarget.style.display='none'}
@@ -288,7 +294,7 @@ export default function GestaoFederacoes() {
                                                 <input
                                                     ref={fileRef}
                                                     type="file"
-                                                    accept="image/*"
+                                                    accept={IMAGE_ACCEPT}
                                                     className="hidden"
                                                     disabled={uploading}
                                                     onChange={handleFileChange}
@@ -316,7 +322,7 @@ export default function GestaoFederacoes() {
                                                 </span>
                                                 <input
                                                     type="file"
-                                                    accept="image/*"
+                                                    accept={IMAGE_ACCEPT}
                                                     className="hidden"
                                                     disabled={uploadingNeg}
                                                     onChange={handleNegativeFileChange}

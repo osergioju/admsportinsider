@@ -1496,17 +1496,15 @@ import { getLinkPreview } from "../controllers/linkPreview.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
 import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
-import { uploadImage } from "../middlewares/uploadImage.js";
-import { uploadFederationImage } from "../middlewares/uploadFederationImage.js";
-import { uploadEditionImage } from "../middlewares/uploadEditionImage.js";
-import { uploadLeagueImage } from "../middlewares/uploadLeagueImage.js";
-import { uploadClubLogo, uploadFederationLogo, uploadEditionLogo, uploadLeagueLogo } from "../controllers/upload.controller.js";
+import { uploadMedia } from "../middlewares/uploadMedia.js";
+import { listMedia, uploadMediaFile, updateMedia, deleteMedia, entityImageUpload } from "../controllers/media.controller.js";
+import { matchClubCrests, uploadClubCrest } from "../controllers/clubCrest.controller.js";
 import { newNotification, listNotifications, updateNotification, deleteNotification } from "../controllers/notification.controller.js";
-import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, uploadBannerImage, reorderBanners } from "../controllers/banner.controller.js";
+import { getAllBanners, getBannerById, createBanner, updateBanner, deleteBanner, reorderBanners } from "../controllers/banner.controller.js";
 import { getAllRegions, deleteRegion, createRegion, updateRegion, getRegionById, getFinancialIndicatorsByRegion, saveFinancialIndicatorsTranslations, getCommonTermsByRegion, saveCommonTermsTranslations } from "../controllers/adminRegionsController.js";
 import { previewFederationFinancial, importFederationFinancial, getEditionsByLeague, getFederationCycleFinancials, listFederationFinancialSheets } from "../controllers/federationFinancial.controller.js";
 
-import { adminGuard } from "../middlewares/auth.middleware.js";
+import { adminGuard, authGuard } from "../middlewares/auth.middleware.js";
 import { getMaintenanceOverview, toggleCountry, toggleLeague, toggleFederation, bulkToggle, getSystemFeatures, toggleSystemFeature } from "../controllers/maintenance.controller.js";
 import { getApiSettings, saveApiToken, deleteApiToken, testApiToken, getApiCompetitions, getApiMatches } from "../controllers/apiIntegration.controller.js";
 import { getImportLeagues, mapImportLeague, getImportTeams, mapImportClubs, previewImport, runImport } from "../controllers/apiImport.controller.js";
@@ -1523,20 +1521,23 @@ router.use((req, res, next) => {
   next();
 });
 
-//router.use(adminGuard);
+// Sem router.use(adminGuard) global: algumas leituras deste arquivo (leagues,
+// clubs, plans, banners) também são consumidas por usuários comuns (favoritos,
+// filtros de gráfico, financeiro, banner do dashboard) — por isso o guard é
+// aplicado rota a rota: adminGuard nas de admin, authGuard nas compartilhadas.
 
 // GET /admin/dashboard
-router.get("/dashboard", getAdminDashboard);
+router.get("/dashboard", adminGuard, getAdminDashboard);
 
 // PAÍSES - GESTÃO CRUD
-router.get("/countries", getAllCountries);
-router.get("/countries/:id", getAllCountriesById);
+router.get("/countries", adminGuard, getAllCountries);
+router.get("/countries/:id", adminGuard, getAllCountriesById);
 router.post("/send-countries", adminGuard, createCountry);
 router.put("/countries/:id/update", adminGuard, updateCountry);
 router.delete("/disable-country/:id", adminGuard, disableCountry);
 
 // CONTINENTES - GESTÃO CRUD
-router.get("/continents", getAllContinents);
+router.get("/continents", adminGuard, getAllContinents);
 router.post("/continents", adminGuard, createContinent);
 router.put("/continents/:id", adminGuard, updateContinent);
 router.delete("/continents/:id", adminGuard, disableContinent);
@@ -1567,14 +1568,15 @@ router.post("/api-import/preview",   adminGuard, previewImport);
 router.post("/api-import/run",       adminGuard, runImport);
 
 // FEDERAÇÕES - GESTÃO CRUD
-router.get("/federations", getAllFederations);
+router.get("/federations", adminGuard, getAllFederations);
 router.post("/federations", adminGuard, createFederation);
 router.put("/federations/:id", adminGuard, updateFederation);
 router.delete("/federations/:id", adminGuard, disableFederation);
 
 // LIGAS - GESTÃO CRUD
-router.get("/leagues", getAllLeagues);
-router.get("/leagues/:id", getLeagueById);
+// GET usados também por usuários comuns (favoritos, filtros de gráfico) — authGuard, não adminGuard
+router.get("/leagues", authGuard, getAllLeagues);
+router.get("/leagues/:id", authGuard, getLeagueById);
 router.post("/send-league", adminGuard, createLeague);
 router.put("/leagues/:id/update", adminGuard, updateLeague);
 router.put("/leagues/:id/structure", adminGuard, saveLeagueStructure);
@@ -1607,45 +1609,56 @@ router.get("/players", adminGuard, adminGetPlayers);
 router.put("/players/:id/photo", adminGuard, updatePlayerPhoto);
 
 // CLUBES - GESTÃO CRUD
-router.get("/clubs", getAllClubs);
-router.get("/clubs/:id", getClubById);
+// GET usados também por usuários comuns (favoritos, filtros de gráfico) — authGuard, não adminGuard
+router.get("/clubs", authGuard, getAllClubs);
+router.get("/clubs/:id", authGuard, getClubById);
 router.post("/send-club", adminGuard, createClub);
 router.post("/clubs/create-hidden", adminGuard, createHiddenClub);
 router.put("/clubs/:id/update", adminGuard, updateClub);
 router.delete("/disable-club/:id", adminGuard, disableClub);
 router.post("/clubs/bulk-disable", adminGuard, bulkDisableClubs);
-router.get("/attribute-keys", getAttributeKeys);
+router.get("/attribute-keys", adminGuard, getAttributeKeys);
 router.post("/import-clubs-xlsx", adminGuard, uploadXlsx, uploadClubXlsx);
 router.post("/preview-import", adminGuard, uploadXlsx, previewClubImport);
 router.post("/import-leagues-xlsx", adminGuard, uploadXlsx, uploadLeagueXlsx);
 router.post("/preview-league-import", adminGuard, uploadXlsx, previewLeagueImport);
 router.post("/clubs/search", adminGuard, clubsSearch);
-router.get("/clubs-grouped-by-country", clubsGroupedByCountry);
+router.get("/clubs-grouped-by-country", adminGuard, clubsGroupedByCountry);
 
 // USUÁRIOS - GESTÃO
-router.get("/users", getAllUsers);
+router.get("/users", adminGuard, getAllUsers);
 router.post("/users/:id", adminGuard, getUserById);
 router.post("/users/:id/disable", adminGuard, disableUser);
 router.post("/users/:id/enable", adminGuard, enableUser);
 router.post("/users/:id/change-plan", adminGuard, changeUserPlan);
 router.put("/users/:id/update", adminGuard, updateUser);
 router.post("/users/:id/resend-confirmation", adminGuard, resendConfirmationEmail);
-router.get("/insights/users", getUsersInsights);
-router.get("/insights/clubes", getClubsInsights);
-router.get("/insights/ligas", getLeaguesInsights);
-router.get("/insights/financeiro", getFinanceiroInsights);
-router.get("/insights/planos", getPlanosInsights);
-router.get("/insights/importacoes", getImportacoesInsights);
-router.get("/insights/uso", getUsoInsights);
-router.get("/insights/performance", getPerformanceInsights);
+router.get("/insights/users", adminGuard, getUsersInsights);
+router.get("/insights/clubes", adminGuard, getClubsInsights);
+router.get("/insights/ligas", adminGuard, getLeaguesInsights);
+router.get("/insights/financeiro", adminGuard, getFinanceiroInsights);
+router.get("/insights/planos", adminGuard, getPlanosInsights);
+router.get("/insights/importacoes", adminGuard, getImportacoesInsights);
+router.get("/insights/uso", adminGuard, getUsoInsights);
+router.get("/insights/performance", adminGuard, getPerformanceInsights);
 router.put("/users/:id/update-password", adminGuard, updateUserPassword);
 router.post("/create-user", adminGuard, createUser); // Criar usuaário 
 
-// Subir foto do clube
-router.post("/upload-club-logo", uploadImage, uploadClubLogo);
-router.post("/federations/upload-logo", adminGuard, uploadFederationImage, uploadFederationLogo);
-router.post("/editions/upload-logo", adminGuard, uploadEditionImage, uploadEditionLogo);
-router.post("/leagues/upload-logo", adminGuard, uploadLeagueImage, uploadLeagueLogo);
+// MÍDIAS — biblioteca única de imagens (jpeg/jpg/png/gif/webp → uploads/media, com large/medium/small/xsmall)
+router.get("/media", adminGuard, listMedia);
+router.post("/media", adminGuard, uploadMedia, uploadMediaFile);
+router.patch("/media/:id", adminGuard, updateMedia);
+router.delete("/media/:id", adminGuard, deleteMedia);
+
+// ESCUDOS EM MASSA — nome do arquivo = slug do clube. /match é só leitura (pré-visualização); /:id/crest grava.
+router.post("/clubs/crests/match", adminGuard, matchClubCrests);
+router.post("/clubs/:id/crest", adminGuard, uploadMedia, uploadClubCrest);
+
+// Uploads de imagem dos formulários: mesmo pipeline da biblioteca, devolvem { url, media }.
+router.post("/upload-club-logo", adminGuard, uploadMedia, entityImageUpload({ size: "medium" }));
+router.post("/leagues/upload-logo", adminGuard, uploadMedia, entityImageUpload({ size: "medium" }));
+router.post("/federations/upload-logo", adminGuard, uploadMedia, entityImageUpload({ size: "medium", requireSlug: true, requireSlugMessage: "Slug da federação é obrigatório." }));
+router.post("/editions/upload-logo", adminGuard, uploadMedia, entityImageUpload({ size: "medium", requireSlug: true, requireSlugMessage: "Slug da edição é obrigatório." }));
 
 // FINANCEIRO DE COMPETIÇÕES DE FEDERAÇÃO (Copa do Mundo, Copa América, Euro...)
 router.post("/federation-financial/sheets", adminGuard, uploadXlsx, listFederationFinancialSheets);
@@ -1654,73 +1667,77 @@ router.post("/federation-financial/import",  adminGuard, uploadXlsx, importFeder
 router.get("/federation-financial/editions/:id", adminGuard, getEditionsByLeague);
 
 // PLANOS - CRUD
+// GET precisa continuar público (sem guard): a tela pública /pricing (visitante deslogado)
+// e a tela financeira/upgrade de usuário logado consomem o mesmo endpoint.
 router.get("/plans", getAllPlans);
-router.get("/plans/:id", getPlanById);
+router.get("/plans/:id", authGuard, getPlanById);
 router.post("/plans", adminGuard, createPlan);
 router.put("/plans/:id", adminGuard, updatePlan);
 router.delete("/plans/:id", adminGuard, disablePlan);
 
-// Notificações 
-router.post("/notifications", newNotification);
-router.get("/notifications", listNotifications);
-router.put("/notifications/:id", updateNotification);
-router.delete("/notifications/:id", deleteNotification);
+// Notificações
+router.post("/notifications", adminGuard, newNotification);
+router.get("/notifications", adminGuard, listNotifications);
+router.put("/notifications/:id", adminGuard, updateNotification);
+router.delete("/notifications/:id", adminGuard, deleteNotification);
 
 
 // Banners
+// GET /banners (lista) precisa continuar público (sem guard): alimenta o banner
+// do /dashboard-public, acessado sem login.
 router.get("/banners", getAllBanners);
 router.post("/banners", adminGuard, createBanner);
-router.put("/banners/reorder", reorderBanners);
-router.post("/banners/upload-image", uploadImage, uploadBannerImage);
-router.get("/banners/:id", getBannerById);
+router.put("/banners/reorder", adminGuard, reorderBanners);
+router.post("/banners/upload-image", adminGuard, uploadMedia, entityImageUpload({ size: "large" }));
+router.get("/banners/:id", adminGuard, getBannerById);
 router.put("/banners/:id", adminGuard, updateBanner);
-router.delete("/banners/:id", deleteBanner);
+router.delete("/banners/:id", adminGuard, deleteBanner);
 
-// Regiões e idiomas
-router.get("/regions", getAllRegions);
-router.get("/regions/:id", getRegionById);
-router.post("/regions", createRegion);
-router.put("/regions/:id", updateRegion);
-router.delete("/regions/:id", deleteRegion);
-router.get("/regions/:id/financial-indicators", getFinancialIndicatorsByRegion);
-router.post("/regions/:id/financial-indicators", saveFinancialIndicatorsTranslations);
-router.get("/regions/:id/common-terms", getCommonTermsByRegion);
-router.post("/regions/:id/common-terms", saveCommonTermsTranslations);
+// Regiões e idiomas (usuário comum usa /user/regions, endpoint separado — este é só admin)
+router.get("/regions", adminGuard, getAllRegions);
+router.get("/regions/:id", adminGuard, getRegionById);
+router.post("/regions", adminGuard, createRegion);
+router.put("/regions/:id", adminGuard, updateRegion);
+router.delete("/regions/:id", adminGuard, deleteRegion);
+router.get("/regions/:id/financial-indicators", adminGuard, getFinancialIndicatorsByRegion);
+router.post("/regions/:id/financial-indicators", adminGuard, saveFinancialIndicatorsTranslations);
+router.get("/regions/:id/common-terms", adminGuard, getCommonTermsByRegion);
+router.post("/regions/:id/common-terms", adminGuard, saveCommonTermsTranslations);
 
-// Faq
-router.get("/faq", getAllFaqs);
+// Faq (usuário comum usa /user/faq, endpoint separado — este é só admin)
+router.get("/faq", adminGuard, getAllFaqs);
 router.post("/faq", adminGuard, createFaq);
 router.put("/faq/:id", adminGuard, updateFaq);
 router.delete("/faq/:id", adminGuard, deleteFaq);
-router.patch("/faq/order", updateFaqOrder);
+router.patch("/faq/order", adminGuard, updateFaqOrder);
 
-// Páginas legais (/legal)
-router.get("/legal", getAllLegalSections);
+// Páginas legais (/legal) — página pública usa /public/legal, endpoint separado
+router.get("/legal", adminGuard, getAllLegalSections);
 router.post("/legal", adminGuard, createLegalSection);
-router.patch("/legal/order", updateLegalOrder);
+router.patch("/legal/order", adminGuard, updateLegalOrder);
 router.put("/legal/:id", adminGuard, updateLegalSection);
 router.delete("/legal/:id", adminGuard, deleteLegalSection);
 
-// Notas de atualização (/update-notes)
-router.get("/update-notes", getAllUpdateNotes);
+// Notas de atualização (/update-notes) — página pública usa /public/update-notes, endpoint separado
+router.get("/update-notes", adminGuard, getAllUpdateNotes);
 router.post("/update-notes", adminGuard, createUpdateNote);
-router.patch("/update-notes/order", updateNotesOrder);
+router.patch("/update-notes/order", adminGuard, updateNotesOrder);
 router.put("/update-notes/:id", adminGuard, updateUpdateNote);
 router.delete("/update-notes/:id", adminGuard, deleteUpdateNote);
 
-// Gerador de Gráficos (/charts)
-router.get("/charts/data-catalog", getDataCatalog);
-router.get("/charts/entities", searchEntities);
-router.post("/charts/preview", previewChart);
-router.get("/charts", getAllCharts);
-router.get("/charts/:id", getChartById);
+// Gerador de Gráficos (/charts) — embed público usa /public/charts/:token/data, endpoint separado
+router.get("/charts/data-catalog", adminGuard, getDataCatalog);
+router.get("/charts/entities", adminGuard, searchEntities);
+router.post("/charts/preview", adminGuard, previewChart);
+router.get("/charts", adminGuard, getAllCharts);
+router.get("/charts/:id", adminGuard, getChartById);
 router.post("/charts", adminGuard, createChart);
 router.put("/charts/:id", adminGuard, updateChart);
 router.delete("/charts/:id", adminGuard, deleteChart);
 router.post("/charts/:id/regenerate-token", adminGuard, regenerateEmbedToken);
 
 // Publicações (/publications) — páginas modulares em árvore (grid aninhada)
-router.get("/publications/:pageKey/:zone", getLayout);
+router.get("/publications/:pageKey/:zone", adminGuard, getLayout);
 router.put("/publications/:pageKey/:zone", adminGuard, saveLayout);
 router.post("/publications/link-preview", adminGuard, getLinkPreview);
 
@@ -1735,7 +1752,7 @@ export default router;
 
 
 // ─── Hospitalidade ────────────────────────────────────────────────────────────
-router.get("/hospitality/stadiums", searchStadiums);
-router.get("/hospitality", listHospitality);
+router.get("/hospitality/stadiums", adminGuard, searchStadiums);
+router.get("/hospitality", adminGuard, listHospitality);
 router.post("/hospitality", adminGuard, upsertHospitality);
 router.delete("/hospitality/:id", adminGuard, deleteHospitality);

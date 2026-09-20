@@ -43,7 +43,12 @@ export default function Subscriptions() {
         let label = "Desconhecido";
 
         if (status) {
-            label = "Plano ativo até " + status;
+            const formatted = new Date(status).toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+            });
+            label = "Plano ativo até " + formatted;
         } else {
                 colorClass = "bg-green-50 text-green-700 border border-green-200";
             label = "Ativo";

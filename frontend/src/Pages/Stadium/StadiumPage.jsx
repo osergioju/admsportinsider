@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, MapPin } from "lucide-react";
-import StadiumGlobe from "../../components/stadium/StadiumGlobe";
-import StadiumGoogleMapEmbed from "../../components/stadium/StadiumGoogleMapEmbed";
-import { resolveStadiumData, geocodeStadium } from "../../data/stadiums";
+import StadiumMap, { buildStadiumMapQuery } from "../../components/stadium/StadiumMap";
+import { resolveStadiumData } from "../../data/stadiums";
 import { clubUrl, clubLogo as resolveClubLogo, handleCrestRetry } from "../../utils/clubUrl";
-import { api } from "../../services/api";
 import { useTranslation } from "../../context/TranslationContext";
 
 const STYLE_ID = "stadium-page-styles";
@@ -53,9 +51,7 @@ export default function StadiumPage() {
 
     const [trackedInitial, setTrackedInitial] = useState(initialStadium);
     const [stadium, setStadium] = useState(initialStadium);
-    const [locating, setLocating] = useState(!!initialStadium?.approximate);
-    const [mapProvider, setMapProvider] = useState("mapbox"); // "mapbox" | "google" — só pra comparação/aprovação
-    const [googleMapType, setGoogleMapType] = useState("roadmap"); // "roadmap" | "satellite" (só quando provider = google)
+    const [mapType, setMapType] = useState("roadmap"); // "roadmap" | "satellite"
 
     // Troca de estádio (navegação pra outro slug): reseta o estado local pro
     // novo valor-base já no render, sem passar por efeito (evita re-render em
@@ -63,36 +59,9 @@ export default function StadiumPage() {
     if (initialStadium !== trackedInitial) {
         setTrackedInitial(initialStadium);
         setStadium(initialStadium);
-        setLocating(!!initialStadium?.approximate);
     }
 
-    // Estádios fora do mock local chegam com coordenada aproximada (centróide do
-    // país). Antes do globo animar, tenta achar a localização exata pelo nome na
-    // Geocoding API do Mapbox — se achar, troca pra ela e grava no banco (via
-    // clube de origem) pra nunca mais precisar buscar de novo; se não, segue no
-    // fallback.
-    useEffect(() => {
-        if (!stadium?.approximate) return undefined;
-
-        let cancelled = false;
-        geocodeStadium(stadium).then((refined) => {
-            if (cancelled) return;
-            if (refined) {
-                setStadium(refined);
-                if (clubHint?.id) {
-                    api.patch(`/dashboard/clubs/${clubHint.id}/stadium-location`, {
-                        latitude: refined.latitude,
-                        longitude: refined.longitude,
-                        country_code: refined.countryCode,
-                    }).catch(() => {
-                        // best-effort — se falhar, só perde o cache; a próxima visita tenta de novo
-                    });
-                }
-            }
-            setLocating(false);
-        });
-        return () => { cancelled = true; };
-    }, [stadium, clubHint]);
+    const mapQuery = useMemo(() => buildStadiumMapQuery(stadium), [stadium]);
 
     useEffect(() => {
         document.title = stadium?.name ? `${stadium.name} · Sport Insider` : "Estádio · Sport Insider";
@@ -127,7 +96,7 @@ export default function StadiumPage() {
     return (
         <div className="w-full overflow-hidden">
 
-            {/* ── Voltar + toggle de mapa (comparação p/ aprovação) ─── */}
+            {/* ── Voltar + toggle mapa/satélite ─────────────────────── */}
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <Link
                     to={backHref}
@@ -140,38 +109,18 @@ export default function StadiumPage() {
                 <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white border border-gray-200 text-xs font-medium">
                     <button
                         type="button"
-                        onClick={() => setMapProvider("mapbox")}
-                        className={`px-3 py-1.5 rounded-full transition-colors ${mapProvider === "mapbox" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
+                        onClick={() => setMapType("roadmap")}
+                        className={`px-3 py-1.5 rounded-full transition-colors ${mapType === "roadmap" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
                     >
-                        Mapbox
+                        Mapa
                     </button>
                     <button
                         type="button"
-                        onClick={() => setMapProvider("google")}
-                        className={`px-3 py-1.5 rounded-full transition-colors ${mapProvider === "google" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
+                        onClick={() => setMapType("satellite")}
+                        className={`px-3 py-1.5 rounded-full transition-colors ${mapType === "satellite" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
                     >
-                        Google Maps
+                        Satélite
                     </button>
-
-                    {mapProvider === "google" && (
-                        <>
-                            <div className="w-px h-4 bg-gray-200 mx-1" />
-                            <button
-                                type="button"
-                                onClick={() => setGoogleMapType("roadmap")}
-                                className={`px-3 py-1.5 rounded-full transition-colors ${googleMapType === "roadmap" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
-                            >
-                                Mapa
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setGoogleMapType("satellite")}
-                                className={`px-3 py-1.5 rounded-full transition-colors ${googleMapType === "satellite" ? "bg-[#7F33D9] text-white" : "text-gray-500 hover:text-[#7F33D9]"}`}
-                            >
-                                Satélite
-                            </button>
-                        </>
-                    )}
                 </div>
             </div>
 
@@ -260,44 +209,15 @@ export default function StadiumPage() {
                         </div>
                     </div>
 
-                    {/* ── Globo ──────────────────────────────────────── */}
+                    {/* ── Mapa ───────────────────────────────────────── */}
                     <div className="relative h-[55vh] lg:h-[640px] overflow-hidden">
-                        {locating ? (
-                            <div
-                                className="absolute inset-0 flex items-center justify-center"
-                                style={{ background: "radial-gradient(circle at 50% 40%, #2A1050 0%, #0A0616 70%)" }}
-                            >
-                                <div className="flex flex-col items-center gap-3 text-white/40">
-                                    <span className="w-2 h-2 rounded-full bg-[#B48CFF] animate-ping" />
-                                    <p className="text-xs tracking-[0.15em] font-light">
-                                        {t("stadium.locating", "LOCALIZANDO ESTÁDIO...")}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : mapProvider === "google" ? (
-                            <StadiumGoogleMapEmbed
-                                key={`google-${googleMapType}-${stadium.slug}`}
-                                latitude={stadium.latitude}
-                                longitude={stadium.longitude}
-                                stadiumName={stadium.name}
-                                mapType={googleMapType}
-                                className="absolute inset-0"
-                            />
-                        ) : (
-                            <StadiumGlobe
-                                key={`mapbox-${stadium.slug}`}
-                                latitude={stadium.latitude}
-                                longitude={stadium.longitude}
-                                stadiumName={stadium.name}
-                                city={stadium.city}
-                                country={stadium.country}
-                                countryCode={stadium.countryCode}
-                                club={stadium.club}
-                                clubLogo={crestSrc}
-                                approximate={stadium.approximate}
-                                className="absolute inset-0"
-                            />
-                        )}
+                        <StadiumMap
+                            key={`${mapType}-${stadium.slug}`}
+                            query={mapQuery}
+                            stadiumName={stadium.name}
+                            mapType={mapType}
+                            className="absolute inset-0"
+                        />
                     </div>
                 </div>
             </div>

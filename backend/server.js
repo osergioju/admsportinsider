@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -104,6 +105,7 @@ app.use("/uploads", express.static(UPLOADS_DIR));
 
 // ===== JSON NORMAL =====
 app.use(express.json());
+app.use(cookieParser());
 
 // Teste banco
 db.query("SELECT NOW()")

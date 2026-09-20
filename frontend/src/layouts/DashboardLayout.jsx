@@ -3,6 +3,9 @@ import { useContext, useState, useRef, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useTranslation } from "../context/TranslationContext";
 import { useFeatureFlags } from "../context/FeatureFlagsContext";
+import brandIcon from "../assets/svg/brand-icon.svg";
+import SidebarToggle from "../components/uxui/SidebarToggle";
+import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import brand from "../assets/svg/brand-full.svg";
 import MenuItem from "../components/uxui/MenuItem";
 import SubItem from "../components/uxui/SubMenu";
@@ -66,9 +69,16 @@ export default function DashboardLayout() {
     };
 
 
-    const menuItemStyle = "group w-full flex items-center justify-between px-3 py-3 rounded-full transition-all duration-300 ease-out border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-0.5 active:scale-95 cursor-pointer mb-1";
+    const [collapsed, setCollapsed] = useSidebarCollapsed();
+    // Recolhido não tem flyout: clicar num grupo (ex.: "Cadastros") expande o menu e já abre o grupo.
+    const toggleGroup = (setter, isOpen) => {
+        if (collapsed && window.matchMedia("(min-width: 1024px)").matches) { setCollapsed(false); setter(true); }
+        else setter(!isOpen);
+    };
+
+    const menuItemStyle = "group w-full flex items-center justify-between px-3 py-2 group-data-[collapsed=true]/sb:justify-center group-data-[collapsed=true]/sb:px-0 rounded-full transition-all duration-300 ease-out border border-transparent hover:bg-white hover:border-purple-100 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-0.5 active:scale-95 cursor-pointer mb-0.5";
     const iconStyle = "text-gray-400 transition-all duration-300 ease-out group-hover:scale-110 group-hover:!text-[#7F33D9]";
-    const textStyle = "text-sm font-medium text-[#4E4E4F] group-hover:text-[#0A0A0A] transition-colors";
+    const textStyle = "text-[13px] font-normal text-[#4E4E4F] group-hover:text-[#0A0A0A] transition-colors group-data-[collapsed=true]/sb:hidden";
 
 
     // --- CONTEÚDO DO MENU ---
@@ -76,11 +86,11 @@ export default function DashboardLayout() {
         <div className="w-full px-2 text-[#111] pb-20 lg:pb-0">
 
             {/* Cabeçalho Perfil (Estilo Card) */}
-            <div className="mb-5 flex items-center gap-3 px-3 py-2 mt-2 bg-white/60 rounded-2xl border border-transparent hover:border-purple-100 hover:bg-white hover:shadow-sm transition-all duration-300 cursor-default group">
+            <div className="mb-5 flex items-center gap-3 px-3 group-data-[collapsed=true]/sb:justify-center group-data-[collapsed=true]/sb:px-0  rounded-2xl border border-transparent hover:border-purple-100 hover:bg-white hover:shadow-sm transition-all duration-300 cursor-default group">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-white border border-purple-200 flex items-center justify-center text-purple-600 font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     {user?.name ? user.name.charAt(0) : "C"}
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col group-data-[collapsed=true]/sb:hidden">
                     <span className="text-sm font-bold text-[#0A0A0A]">
                         {user?.name ? user.name.split(" ")[0] : t("ui.guest", "Convidado")}
                     </span>
@@ -94,18 +104,18 @@ export default function DashboardLayout() {
 
                 {/* SEÇÃO: MENU */}
                 <div>
-                    <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.main_menu", "Menu Principal")}</span>
+                    <span className="text-[10px] text-[#AFAFB2] mb-1.5 font-semibold tracking-widest uppercase block px-4 group-data-[collapsed=true]/sb:h-px group-data-[collapsed=true]/sb:bg-gray-100 group-data-[collapsed=true]/sb:text-[0px] group-data-[collapsed=true]/sb:px-0 group-data-[collapsed=true]/sb:mx-3 group-data-[collapsed=true]/sb:mb-2">{t("menu.main_menu", "Menu Principal")}</span>
                     <ul className="space-y-1">
 
                         {/* Página Inicial */}
                         {
                             user?.role == 'admin_master' && (
                                 <div className="group">
-                                    <MenuItem
+                                    <MenuItem compact
                                         onClick={() => setOpenMenu(false)}
                                         to={user ? "/admin" : "/admin"}
                                         className={menuItemStyle}
-                                        icon={<ShieldUser strokeWidth={1.5} size={18} className={iconStyle} />}
+                                        icon={<ShieldUser strokeWidth={1.25} size={18} className={iconStyle} />}
                                         label={<span className={textStyle}>Admin</span>}
                                     />
                                 </div>
@@ -114,11 +124,11 @@ export default function DashboardLayout() {
 
 
                         <div className="group">
-                            <MenuItem
+                            <MenuItem compact
                                 onClick={() => setOpenMenu(false)}
                                 to={user ? "/dashboard" : "/dashboard-public"}
                                 className={menuItemStyle}
-                                icon={<Home strokeWidth={1.5} size={18} className={iconStyle} />}
+                                icon={<Home strokeWidth={1.25} size={18} className={iconStyle} />}
                                 label={<span className={textStyle}>{t("menu.home", "Página inicial")}</span>}
                             />
                         </div>
@@ -126,18 +136,18 @@ export default function DashboardLayout() {
                         {/* Dropdown Ligas */}
                         {isEnabled("competitions") && (
                         <li>
-                            <button onClick={() => setOpenLigas(!openLigas)} className={menuItemStyle}>
-                                <div className="flex items-center gap-3">
-                                    <Trophy strokeWidth={1.5} className={iconStyle} size={18} />
+                            <button onClick={() => toggleGroup(setOpenLigas, openLigas)} title={t("menu.leagues", "Competições")} className={menuItemStyle}>
+                                <div className="flex items-center gap-2.5">
+                                    <Trophy strokeWidth={1.25} className={iconStyle} size={18} />
                                     <span className={textStyle}>{t("menu.leagues", "Competições")}</span>
                                 </div>
-                                <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openLigas ? "rotate-180 text-purple-500" : ""}`} />
+                                <ChevronDown strokeWidth={1.25} size={16} className={`group-data-[collapsed=true]/sb:hidden text-gray-400 transition-transform duration-300 ${openLigas ? "rotate-180 text-purple-500" : ""}`} />
                             </button>
                             {openLigas && (
-                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/competitions" label={t("menu.leagues_all", "Todas as competições")} />
+                                <ul className="group-data-[collapsed=true]/sb:hidden ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                    <SubItem compact onClick={() => setOpenMenu(false)} to="/dashboard/competitions" label={t("menu.leagues_all", "Todas as competições")} />
                                     {user && isEnabled("competitions.favorites") && (
-                                        <SubItem
+                                        <SubItem compact
                                             onClick={() => setOpenMenu(false)}
                                             to="/dashboard/competitions/favorites"
                                             label={t("menu.favorites", "Favoritos")}
@@ -151,23 +161,23 @@ export default function DashboardLayout() {
                         {/* Dropdown Clubes */}
                         {isEnabled("clubs") && (
                         <li>
-                            <button onClick={() => setOpenClubes(!openClubes)} className={menuItemStyle}>
-                                <div className="flex items-center gap-3">
-                                    <Shield strokeWidth={1.5} className={iconStyle} size={18} />
+                            <button onClick={() => toggleGroup(setOpenClubes, openClubes)} title={t("menu.clubs", "Clubes")} className={menuItemStyle}>
+                                <div className="flex items-center gap-2.5">
+                                    <Shield strokeWidth={1.25} className={iconStyle} size={18} />
                                     <span className={textStyle}>{t("menu.clubs", "Clubes")}</span>
                                 </div>
-                                <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openClubes ? "rotate-180 text-purple-500" : ""}`} />
+                                <ChevronDown strokeWidth={1.25} size={16} className={`group-data-[collapsed=true]/sb:hidden text-gray-400 transition-transform duration-300 ${openClubes ? "rotate-180 text-purple-500" : ""}`} />
                             </button>
                             {openClubes && (
-                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                    <SubItem
+                                <ul className="group-data-[collapsed=true]/sb:hidden ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                    <SubItem compact
                                         onClick={() => setOpenMenu(false)}
                                         to="/dashboard/clubs"
                                         label={t("menu.clubs_all", "Todos os clubes")}
                                     />
 
                                     {user && isEnabled("clubs.favorites") && (
-                                        <SubItem
+                                        <SubItem compact
                                             onClick={() => setOpenMenu(false)}
                                             to="/dashboard/clubs/favorites"
                                             label={t("menu.favorites", "Favoritos")}
@@ -181,18 +191,18 @@ export default function DashboardLayout() {
                         {/* Dropdown Federações */}
                         {isEnabled("federations") && (
                         <li>
-                            <button onClick={() => setOpenFeds(!openFeds)} className={menuItemStyle}>
-                                <div className="flex items-center gap-3">
-                                    <ShieldUser strokeWidth={1.5} className={iconStyle} size={18} />
+                            <button onClick={() => toggleGroup(setOpenFeds, openFeds)} title={t("menu.federations", "Federações")} className={menuItemStyle}>
+                                <div className="flex items-center gap-2.5">
+                                    <ShieldUser strokeWidth={1.25} className={iconStyle} size={18} />
                                     <span className={textStyle}>{t("menu.federations", "Federações")}</span>
                                 </div>
-                                <ChevronDown strokeWidth={1.5} size={18} className={`text-gray-400 transition-transform duration-300 ${openFeds ? "rotate-180 text-purple-500" : ""}`} />
+                                <ChevronDown strokeWidth={1.25} size={16} className={`group-data-[collapsed=true]/sb:hidden text-gray-400 transition-transform duration-300 ${openFeds ? "rotate-180 text-purple-500" : ""}`} />
                             </button>
                             {openFeds && (
-                                <ul className="ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
-                                    <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations" label={t("menu.federations_all", "Todas as federações")} />
+                                <ul className="group-data-[collapsed=true]/sb:hidden ml-5 pl-4 border-l-2 border-purple-50 space-y-1 my-1 animate-fadeIn">
+                                    <SubItem compact onClick={() => setOpenMenu(false)} to="/dashboard/federations" label={t("menu.federations_all", "Todas as federações")} />
                                     {user && isEnabled("federations.favorites") && (
-                                        <SubItem onClick={() => setOpenMenu(false)} to="/dashboard/federations?tab=favs" label={t("menu.favorites", "Favoritas")} />
+                                        <SubItem compact onClick={() => setOpenMenu(false)} to="/dashboard/federations?tab=favs" label={t("menu.favorites", "Favoritas")} />
                                     )}
                                 </ul>
                             )}
@@ -202,18 +212,18 @@ export default function DashboardLayout() {
                         {/* Países */}
                         {isEnabled("countries") && (
                         <div className="group">
-                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.5} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.countries", "Países")}</span>} className={menuItemStyle} />
+                            <MenuItem compact onClick={() => setOpenMenu(false)} to="/dashboard/countries" icon={<Globe strokeWidth={1.25} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.countries", "Países")}</span>} className={menuItemStyle} />
                         </div>
                         )}
 
                         {/* Outros itens 
                         <div className="group">
-                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} />
+                            <MenuItem compact onClick={() => setOpenMenu(false)} to="/dashboard/players" icon={<PersonStanding strokeWidth={1.25} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.players", "Jogadores")}</span>} className={menuItemStyle} />
                         </div>
                         */}
                         {isEnabled("reports") && (
                         <div className="group">
-                            <MenuItem onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} />
+                            <MenuItem compact onClick={() => setOpenMenu(false)} to="/dashboard/relatorios" icon={<FileText strokeWidth={1.25} size={18} className={iconStyle} />} label={<span className={textStyle}>{t("menu.reports", "Relatórios")}</span>} />
                         </div>
                         )}
                     </ul>
@@ -224,26 +234,26 @@ export default function DashboardLayout() {
                     user ? (
                         (isEnabled("profile") || isEnabled("financial")) && (
                         <div>
-                            <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.my_account", "Minha conta")}</span>
+                            <span className="text-[10px] text-[#AFAFB2] mb-1.5 font-semibold tracking-widest uppercase block px-4 group-data-[collapsed=true]/sb:h-px group-data-[collapsed=true]/sb:bg-gray-100 group-data-[collapsed=true]/sb:text-[0px] group-data-[collapsed=true]/sb:px-0 group-data-[collapsed=true]/sb:mx-3 group-data-[collapsed=true]/sb:mb-2">{t("menu.my_account", "Minha conta")}</span>
                             <ul className="space-y-1">
                                 {isEnabled("profile") && (
                                 <div className="group">
-                                    <MenuItem
+                                    <MenuItem compact
                                         to="/me/profile"
                                         onClick={() => setOpenMenu(false)}
                                         className={menuItemStyle}
-                                        icon={<User strokeWidth={1.5} size={18} className={iconStyle} />}
+                                        icon={<User strokeWidth={1.25} size={18} className={iconStyle} />}
                                         label={<span className={textStyle}>{t("menu.profile", "Perfil")}</span>}
                                     />
                                 </div>
                                 )}
                                 {isEnabled("financial") && (
                                 <div className="group">
-                                    <MenuItem
+                                    <MenuItem compact
                                         to="/me/financial"
                                         onClick={() => setOpenMenu(false)}
                                         className={menuItemStyle}
-                                        icon={<Wallet strokeWidth={1.5} size={18} className={iconStyle} />}
+                                        icon={<Wallet strokeWidth={1.25} size={18} className={iconStyle} />}
                                         label={<span className={textStyle}>{t("menu.financial", "Financeiro")}</span>}
                                     />
                                 </div>
@@ -261,26 +271,26 @@ export default function DashboardLayout() {
                 {/* SEÇÃO: SUPORTE */}
                 {user && (isEnabled("faq") || isEnabled("contact")) ? (
                     <div>
-                        <span className="text-[11px] text-[#AFAFB2] mb-2 font-bold tracking-widest uppercase block px-4">{t("menu.support", "Suporte")}</span>
+                        <span className="text-[10px] text-[#AFAFB2] mb-1.5 font-semibold tracking-widest uppercase block px-4 group-data-[collapsed=true]/sb:h-px group-data-[collapsed=true]/sb:bg-gray-100 group-data-[collapsed=true]/sb:text-[0px] group-data-[collapsed=true]/sb:px-0 group-data-[collapsed=true]/sb:mx-3 group-data-[collapsed=true]/sb:mb-2">{t("menu.support", "Suporte")}</span>
                         <ul className="space-y-1">
                             {isEnabled("faq") && (
                             <div className="group">
-                                <MenuItem
+                                <MenuItem compact
                                     to="/faq"
                                     onClick={() => setOpenMenu(false)}
                                     className={menuItemStyle}
-                                    icon={<BadgeQuestionMark strokeWidth={1.5} size={18} className={iconStyle} />}
+                                    icon={<BadgeQuestionMark strokeWidth={1.25} size={18} className={iconStyle} />}
                                     label={<span className={textStyle}>{t("menu.faq", "Perguntas frequentes")}</span>}
                                 />
                             </div>
                             )}
                             {isEnabled("contact") && (
                             <div className="group">
-                                <MenuItem
+                                <MenuItem compact
                                     to="/fale-conosco"
                                     onClick={() => setOpenMenu(false)}
                                     className={menuItemStyle}
-                                    icon={<MessagesSquare strokeWidth={1.5} size={18} className={iconStyle} />}
+                                    icon={<MessagesSquare strokeWidth={1.25} size={18} className={iconStyle} />}
                                     label={<span className={textStyle}>{t("menu.contact", "Fale conosco")}</span>}
                                 />
                             </div>
@@ -294,17 +304,17 @@ export default function DashboardLayout() {
             {/* Footer Sair */}
             {user ? (
                 <div className="mt-8 pt-4 border-t border-gray-100">
-                    <button onClick={logout} className={`${menuItemStyle} hover:!bg-red-50 hover:!border-red-100 hover:!shadow-red-500/5`}>
-                        <div className="flex items-center gap-3">
-                            <LogOut strokeWidth={1.5} size={18} className="text-gray-400 group-hover:text-red-500 transition-all duration-300 group-hover:scale-110" />
-                            <span className="text-sm font-medium text-[#4E4E4F] group-hover:text-red-600 transition-colors">{t("menu.logout", "Sair")}</span>
+                    <button onClick={logout} title={t("menu.logout", "Sair")} className={`${menuItemStyle} hover:!bg-red-50 hover:!border-red-100 hover:!shadow-red-500/5`}>
+                        <div className="flex items-center gap-2.5">
+                            <LogOut strokeWidth={1.25} size={18} className="text-gray-400 group-hover:text-red-500 transition-all duration-300 group-hover:scale-110" />
+                            <span className="text-[13px] font-normal text-[#4E4E4F] group-hover:text-red-600 transition-colors group-data-[collapsed=true]/sb:hidden">{t("menu.logout", "Sair")}</span>
                         </div>
                     </button>
                 </div>
             ) : null}
 
             {/* Políticas — texto discreto, sem ícone (são políticas, visual diferente) */}
-            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2 px-1">
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2 px-1 group-data-[collapsed=true]/sb:hidden">
                 <Link onClick={() => setOpenMenu(false)} to="/legal" className="text-xs text-gray-400 hover:text-[#7F33D9] transition-colors">Responsabilidade legal</Link>
                 <Link onClick={() => setOpenMenu(false)} to="/privacy" className="text-xs text-gray-400 hover:text-[#7F33D9] transition-colors">Política de Privacidade</Link>
             </div>
@@ -315,7 +325,7 @@ export default function DashboardLayout() {
         <div className="lg:flex w-full h-screen bg-[#F6F5FA]">
 
             {/* --- SIDEBAR CONTAINER --- */}
-            <div className="z-50 sticky top-0 lg:border-r lg:relative top-0 lg:w-[260px] w-full pb-4 bg-[#F6F5FA] lg:bg-white">
+            <div className={`z-50 sticky top-0 lg:border-r lg:relative top-0 ${collapsed ? "lg:w-[72px]" : "lg:w-[260px]"} lg:transition-[width] lg:duration-300 w-full pb-4 bg-[#F6F5FA] lg:bg-white`}>
 
                 {/* ── HEADER MOBILE ── */}
                 <div className="lg:hidden z-30 bg-white border-b border-gray-100 shadow-sm pt-[env(safe-area-inset-top)]">
@@ -406,16 +416,19 @@ export default function DashboardLayout() {
                 )}
 
                 {/* --- MENU DESKTOP --- */}
-                <div className="hidden lg:block h-screen overflow-y-auto pt-4 bg-white scrollbar-hide">
-                    <div className="px-6 pb-4 mb-4 border-b border-gray-100">
-                        <img src={brand} alt="Brand" className="h-6 w-auto object-contain" />
+                <div data-collapsed={collapsed} className="group/sb hidden lg:flex flex-col h-screen bg-white">
+                    <div className="flex-1 min-h-0 overflow-y-auto pt-4 scrollbar-hide">
+                        <div className={`pb-4 mb-4 border-b border-gray-100 ${collapsed ? "flex justify-center px-0" : "px-6"}`}>
+                            <img src={collapsed ? brandIcon : brand} alt="Brand" className={collapsed ? "h-7 w-auto object-contain" : "h-6 w-auto object-contain"} />
+                        </div>
+                        <UserMenuContent />
                     </div>
-                    <UserMenuContent />
+                    <SidebarToggle collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} collapseLabel={t("menu.collapse", "Recolher menu")} expandLabel={t("menu.expand", "Expandir menu")} />
                 </div>
             </div>
 
             {/* --- CONTEÚDO PRINCIPAL (HEADER ORIGINAL) --- */}
-            <div className="overflow-y-auto lg:w-[calc(100%-260px)] bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:px-10 w-full px-4">
+            <div className={`overflow-y-auto ${collapsed ? "lg:w-[calc(100%-72px)]" : "lg:w-[calc(100%-260px)]"} bg-[#F6F5FA] pb-24 lg:pb-0 lg:h-screen lg:px-10 w-full px-4 lg:transition-[width] lg:duration-300`}>
 
                 <header className="hidden lg:flex items-center justify-between mb-10 sticky top-0 bg-[#F6F5FA] z-30 py-4">
 

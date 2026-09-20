@@ -4,16 +4,21 @@ import RevenueSection from "./Leagues/components/revenue/RevenueSection"
 import FinanceCarousel from "./Finance/FinanceCarousel"
 import SlotRenderer from "../../components/publications/SlotRenderer"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useContext } from "react"
 import { Link } from "react-router-dom"
 import { api } from "../../services/api"
 import { worldCupLogo } from "../../utils/worldCupLogo"
+import { AuthContext } from "../../context/AuthContext"
+import { Crown, ArrowRight } from "lucide-react"
 
 // Liga "FIFA Financeiro" — dados por ciclo de Copa do Mundo
 const FIFA_LEAGUE_ID = 310;
 const FIFA_COLOR = "#02285b";
 
 export default function Main() {
+  const { user } = useContext(AuthContext);
+  const isFreePlan = !!user && user.plan_id === 1;
+
   const [currency, setCurrency] = useState("BRL");
   const [currencies, setCurrencies] = useState([]);
 
@@ -67,6 +72,29 @@ export default function Main() {
 
       {/* Chamada grande (2 slots) */}
       <SlotRenderer pageKey="home" zone="hero" />
+
+      {/* Banner de upgrade — só pra quem está no plano grátis */}
+      {isFreePlan && (
+        <Link
+          to="/me/plans"
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl p-1 bg-gradient-to-r from-[#7F33D9] to-[#4C1D95] hover:opacity-95 transition-opacity"
+        >
+          <div className="w-full flex items-center justify-between gap-4 bg-white rounded-xl px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#7F33D9]/10 flex items-center justify-center text-[#7F33D9] shrink-0">
+                <Crown size={20} />
+              </div>
+              <div>
+                <p className="font-semibold text-[#111] text-sm">Desbloqueie todo o potencial da plataforma</p>
+                <p className="text-xs text-gray-500">Conheça os planos Premium e Business</p>
+              </div>
+            </div>
+            <span className="flex items-center gap-1 text-sm font-medium text-[#7F33D9] shrink-0 whitespace-nowrap">
+              Ver planos <ArrowRight size={16} />
+            </span>
+          </div>
+        </Link>
+      )}
 
       {/* Carrossel automático — seção Finanças (curadoria manual em Publicações) */}
       <FinanceCarousel />

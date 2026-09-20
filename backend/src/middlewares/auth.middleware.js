@@ -25,10 +25,8 @@ export function authGuard(req, res, next) {
 }
 
 export function adminGuard(req, res, next) {
-  return next();
-  // const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-  console.log(authHeader);
   if (!authHeader) {
     return res.status(401).json({ error: "Token não informado" });
   }
@@ -45,8 +43,8 @@ export function adminGuard(req, res, next) {
     return res.status(401).json({ error: "Token inválido ou expirado" });
   }
 
-  if (decoded.role !== "admin_master") {
-    //return res.status(403).json({ error: "Acesso restrito a administradores" });
+  if (!["admin", "admin_master"].includes(decoded.role)) {
+    return res.status(403).json({ error: "Acesso restrito a administradores" });
   }
 
   req.user = decoded;

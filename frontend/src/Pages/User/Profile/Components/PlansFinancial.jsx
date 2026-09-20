@@ -56,7 +56,6 @@ export default function PlansFinancial() {
       setCheckoutError(null);
 
       const response = await api.post("/stripe/create-checkout-session", {
-        userId: user.id,
         plan_id,
       });
 

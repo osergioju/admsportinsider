@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-export default function SubItem({ label, to, ...props }) {
+export default function SubItem({ label, to, compact = false, ...props }) {
   const navigate = useNavigate();
 
   return (
@@ -11,7 +11,7 @@ export default function SubItem({ label, to, ...props }) {
           props.onClick?.(e);
           navigate(to);
         }}
-        className="text-left cursor-pointer text-sm text-gray-600 hover:text-[#7F33D9] transition"
+        className={`text-left cursor-pointer ${compact ? "text-[12.5px] font-normal" : "text-sm"} text-gray-600 hover:text-[#7F33D9] transition`}
       >
         {label}
       </button>

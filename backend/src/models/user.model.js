@@ -2,16 +2,19 @@ import db from  "../config/db.js";
 
 export async function findUserByEmail(email) {
   const query = `
-    SELECT 
+    SELECT
       u.*,
       row_to_json(up) AS preferences
     FROM users u
-    LEFT JOIN user_preferences up 
+    LEFT JOIN user_preferences up
       ON up.user_id = u.id
-    WHERE u.email = $1
+    WHERE LOWER(u.email) = LOWER($1)
     LIMIT 1
   `;
 
+  // Comparação via LOWER() (não índice funcional) de propósito: contas
+  // antigas podem ter e-mail salvo com maiúsculas e não queremos migração
+  // de dados aqui. Tabela users é pequena, sem impacto de performance real.
   const result = await db.query(query, [email]);
   return result.rows[0];
 }

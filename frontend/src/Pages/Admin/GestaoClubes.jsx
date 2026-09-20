@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { api } from "../../services/api";
+import { IMAGE_ACCEPT, validateImageFile, uploadErrorMessage } from "../../utils/media";
 import {
     Trash2, Loader2, Plus, Search, ChevronLeft, ChevronRight,
     X, Shield, UploadCloud, FileSpreadsheet, Wand2, CheckCircle2, AlertCircle
@@ -84,8 +85,8 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                 headers: { "Content-Type": "multipart/form-data" },
             });
             setNewClub((p) => ({ ...p, crest_url: res.data.url }));
-        } catch {
-            alert("Erro ao fazer upload da logo");
+        } catch (err) {
+            alert(uploadErrorMessage(err, "Erro ao fazer upload da logo"));
         } finally {
             setUploading(false);
         }
@@ -212,8 +213,13 @@ function ClubModal({ countries, attributeKeys, isEditing, initialClub, initialAt
                                 <div className="flex gap-2 mb-2">
                                     <input
                                         type="file"
-                                        accept="image/*"
-                                        onChange={(e) => setFile(e.target.files[0])}
+                                        accept={IMAGE_ACCEPT}
+                                        onChange={(e) => {
+                                            const f = e.target.files[0];
+                                            const msg = f && validateImageFile(f);
+                                            if (msg) { alert(msg); e.target.value = ""; setFile(null); return; }
+                                            setFile(f);
+                                        }}
                                         className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
                                     />
                                     <button

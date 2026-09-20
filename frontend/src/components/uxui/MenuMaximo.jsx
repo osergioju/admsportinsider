@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { Home, Trophy, Shield, BarChart2, Heart, MessagesSquare, BadgeQuestionMark, FileText, Wallet, User, ChevronDown } from "lucide-react";
+import { Home, Trophy, Shield, BarChart2, Heart, MessagesSquare, BadgeQuestionMark, FileText, Wallet, User, ChevronDown, Crown } from "lucide-react";
 import MenuItem from "./MenuItem";
 import SubItem from "./SubMenu";
 import { AuthContext } from "../../context/AuthContext"
@@ -100,6 +100,7 @@ export default function SideMenu() {
           {/* PERFIL */}
           <MenuItem to="/me/profile" icon={<User strokeWidth={1} size={20}/>} label="Perfil" />
           <MenuItem to="/me/financial" icon={<Wallet strokeWidth={1} size={20}/>} label="Financeiro" />
+          <MenuItem to="/me/plans" icon={<Crown strokeWidth={1} size={20}/>} label="Planos" />
 
         </ul>
       </div>

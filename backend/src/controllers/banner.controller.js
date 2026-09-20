@@ -1,38 +1,4 @@
 import db from  "../config/db.js";
-import fs from "fs";
-import path from "path";
-import { UPLOADS_DIR } from "../config/paths.js";
-
-// Banner: salva em uploads/banners (servido pelo nginx/express), igual aos escudos de liga.
-// NÃO vai mais para o Supabase.
-export async function uploadBannerImage(req, res) {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "Nenhum arquivo enviado." });
-    }
-
-    const file = req.file;
-    const ext = (file.originalname.split(".").pop() || "png").toLowerCase();
-    const filename = `banner_${Date.now()}.${ext}`;
-
-    const dest = path.join(UPLOADS_DIR, "banners");
-    fs.mkdirSync(dest, { recursive: true });
-    fs.writeFileSync(path.join(dest, filename), file.buffer);
-
-    const baseUrl = process.env.UPLOADS_BASE_URL || "https://pro.sportinsider.com.br";
-    const v = Date.now();
-
-    return res.status(200).json({
-      message: "Upload realizado com sucesso!",
-      url: `${baseUrl}/uploads/banners/${filename}?v=${v}`,
-    });
-
-  } catch (error) {
-    console.error("Erro no upload:", error);
-    return res.status(500).json({ message: "Erro interno no upload." });
-  }
-}
-
 
 export async function createBanner(req, res) {
   const {

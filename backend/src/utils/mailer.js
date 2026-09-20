@@ -25,9 +25,6 @@ export async function sendEmailBrevo({ to, subject, html }) {
 
   const data = await response.json();
 
-  //. se sucesso
-  console.log(response);
-
   if (!response.ok) {
     console.error("Erro Brevo:", data);
     throw new Error(data.message || "Erro ao enviar e-mail via Brevo");

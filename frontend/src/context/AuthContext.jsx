@@ -38,6 +38,20 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* =========================
+     Refresh user (ex: após webhook do Stripe processar um pagamento)
+  ========================= */
+  async function refreshUser() {
+    try {
+      const response = await api.get("/auth/me");
+      setUser(response.data.user);
+      return response.data.user;
+    } catch (err) {
+      console.error("Failed to refresh user", err);
+      return null;
+    }
+  }
+
+  /* =========================
      Login
   ========================= */
   function login(token, userData) {
@@ -85,6 +99,7 @@ export function AuthProvider({ children }) {
         loading,
         login,
         logout,
+        refreshUser,
         updateUser, // 🔥 use isso no onboarding
         isAuthenticated: !!user,
       }}

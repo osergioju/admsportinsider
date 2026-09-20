@@ -11,13 +11,17 @@ export default function GoogleCallback() {
     async function handleGoogleLogin() {
       try {
         const params = new URLSearchParams(window.location.search);
-        const token = params.get("token");
+        const code = params.get("code");
 
-        // Se não veio token, volta pro login
-        if (!token) {
+        // Se não veio código, volta pro login
+        if (!code) {
           navigate("/login");
           return;
         }
+
+        // Troca o código de uso único (não fica na URL/histórico) pelo JWT
+        const exchange = await api.post("/auth/google/exchange", { code });
+        const token = exchange.data.token;
 
         // Guarda o token (se seu AuthContext já faz isso, depois podemos simplificar)
         localStorage.setItem("token", token);

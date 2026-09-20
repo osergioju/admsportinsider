@@ -41,6 +41,7 @@ export default function SubscriptionManagement() {
 
   // Cancelamento agendado — vem direto do user (SELECT u.* no /auth/me)
   const isCanceling = user?.cancel_at_period_end === true;
+  const isPastDue = user?.subscription_status === "past_due";
   const expiresAt = user?.subscription_current_period_end
     ? new Date(user.subscription_current_period_end).toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -64,7 +65,6 @@ export default function SubscriptionManagement() {
       setCheckoutLoading(plan_id);
       setCheckoutError(null);
       const response = await api.post("/stripe/create-checkout-session", {
-        userId: user.id,
         plan_id,
       });
       window.location.href = response.data.url;
@@ -208,6 +208,26 @@ export default function SubscriptionManagement() {
             className="shrink-0 text-xs font-bold text-amber-700 hover:text-amber-900 underline underline-offset-2 transition-colors disabled:opacity-50 whitespace-nowrap"
           >
             {portalLoading ? "Aguarde..." : t("financial.reactivate", "Reativar")}
+          </button>
+        </div>
+      )}
+
+      {/* Banner de pagamento falhado */}
+      {isPastDue && (
+        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-800">
+          <AlertTriangle size={18} className="shrink-0 mt-0.5 text-red-500" />
+          <div className="flex-1">
+            <p className="text-sm font-bold">{t("financial.past_due_banner", "Não conseguimos cobrar seu cartão")}</p>
+            <p className="text-xs text-red-700 mt-0.5">
+              {t("financial.past_due_body", "Atualize seu método de pagamento para evitar a interrupção do seu plano.")}
+            </p>
+          </div>
+          <button
+            onClick={handleOpenBillingPortal}
+            disabled={portalLoading}
+            className="shrink-0 text-xs font-bold text-red-700 hover:text-red-900 underline underline-offset-2 transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {portalLoading ? "Aguarde..." : t("financial.update_payment", "Atualizar pagamento")}
           </button>
         </div>
       )}

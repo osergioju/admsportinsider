@@ -1,4 +1,4 @@
-import Stripe from "stripe";
+import stripe from "../config/stripe.js";
 import db from "../config/db.js";
 import {
   sendPlanActivatedEmail,
@@ -7,8 +7,6 @@ import {
   sendPaymentFailedEmail,
   updateContactPlanInBrevo,
 } from "../utils/mailer.js";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const stripeWebhookHandler = async (req, res) => {
   const sig = req.headers["stripe-signature"];
@@ -31,6 +29,31 @@ export const stripeWebhookHandler = async (req, res) => {
   console.log("📋 Tipo do evento:", event.type);
   console.log("🆔 ID do objeto:", data.id);
 
+  // Stripe pode reenviar o mesmo evento (retries) — evita reprocessar e duplicar efeitos colaterais (e-mails, etc.)
+  const dedupe = await db.query(
+    `INSERT INTO stripe_events (id, event_type) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING RETURNING id`,
+    [event.id, event.type]
+  );
+
+  if (dedupe.rowCount === 0) {
+    console.log("↩️ Evento já processado anteriormente, ignorando:", event.id);
+    return res.json({ received: true, duplicate: true });
+  }
+
+  try {
+    await processStripeEvent(event, data);
+  } catch (err) {
+    console.error("❌ Erro ao processar evento do webhook:", err);
+    // Libera o evento pra Stripe poder tentar de novo (não deixamos marcado como processado)
+    await db.query(`DELETE FROM stripe_events WHERE id = $1`, [event.id]).catch(() => {});
+    return res.status(500).json({ error: "Erro ao processar evento" });
+  }
+
+  console.log("\n✅ ========== WEBHOOK PROCESSADO ==========\n");
+  return res.json({ received: true });
+};
+
+async function processStripeEvent(event, data) {
   switch (event.type) {
     // ========================================
     // ✔ CHECKOUT COMPLETED (ATIVA PLANO)
@@ -221,22 +244,32 @@ export const stripeWebhookHandler = async (req, res) => {
         previousAttributes.cancel_at === null                  // via timestamp (cancel_at: null → timestamp)
       );
 
+      // Troca de plano pode acontecer pelo Billing Portal (self-service), não só pelo admin —
+      // então precisamos re-sincronizar o plan_id local a partir do priceId em todo update, não só no checkout.
+      const matchingPlan = await db.query(
+        `SELECT id FROM plans WHERE pagarme_plan_id = $1`,
+        [priceId]
+      );
+      const planId = matchingPlan.rows[0]?.id || null;
+
       console.log("\n💾 EXECUTANDO UPDATE NO BANCO:");
       console.log("  [1] subscription_status:", status);
       console.log("  [2] cancel_at_period_end:", cancel_at_period_end);
       console.log("  [3] stripe_price_id:", priceId);
       console.log("  [4] subscription_current_period_end:", current_period_end);
-      console.log("  [5] stripe_customer_id (WHERE):", customer);
+      console.log("  [5] plan_id (resolvido pelo priceId):", planId);
+      console.log("  [6] stripe_customer_id (WHERE):", customer);
 
       const result = await db.query(
         `UPDATE users SET
           subscription_status = $1,
           cancel_at_period_end = $2,
           stripe_price_id = $3,
-          subscription_current_period_end = to_timestamp($4)
+          subscription_current_period_end = to_timestamp($4),
+          plan_id = COALESCE($6, plan_id)
         WHERE stripe_customer_id = $5
-        RETURNING id, cancel_at_period_end, subscription_current_period_end`,
-        [status, cancel_at_period_end, priceId, current_period_end, customer]
+        RETURNING id, plan_id, cancel_at_period_end, subscription_current_period_end`,
+        [status, cancel_at_period_end, priceId, current_period_end, customer, planId]
       );
 
       console.log("✅ UPDATE executado! Linhas afetadas:", result.rowCount);
@@ -390,6 +423,13 @@ export const stripeWebhookHandler = async (req, res) => {
       const failedCustomer = data.customer;
       console.log("👤 Customer ID:", failedCustomer);
 
+      // Marca a assinatura como inadimplente — sem isso o usuário mantinha acesso total
+      // durante toda a janela de "smart retries" do Stripe mesmo sem pagar.
+      await db.query(
+        `UPDATE users SET subscription_status = 'past_due' WHERE stripe_customer_id = $1`,
+        [failedCustomer]
+      );
+
       console.log("\n📧 Tentando enviar e-mail de falha de pagamento...");
       try {
         const userRes = await db.query(
@@ -414,7 +454,4 @@ export const stripeWebhookHandler = async (req, res) => {
     default:
       console.log(`⚠️ Evento não tratado: ${event.type}`);
   }
-
-  console.log("\n✅ ========== WEBHOOK PROCESSADO ==========\n");
-  res.json({ received: true });
-};
+}

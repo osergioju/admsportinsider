@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../../services/api";
+import { IMAGE_ACCEPT, validateImageFile, uploadErrorMessage } from "../../utils/media";
 import { Trash2, Loader2, Check, Plus, Search, ChevronLeft, ChevronRight, X, Trophy, Settings2, FileSpreadsheet, AlertTriangle, Shuffle, TableProperties } from "lucide-react";
 import SearchableSelect from "../../components/uxui/SearchableSelect";
 import CompetitionSetupModal from "./CompetitionSetupModal";
@@ -78,6 +79,8 @@ export default function GestaoLigas() {
     const makeLogoUpload = (field, variant) => async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const invalid = validateImageFile(file);
+        if (invalid) { alert(invalid); e.target.value = ""; return; }
         setUploadingLogo(field);
         try {
             const fd = new FormData();
@@ -89,7 +92,7 @@ export default function GestaoLigas() {
                 headers: { "Content-Type": "multipart/form-data" },
             });
             setNewLeague(prev => ({ ...prev, [field]: data.url }));
-        } catch { alert("Erro ao enviar a foto da liga."); }
+        } catch (err) { alert(uploadErrorMessage(err, "Erro ao enviar a foto da liga.")); }
         finally { setUploadingLogo(null); e.target.value = ""; }
     };
 
@@ -426,10 +429,10 @@ export default function GestaoLigas() {
                                     <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${uploadingLogo === "logo_url" ? "border-gray-200 text-gray-400" : "border-[#7F33D9] text-[#7F33D9] hover:bg-[#7F33D9]/5"}`}>
                                         {uploadingLogo === "logo_url" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
                                         {uploadingLogo === "logo_url" ? "Enviando…" : "Subir foto"}
-                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingLogo} onChange={makeLogoUpload("logo_url")} />
+                                        <input type="file" accept={IMAGE_ACCEPT} className="hidden" disabled={!!uploadingLogo} onChange={makeLogoUpload("logo_url")} />
                                     </label>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-1.5">A foto é salva em uploads/ligas (não no Supabase) e a URL é preenchida automaticamente.</p>
+                                <p className="text-xs text-gray-400 mt-1.5">A imagem vai para a biblioteca de Mídias (jpeg, jpg, png, gif ou webp · até 3 MB) e a URL é preenchida automaticamente.</p>
                             </div>
 
                             {/* Escudo alternativo (versão negativa) — usado SÓ na página da liga */}
@@ -448,7 +451,7 @@ export default function GestaoLigas() {
                                     <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${uploadingLogo === "logo_url_negative" ? "border-gray-200 text-gray-400" : "border-[#7F33D9] text-[#7F33D9] hover:bg-[#7F33D9]/5"}`}>
                                         {uploadingLogo === "logo_url_negative" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
                                         {uploadingLogo === "logo_url_negative" ? "Enviando…" : "Subir foto"}
-                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingLogo} onChange={makeLogoUpload("logo_url_negative", "negative")} />
+                                        <input type="file" accept={IMAGE_ACCEPT} className="hidden" disabled={!!uploadingLogo} onChange={makeLogoUpload("logo_url_negative", "negative")} />
                                     </label>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-1.5">Versão negativa do escudo. Aparece <b>apenas na página da liga</b>, quando existir.</p>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Testeira do clube — Opção D</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&amp;family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.row{transition:background .15s ease, padding .15s ease}
+.row:hover{background:color-mix(in oklab, var(--c1) 12%, #ffffff)!important;padding-left:14px!important}
+.row .arr{transition:transform .15s ease}
+.row:hover .arr{transform:translate(3px,-3px)}
+.row:focus-visible{outline:3px solid #8B5CF6;outline-offset:-3px}
+</style>
+</helmet>
+<div style="width: 1694px; height: 412px; box-sizing: border-box; padding: 24px; background: #F6F5FB; font-family: 'Figtree', system-ui, sans-serif; color: #17132B;">
+<section style="--c1: {{cor1}}; width: 100%; height: 100%; display: flex; flex-direction: column; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 1px 2px rgba(23,19,43,.05), 0 14px 34px -14px rgba(23,19,43,.16);">
+
+<div style="flex: none; height: 12px; display: flex;">
+<div style="flex-grow: 7; background: {{cor1}};"></div>
+<div style="flex-grow: 3; background: {{cor2}};"></div>
+</div>
+
+<div style="flex: 1; display: flex; align-items: stretch; gap: 44px; padding: 28px 48px; min-height: 0;">
+
+<div style="flex: none; width: 200px; border-radius: 14px; background: #F6F5FB; border: 1px solid #E7E4F2; display: flex; align-items: center; justify-content: center;">
+<svg width="132" height="158" viewBox="0 0 100 120" role="img" aria-label="Escudo do clube (espaço reservado)">
+<g transform="translate(50 60) scale(1.07) translate(-50 -60)"><path d="M50 4 L92 16 V58 C92 88 70 108 50 116 C30 108 8 88 8 58 V16 Z" fill="{{ln}}"></path></g>
+<path d="M50 4 L92 16 V58 C92 88 70 108 50 116 C30 108 8 88 8 58 V16 Z" fill="{{b3}}"></path>
+<path d="M50 4 L92 16 V58 C92 67 90.02 75.1 86.69 82.25 L13.31 82.25 C9.98 75.1 8 67 8 58 V16 Z" fill="{{b2}}"></path>
+<path d="M50 4 L92 16 V44 H8 V16 Z" fill="{{b1}}"></path>
+</svg>
+</div>
+
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10.5" fill="#009B3A"></circle><path d="M11 4 L19 11 L11 18 L3 11 Z" fill="#FEDF00"></path><circle cx="11" cy="11" r="4" fill="#002776"></circle></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #6B6785;">Clube · Brasil</span>
+</div>
+<h1 style="margin: 0; font-family: 'Big Shoulders Display', 'Figtree', sans-serif; font-size: 172px; line-height: 0.84; font-weight: 800; letter-spacing: -0.005em; text-transform: uppercase; white-space: nowrap; color: #17132B;">{{nome}}</h1>
+<div style="font-size: 17px; font-weight: 500; color: #5B5675;">{{oficial}}</div>
+</div>
+
+<nav aria-label="Seções do clube" style="flex: none; width: 470px; display: flex; flex-direction: column; border-bottom: 1px solid #DDD9EC;">
+<a class="row" href="#financeiros" style="flex: 1; display: flex; align-items: center; gap: 20px; border-top: 1px solid #DDD9EC; padding: 0 8px;">
+<span style="width: 34px; font-family: 'Big Shoulders Display', sans-serif; font-size: 26px; font-weight: 800; color: color-mix(in oklab, {{cor1}} 65%, #000000);">01</span>
+<span style="flex: 1; font-size: 21px; font-weight: 650;">Indicadores financeiros</span>
+<span class="arr" style="display: flex; color: #17132B;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"></path></svg></span>
+</a>
+<a class="row" href="#resultados" style="flex: 1; display: flex; align-items: center; gap: 20px; border-top: 1px solid #DDD9EC; padding: 0 8px;">
+<span style="width: 34px; font-family: 'Big Shoulders Display', sans-serif; font-size: 26px; font-weight: 800; color: color-mix(in oklab, {{cor1}} 65%, #000000);">02</span>
+<span style="flex: 1; font-size: 21px; font-weight: 650;">Resultados esportivos</span>
+<span class="arr" style="display: flex; color: #17132B;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"></path></svg></span>
+</a>
+<a class="row" href="#elenco" style="flex: 1; display: flex; align-items: center; gap: 20px; border-top: 1px solid #DDD9EC; padding: 0 8px;">
+<span style="width: 34px; font-family: 'Big Shoulders Display', sans-serif; font-size: 26px; font-weight: 800; color: color-mix(in oklab, {{cor1}} 65%, #000000);">03</span>
+<span style="flex: 1; font-size: 21px; font-weight: 650;">Elenco de atletas</span>
+<span class="arr" style="display: flex; color: #17132B;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"></path></svg></span>
+</a>
+</nav>
+
+</div>
+
+<div style="flex: none; height: 64px; display: flex; align-items: center; gap: 18px; padding: 0 48px; border-top: 1px solid #ECE9F6; background: #FBFAFE;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B5675" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="9" rx="8" ry="3.5"></ellipse><path d="M4 9v6c0 1.9 3.6 3.5 8 3.5s8-1.6 8-3.5V9"></path><path d="M8 12.5v5M12 13v5.5M16 12.5v5"></path></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #6B6785;">Estádio</span>
+<span style="font-size: 19px; font-weight: 650;">{{est}}</span>
+<span style="width: 1px; height: 22px; background: #DDD9EC;"></span>
+<span style="font-size: 16px; font-weight: 500; color: #5B5675;">{{cap}} lugares</span>
+</div>
+
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"clube":{"editor":"enum","options":["saopaulo","flamengo","palmeiras"],"default":"saopaulo"},"$preview":{"width":1694,"height":412}}'>
+class Component extends DCLogic {
+renderVals() {
+const P = {
+saopaulo: { nome: 'São Paulo', oficial: 'São Paulo Futebol Clube', est: 'Estádio do Morumbis', cor1: '#E30613', cor2: '#1A1A1A', b1: '#E30613', b2: '#FFFFFF', b3: '#1A1A1A', ln: '#1A1A1A' },
+flamengo: { nome: 'Flamengo', oficial: 'Clube de Regatas do Flamengo', est: 'Maracanã', cor1: '#C8102E', cor2: '#0D0D0D', b1: '#C8102E', b2: '#0D0D0D', b3: '#C8102E', ln: '#0D0D0D' },
+palmeiras: { nome: 'Palmeiras', oficial: 'Sociedade Esportiva Palmeiras', est: 'Nubank Parque', cor1: '#0B7A3B', cor2: '#06301A', b1: '#0B7A3B', b2: '#FFFFFF', b3: '#0B7A3B', ln: '#06301A' }
+};
+const c = P[this.props.clube] || P.saopaulo;
+return Object.assign({}, c, { cap: '00.000' });
+}
+}
+</script>
+</body>
+</html>
