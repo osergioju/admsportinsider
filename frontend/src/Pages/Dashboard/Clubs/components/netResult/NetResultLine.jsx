@@ -1,3 +1,4 @@
+import { withGradientArea } from "../../../../../utils/chartColor";
 import { useTranslation } from "../../../../../context/TranslationContext";
 import ReactECharts from "echarts-for-react";
 import { adaptNetResultEvolution } from "./netResultTableLine.adapter"
@@ -138,7 +139,7 @@ export default function NetResultLine({
       }
     },
 
-    series: adapted.series.map((serie) => ({
+    series: adapted.series.map((serie) => withGradientArea({
       ...serie,
       type: "line",
       smooth: false,

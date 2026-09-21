@@ -1,3 +1,4 @@
+import { withGradientArea } from "../../../../../utils/chartColor";
 import { useTranslation } from "../../../../../context/TranslationContext";
 import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
@@ -139,7 +140,7 @@ export default function PayrollLineChart({
       opacity: 0
     },
 
-    series: adapted.series.map((serie) => ({
+    series: adapted.series.map((serie) => withGradientArea({
       ...serie,
       type: "line",
       smooth: false,
