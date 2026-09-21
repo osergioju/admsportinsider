@@ -5,7 +5,7 @@ const INK = "#17132B";
 
 // Botão "Hospitalidade e camarotes" + logotipo do parceiro (só existem em alguns clubes).
 // O logo fica dentro do mesmo link: clicar em qualquer parte do bloco abre a página externa.
-export default function HospitalityLink({ hospitality, color1 }) {
+export default function HospitalityLink({ hospitality, color1, fontFamily = "'Figtree', system-ui, sans-serif", solid = false }) {
     if (!hospitality?.url) return null;
 
     return (
@@ -15,7 +15,7 @@ export default function HospitalityLink({ hospitality, color1 }) {
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="club-hosp flex items-center flex-wrap"
-            style={{ gap: 14, color: INK, textDecoration: "none", fontFamily: "'Figtree', system-ui, sans-serif" }}
+            style={{ gap: 14, color: INK, textDecoration: "none", fontFamily }}
         >
             <style>{`
                 .club-hosp .pill{transition:background .18s ease, border-color .18s ease, color .18s ease}
@@ -26,7 +26,7 @@ export default function HospitalityLink({ hospitality, color1 }) {
             `}</style>
             <span
                 className="pill flex items-center"
-                style={{ gap: 12, padding: "6px 6px 6px 18px", borderRadius: 999, border: `1px solid color-mix(in oklab, ${color1} 30%, #ffffff)`, background: `color-mix(in oklab, ${color1} 9%, #ffffff)`, fontSize: 14, fontWeight: 650 }}
+                style={{ gap: 12, padding: "6px 6px 6px 18px", borderRadius: 999, border: `1px solid color-mix(in oklab, ${color1} 30%, #ffffff)`, background: solid ? "#ffffff" : `color-mix(in oklab, ${color1} 9%, #ffffff)`, fontSize: 14, fontWeight: 650 }}
             >
                 <span>{hospitality.label}</span>
                 <span className="arr flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: "50%", background: "#F1EEF9", color: INK }}><ArrowUpRight /></span>
