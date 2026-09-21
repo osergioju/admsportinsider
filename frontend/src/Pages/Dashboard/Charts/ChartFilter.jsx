@@ -124,7 +124,7 @@ export default function ChartFilter({
                         <img src={l.logo_url} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
                       )}
                       <span style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ display: "block", fontWeight: 500, color: "#222", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</span>
+                        <span style={{ display: "block", fontWeight: 500, color: "var(--dm-text, #222)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</span>
                         {l.country_name && (
                           <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#888", marginTop: 1 }}>
                             {l.flag_url && <img src={l.flag_url} alt="" style={{ width: 13, height: 10, objectFit: "cover", borderRadius: 1 }} />}

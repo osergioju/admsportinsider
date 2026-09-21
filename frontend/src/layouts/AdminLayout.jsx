@@ -8,6 +8,7 @@ import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import MenuItem from "../components/uxui/MenuItem";
 import SubItem from "../components/uxui/SubMenu";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
+import ThemeToggle from "../components/uxui/ThemeToggle";
 
 import {
     LayoutDashboard,
@@ -398,7 +399,8 @@ export default function AdminLayout() {
                     <div className="w-1/2">
                         <img src={brand} alt="Brand" className="h-6" />
                     </div>
-                    <div className="w-1/2 flex items-center justify-end">
+                    <div className="w-1/2 flex items-center justify-end gap-3">
+                        <ThemeToggle compact />
                         <span className="text-[#0A0A0A] font-medium text-sm">Modo Admin</span>
                     </div>
                     <div className="mt-5 w-full border-b border-[#DADADA]"></div>
@@ -464,6 +466,9 @@ export default function AdminLayout() {
                 <header className="hidden lg:flex items-center justify-end mb-10 sticky top-0 bg-[#F6F5FA] z-30 py-4">
                     <div className="flex items-center gap-6 ml-4">
                         <div className="w-px h-6 bg-gray-200 mx-1"></div>
+
+                        {/* Tema claro/escuro (ao lado do perfil) */}
+                        <ThemeToggle />
 
                         {/* Avatar Header */}
                         <div className="relative group cursor-pointer">

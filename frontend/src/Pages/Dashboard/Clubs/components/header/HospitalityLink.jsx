@@ -23,6 +23,11 @@ export default function HospitalityLink({ hospitality, color1, fontFamily = "'Fi
                 .club-hosp:hover .pill{background:#17132B!important;border-color:#17132B!important;color:#fff!important}
                 .club-hosp:hover .pill .arr{background:#fff!important;color:#17132B!important}
                 .club-hosp:focus-visible{outline:3px solid #8B5CF6;outline-offset:3px;border-radius:999px}
+                .dark .club-hosp{color:#f1ecfb!important}
+                .dark .club-hosp .pill{background:color-mix(in oklab,var(--c1,#7f33d9) 16%,#150b2e)!important;border-color:color-mix(in oklab,var(--c1,#7f33d9) 40%,#150b2e)!important}
+                .dark .club-hosp .pill .arr{background:#2a1b52!important;color:#f1ecfb!important}
+                .dark .club-hosp:hover .pill{background:#f1ecfb!important;border-color:#f1ecfb!important;color:#150b2e!important}
+                .dark .club-hosp:hover .pill .arr{background:#150b2e!important;color:#f1ecfb!important}
             `}</style>
             <span
                 className="pill flex items-center"

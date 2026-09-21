@@ -21,15 +21,24 @@ export default function ClubHeaderO({ club, crestSrc, onCrestError, color1, colo
 
     // Cores secundárias do desenho, derivadas das do clube. Clubes com cor clara demais (amarelo, branco)
     // não podem virar texto/botão com contraste ruim: o desenho original só previa cores escuras.
-    const ink = pickInk(color2, color1);
-    const muted = `color-mix(in srgb, ${ink} 72%, #ffffff)`;
-    const accentText = isLight(color1, 0.3) ? `color-mix(in srgb, ${color1} 50%, #000000)` : color1;
+    const inkRaw = pickInk(color2, color1);
+    const mutedRaw = `color-mix(in srgb, ${inkRaw} 72%, #ffffff)`;
+    const accentRaw = isLight(color1, 0.3) ? `color-mix(in srgb, ${color1} 50%, #000000)` : color1;
+    // O JSX usa estas variáveis; no modo escuro o <style> abaixo troca os valores (ver `.dark .club-ho`).
+    const ink = "var(--ho-ink)";
+    const muted = "var(--ho-muted)";
+    const accentText = "var(--ho-accent)";
     const onAccent = luminance(color1) > 0.45 ? "#050111" : "#ffffff";
 
     return (
         <section
             className="club-ho @container relative w-full overflow-hidden"
-            style={{ "--c1": color1, "--c2": color2, background: `linear-gradient(90deg, #ffffff 0%, color-mix(in srgb, ${color1} 5%, #ffffff) 100%)`, borderRadius: 24, color: ink }}
+            style={{
+                "--c1": color1, "--c2": color2,
+                "--ho-ink": inkRaw, "--ho-muted": mutedRaw, "--ho-accent": accentRaw, "--ho-nav": "#050111", "--ho-rule": "rgba(5,1,17,0.14)",
+                "--ho-bg-from": "#ffffff", "--ho-bg-to": `color-mix(in srgb, ${color1} 5%, #ffffff)`,
+                background: "linear-gradient(90deg, var(--ho-bg-from) 0%, var(--ho-bg-to) 100%)", borderRadius: 24, color: "var(--ho-ink)",
+            }}
         >
             <style>{`
                 .club-ho .c1,.club-ho .c2{position:absolute;border-radius:50%;pointer-events:none}
@@ -43,6 +52,10 @@ export default function ClubHeaderO({ club, crestSrc, onCrestError, color1, colo
                     .club-ho .c1{left:max(1100px,calc(100% - 594px))}
                     .club-ho .c2{left:max(1340px,calc(100% - 354px))}
                 }
+                /* Modo escuro: mesma estrutura, cores trocadas (!important porque as variáveis claras vêm inline) */
+                .dark .club-ho{--ho-ink:#f1ecfb!important;--ho-muted:#a699c7!important;--ho-nav:#f1ecfb!important;--ho-rule:rgba(255,255,255,.16)!important;--ho-accent:color-mix(in srgb,var(--c1) 55%,#ffffff)!important;--ho-bg-from:#150b2e!important;--ho-bg-to:color-mix(in srgb,var(--c1) 16%,#150b2e)!important}
+                .dark .club-ho .c1{background:linear-gradient(180deg,var(--c1) 0%,color-mix(in srgb,var(--c1) 22%,#150b2e) 100%)}
+                .dark .club-ho .c2{background:linear-gradient(180deg,color-mix(in srgb,var(--c2) 55%,#150b2e) 0%,color-mix(in srgb,var(--c2) 12%,#150b2e) 100%)}
                 .club-ho .act{transition:border-color .2s ease}
                 .club-ho .act:hover{border-color:var(--c1)!important}
                 .club-ho .bt,.club-ho .arw{transition:transform .2s ease}
@@ -92,7 +105,11 @@ export default function ClubHeaderO({ club, crestSrc, onCrestError, color1, colo
                             </h1>
                         </div>
 
-                        {official && <div style={{ marginTop: 16, fontSize: 17, fontWeight: 500, color: muted }}>{official}</div>}
+                        {facts.founded && (
+                            <div style={{ marginTop: 16, fontSize: 17, fontWeight: 500, color: muted }}>
+                                Fundação <strong style={{ fontWeight: 600, color: ink }}>{facts.founded}</strong>
+                            </div>
+                        )}
 
                         {stadium && (
                             <Link
@@ -117,21 +134,19 @@ export default function ClubHeaderO({ club, crestSrc, onCrestError, color1, colo
                             </Link>
                         )}
 
-                        {(facts.founded || facts.structure) && (
+                        {(facts.structure || official) && (
                             <div className="flex flex-col items-start @[1000px]:flex-row @[1000px]:flex-wrap @[1000px]:items-center" style={{ marginTop: 10, gap: "4px 0", fontSize: 16, fontWeight: 400, color: muted }}>
-                                {facts.founded && (
-                                    <span className="inline-flex" style={{ gap: 6 }}>Fundação<strong style={{ fontWeight: 600, color: ink }}>{facts.founded}</strong></span>
-                                )}
-                                {facts.founded && facts.structure && <span className="hidden @[1000px]:inline" style={{ padding: "0 10px", color: "#7F33D9" }}>·</span>}
                                 {facts.structure && (
                                     <span className="inline-flex flex-wrap items-center" style={{ gap: 6 }}>
                                         Estrutura societária
                                         <strong style={{ fontWeight: 600, color: ink }}>{facts.structure.label}</strong>
-                                        <InfoTip title="Estrutura societária" label="O que é estrutura societária?">
+                                        <InfoTip color={ink} title="Estrutura societária" label="O que é estrutura societária?">
                                             {STRUCTURE_INTRO}{facts.structure.hint ? ` ${facts.structure.hint}` : ""}
                                         </InfoTip>
                                     </span>
                                 )}
+                                {facts.structure && official && <span className="hidden @[1000px]:inline" style={{ padding: "0 10px", color: "#7F33D9" }}>·</span>}
+                                {official && <strong style={{ fontWeight: 600, color: ink }}>{official}</strong>}
                             </div>
                         )}
                     </div>
@@ -149,9 +164,9 @@ export default function ClubHeaderO({ club, crestSrc, onCrestError, color1, colo
                                 className="act flex items-center"
                                 href={card.route}
                                 onClick={(e) => { e.preventDefault(); navigate(card.route); }}
-                                style={{ gap: 14, paddingTop: 16, borderTop: "2px solid rgba(5,1,17,0.14)", color: "inherit", textDecoration: "none" }}
+                                style={{ gap: 14, paddingTop: 16, borderTop: "2px solid var(--ho-rule)", color: "inherit", textDecoration: "none" }}
                             >
-                                <span className="flex-1" style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.012em", color: "#050111" }}>{card.title}</span>
+                                <span className="flex-1" style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.012em", color: "var(--ho-nav)" }}>{card.title}</span>
                                 <span className="bt flex flex-none items-center justify-center" style={{ width: 44, height: 44, borderRadius: "50%", background: color1, color: onAccent }}>
                                     <span className="arw flex"><ArrowUpRight size={17} /></span>
                                 </span>

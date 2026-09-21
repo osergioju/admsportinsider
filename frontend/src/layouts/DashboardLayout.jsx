@@ -13,6 +13,7 @@ import SearchBar from "../components/uxui/SearchBar";
 import FixedMenu from "../components/uxui/FixedMenu";
 import LinkButton from "../components/uxui/LinkButton";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
+import ThemeToggle from "../components/uxui/ThemeToggle";
 // Ícones do Usuário
 import { Home, PersonStanding, Trophy, Shield, Globe, ShieldUser, FileText, User, Wallet, BadgeQuestionMark, MessagesSquare, ChevronDown, LogOut, CircleX } from "lucide-react";
 
@@ -372,6 +373,8 @@ export default function DashboardLayout() {
                                 </>
                             )}
 
+                            <ThemeToggle compact />
+
                             {/* Hamburger */}
                             <button
                                 className="flex flex-col gap-[5px] ml-1 p-1"
@@ -443,6 +446,9 @@ export default function DashboardLayout() {
                             <>
                                 <div className="w-px h-6 bg-gray-200"></div>
 
+                                {/* Tema claro/escuro (ao lado do perfil) */}
+                                <ThemeToggle />
+
                                 {/* Avatar */}
                                 <div
                                     onClick={() => navigate("/me/profile")}
@@ -479,6 +485,7 @@ export default function DashboardLayout() {
                                         </button>
                                     ))}
                                 </div>
+                                <ThemeToggle />
                                 <div className="w-px h-5 bg-gray-200" />
                                 <Link
                                     to="/login"

@@ -354,7 +354,7 @@ export default function FederationDetail() {
                     <button
                       onClick={() => navigate(`/dashboard/federations/finance/${slug}`)}
                       className="flex items-center gap-2 cursor-pointer text-[#0A0A0A] font-[400] text-sm lg:text-[15px] py-3 px-5 rounded-full transition-all hover:brightness-[1.05]"
-                      style={{ background: "#ffffff" }}
+                      style={{ background: "var(--dm-surface, #ffffff)" }}
                     >
                       <TrendingUp size={15} />
                       Indicadores financeiros

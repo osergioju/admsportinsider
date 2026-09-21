@@ -21,8 +21,11 @@ export default defineConfig(({ mode }) => ({
   ],
 
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "src") },
+      // Todo `import ReactECharts from "echarts-for-react"` passa pelo wrapper com tema claro/escuro.
+      // Regex ancorada: o import interno do wrapper ("echarts-for-react/esm/index.js") não é reescrito.
+      { find: /^echarts-for-react$/, replacement: path.resolve(__dirname, "src/lib/echartsThemed.jsx") },
+    ],
   },
 }));

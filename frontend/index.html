@@ -19,6 +19,22 @@
 
   <!-- Android / Chrome -->
   <meta name="theme-color" content="#7F33D9" />
+
+  <!-- Tema claro/escuro: aplica a classe `dark` antes de qualquer render (evita piscar branco).
+       Vale o valor salvo em localStorage["theme"]; ?theme=dark|light força só nesta visita (útil p/ testes). -->
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get("theme");
+        var t = q === "dark" || q === "light" ? q : localStorage.getItem("theme");
+        if (t === "dark") {
+          document.documentElement.classList.add("dark");
+          document.documentElement.style.colorScheme = "dark";
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#0A0616");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta name="mobile-web-app-capable" content="yes" />
 
   <!-- SEO / compartilhamento -->

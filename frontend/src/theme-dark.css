@@ -1,0 +1,219 @@
+/* ────────────────────────────────────────────────────────────────────────────────────────────────────
+   MODO ESCURO — só vale com <html class="dark"> (ver context/ThemeContext.jsx).
+
+   Como funciona (sem editar as ~240 telas):
+   1) O Tailwind v4 monta as cores a partir de variáveis (--color-gray-*, --color-white…). Redefinir a rampa de
+      cinzas AQUI, invertida, vira o app inteiro escuro: text-gray-900 (texto escuro) passa a ser claro,
+      bg-gray-50 (fundo claro) passa a ser roxo bem escuro, border-gray-200 vira a linha roxa etc.
+   2) O que a rampa não cobre (bg-white, cores em hex, tons com matiz) é sobrescrito abaixo, classe a classe.
+   3) Este arquivo NÃO tem @layer: estilos sem camada vencem os utilitários do Tailwind (que ficam em camada).
+
+   Paleta = a do card da página do estádio (#2A1050 → #170B33 → #0A0616), só que mais fechada p/ o fundo.
+   ──────────────────────────────────────────────────────────────────────────────────────────────────── */
+
+.dark {
+  --dm-bg: #0a0616;          /* fundo da página */
+  --dm-surface: #150b2e;     /* cards, menus, modais (era o branco) */
+  --dm-surface-2: #1d1140;   /* hover / elemento elevado */
+  --dm-well: #0f0824;        /* "poço": campos e áreas rebaixadas dentro do card */
+  --dm-border: #2a1b52;
+  --dm-text: #f1ecfb;
+  --dm-muted: #a699c7;
+  --dm-brand: #a970ff;       /* roxo da marca legível sobre o escuro (o #7F33D9 fica fraco em texto pequeno) */
+
+  /* rampa de cinzas do Tailwind, invertida: claro ↔ escuro */
+  --color-gray-50: #0f0824;
+  --color-gray-100: #1d1140;
+  --color-gray-200: #2a1b52;
+  --color-gray-300: #43326f;
+  --color-gray-400: #8a7cb0;
+  --color-gray-500: #a093c4;
+  --color-gray-600: #b6abd5;
+  --color-gray-700: #cdc5e3;
+  --color-gray-800: #e1dbf0;
+  --color-gray-900: #f1ecfb;
+  --color-gray-950: #faf7ff;
+
+  /* tokens do shadcn (components/uxui/*) */
+  --background: #0a0616;
+  --foreground: #f1ecfb;
+  --card: #150b2e;
+  --card-foreground: #f1ecfb;
+  --popover: #150b2e;
+  --popover-foreground: #f1ecfb;
+  --primary: #a970ff;
+  --primary-foreground: #0a0616;
+  --secondary: #1d1140;
+  --secondary-foreground: #f1ecfb;
+  --muted: #1d1140;
+  --muted-foreground: #a699c7;
+  --accent: #241547;
+  --accent-foreground: #f1ecfb;
+  --border: #2a1b52;
+  --input: #2a1b52;
+  --ring: #7f33d9;
+}
+
+html.dark { color-scheme: dark; background-color: var(--dm-bg); }
+.dark body { background-color: var(--dm-bg); color: var(--dm-text); }
+.dark ::selection { background: #7f33d9; color: #fff; }
+
+/* ── branco → superfície ───────────────────────────────────────────────────────────────────────────
+   Só o bg-white "cheio" e as versões translúcidas de UI clara. bg-white/5,/10,/15,/20 ficam como estão:
+   são vidro branco em cima de fundos JÁ escuros (cards de destaque, hero). */
+.dark .bg-white { background-color: var(--dm-surface); }
+@media (min-width: 64rem) { .dark .lg\:bg-white { background-color: var(--dm-surface); } }
+.dark .bg-white\/95 { background-color: color-mix(in oklab, var(--dm-surface) 95%, transparent); }
+.dark .bg-white\/90 { background-color: color-mix(in oklab, var(--dm-surface) 90%, transparent); }
+.dark .bg-white\/80 { background-color: color-mix(in oklab, var(--dm-surface) 80%, transparent); }
+.dark .bg-white\/60 { background-color: color-mix(in oklab, var(--dm-surface) 60%, transparent); }
+.dark .bg-white\/50 { background-color: color-mix(in oklab, var(--dm-surface) 50%, transparent); }
+.dark .bg-white\/40 { background-color: color-mix(in oklab, var(--dm-surface) 40%, transparent); }
+.dark .hover\:bg-white:hover,
+.dark .group:hover .group-hover\:bg-white,
+.dark .focus\:bg-white:focus { background-color: var(--dm-surface-2); }
+.dark .hover\:bg-white\/60:hover,
+.dark .hover\:bg-white\/40:hover { background-color: color-mix(in oklab, var(--dm-surface-2) 70%, transparent); }
+
+/* gradientes que desbotam para branco (fade de listas, cartões) */
+.dark .from-white:not(.bg-clip-text) { --tw-gradient-from: var(--dm-surface); }
+.dark .via-white:not(.bg-clip-text) { --tw-gradient-via: var(--dm-surface); }
+.dark .to-white:not(.bg-clip-text),
+.dark .to-\[\#ffffff\]:not(.bg-clip-text) { --tw-gradient-to: var(--dm-surface); }
+.dark .to-white\/60:not(.bg-clip-text) { --tw-gradient-to: color-mix(in oklab, var(--dm-surface) 60%, transparent); }
+.dark .to-\[\#ffffff00\] { --tw-gradient-to: transparent; }
+.dark .to-gray-900 { --tw-gradient-to: #3b2470; }
+.dark .to-\[\#FEF7FF\] { --tw-gradient-to: var(--dm-surface-2); }
+
+/* ── cinzas escuros usados como fundo SÓLIDO (botões/tooltips escuros com texto branco) ───────────── */
+.dark .bg-gray-900 { background-color: #3b2470; }
+.dark .bg-gray-800 { background-color: #2f1c5c; }
+.dark .bg-gray-700 { background-color: #3b2470; }
+.dark .hover\:bg-gray-800:hover { background-color: #4a2d8a; }
+.dark .hover\:bg-gray-900:hover { background-color: #4a2d8a; }
+
+/* ── cores em hex nas classes ─────────────────────────────────────────────────────────────────────── */
+.dark .text-\[\#111\],
+.dark .text-\[\#0A0A0A\],
+.dark .text-\[\#1B1917\],
+.dark .text-\[\#050111\] { color: var(--dm-text); }
+.dark .text-\[\#0A0A0AB2\] { color: color-mix(in oklab, var(--dm-text) 70%, transparent); }
+.dark .text-\[\#4E4E4F\],
+.dark .text-\[\#626262\] { color: var(--color-gray-600); }
+.dark .text-\[\#8D6C6C\] { color: var(--dm-muted); }
+.dark .text-\[\#7F33D9\],
+.dark .text-\[\#8033D9\] { color: var(--dm-brand); }
+.dark .hover\:text-\[\#7F33D9\]:hover { color: #c3a1ff; }
+
+.dark .bg-\[\#F6F5FA\] { background-color: var(--dm-bg); }
+.dark .bg-\[\#F8F9FB\],
+.dark .bg-\[\#fafaf8\],
+.dark .bg-\[\#F5F0F0\],
+.dark .bg-\[\#F5F3FF\],
+.dark .bg-\[\#FEF7FF\] { background-color: var(--dm-well); }
+.dark .bg-\[\#EDE6F6\] { background-color: #271650; }
+.dark .bg-\[\#FFF5F5\] { background-color: #2a1028; }
+
+.dark .border-\[\#F0F0F0\],
+.dark .border-\[\#DADADA\],
+.dark .border-\[\#00000018\] { border-color: var(--dm-border); }
+.dark .divide-\[\#F0F0F0\] > :not(:last-child) { border-color: var(--dm-border); }
+
+/* ── tons claros com matiz (avisos, badges, hovers) → mesmo matiz, versão escura ─────────────────── */
+.dark {
+  --tint-red: #ef4444; --tint-green: #22c55e; --tint-amber: #f59e0b; --tint-purple: #a855f7; --tint-violet: #8b5cf6;
+  --tint-blue: #3b82f6; --tint-orange: #f97316; --tint-teal: #14b8a6; --tint-yellow: #eab308; --tint-rose: #f43f5e;
+  --tint-pink: #ec4899; --tint-indigo: #6366f1; --tint-sky: #0ea5e9; --tint-emerald: #10b981;
+}
+/* 50/100/200 de cada matiz: mistura da cor sobre a superfície (mesma família de tons do modo claro) */
+.dark { --color-red-50: color-mix(in srgb, var(--tint-red) 13%, #150b2e); --color-red-100: color-mix(in srgb, var(--tint-red) 20%, #150b2e); --color-red-200: color-mix(in srgb, var(--tint-red) 30%, #150b2e);
+  --color-green-50: color-mix(in srgb, var(--tint-green) 12%, #150b2e); --color-green-100: color-mix(in srgb, var(--tint-green) 19%, #150b2e); --color-green-200: color-mix(in srgb, var(--tint-green) 28%, #150b2e);
+  --color-emerald-50: color-mix(in srgb, var(--tint-emerald) 12%, #150b2e); --color-emerald-100: color-mix(in srgb, var(--tint-emerald) 19%, #150b2e); --color-emerald-200: color-mix(in srgb, var(--tint-emerald) 28%, #150b2e);
+  --color-amber-50: color-mix(in srgb, var(--tint-amber) 13%, #150b2e); --color-amber-100: color-mix(in srgb, var(--tint-amber) 20%, #150b2e); --color-amber-200: color-mix(in srgb, var(--tint-amber) 30%, #150b2e);
+  --color-yellow-50: color-mix(in srgb, var(--tint-yellow) 13%, #150b2e); --color-yellow-100: color-mix(in srgb, var(--tint-yellow) 20%, #150b2e);
+  --color-orange-50: color-mix(in srgb, var(--tint-orange) 13%, #150b2e); --color-orange-100: color-mix(in srgb, var(--tint-orange) 20%, #150b2e);
+  --color-purple-50: color-mix(in srgb, var(--tint-purple) 14%, #150b2e); --color-purple-100: color-mix(in srgb, var(--tint-purple) 22%, #150b2e); --color-purple-200: color-mix(in srgb, var(--tint-purple) 32%, #150b2e);
+  --color-violet-50: color-mix(in srgb, var(--tint-violet) 14%, #150b2e); --color-violet-100: color-mix(in srgb, var(--tint-violet) 22%, #150b2e); --color-violet-200: color-mix(in srgb, var(--tint-violet) 32%, #150b2e);
+  --color-blue-50: color-mix(in srgb, var(--tint-blue) 13%, #150b2e); --color-blue-100: color-mix(in srgb, var(--tint-blue) 20%, #150b2e); --color-blue-200: color-mix(in srgb, var(--tint-blue) 30%, #150b2e);
+  --color-teal-50: color-mix(in srgb, var(--tint-teal) 13%, #150b2e); --color-teal-100: color-mix(in srgb, var(--tint-teal) 20%, #150b2e);
+  --color-sky-50: color-mix(in srgb, var(--tint-sky) 13%, #150b2e); --color-sky-100: color-mix(in srgb, var(--tint-sky) 20%, #150b2e);
+  --color-rose-50: color-mix(in srgb, var(--tint-rose) 13%, #150b2e); --color-rose-100: color-mix(in srgb, var(--tint-rose) 20%, #150b2e);
+  --color-pink-50: color-mix(in srgb, var(--tint-pink) 13%, #150b2e); --color-pink-100: color-mix(in srgb, var(--tint-pink) 20%, #150b2e);
+  --color-indigo-50: color-mix(in srgb, var(--tint-indigo) 13%, #150b2e); --color-indigo-100: color-mix(in srgb, var(--tint-indigo) 20%, #150b2e);
+}
+
+/* Texto com matiz escuro (…-600/700/800) ficava sem contraste no escuro → versão clara do mesmo matiz.
+   Feito por classe de TEXTO (e não pela variável) p/ não clarear botões sólidos como bg-red-600. */
+.dark .text-red-500 { color: #f87171; }    .dark .text-red-600 { color: #f87171; }    .dark .text-red-700, .dark .text-red-800 { color: #fca5a5; }
+.dark .text-green-600 { color: #4ade80; }  .dark .text-green-700, .dark .text-green-800 { color: #86efac; }
+.dark .text-emerald-600 { color: #34d399; } .dark .text-emerald-700, .dark .text-emerald-800 { color: #6ee7b7; }
+.dark .text-amber-600 { color: #fbbf24; }  .dark .text-amber-700, .dark .text-amber-800 { color: #fcd34d; }
+.dark .text-yellow-600, .dark .text-yellow-700 { color: #fde047; }
+.dark .text-orange-600, .dark .text-orange-700 { color: #fb923c; }
+.dark .text-blue-600 { color: #60a5fa; }   .dark .text-blue-700, .dark .text-blue-800 { color: #93c5fd; }
+.dark .text-purple-600, .dark .text-purple-700, .dark .text-purple-800 { color: #c4a0ff; }
+.dark .text-violet-600 { color: #b39bff; }  .dark .text-violet-700, .dark .text-violet-800 { color: #c7b8ff; }
+.dark .text-teal-600, .dark .text-teal-700 { color: #2dd4bf; }
+.dark .text-sky-600, .dark .text-sky-700 { color: #38bdf8; }
+.dark .text-rose-600, .dark .text-rose-700 { color: #fb7185; }
+.dark .text-indigo-600, .dark .text-indigo-700 { color: #a5b4fc; }
+.dark .border-red-100, .dark .border-red-200 { border-color: color-mix(in srgb, #ef4444 35%, #150b2e); }
+.dark .border-green-100, .dark .border-green-200 { border-color: color-mix(in srgb, #22c55e 32%, #150b2e); }
+.dark .border-amber-100, .dark .border-amber-200 { border-color: color-mix(in srgb, #f59e0b 35%, #150b2e); }
+.dark .border-purple-100, .dark .border-purple-200, .dark .border-violet-100, .dark .border-violet-200 { border-color: #3a2470; }
+
+/* ── detalhes ──────────────────────────────────────────────────────────────────────────────────────── */
+.dark input::placeholder, .dark textarea::placeholder { color: #6d5f94; }
+.dark .swiper-pagination-bullet { background: #6d5f94; }
+
+/* Texto com gradiente escuro (títulos e frases das páginas de clube/federação/competição): o React grava o
+   estilo como "linear-gradient(99deg, rgb(10, 10, 10), …)". Troca só a imagem; o background-clip:text fica. */
+.dark [style*="99deg, rgb(10, 10, 10)"] { background-image: linear-gradient(99deg, #f1ecfb, #cdc5e3, #8a7cb0) !important; }
+
+/* Logo (SVG escuro): clareia p/ ler sobre o fundo roxo escuro */
+.dark img[alt="Brand"] { filter: brightness(2.3) saturate(0.85); }
+
+/* Campos de formulário nativos (select, input, textarea) — os filtros dos gráficos são assim.
+   Exclui checkbox/radio/range/cor/arquivo/botões e inputs transparentes (ex.: a busca, que vive dentro de um card). */
+.dark select,
+.dark textarea,
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([style*="transparent"]) {
+  background-color: var(--dm-well);
+  color: var(--dm-text);
+  border-color: var(--dm-border);
+}
+.dark select option { background-color: var(--dm-surface); color: var(--dm-text); }
+
+/* Fundos brancos e textos quase pretos gravados INLINE (style={{…}}): o navegador serializa como rgb(). */
+.dark [style*="background: rgb(255, 255, 255)"],
+.dark [style*="background-color: rgb(255, 255, 255)"] { background-color: var(--dm-surface-2) !important; }
+.dark [style*="color: rgb(34, 34, 34)"],
+.dark [style*="color: rgb(51, 51, 51)"],
+.dark [style*="color: rgb(17, 17, 17)"],
+.dark [style*="color: rgb(26, 26, 46)"],
+.dark [style*="color: rgb(10, 10, 10)"],
+.dark [style*="color: rgb(5, 1, 17)"] { color: var(--dm-text) !important; }
+
+/* Quase-brancos inline (#fafaf8, #f5f5f5, hover lilás #f5f0fc…): viram o "poço" escuro. */
+.dark [style*="background: rgb(250, 250, 248)"],
+.dark [style*="background-color: rgb(250, 250, 248)"],
+.dark [style*="background: rgb(250, 250, 250)"],
+.dark [style*="background-color: rgb(250, 250, 250)"],
+.dark [style*="background: rgb(249, 249, 249)"],
+.dark [style*="background-color: rgb(249, 249, 249)"],
+.dark [style*="background: rgb(248, 248, 248)"],
+.dark [style*="background-color: rgb(248, 248, 248)"],
+.dark [style*="background: rgb(247, 247, 247)"],
+.dark [style*="background-color: rgb(247, 247, 247)"],
+.dark [style*="background: rgb(245, 245, 245)"],
+.dark [style*="background-color: rgb(245, 245, 245)"],
+.dark [style*="background: rgb(243, 243, 243)"],
+.dark [style*="background-color: rgb(243, 243, 243)"],
+.dark [style*="background: rgb(240, 240, 240)"],
+.dark [style*="background-color: rgb(240, 240, 240)"],
+.dark [style*="background: rgb(245, 240, 252)"],
+.dark [style*="background-color: rgb(245, 240, 252)"],
+.dark [style*="background: rgb(248, 246, 253)"],
+.dark [style*="background-color: rgb(248, 246, 253)"],
+.dark [style*="background: rgb(250, 249, 254)"],
+.dark [style*="background-color: rgb(250, 249, 254)"] { background-color: var(--dm-well) !important; }

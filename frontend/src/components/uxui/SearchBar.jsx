@@ -33,7 +33,7 @@ function ClubAvatar({ name, crestUrl }) {
           borderRadius: 10,
           overflow: "hidden",
           flexShrink: 0,
-          background: "#f3f3f3",
+          background: "var(--dm-well, #f3f3f3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -94,7 +94,7 @@ function LigaAvatar({ logoUrl, name }) {
           borderRadius: 10,
           overflow: "hidden",
           flexShrink: 0,
-          background: "#f3f3f3",
+          background: "var(--dm-well, #f3f3f3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -153,7 +153,7 @@ function PlayerAvatar({ name, photoUrl }) {
           borderRadius: "50%",
           overflow: "hidden",
           flexShrink: 0,
-          background: "#f3f3f3",
+          background: "var(--dm-well, #f3f3f3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -257,7 +257,7 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: "#1a1a2e",
+            color: "var(--dm-text, #1a1a2e)",
             fontFamily: "'DM Sans', sans-serif",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -272,7 +272,7 @@ function ResultItem({ item, type, onSelect, isHighlighted }) {
           <div
             style={{
               fontSize: 12,
-              color: "#888",
+              color: "var(--dm-muted, #888)",
               fontFamily: "'DM Sans', sans-serif",
               display: "flex",
               alignItems: "center",
@@ -514,9 +514,9 @@ export default function SearchBar() {
             alignItems: "center",
             gap: 10,
             padding: "10px 14px",
-            background: "#fff",
+            background: "var(--dm-surface, #fff)",
             borderRadius: isOpen ? "14px 14px 0 0" : 14,
-            border: `1.5px solid ${focused ? "#7F33D9" : "#e8e8e8"}`,
+            border: `1.5px solid ${focused ? "#7F33D9" : "var(--dm-border, #e8e8e8)"}`,
             boxShadow: focused
               ? "0 0 0 3px rgba(127,51,217,0.10)"
               : "0 1px 4px rgba(0,0,0,0.06)",
@@ -538,7 +538,7 @@ export default function SearchBar() {
               background: "transparent",
               fontSize: 14,
               fontWeight: 500,
-              color: "#1a1a2e",
+              color: "var(--dm-text, #1a1a2e)",
               fontFamily: "'DM Sans', sans-serif",
               caretColor: "#7F33D9",
             }}
@@ -588,8 +588,8 @@ export default function SearchBar() {
               style={{
                 fontSize: 11,
                 color: "#bbb",
-                background: "#f5f5f5",
-                border: "1px solid #e0e0e0",
+                background: "var(--dm-surface-2, #f5f5f5)",
+                border: "1px solid var(--dm-border, #e0e0e0)",
                 borderRadius: 5,
                 padding: "1px 6px",
                 fontFamily: "monospace",
@@ -608,9 +608,9 @@ export default function SearchBar() {
               top: "100%",
               left: 0,
               right: 0,
-              background: "#fff",
+              background: "var(--dm-surface, #fff)",
               border: "1.5px solid #7F33D9",
-              borderTop: "1px solid #f0e6ff",
+              borderTop: "1px solid var(--dm-border, #f0e6ff)",
               borderRadius: "0 0 14px 14px",
               boxShadow: "0 8px 24px rgba(127,51,217,0.12)",
               zIndex: 1000,
@@ -627,13 +627,13 @@ export default function SearchBar() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "8px 14px 6px",
-                  borderBottom: "1px solid #f5f5f5",
+                  borderBottom: "1px solid var(--dm-border, #f5f5f5)",
                 }}
               >
                 <span
                   style={{
                     fontSize: 12,
-                    color: "#888",
+                    color: "var(--dm-muted, #888)",
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
@@ -664,7 +664,7 @@ export default function SearchBar() {
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
-                    color: "#333",
+                    color: "var(--dm-text, #333)",
                     fontFamily: "'DM Sans', sans-serif",
                     marginBottom: 4,
                   }}
@@ -704,7 +704,7 @@ export default function SearchBar() {
               <div
                 style={{
                   height: 1,
-                  background: "#f5f5f5",
+                  background: "var(--dm-surface-2, #f5f5f5)",
                   margin: "4px 14px",
                 }}
               />
@@ -731,7 +731,7 @@ export default function SearchBar() {
               <div
                 style={{
                   height: 1,
-                  background: "#f5f5f5",
+                  background: "var(--dm-surface-2, #f5f5f5)",
                   margin: "4px 14px",
                 }}
               />
@@ -758,7 +758,7 @@ export default function SearchBar() {
               <div
                 style={{
                   height: 1,
-                  background: "#f5f5f5",
+                  background: "var(--dm-surface-2, #f5f5f5)",
                   margin: "4px 14px",
                 }}
               />
@@ -786,7 +786,7 @@ export default function SearchBar() {
             <div
               style={{
                 padding: "8px 14px",
-                borderTop: "1px solid #f5f5f5",
+                borderTop: "1px solid var(--dm-border, #f5f5f5)",
                 display: "flex",
                 justifyContent: "flex-end",
               }}

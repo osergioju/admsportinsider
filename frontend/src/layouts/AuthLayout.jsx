@@ -1,7 +1,26 @@
+import { useLayoutEffect } from "react";
 import { Outlet } from "react-router-dom";
 import LogoWatermark from "../assets/img/footer-logo.png"
+import { useTheme } from "../hooks/useTheme";
 
 export default function AuthLayout() {
+    const { isDark } = useTheme();
+
+    // Login, cadastro, landing, planos e páginas legais já têm fundo e gradientes próprios e NÃO têm o botão
+    // de tema: ficam sempre no visual claro. Só tira a classe `dark` do <html> enquanto esta tela está montada
+    // (antes da pintura, p/ não piscar) e devolve ao sair, se o usuário estava no escuro.
+    useLayoutEffect(() => {
+        const root = document.documentElement;
+        root.classList.remove("dark");
+        root.style.colorScheme = "light";
+        return () => {
+            if (isDark) {
+                root.classList.add("dark");
+                root.style.colorScheme = "dark";
+            }
+        };
+    }, [isDark]);
+
     return (
         <div className="min-h-screen w-full bg-black relative overflow-hidden flex flex-col justify-center items-center">
             <div className="xl:w-180 xl:h-180 xl:blur-4xl blur-3xl lg:w-120 lg:h-120 w-100 h-100 bg-[radial-gradient(50%_50%_at_50%_50%,_#7E34D9_0%,_rgba(126,52,217,0)_89%)] rounded-full absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
