@@ -12,8 +12,8 @@ export const SIMULATE_MISSING_FACTS = true;
 export const STRUCTURE_INTRO = "Como o clube é constituído juridicamente e quem o controla.";
 
 const STRUCTURES = [
-    { label: "Associação civil sem fins lucrativos", hint: "Clube controlado pelos próprios sócios/associados, que elegem a diretoria. Não distribui lucros." },
-    { label: "SAF — Sociedade Anônima do Futebol", hint: "Empresa criada só para o futebol (Lei 14.193/2021). Investidores podem comprar participação e o clube associativo passa a ser acionista." },
+    { label: "Associação ", hint: "Clube controlado pelos próprios sócios/associados, que elegem a diretoria. Não distribui lucros." },
+    { label: "SAF", hint: "Empresa criada só para o futebol (Lei 14.193/2021). Investidores podem comprar participação e o clube associativo passa a ser acionista." },
     { label: "Clube-empresa", hint: "O clube é uma empresa com fins lucrativos, com donos ou acionistas, e não uma associação de sócios." },
     { label: "Investidor majoritário", hint: "Um grupo ou investidor detém o controle da sociedade que administra o clube." },
 ];

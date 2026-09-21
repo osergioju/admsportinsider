@@ -170,8 +170,8 @@ html.dark { color-scheme: dark; background-color: var(--dm-bg); }
    estilo como "linear-gradient(99deg, rgb(10, 10, 10), …)". Troca só a imagem; o background-clip:text fica. */
 .dark [style*="99deg, rgb(10, 10, 10)"] { background-image: linear-gradient(99deg, #f1ecfb, #cdc5e3, #8a7cb0) !important; }
 
-/* Logo (SVG escuro): clareia p/ ler sobre o fundo roxo escuro */
-.dark img[alt="Brand"] { filter: brightness(2.3) saturate(0.85); }
+/* Logo (SVG escuro): todo branco sobre o fundo roxo escuro */
+.dark img[alt="Brand"] { filter: brightness(0) invert(1); }
 
 /* Campos de formulário nativos (select, input, textarea) — os filtros dos gráficos são assim.
    Exclui checkbox/radio/range/cor/arquivo/botões e inputs transparentes (ex.: a busca, que vive dentro de um card). */
