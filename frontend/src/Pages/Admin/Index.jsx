@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useUsersInsights } from '../../hooks/useUsersInsights'
 import { useFinanceiroInsights } from '../../hooks/useFinanceiroInsights'
 import { usePlanosInsights } from '../../hooks/usePlanosInsights'
+import { mrrSummary } from '../../utils/planBilling'
 
 function KpiCard({ label, value, sub, highlight, loading }) {
   return (
@@ -33,9 +34,7 @@ export default function Admin() {
   const { data: finData, isLoading: finLoading } = useFinanceiroInsights()
   const { data: planosData, isLoading: planosLoading } = usePlanosInsights()
 
-  const mrrFormatted = finData?.kpis?.mrr != null
-    ? finData.kpis.mrr.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-    : '-'
+  const mrr = mrrSummary(finData?.kpis)
 
   const growthRate = usersData?.kpis?.growth_rate != null
     ? `${usersData.kpis.growth_rate}%`
@@ -93,8 +92,8 @@ export default function Admin() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard
             label="MRR Estimado"
-            value={mrrFormatted}
-            sub="receita recorrente mensal"
+            value={mrr.value}
+            sub={mrr.sub}
             highlight
             loading={finLoading}
           />

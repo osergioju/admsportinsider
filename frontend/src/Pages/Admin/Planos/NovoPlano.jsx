@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ListChecks,
+  Coins,
+  CalendarClock,
   Tag,
   Activity,
   Code,
@@ -52,6 +54,9 @@ export default function NovoPlano() {
     price: "",
     pagarme_plan_id: "",
     active: true,
+    is_featured: false,
+    currency: "BRL",
+    billing_interval: "month",
   });
   const [benefits, setBenefits] = useState([]);
   const [newBenefit, setNewBenefit] = useState("");
@@ -80,12 +85,15 @@ export default function NovoPlano() {
         benefits,
         pagarme_plan_id: form.pagarme_plan_id,
         active: form.active,
+        is_featured: form.is_featured,
+        currency: form.currency,
+        billing_interval: form.billing_interval,
       });
       setFeedback({ type: "success", text: "Plano criado com sucesso!" });
       setTimeout(() => navigate("/admin/gestao-planos"), 1500);
     } catch (error) {
       console.error(error);
-      setFeedback({ type: "error", text: "Erro ao criar o plano. Verifique os campos." });
+      setFeedback({ type: "error", text: error.response?.data?.message || "Erro ao criar o plano. Verifique os campos." });
       setLoading(false);
     }
   }
@@ -143,9 +151,9 @@ export default function NovoPlano() {
 
             {/* Preço */}
             <div>
-              <label className={labelClass}>Preço (R$)</label>
+              <label className={labelClass}>Preço</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400 font-medium text-sm">R$</span>
+                <span className="absolute left-3 top-2.5 text-gray-400 font-medium text-sm">{form.currency === "EUR" ? "€" : form.currency === "USD" ? "$" : "R$"}</span>
                 <input
                   className={inputClass}
                   type="number"
@@ -158,6 +166,44 @@ export default function NovoPlano() {
               </div>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Moeda */}
+            <div>
+              <label className={labelClass}>Moeda</label>
+              <div className="relative">
+                <Coins size={18} className="absolute left-3 top-2.5 text-gray-400" />
+                <select
+                  className={inputClass}
+                  value={form.currency || "BRL"}
+                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                >
+                  <option value="BRL">Real (BRL)</option>
+                  <option value="EUR">Euro (EUR)</option>
+                  <option value="USD">Dólar (USD)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Periodicidade */}
+            <div>
+              <label className={labelClass}>Cobrança</label>
+              <div className="relative">
+                <CalendarClock size={18} className="absolute left-3 top-2.5 text-gray-400" />
+                <select
+                  className={inputClass}
+                  value={form.billing_interval || "month"}
+                  onChange={(e) => setForm({ ...form, billing_interval: e.target.value })}
+                >
+                  <option value="month">Mensal</option>
+                  <option value="year">Anual</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 -mt-3 ml-1">
+            Se o plano tiver um Price ID do Stripe, preço, moeda e periodicidade são lidos do Stripe ao salvar (o que você escolher aqui é sobrescrito). Vale principalmente para o plano Free.
+          </p>
 
           {/* Benefícios */}
           <div>
@@ -239,6 +285,22 @@ export default function NovoPlano() {
               </div>
             </div>
           </div>
+
+          {/* Plano em destaque — só 1 por vez; ao marcar, o anterior perde o selo */}
+          <label className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 bg-gray-50 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-0.5 w-4 h-4 accent-[#7F33D9]"
+              checked={!!form.is_featured}
+              onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
+            />
+            <span>
+              <span className="block text-sm font-bold text-gray-800">Destacar como "Recomendado"</span>
+              <span className="block text-xs text-gray-500 mt-0.5">
+                Exibe o selo nas telas de planos. Apenas um plano pode ficar em destaque: se outro já estiver, ele perde o selo ao salvar.
+              </span>
+            </span>
+          </label>
 
           <div className="pt-4 border-t border-gray-100 flex justify-end">
             <div className="flex items-center gap-2 text-xs text-gray-400">

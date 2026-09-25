@@ -154,7 +154,7 @@ export default function NotificationDropdown() {
                         className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
                         onClick={(e) => e.stopPropagation()} // Impede fechar ao clicar dentro
                     >
-                        <NotificationListContent />
+                        {NotificationListContent()}
                     </div>
                     {/* Clique fora para fechar */}
                     <div className="absolute inset-0 -z-10" onClick={() => setOpen(false)} />
@@ -167,7 +167,7 @@ export default function NotificationDropdown() {
         */}
             {open && (
                 <div className="hidden lg:flex absolute right-0 z-50 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex-col mt-3 animate-in fade-in zoom-in-95 slide-in-from-top-2 origin-top-right">
-                    <NotificationListContent />
+                    {NotificationListContent()}
                 </div>
             )}
 

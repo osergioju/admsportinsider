@@ -50,7 +50,7 @@ export default function UploadTeamsPage() {
           page++;
         }
         setCountries(all);
-      } catch (e) {
+      } catch {
         console.error("Erro ao carregar países");
       }
     }
@@ -58,7 +58,7 @@ export default function UploadTeamsPage() {
       try {
         const { data } = await api.get("/admin/leagues?limit=500");
         setAllLeaguesList(data.leagues ?? []);
-      } catch (e) {
+      } catch {
         console.error("Erro ao carregar ligas");
       }
     }

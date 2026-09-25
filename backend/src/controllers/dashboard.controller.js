@@ -76,7 +76,7 @@ async function getUserFinancialContext(req) {
 
 // Retorna a moeda nativa do clube: primeiro tenta pela liga mais recente,
 // depois pelo país, e por último usa o fallback.
-async function getClubCurrency(clubId, fallback) {
+export async function getClubCurrency(clubId, fallback) {
   // 1. Liga mais recente do clube (fonte mais confiável — vem da planilha importada)
   const leagueRes = await db.query(
     `SELECT l.currency_code
@@ -99,7 +99,7 @@ async function getClubCurrency(clubId, fallback) {
   return countryRes.rows[0]?.code ?? fallback;
 }
 
-async function getLeagueCurrency(leagueId, fallback) {
+export async function getLeagueCurrency(leagueId, fallback) {
   const res = await db.query(
     `SELECT currency_code FROM leagues WHERE id_league = $1 AND currency_code IS NOT NULL LIMIT 1`,
     [leagueId]

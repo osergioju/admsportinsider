@@ -2,14 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
-import { formatFinancial } from "../../../utils/formatFinancial";
 import { TrendingUp, Trophy, ArrowRight, Award, Users } from "lucide-react";
-import ReactECharts from "echarts-for-react";
-import RevenueLineChart from "./components/revenue/RevenueLineChart";
-import NetResultLineChart from "./components/netResult/NetResultLineChart";
-import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
-import NoFinancialData from "./components/NoFinancialData";
 import PageLoader from "../../../components/uxui/PageLoader";
+import EntityModules from "../../../components/publications/EntityModules";
 import NotasSection from "./../../Dashboard/Notas/NotasSection"
 
 /* ─── Utilitários de cor ───────────────────────────────────────── */
@@ -29,64 +24,6 @@ function resolveColors(primary, secondary, tertiary) {
     const c2 = secondary || c1;
     const c3 = tertiary || c2;
     return [c1, c2, c3];
-}
-
-/* ─── Gráfico de barras por ano ─────────────────────────────────── */
-
-function AnnualBarChart({ rows, color, millions = false }) {
-    if (!rows?.length) return (
-        <div className="flex items-center justify-center h-48 text-gray-300 text-sm">
-            Sem dados disponíveis
-        </div>
-    );
-
-    const labels = rows.map(r => String(r.year));
-    const values = rows.map(r => Math.round(r.value * 10) / 10);
-
-    const fmt = (v) => {
-        if (v == null) return "—";
-        const abs = Math.abs(v);
-        // millions: o valor já vem em milhões (ex: premiações) — só anexa a unidade
-        if (millions) {
-            if (abs >= 1_000) return `${(v / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}B`;
-            return `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M`;
-        }
-        if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-        if (abs >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
-        return String(Math.round(v));
-    };
-
-    const option = {
-        tooltip: {
-            trigger: "axis",
-            formatter: (params) => {
-                const p = params[0];
-                return `<b>${labels[p.dataIndex]}</b><br/>${p.marker} ${fmt(p.value)}`;
-            },
-        },
-        grid: { left: 8, right: 8, top: 30, bottom: 24, containLabel: true },
-        xAxis: {
-            type: "category",
-            data: labels,
-            axisLabel: { fontSize: 11, color: "#9ca3af" },
-            axisLine: { show: false },
-            axisTick: { show: false },
-        },
-        yAxis: {
-            type: "value",
-            axisLabel: { formatter: (v) => fmt(v), fontSize: 10, color: "#9ca3af" },
-            splitLine: { lineStyle: { color: "#f3f4f6" } },
-        },
-        series: [{
-            type: "bar",
-            data: values,
-            barMaxWidth: 70,
-            itemStyle: { color, borderRadius: [6, 6, 0, 0] },
-            label: { show: true, position: "top", formatter: (p) => fmt(p.value), fontSize: 10, color: "#6b7280" },
-        }],
-    };
-
-    return <ReactECharts option={option} style={{ height: 220 }} />;
 }
 
 /* ─── Keyframes ────────────────────────────────────────────────── */
@@ -127,7 +64,6 @@ export default function DashLeagueUniques() {
     const navigate = useNavigate();
 
     const [theLeague, setTheLeague] = useState(null);
-    const [financials, setFinancials] = useState(null);
     const [annualIndicators, setAnnualIndicators] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -144,23 +80,10 @@ export default function DashLeagueUniques() {
                 setLoading(true);
                 const res = await api.get(`/dashboard/leagues/${slug}/info`);
                 const leagueId = res.data.league.id_league;
-                const [revRes, netRes, netEvoRes, debtEvRes, debtBrkRes, annualRes] = await Promise.all([
-                    api.get(`/dashboard/leagues/${leagueId}/financials/revenues`),
-                    api.get(`/dashboard/leagues/${leagueId}/financials/net-result`),
-                    api.get(`/dashboard/leagues/${leagueId}/financials/net-result/evolution`),
-                    api.get(`/dashboard/leagues/${leagueId}/financials/debts/evolution`),
-                    api.get(`/dashboard/leagues/${leagueId}/financials/debts/breakdown`),
-                    api.get(`/dashboard/leagues/${leagueId}/indicators/annual?codes=prizes_total,attendance-total`),
-                ]);
+                // Só o que o CABEÇALHO precisa (quais botões mostrar). Os gráficos e textos
+                // abaixo vêm da área modular (EntityModules), que busca os próprios dados.
+                const annualRes = await api.get(`/dashboard/leagues/${leagueId}/indicators/annual?codes=prizes_total,attendance-total`);
                 setTheLeague(res.data);
-                setFinancials({
-                    revenues: revRes.data?.data || [],
-                    netResult: netRes.data?.data || [],
-                    netEvolution: netEvoRes.data?.data || [],
-                    debts: debtEvRes.data?.data || [],
-                    debtsBreakdown: debtBrkRes.data?.data || [],
-                    currency: revRes.data?.fromCurrency || "BRL",
-                });
                 setAnnualIndicators(annualRes.data?.indicators || {});
             } catch (err) {
                 console.error("Erro ao carregar dashboard da liga:", err);
@@ -172,23 +95,6 @@ export default function DashLeagueUniques() {
     }, [slug]);
 
     if (loading || !theLeague) return <PageLoader />;
-
-    /* ─── Helpers financeiros ──────────────────────────────────── */
-    function formatMoney(value, currency) {
-        return formatFinancial(value, currency, "pt-BR");
-    }
-
-    function getLatestTwo(arr) {
-        const sorted = [...arr]
-            .filter(r => r.value != null && Number(r.value) !== 0)
-            .sort((a, b) => b.year - a.year);
-        return [sorted[0] || null, sorted[1] || null];
-    }
-
-    function calcPct(latest, prev) {
-        if (!prev || prev === 0) return null;
-        return ((latest - prev) / Math.abs(prev)) * 100;
-    }
 
     const lg = theLeague.league;
     const sj = lg.structure_json ?? {};
@@ -214,7 +120,6 @@ export default function DashLeagueUniques() {
         radial-gradient(circle at 80% 70%, ${c2} 0%, transparent 60%),
         linear-gradient(135deg, ${c1}, ${c2}, ${c3})
     `.trim();
-    const backgroundLine = `linear-gradient(to bottom, ${c1}, ${c3}, ${c2}, transparent)`.trim();
 
     const glowPrimary = rgb1
         ? `radial-gradient(circle, rgba(${rgb1.r},${rgb1.g},${rgb1.b},0.45) 0%, transparent 70%)`
@@ -226,40 +131,6 @@ export default function DashLeagueUniques() {
     const lum1 = rgb1 ? (0.299 * rgb1.r + 0.587 * rgb1.g + 0.114 * rgb1.b) / 255 : 0;
     const textColor = lum1 > 0.5 ? "#0A0A0A" : "#FFFFFF";
     const borderColor = lum1 > 0.5 ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.4)";
-
-    const fCurrency = financials?.currency || "BRL";
-
-    // Receita
-    const revData = (financials?.revenues || []).filter(r => r.code === "revenue" || r.code === "recurring_revenue");
-    const [latestRev, prevRev] = getLatestTwo(revData);
-    const revPct = latestRev && prevRev ? calcPct(latestRev.value, prevRev.value) : null;
-
-    // Dívida
-    const [latestDebt, prevDebt] = getLatestTwo(financials?.debts || []);
-    const debtPct = latestDebt && prevDebt ? calcPct(latestDebt.value, prevDebt.value) : null;
-
-    // Resultado líquido
-    const netData = (financials?.netResult || []).filter(r => r.code === "net_income");
-    const [latestNet, prevNet] = getLatestTwo(netData);
-
-    // Dados para os gráficos financeiros
-    const chartLeagueId = lg.id_league;
-    const leagueMapLocal = { [chartLeagueId]: competitionTitle };
-    const leagueColorLocal = { [chartLeagueId]: { color_one: c1 } };
-
-    const toNative = (arr) => (arr || []).filter(item => item.value != null && Number(item.value) !== 0).map(item => ({ ...item, converted_value: item.value }));
-    const revenueChartData = { [chartLeagueId]: toNative(financials?.revenues) };
-    const netChartData = { [chartLeagueId]: toNative(financials?.netEvolution) };
-    const debtsChartData = { [chartLeagueId]: toNative(financials?.debtsBreakdown) };
-
-    // Cor das barras dos gráficos: nunca usa cor clara demais (ex: secundária
-    // #FFFFFF da FIFA → barras brancas invisíveis em fundo branco)
-    const isDarkEnough = (hex) => {
-        const rgb = hexToRgb(hex);
-        return rgb ? (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255 < 0.82 : false;
-    };
-    const chartColorPrimary = isDarkEnough(c1) ? c1 : "#946E1C";
-    const chartColorSecondary = (c2 !== c1 && isDarkEnough(c2)) ? c2 : chartColorPrimary === c1 ? "#946E1C" : chartColorPrimary;
 
     // Indicadores anuais (premiações e público)
     // Anos zerados são edições futuras sem dado (ex: CWC 2029) — fora do gráfico
@@ -433,159 +304,9 @@ export default function DashLeagueUniques() {
                 </div>
             </div>
 
-            {/* ── SEÇÕES ESPECIAIS (Premiações / Público) ──────── */}
-            {hasSpecialSections && (
-                <>
-                    {hasPrizesSection && (
-                        <div id="premiacoes" className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
-                            <div className="flex flex-wrap w-full items-center">
-                                <div className="w-full lg:w-1/2">
-                                    <AnnualBarChart rows={prizesData} color={chartColorPrimary} millions />
-                                </div>
-                                <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                                    <h2
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-3 text-xl font-light lg:text-2xl relative"
-                                    >
-                                        Premiações
-                                    </h2>
-                                    {sj.prizes_text && (
-                                        <p className="text-sm font-light lg:text-base text-black">
-                                            {sj.prizes_text}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+            {/* ── Área modular (layout padrão ou próprio da competição — Admin > Publicações > Competições) ── */}
+            <EntityModules kind="league" entityKey={slug} entity={lg} className="mb-4" />
 
-                    {hasAttendanceSection && (
-                        <div id="publico" className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
-                            <div className="flex flex-wrap w-full items-center">
-                                <div className="w-full lg:w-1/2">
-                                    <AnnualBarChart rows={attendanceData} color={chartColorSecondary} />
-                                </div>
-                                <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                                    <h2
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-3 text-xl font-light lg:text-2xl relative"
-                                    >
-                                        Público
-                                    </h2>
-                                    {sj.attendance_text && (
-                                        <p className="text-sm font-light lg:text-base text-black">
-                                            {sj.attendance_text}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
-
-            {/* ── SEÇÕES FINANCEIRAS (nunca para competições de seleções) ── */}
-            {showFinance && (
-                <>
-                    <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                        {!latestRev ? (
-                            <NoFinancialData title={t("clubs.revenues", "Receitas")} />
-                        ) : (
-                            <div className="flex flex-wrap w-full items-center">
-                                <div className="w-full lg:w-1/2">
-                                    <RevenueLineChart
-                                        data={revenueChartData}
-                                        ligasSelecionadas={[]}
-                                        leagueMap={leagueMapLocal}
-                                        mainLeagueId={chartLeagueId}
-                                        leagueColor={leagueColorLocal}
-                                    />
-                                </div>
-                                <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                                    <h2
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
-                                    >
-                                        <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                                        {t("clubs.revenues", "Receitas")} <br /> em {latestRev.year}
-                                    </h2>
-                                    <p
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="text-lg font-light lg:text-xl"
-                                    >
-                                        {`${competitionTitle} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                        {!latestDebt ? (
-                            <NoFinancialData title={t("clubs.debts", "Dívidas")} />
-                        ) : (
-                            <div className="flex flex-wrap w-full items-center">
-                                <div className="w-full lg:w-1/2">
-                                    <DebtsBreakdownBarChart
-                                        data={debtsChartData}
-                                        ligasSelecionadas={[]}
-                                        leagueMap={leagueMapLocal}
-                                        mainLeagueId={chartLeagueId}
-                                    />
-                                </div>
-                                <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                                    <h2
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
-                                    >
-                                        <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                                        {t("clubs.debts", "Dívidas")}<br /> em {latestDebt.year}
-                                    </h2>
-                                    <p
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="text-lg font-light lg:text-xl"
-                                    >
-                                        {`${competitionTitle} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                        {!latestNet ? (
-                            <NoFinancialData title={t("clubs.result", "Resultado")} />
-                        ) : (
-                            <div className="flex flex-wrap w-full items-center">
-                                <div className="w-full lg:w-1/2">
-                                    <NetResultLineChart
-                                        data={netChartData}
-                                        ligasSelecionadas={[]}
-                                        leagueMap={leagueMapLocal}
-                                        mainLeagueId={chartLeagueId}
-                                        leagueColor={leagueColorLocal}
-                                    />
-                                </div>
-                                <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                                    <h2
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6"
-                                    >
-                                        <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                                        {t("clubs.result", "Resultado")} <br /> em {latestNet.year}
-                                    </h2>
-                                    <p
-                                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                        className="text-lg font-light lg:text-xl"
-                                    >
-                                        {`${competitionTitle} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${Math.abs(latestNet.value) >= Math.abs(prevNet.value) ? "acima" : "abaixo"} dos ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrados em ${prevNet.year}` : ""}.`}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </>
-            )}
             <NotasSection />
         </div>
     );

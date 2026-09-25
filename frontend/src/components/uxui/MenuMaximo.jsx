@@ -1,19 +1,12 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { Home, Trophy, Shield, BarChart2, Heart, MessagesSquare, BadgeQuestionMark, FileText, Wallet, User, ChevronDown, Crown } from "lucide-react";
 import MenuItem from "./MenuItem";
 import SubItem from "./SubMenu";
-import { AuthContext } from "../../context/AuthContext"
 
 
 export default function SideMenu() {
   const [openLigas, setOpenLigas] = useState(false);
   const [openClubes, setOpenClubes] = useState(false);
-  const [openPerfil, setOpenPerfil] = useState(false);
-  const [openSeguranca, setOpenSeguranca] = useState(false);
-  const [openPlano, setOpenPlano] = useState(false);
-  const [openPrivacidade, setOpenPrivacidade] = useState(false);
-
-  const { logout, user } = useContext(AuthContext);
 
   return (
     <aside className="w-full h-full px-4 py-6 text-[#111]">

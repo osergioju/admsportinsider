@@ -1,7 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
-import { useTranslation } from "../../../context/TranslationContext";
 
 function hexToRgb(hex) {
   if (!hex) return null;
@@ -32,7 +31,6 @@ import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
 import PageLoader from "../../../components/uxui/PageLoader";
 
 export default function DashLeagueFinance() {
-  const { t } = useTranslation();
   const { slug } = useParams();
   const [mainLeagueId, setMainLeagueId] = useState(null);
 

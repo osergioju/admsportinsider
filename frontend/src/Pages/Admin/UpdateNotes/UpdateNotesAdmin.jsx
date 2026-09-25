@@ -91,7 +91,7 @@ export default function UpdateNotesAdmin() {
       }
       resetForm();
       loadNotes();
-    } catch (error) {
+    } catch {
       alert("Erro ao salvar nota");
     } finally {
       setSaving(false);
@@ -122,7 +122,7 @@ export default function UpdateNotesAdmin() {
       const remaining = notes.filter(s => s.id !== id);
       await syncServerOrder(remaining);
       loadNotes();
-    } catch (error) {
+    } catch {
       alert("Erro ao excluir");
     }
   }

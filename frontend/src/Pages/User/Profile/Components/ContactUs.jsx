@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import banner2 from "../../../../assets/img/cultura-insider.jpeg";
 import { api } from "../../../../services/api"
-import { useNavigate } from "react-router-dom";
 
 // Fora do componente: declarar dentro recriava o componente a cada render
 // (cada tecla digitada no form), remontando os cards e repetindo o fade-in
@@ -74,7 +73,6 @@ export default function ContactUs() {
     }
     };
 
-const navigate = useNavigate();
 
   // Estilo dos Inputs
   const inputClass = "w-full px-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm outline-none focus:bg-white focus:border-[#7F33D9] focus:ring-4 focus:ring-[#7F33D9]/10 transition-all duration-300 text-[#111] placeholder-gray-400 hover:bg-gray-50";

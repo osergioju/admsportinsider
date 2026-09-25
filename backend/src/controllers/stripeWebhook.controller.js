@@ -144,7 +144,7 @@ async function processStripeEvent(event, data) {
         );
         if (userRes.rows[0]) {
           const { name, email, plan_name } = userRes.rows[0];
-          console.log(`  → Destinatário: ${email} (${name}) | Plano: ${plan_name}`);
+          console.log(`  → Destinatário: user ${userId} | Plano: ${plan_name}`);
           await sendPlanActivatedEmail(email, { name, planName: plan_name, periodEnd });
           console.log("  ✅ E-mail de ativação enviado com sucesso.");
           await updateContactPlanInBrevo({ email, planName: plan_name });
@@ -289,7 +289,7 @@ async function processStripeEvent(event, data) {
           );
           if (userRes.rows[0]) {
             const { name, email, plan_name } = userRes.rows[0];
-            console.log(`  → Destinatário: ${email} (${name}) | Plano: ${plan_name}`);
+            console.log(`  → Destinatário: customer ${customer} | Plano: ${plan_name}`);
             await sendSubscriptionCanceledEmail(email, { name, planName: plan_name, periodEnd: current_period_end });
             console.log("  ✅ E-mail de cancelamento enviado com sucesso.");
           } else {
@@ -397,7 +397,7 @@ async function processStripeEvent(event, data) {
       if (deletedUserRes.rows[0]) {
         try {
           const { name, email } = deletedUserRes.rows[0];
-          console.log(`  → Destinatário: ${email} (${name})`);
+          console.log(`  → Destinatário: customer ${customer}`);
           await sendSubscriptionEndedEmail(email, { name });
           console.log("  ✅ E-mail de encerramento enviado com sucesso.");
           const freePlanRes = await db.query(`SELECT name FROM plans WHERE id = 1`);
@@ -438,7 +438,7 @@ async function processStripeEvent(event, data) {
         );
         if (userRes.rows[0]) {
           const { name, email } = userRes.rows[0];
-          console.log(`  → Destinatário: ${email} (${name})`);
+          console.log(`  → Destinatário: customer ${failedCustomer}`);
           await sendPaymentFailedEmail(email, { name });
           console.log("  ✅ E-mail de falha de pagamento enviado com sucesso.");
         } else {

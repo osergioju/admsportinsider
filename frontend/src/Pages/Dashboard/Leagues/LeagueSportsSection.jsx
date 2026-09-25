@@ -474,6 +474,71 @@ function legScoreFor(leg, teamId) {
   return null;
 }
 
+// Peças da tabela de confrontos — no nível do módulo (dentro do componente eram recriadas a cada render)
+const ScoreBox = ({ score, href, dim }) => {
+  const box = (
+    <div className={`w-9 h-7 flex items-center justify-center rounded text-xs font-bold tabular-nums
+      ${score == null
+        ? "bg-gray-50 text-gray-200"
+        : dim
+          ? "bg-gray-50 text-gray-400"
+          : "bg-gray-100 text-gray-700"}`}>
+      {score ?? "–"}
+    </div>
+  );
+  return href
+    ? <Link to={href} className="hover:opacity-70 transition-opacity shrink-0">{box}</Link>
+    : <div className="shrink-0">{box}</div>;
+};
+
+const AggBox = ({ score, isWinner }) => (
+  <div className={`w-9 h-7 flex items-center justify-center rounded text-sm font-extrabold tabular-nums shrink-0
+    ${score == null
+      ? "bg-gray-50 text-gray-200"
+      : isWinner
+        ? "bg-gray-900 text-white"
+        : "bg-gray-100 text-gray-400"}`}>
+    {score ?? "–"}
+  </div>
+);
+
+const TeamRow = ({ team, isWinner, isLoser, leg1, leg2, agg }) => {
+  const s1 = legScoreFor(leg1, team.id);
+  const s2 = legScoreFor(leg2, team.id);
+  const aggScore = agg[team.id] ?? null;
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-2.5 ${isLoser ? "opacity-100" : ""}`}>
+      <TeamCrest team={team} />
+      <ClubLink id={team.id} slug={team.slug} hidden={team.hidden} federationSlug={team.federation_slug} isCountry={team.is_country} federationActive={team.federation_active}
+        className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
+          ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
+        {team.name}
+      </ClubLink>
+      <ScoreBox score={s1} href={`/dashboard/matches/${leg1.id}`} dim={!isWinner} />
+      <ScoreBox score={s2} href={`/dashboard/matches/${leg2.id}`} dim={!isWinner} />
+      <AggBox score={aggScore} isWinner={isWinner} />
+    </div>
+  );
+};
+
+const SingleRow = ({ team, score, isWinner, isLoser }) => (
+  <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-35" : ""}`}>
+    <TeamCrest team={team} />
+    <ClubLink id={team.id} slug={team.slug} hidden={team.hidden} federationSlug={team.federation_slug} isCountry={team.is_country} federationActive={team.federation_active}
+      className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
+        ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
+      {team.name}
+    </ClubLink>
+    {score !== null && (
+      <span className={`text-base tabular-nums font-extrabold shrink-0
+        ${isWinner ? "text-gray-900" : "text-gray-400"}`}>
+        {score}
+      </span>
+    )
+    }
+  </div >
+);
+
 function ConfrontoCard({ confronto }) {
   const { team1, team2, legs, agg } = confronto;
   const isDoubleLegged = legs.length === 2;
@@ -494,52 +559,6 @@ function ConfrontoCard({ confronto }) {
   if (isDoubleLegged) {
     const [leg1, leg2] = legs;
 
-    const ScoreBox = ({ score, href, dim }) => {
-      const box = (
-        <div className={`w-9 h-7 flex items-center justify-center rounded text-xs font-bold tabular-nums
-          ${score == null
-            ? "bg-gray-50 text-gray-200"
-            : dim
-              ? "bg-gray-50 text-gray-400"
-              : "bg-gray-100 text-gray-700"}`}>
-          {score ?? "–"}
-        </div>
-      );
-      return href
-        ? <Link to={href} className="hover:opacity-70 transition-opacity shrink-0">{box}</Link>
-        : <div className="shrink-0">{box}</div>;
-    };
-
-    const AggBox = ({ score, isWinner }) => (
-      <div className={`w-9 h-7 flex items-center justify-center rounded text-sm font-extrabold tabular-nums shrink-0
-        ${score == null
-          ? "bg-gray-50 text-gray-200"
-          : isWinner
-            ? "bg-gray-900 text-white"
-            : "bg-gray-100 text-gray-400"}`}>
-        {score ?? "–"}
-      </div>
-    );
-
-    const TeamRow = ({ team, isWinner, isLoser }) => {
-      const s1 = legScoreFor(leg1, team.id);
-      const s2 = legScoreFor(leg2, team.id);
-      const aggScore = agg[team.id] ?? null;
-      return (
-        <div className={`flex items-center gap-1.5 px-3 py-2.5 ${isLoser ? "opacity-100" : ""}`}>
-          <TeamCrest team={team} />
-          <ClubLink id={team.id} slug={team.slug} hidden={team.hidden} federationSlug={team.federation_slug} isCountry={team.is_country} federationActive={team.federation_active}
-            className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
-              ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
-            {team.name}
-          </ClubLink>
-          <ScoreBox score={s1} href={`/dashboard/matches/${leg1.id}`} dim={!isWinner} />
-          <ScoreBox score={s2} href={`/dashboard/matches/${leg2.id}`} dim={!isWinner} />
-          <AggBox score={aggScore} isWinner={isWinner} />
-        </div>
-      );
-    };
-
     return (
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:border-gray-200 transition-colors">
         {/* Column headers */}
@@ -549,9 +568,9 @@ function ConfrontoCard({ confronto }) {
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 w-9 text-center">Agr</span>
         </div>
         <div className="py-0.5">
-          <TeamRow team={team1} isWinner={winner === team1.id} isLoser={winner === team2.id} />
+          <TeamRow leg1={leg1} leg2={leg2} agg={agg} team={team1} isWinner={winner === team1.id} isLoser={winner === team2.id} />
           <div className="mx-3 border-t border-gray-50" />
-          <TeamRow team={team2} isWinner={winner === team2.id} isLoser={winner === team1.id} />
+          <TeamRow leg1={leg1} leg2={leg2} agg={agg} team={team2} isWinner={winner === team2.id} isLoser={winner === team1.id} />
         </div>
       </div>
     );
@@ -568,24 +587,6 @@ function ConfrontoCard({ confronto }) {
   else if (finished && leg?.winner_id != null && (leg.winner_id === team1.id || leg.winner_id === team2.id)) {
     singleWinner = leg.winner_id;
   }
-
-  const SingleRow = ({ team, score, isWinner, isLoser }) => (
-    <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isLoser ? "opacity-35" : ""}`}>
-      <TeamCrest team={team} />
-      <ClubLink id={team.id} slug={team.slug} hidden={team.hidden} federationSlug={team.federation_slug} isCountry={team.is_country} federationActive={team.federation_active}
-        className={`flex-1 min-w-0 text-sm truncate hover:underline transition-colors
-          ${isWinner ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
-        {team.name}
-      </ClubLink>
-      {score !== null && (
-        <span className={`text-base tabular-nums font-extrabold shrink-0
-          ${isWinner ? "text-gray-900" : "text-gray-400"}`}>
-          {score}
-        </span>
-      )
-      }
-    </div >
-  );
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:border-gray-200 transition-colors">
@@ -972,7 +973,7 @@ function GroupPhaseView({ phase, t, adminGroups }) {
 
   return (
     <div className={`grid gap-4 w-full ${cols}`}>
-      {groups.map(({ label, rows }, gi) => (
+      {groups.map(({ label, rows }) => (
         <div key={label} className="rounded-xl border border-gray-100 overflow-hidden bg-white shadow-sm">
           <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
@@ -1701,7 +1702,6 @@ export default function LeagueSportsSection({ leagueId }) {
     : null;
   const activeGroupClubs = grupoPhaseKey ? (groupClubs?.[grupoPhaseKey] ?? null) : null;
 
-  const hasGrupoPhase = !!grupoFaseConfig;
 
   const tabs = [];
   if (isAperturaClausura) {

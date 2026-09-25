@@ -3,8 +3,7 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 import { X, Heart } from "lucide-react";
 import RevenueBreakdownBarChart from "./RevenueBreakdownBarChart";
 import ChartFilter from "../filter/ChartFilter";
-import { api } from "../../../../../services/api";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 
 
 export default function RevenueBreakdownSection({
@@ -51,26 +50,8 @@ export default function RevenueBreakdownSection({
     );
   }
 
-  async function handleFavorite() {
-    const payload = {
-      chartType: "revenue_breakdown",
-      title: "Receitas por clube",
-      mainClubId,
-      selectedClubs
-    };
-
-    try {
-      await api.post("/dashboard/favorites", payload);
-      alert("Favorito salvo 😎");
-    } catch (err) {
-      console.error(err);
-      alert("Deu ruim ao salvar favorito");
-    }
-  }
-
-
-  const [startYear, setStartYear] = useState(null);
-  const [endYear, setEndYear] = useState(null);
+  const [startYearPick, setStartYear] = useState(null);
+  const [endYearPick, setEndYear] = useState(null);
 
   const availableYears = useMemo(() => {
     const years = new Set();
@@ -85,27 +66,14 @@ export default function RevenueBreakdownSection({
   }, [data]);
 
 
-  const [selectedYears, setSelectedYears] = useState([]);
+  const [selectedYearsPick, setSelectedYears] = useState(null);
 
-  useEffect(() => {
-    if (!availableYears || availableYears.length === 0) return;
-
-    // já tem seleção? não mexe
-    if (selectedYears.length > 0) return;
-
-    const lastYear = availableYears[availableYears.length - 1];
-
-    setStartYear(lastYear);
-    setEndYear(lastYear);
-
-    if (yearSelectionMode === "single") {
-      setSelectedYears([lastYear]);
-    } else {
-      setStartYear(availableYears[0]);
-      setEndYear(lastYear);
-      setSelectedYears(availableYears);
-    }
-  }, [availableYears, yearSelectionMode]);
+  // Anos: o que o usuário escolheu; enquanto não escolheu, o padrão vem dos dados (sem efeito de sincronização)
+  const lastYear = availableYears[availableYears.length - 1] ?? null;
+  const isSingleYear = yearSelectionMode === "single";
+  const startYear = startYearPick ?? (isSingleYear ? lastYear : availableYears[0] ?? null);
+  const endYear = endYearPick ?? lastYear;
+  const selectedYears = selectedYearsPick ?? (isSingleYear ? (lastYear != null ? [lastYear] : []) : availableYears);
 
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">

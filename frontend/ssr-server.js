@@ -34,17 +34,21 @@ function escapeHtml(str = "") {
 }
 
 async function fetchClubInitialData(id) {
-    const [res, revRes, netRes, netEvoRes, debtEvRes, debtBrkRes] = await Promise.all([
+    const [res, revRes, netRes, netEvoRes, debtEvRes, debtBrkRes, layoutRes] = await Promise.all([
         axios.get(`${API_URL}/dashboard/clubs/${id}/info`),
         axios.get(`${API_URL}/dashboard/clubs/${id}/financials/revenues`),
         axios.get(`${API_URL}/dashboard/clubs/${id}/financials/net-result`),
         axios.get(`${API_URL}/dashboard/clubs/${id}/financials/net-result/evolution`),
         axios.get(`${API_URL}/dashboard/clubs/${id}/financials/debts/evolution`),
         axios.get(`${API_URL}/dashboard/clubs/${id}/financials/debts/breakdown`),
+        // Layout modular da página (próprio/padrão) + dados dos blocos. Falha aqui não derruba o SSR:
+        // sem layout, o cliente busca sozinho e o snapshot fica só com a testeira.
+        axios.get(`${API_URL}/dashboard/clubs/${id}/layout`).catch(() => null),
     ]);
 
     return {
         theClub: res.data,
+        layout: layoutRes?.data ?? undefined,
         financials: {
             revenues: revRes.data?.data || [],
             netResult: netRes.data?.data || [],

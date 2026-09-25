@@ -41,8 +41,6 @@ export default function Faq() {
     item.answer.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const btnPurpleClass = "group flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium text-white bg-[#7F33D9] hover:bg-[#6025A8] shadow-md shadow-purple-500/20 transition-all duration-300";
-
   return (
     <div className="max-w-4xl mx-auto">
 

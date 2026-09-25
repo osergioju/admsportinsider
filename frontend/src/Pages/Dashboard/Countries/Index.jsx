@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
 import { Search, Globe, X } from "lucide-react";
@@ -20,7 +20,6 @@ export default function DashCountries() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [countries, setCountries] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -28,15 +27,15 @@ export default function DashCountries() {
     api.get("/dashboard/countries")
       .then(({ data }) => {
         setCountries(data.countries);
-        setFiltered(data.countries);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
+  // Filtro derivado da busca (sem estado extra nem efeito)
+  const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    setFiltered(q ? countries.filter(c => c.name.toLowerCase().includes(q)) : countries);
+    return q ? countries.filter(c => c.name.toLowerCase().includes(q)) : countries;
   }, [search, countries]);
 
   return (

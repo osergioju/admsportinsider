@@ -3,7 +3,7 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 import { X } from "lucide-react";
 import CostsPieChart from "./CostsPieChart";
 import ChartFilter from "../filter/ChartFilter";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function CostsSection({
   data,
@@ -47,8 +47,8 @@ export default function CostsSection({
     );
   }
 
-  const [startYear, setStartYear] = useState(null);
-  const [endYear, setEndYear] = useState(null);
+  const [startYearPick, setStartYear] = useState(null);
+  const [endYearPick, setEndYear] = useState(null);
 
   const availableYears = useMemo(() => {
     const years = new Set();
@@ -63,18 +63,14 @@ export default function CostsSection({
   }, [data]);
 
 
-  const [selectedYears, setSelectedYears] = useState([]);
+  const [selectedYearsPick, setSelectedYears] = useState(null);
 
   // Inicializa selectedYears quando availableYears chega
-  useEffect(() => {
-    if (!availableYears || availableYears.length === 0) return;
-
-    const lastYear = availableYears[availableYears.length - 1];
-
-    setStartYear(lastYear);
-    setEndYear(lastYear);
-    setSelectedYears([lastYear]); // ✅ só 1 ano
-  }, [availableYears]);
+  // Anos: o que o usuário escolheu; enquanto não escolheu, o último ano com dado (sem efeito de sincronização)
+  const lastYear = availableYears[availableYears.length - 1] ?? null;
+  const startYear = startYearPick ?? lastYear;
+  const endYear = endYearPick ?? lastYear;
+  const selectedYears = selectedYearsPick ?? (lastYear != null ? [lastYear] : []);
 
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">

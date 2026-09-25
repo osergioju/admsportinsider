@@ -50,7 +50,7 @@ function ConfirmDeleteModal({ title, description, onConfirm, onClose, loading })
 // ---------------------------------------------------------------------------
 // Tela de taxas de um par (RUB → BRL com histórico por ano)
 // ---------------------------------------------------------------------------
-function PairRatesView({ currency, pair, onBack }) {
+function PairRatesView({ pair, onBack }) {
   const [rates, setRates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

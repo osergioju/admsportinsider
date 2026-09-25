@@ -95,7 +95,7 @@ export default function LegalAdmin() {
       }
       resetForm();
       loadSections();
-    } catch (error) {
+    } catch {
       alert("Erro ao salvar seção");
     } finally {
       setSaving(false);
@@ -126,7 +126,7 @@ export default function LegalAdmin() {
       const remaining = sections.filter(s => s.id !== id);
       await syncServerOrder(remaining);
       loadSections();
-    } catch (error) {
+    } catch {
       alert("Erro ao excluir");
     }
   }

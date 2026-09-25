@@ -5,6 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 import SportinsiderIcon from "../../assets/svg/brand-white.svg"
 import IconInsider from "../../assets/svg/brand-icon.svg";
 import SubmitButtonMini from "../../components/uxui/SubmitButtonMini";
+import { formatPlanPrice, intervalSuffix } from "../../utils/planBilling";
 import { CircleCheck, Check, AlertCircle, X, Loader2 } from "lucide-react";
 
 // Planos podem guardar benefits como array de strings/objetos ou como objeto { chave: boolean }
@@ -139,7 +140,7 @@ export default function Pricing() {
                         Planos e preços
                     </h1>
                     <p className="relative text-[#C2B3E0] font-light">
-                        Cobrança mensal recorrente. Cancele quando quiser, sem multa.
+                        Assinatura recorrente. Cancele quando quiser, sem multa.
                     </p>
                 </div>
 
@@ -175,6 +176,11 @@ export default function Pricing() {
 
                             return (
                                 <div key={plan.id} className="rounded-3xl bg plan_box relative overflow-hidden">
+                                    {plan.is_featured && !isFree && (
+                                        <span className="absolute top-6 right-6 px-3 py-1 rounded-full bg-[#7F33D9] text-white text-xs font-semibold">
+                                            Recomendado
+                                        </span>
+                                    )}
                                     <div className="p-10 lg:p-12 relative">
                                         <img src={IconInsider} alt="" className="w-12 h-auto grayscale brightness-400" />
                                         <div className="text-left text-white mt-4">
@@ -183,10 +189,8 @@ export default function Pricing() {
                                                 {plan.description || (isFree ? "Para quem usa de forma casual" : "Plano completo")}
                                             </p>
                                             <p className="font-[100] text-4xl text-[#ffffff38] lg:text-6xl xl:text-7xl mb-10">
-                                                R$ <span className="text-white font-medium">
-                                                    {Number(plan.price).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </span>
-                                                {!isFree && <span className="text-base text-[#ffffff60] font-light">/mês</span>}
+                                                <span className="text-white font-medium">{formatPlanPrice(plan)}</span>
+                                                {!isFree && <span className="text-base text-[#ffffff60] font-light">{intervalSuffix(plan)}</span>}
                                             </p>
                                         </div>
                                         <SubmitButtonMini
@@ -237,7 +241,7 @@ export default function Pricing() {
                                             <th key={p.id} className="border-l border-white/20 p-4 text-center">
                                                 <p className="font-[400] flex items-center justify-between">
                                                     <span>{p.name}</span>
-                                                    <span>R$ {Number(p.price).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                    <span>{formatPlanPrice(p)}</span>
                                                 </p>
                                             </th>
                                         ))}

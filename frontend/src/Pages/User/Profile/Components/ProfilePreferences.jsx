@@ -23,12 +23,12 @@ export default function ProfilePreferences() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
 
-  if (!user) return null;
 
   /* =========================
      Hydrate (somente do contexto)
   ========================= */
   useEffect(() => {
+    if (!user) return; // sem usuário ainda: nada a hidratar (o return antecipado do componente vem depois dos hooks)
     let isMounted = true;
 
     async function loadData() {
@@ -174,6 +174,9 @@ export default function ProfilePreferences() {
       </div>
     );
   }
+
+  // Só depois de TODOS os hooks (return antecipado antes deles quebra a ordem dos hooks)
+  if (!user) return null;
 
   return (
     <div className="w-full">

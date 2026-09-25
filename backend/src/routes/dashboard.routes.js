@@ -37,8 +37,11 @@ import {
 
 } from "../controllers/dashboard.controller.js";
 import { authGuard, optionalAuth } from "../middlewares/auth.middleware.js";
-import { getResolvedLayout } from "../controllers/publications.controller.js";
-import { getChartData } from "../controllers/chartDefinitions.controller.js";
+import { getResolvedLayout, getResolvedClubLayout, getResolvedFederationLayout, getResolvedLeagueLayout } from "../controllers/publications.controller.js";
+import { getClubModuleData } from "../controllers/clubModules.controller.js";
+import { getFederationModuleData } from "../controllers/federationModules.controller.js";
+import { getLeagueModuleData } from "../controllers/leagueModules.controller.js";
+import { getChartData, getClubContextChartData } from "../controllers/chartDefinitions.controller.js";
 
 import { createFavorite, listFavorites } from "../controllers/dashboardFavorites.controller.js";
 import { getClubCompetitions, getClubPlayers, getPlayerDetail, searchPlayers, getPlayerCountries, getLeagueSports, getMatchDetail, getLeagueAttendance } from "../controllers/sports.controller.js";
@@ -83,6 +86,9 @@ router.post("/players/search", optionalAuth, playersSearch);
 router.get("/clubs", clubsGroupedByCountry);
 router.post("/clubs/search", clubsSearch);
 router.get("/clubs/:id/info", getClubById);
+// Página modular do clube: layout (próprio ou padrão) + dados financeiros dos blocos
+router.get("/clubs/:id/layout", optionalAuth, getResolvedClubLayout);
+router.get("/clubs/:id/module-data", optionalAuth, getClubModuleData);
 router.patch("/clubs/:id/stadium-location", saveStadiumLocation);
 
 /* ===============================
@@ -122,12 +128,20 @@ router.get("/leagues/:id/cycle-financials", getLeagueCycleFinancials);
 router.get("/federations", getDashboardFederations);
 router.get("/federations/:slug", optionalAuth, getDashboardFederationBySlug);
 router.get("/federations/:slug/cycle-financials", getFederationCycleFinancials);
+// Página modular da federação: layout (próprio ou padrão) + dados por ciclo na moeda escolhida
+router.get("/federations/:slug/layout", optionalAuth, getResolvedFederationLayout);
+router.get("/federations/:slug/module-data", optionalAuth, getFederationModuleData);
 router.get("/federations/:slug/finance-overview", getFederationFinanceOverview);
 
 // PUBLICAÇÕES (páginas modulares por slots)
 router.get("/publications/:pageKey/:zone", optionalAuth, getResolvedLayout);
 router.get("/charts/:id/data", optionalAuth, getChartData);
+// Gráfico "do clube da página" (página financeira modular): dados do clube + comparação/moeda/período + trava por plano
+router.get("/clubs/:id/charts/:chartId/data", optionalAuth, financialContext, getClubContextChartData);
 router.get("/leagues/:id/info", optionalAuth, getLeagueById);
+// Página modular da competição: layout (próprio ou padrão) + dados anuais da competição
+router.get("/leagues/:id/layout", optionalAuth, getResolvedLeagueLayout);
+router.get("/leagues/:id/module-data", optionalAuth, getLeagueModuleData);
 router.post("/leagues/search", optionalAuth, leaguesSearch);
 
 /* ===============================

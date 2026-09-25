@@ -1491,11 +1491,14 @@ import { previewClubImport, uploadClubXlsx, previewLeagueImport, uploadLeagueXls
 import { getAllLegalSections, createLegalSection, updateLegalSection, deleteLegalSection, updateLegalOrder } from "../controllers/legal.controller.js";
 import { getAllUpdateNotes, createUpdateNote, updateUpdateNote, deleteUpdateNote, updateNotesOrder } from "../controllers/updateNotes.controller.js";
 import { getDataCatalog, searchEntities, previewChart, getAllCharts, getChartById, createChart, updateChart, deleteChart, regenerateEmbedToken } from "../controllers/chartDefinitions.controller.js";
-import { getLayout, saveLayout } from "../controllers/publications.controller.js";
+import { getLayout, saveLayout, listClubLayouts, listFederationLayouts, listLeagueLayouts, deleteLayout } from "../controllers/publications.controller.js";
+import { getFederationModuleCatalog } from "../controllers/federationModules.controller.js";
+import { getLeagueModuleCatalog } from "../controllers/leagueModules.controller.js";
 import { getLinkPreview } from "../controllers/linkPreview.controller.js";
 import { getUsersInsights, getClubsInsights, getLeaguesInsights, getFinanceiroInsights, getPlanosInsights, getImportacoesInsights, getUsoInsights, getPerformanceInsights } from "../controllers/insights.controller.js";
-import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan } from "../controllers/admin.plans.controller.js";
+import { getAllPlans, getPlanById, createPlan, updatePlan, disablePlan, deletePlan } from "../controllers/admin.plans.controller.js";
 import { uploadXlsx } from "../middlewares/uploadXlsx.js";
+import { previewIdentification, importIdentification } from "../controllers/identificationImport.controller.js";
 import { uploadMedia } from "../middlewares/uploadMedia.js";
 import { listMedia, uploadMediaFile, updateMedia, deleteMedia, entityImageUpload } from "../controllers/media.controller.js";
 import { matchClubCrests, uploadClubCrest } from "../controllers/clubCrest.controller.js";
@@ -1622,6 +1625,9 @@ router.post("/import-clubs-xlsx", adminGuard, uploadXlsx, uploadClubXlsx);
 router.post("/preview-import", adminGuard, uploadXlsx, previewClubImport);
 router.post("/import-leagues-xlsx", adminGuard, uploadXlsx, uploadLeagueXlsx);
 router.post("/preview-league-import", adminGuard, uploadXlsx, previewLeagueImport);
+// Planilha Identificação — abas de apoio (entity: countries | cities | federations | stadiums)
+router.post("/identification/:entity/preview", adminGuard, uploadXlsx, previewIdentification);
+router.post("/identification/:entity/import", adminGuard, uploadXlsx, importIdentification);
 router.post("/clubs/search", adminGuard, clubsSearch);
 router.get("/clubs-grouped-by-country", adminGuard, clubsGroupedByCountry);
 
@@ -1674,6 +1680,7 @@ router.get("/plans/:id", authGuard, getPlanById);
 router.post("/plans", adminGuard, createPlan);
 router.put("/plans/:id", adminGuard, updatePlan);
 router.delete("/plans/:id", adminGuard, disablePlan);
+router.delete("/plans/:id/permanent", adminGuard, deletePlan);
 
 // Notificações
 router.post("/notifications", adminGuard, newNotification);
@@ -1737,7 +1744,14 @@ router.delete("/charts/:id", adminGuard, deleteChart);
 router.post("/charts/:id/regenerate-token", adminGuard, regenerateEmbedToken);
 
 // Publicações (/publications) — páginas modulares em árvore (grid aninhada)
+// /club-layouts fica fora de /publications/:pageKey/:zone pra não colidir com esse padrão de rota
+router.get("/club-layouts", adminGuard, listClubLayouts);
+router.get("/federation-layouts", adminGuard, listFederationLayouts);
+router.get("/league-layouts", adminGuard, listLeagueLayouts);
+router.get("/league-modules/catalog", adminGuard, getLeagueModuleCatalog);
+router.get("/federation-modules/catalog", adminGuard, getFederationModuleCatalog);
 router.get("/publications/:pageKey/:zone", adminGuard, getLayout);
+router.delete("/publications/:pageKey/:zone", adminGuard, deleteLayout);
 router.put("/publications/:pageKey/:zone", adminGuard, saveLayout);
 router.post("/publications/link-preview", adminGuard, getLinkPreview);
 

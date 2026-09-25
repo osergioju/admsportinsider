@@ -37,7 +37,7 @@ import {
     Search,
     Check,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function FrontPage() {
     const isStandalone =
@@ -63,7 +63,7 @@ export default function FrontPage() {
 
     const { loadingAuth, user } = useRedirectIfAuthenticated();
     const [menuOpen, setMenuOpen] = useState(false);
-    const [show, setShow] = useState(true);
+    const [show, setShow] = useState(() => !localStorage.getItem('pwa-banner-dismissed'));
 
     const leftPillStyle = "flex items-center justify-center gap-2 px-3 py-2 bg-white border border-[#E5E5E5] rounded-full text-[#404040] text-xs sm:text-sm font-medium shadow-sm z-20 relative whitespace-nowrap hover:scale-105 transition-transform cursor-default";
     const rightPillStyle = "flex items-center gap-3 px-4 py-3 bg-white border border-[#F0F0F0] rounded-2xl text-[#404040] text-sm font-medium shadow-sm z-20 relative w-full hover:border-purple-200 transition-colors cursor-default";
@@ -73,14 +73,6 @@ export default function FrontPage() {
 
     // ESTILO ORIGINAL DOS BOTÕES
     const primaryButtonClass = "bg-gradient-to-r from-[#904EDE] to-[#4E2A78] flex items-center justify-center border border-[#A572E1] text-[#ffffff] rounded-full hover:brightness-110 transition-all";
-    const secondaryButtonClass = "flex items-center justify-center border border-[#A572E1] text-[#A572E1] rounded-full hover:bg-white/5 transition-colors";
-
-    useEffect(() => {
-        const dismissed = localStorage.getItem('pwa-banner-dismissed');
-        if (dismissed) {
-            setShow(false);
-        }
-    }, []);
 
     if (loadingAuth || user) return null;
 

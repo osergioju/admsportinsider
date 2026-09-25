@@ -4,7 +4,7 @@ import { api } from "../../services/api";
 
 const fmtDate = d => d ? new Date(d).toISOString().slice(0, 10) : "";
 
-function ClubCrest({ crest, name }) {
+function ClubCrest({ crest }) {
   if (!crest) return <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />;
   // Seleções: crest já vem como URL completa (bandeira); clubes vêm como token
   const src = String(crest).startsWith("http")

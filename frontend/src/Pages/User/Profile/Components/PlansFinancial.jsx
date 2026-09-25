@@ -1,27 +1,34 @@
 import { useState, useEffect, useContext } from "react";
-import { Link } from "react-router-dom";
-import {
-  ArrowLeft,
-  ChevronRight,
-  CircleCheck,
-  ShieldCheck,
-  Loader2,
-  Zap,
-  X,
-  AlertCircle,
-  Check
-} from "lucide-react";
-import IconInsider from "../../../../assets/svg/brand-icon.svg";
+import { useNavigate } from "react-router-dom";
+import { Check } from "lucide-react";
 import { AuthContext } from "../../../../context/AuthContext";
 import { api } from "../../../../services/api";
+import { formatPlanPrice, intervalSuffix, intervalAdjective } from "../../../../utils/planBilling";
+import BillingShell, { Dot, Eyebrow, INK, LINE, LINE_SOFT, MUTED, PillButton } from "../../../../components/billing/BillingShell";
+
+// Coluna do rótulo à esquerda (mesma largura no bloco de planos e na tabela, pra alinhar)
+const LABEL_COL = "lg:grid-cols-[minmax(0,20rem)_repeat(var(--cols),minmax(0,1fr))]";
+
+// Planos guardam benefits como array (strings/objetos) ou objeto { chave: boolean }
+function parseBenefits(raw) {
+  if (!raw) return [];
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (Array.isArray(parsed)) return parsed;
+  return Object.entries(parsed)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key);
+}
+
+const benefitLabel = (b) => (typeof b === "string" ? b : b.name || b.label);
 
 export default function PlansFinancial() {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const [plans, setPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
 
-  // Rastreia qual plan_id está em checkout (null = idle)
+  // Qual plan_id está em checkout (null = ocioso)
   const [checkoutLoading, setCheckoutLoading] = useState(null);
   const [checkoutError, setCheckoutError] = useState(null);
 
@@ -30,7 +37,11 @@ export default function PlansFinancial() {
       try {
         setLoadingPlans(true);
         const response = await api.get("/admin/plans");
-        setPlans(response.data.plans?.filter((p) => p.active) || []);
+        setPlans(
+          (response.data.plans || [])
+            .filter((p) => p.active)
+            .sort((a, b) => Number(a.price) - Number(b.price))
+        );
       } catch (err) {
         console.error("Erro ao buscar planos:", err);
       } finally {
@@ -40,13 +51,12 @@ export default function PlansFinancial() {
     fetchPlans();
   }, []);
 
-  // Plano atual do usuário
-  const isCurrentPlan = (plan) => plan.id === user?.plan_id;
+  const currentPlan = plans.find((p) => p.id === user?.plan_id) || null;
+  const userIsPaid = !!currentPlan && Number(currentPlan.price) > 0;
 
   /**
-   * Dispara o checkout Stripe.
-   * Sem finally — se o redirect acontecer, a página some.
-   * Se der erro, reseta manualmente no catch.
+   * Dispara o checkout Stripe. Sem finally: se o redirect acontecer, a página some.
+   * Em erro, reseta manualmente no catch.
    */
   async function handleSubscribe(plan_id) {
     if (!plan_id || checkoutLoading) return;
@@ -54,273 +64,213 @@ export default function PlansFinancial() {
     try {
       setCheckoutLoading(plan_id);
       setCheckoutError(null);
-
-      const response = await api.post("/stripe/create-checkout-session", {
-        plan_id,
-      });
-
+      const response = await api.post("/stripe/create-checkout-session", { plan_id });
       window.location.href = response.data.url;
     } catch (err) {
       console.error("Checkout error:", err);
+      // Já tem assinatura ativa: troca de plano é no gerenciamento (portal do Stripe)
+      if (err.response?.data?.code === "ALREADY_SUBSCRIBED") {
+        navigate("/me/financial");
+        return;
+      }
       setCheckoutError("Não foi possível iniciar o checkout. Tente novamente.");
       setCheckoutLoading(null);
     }
   }
 
-  // Coleta todos os benefits únicos de todos os planos para montar a tabela
-  function parseBenefits(raw) {
-    if (!raw) return [];
-    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (Array.isArray(parsed)) return parsed;
-    return Object.values(parsed);
-  }
-
-  // Monta lista única de features para a tabela (união de todos os planos)
+  // União de todos os benefícios de todos os planos, para a tabela comparativa
   const allFeatures = (() => {
     const seen = new Set();
     const result = [];
     for (const plan of plans) {
       for (const benefit of parseBenefits(plan.benefits)) {
-        const key = typeof benefit === "string" ? benefit : benefit.name || benefit.label;
+        const key = benefitLabel(benefit);
         if (key && !seen.has(key)) {
           seen.add(key);
-          result.push(
-            typeof benefit === "string"
-              ? { name: benefit, desc: "" }
-              : { name: benefit.name || benefit.label, desc: benefit.desc || benefit.description || "" }
-          );
+          result.push({
+            name: key,
+            desc: typeof benefit === "string" ? "" : benefit.desc || benefit.description || "",
+          });
         }
       }
     }
     return result;
   })();
 
-  // Verifica se um plano tem determinado feature
-  function planHasFeature(plan, featureName) {
-    return parseBenefits(plan.benefits).some((b) => {
-      const key = typeof b === "string" ? b : b.name || b.label;
-      return key === featureName;
-    });
-  }
+  const planHasFeature = (plan, featureName) =>
+    parseBenefits(plan.benefits).some((b) => benefitLabel(b) === featureName);
 
-  // Skeleton para loading
-  const PlanSkeleton = () => (
-    <div className="rounded-[2.5rem] bg-white border border-gray-200/60 flex flex-col p-8 animate-pulse">
-      <div className="w-11 h-11 rounded-2xl bg-gray-100 mb-5" />
-      <div className="h-5 w-24 bg-gray-100 rounded mb-2" />
-      <div className="h-3 w-32 bg-gray-100 rounded mb-8" />
-      <div className="h-10 w-36 bg-gray-100 rounded mb-8" />
-      <div className="h-10 w-full bg-gray-100 rounded-xl mb-8" />
-      <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-4 bg-gray-100 rounded" />
-        ))}
-      </div>
-    </div>
-  );
+  const gridVars = { "--cols": plans.length || 1 };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 sm:p-10 animate-in fade-in duration-700">
-
-      {/* HEADER */}
-      <div className="flex items-center gap-6 mb-16">
-        <Link
-          to="/me/financial"
-          className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#7F33D9] hover:border-[#7F33D9] transition-all shadow-sm group shrink-0"
-        >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform duration-300" />
-        </Link>
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Planos e preços</h1>
-          <p className="text-gray-400 text-[10px] font-bold mt-0.5">Gestão de assinatura</p>
-        </div>
-      </div>
-
+    <BillingShell
+      title="Escolha seu plano"
+      subtitle="Assinatura recorrente. Cancele quando quiser, sem multa — o acesso continua até o fim do período já pago."
+      backTo="/me/financial"
+      backLabel="Voltar para assinatura e cobrança"
+    >
       {/* Erro de checkout */}
       {checkoutError && (
-        <div className="flex items-center gap-3 p-4 mb-8 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm">
-          <AlertCircle size={18} className="shrink-0" />
+        <div role="alert" className="mt-8 flex items-center gap-3 border-l-2 border-red-500 pl-4 py-1 text-[15px] text-red-700 dark:text-red-300">
           <span>{checkoutError}</span>
           <button
+            type="button"
             onClick={() => setCheckoutError(null)}
-            className="ml-auto text-red-400 hover:text-red-600"
+            className="ml-2 underline underline-offset-4 cursor-pointer"
           >
-            <X size={16} />
+            Fechar
           </button>
         </div>
       )}
 
-      {/* GRID DE CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-28">
+      {/* PLANOS — colunas lado a lado no desktop, empilhadas no celular */}
+      <div
+        className={`mt-10 lg:mt-14 grid grid-cols-1 gap-x-14 gap-y-14 ${LABEL_COL}`}
+        style={gridVars}
+        aria-busy={loadingPlans}
+      >
+        <div className="hidden lg:block" />
+
         {loadingPlans
-          ? [1, 2, 3].map((i) => <PlanSkeleton key={i} />)
+          ? [1, 2].map((i) => (
+              <div key={i} className="animate-pulse motion-reduce:animate-none space-y-5">
+                <div className="h-4 w-24 rounded" style={{ background: LINE }} />
+                <div className="h-12 w-40 rounded" style={{ background: LINE }} />
+                <div className="h-14 w-56 rounded" style={{ background: LINE }} />
+                <div className="h-14 w-48 rounded-full" style={{ background: LINE }} />
+              </div>
+            ))
           : plans.map((plan) => {
-              const isCurrent = isCurrentPlan(plan);
+              const isCurrent = plan.id === user?.plan_id;
               const isFree = Number(plan.price) === 0;
+              const isFeatured = !!plan.is_featured && !isFree;
               const isLoadingThis = checkoutLoading === plan.id;
-              const benefits = parseBenefits(plan.benefits);
 
               return (
-                <div
-                  key={plan.id}
-                  className={`group rounded-[2.5rem] bg-white flex flex-col p-8 transition-all duration-500 relative
-                    ${isCurrent
-                      ? "border-2 border-[#7F33D9] shadow-[0_8px_30px_rgba(127,51,217,0.12)] -translate-y-1"
-                      : "border border-gray-200/60 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:border-purple-200"
-                    }`}
-                >
-                  {/* Badge plano atual */}
-                  {isCurrent && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                      <span className="px-4 py-1 rounded-full bg-[#7F33D9] text-white text-[10px] font-bold shadow-md whitespace-nowrap">
-                        Seu plano atual
-                      </span>
-                    </div>
-                  )}
+                <section key={plan.id} aria-label={`Plano ${plan.name}`} className="flex flex-col items-start">
+                  {/* Etiqueta: plano atual / recomendado (espaço reservado mantém as colunas alinhadas) */}
+                  <span className="h-4 flex items-center gap-2.5">
+                    {(isCurrent || isFeatured) && (
+                      <>
+                        <span className="w-[9px] h-[9px] rounded-full bg-[#7F33D9] shrink-0" aria-hidden="true" />
+                        <Eyebrow className="tracking-[0.24em]">{isCurrent ? "Seu plano atual" : "Recomendado"}</Eyebrow>
+                      </>
+                    )}
+                  </span>
 
-                  <div className="mb-6">
-                    <div className="w-11 h-11 rounded-2xl bg-[#F5F3FF] flex items-center justify-center mb-5">
-                      <img src={IconInsider} alt="Logo" className="w-6 h-auto" />
-                    </div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-1">{plan.name}</h2>
-                    <p className="text-gray-400 text-[10px] font-semibold">
-                      {/* Usa description do banco se existir, senão fallback */}
-                      {plan.description || (isFree ? "Para quem usa de forma casual" : "Plano completo")}
-                    </p>
-                  </div>
+                  <h2 className="mt-[22px] text-[40px] xl:text-[50px] leading-none font-light tracking-[-0.03em]" style={{ color: INK }}>
+                    {plan.name}
+                  </h2>
+                  <p className="mt-3.5 text-base" style={{ color: MUTED }}>
+                    {plan.description || (isFree ? "Para quem usa de forma casual" : "Plano completo")}
+                  </p>
 
-                  <div className="flex items-baseline gap-1 mb-8">
-                    <span className="text-gray-300 font-bold text-lg">R$</span>
-                    <span className="text-4xl font-bold text-gray-900 tracking-tight">
-                      {Number(plan.price).toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                  <div className="mt-8 flex items-baseline gap-2.5 flex-wrap">
+                    <span className="text-[40px] xl:text-[56px] leading-none font-light tracking-[-0.03em]" style={{ color: INK }}>
+                      {isFree ? "Gratuito" : formatPlanPrice(plan)}
                     </span>
+                    {!isFree && (
+                      <span className="text-xl font-medium" style={{ color: MUTED }}>{intervalSuffix(plan)}</span>
+                    )}
                   </div>
+                  <p className="mt-3.5 text-[15px]" style={{ color: MUTED }}>
+                    {isFree ? "Sem cobrança" : `Cobrança ${intervalAdjective(plan)} · cancele quando quiser`}
+                  </p>
 
-                  {/* Botão */}
-                  {isCurrent ? (
-                    <button
-                      disabled
-                      className="w-full py-3 rounded-xl bg-gray-100 text-gray-400 font-semibold text-sm flex items-center justify-center gap-2 mb-8 cursor-not-allowed"
-                    >
-                      Plano atual
-                    </button>
-                  ) : isFree ? (
-                    <Link
-                      to="/me/financial"
-                      className="w-full py-3 rounded-xl bg-[#7F33D9] text-white font-semibold text-sm transition-all hover:bg-[#6025A8] active:scale-[0.98] flex items-center justify-center gap-2 mb-8"
-                    >
-                      Acessar <ChevronRight size={14} />
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => handleSubscribe(plan.id)}
-                      disabled={!!checkoutLoading}
-                      className="w-full py-3 rounded-xl bg-[#7F33D9] text-white font-semibold text-sm transition-all hover:bg-[#6025A8] active:scale-[0.98] flex items-center justify-center gap-2 mb-8 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {isLoadingThis ? (
-                        <><Loader2 size={14} className="animate-spin" /> Aguarde...</>
-                      ) : (
-                        <><Zap size={14} /> Contratar plano</>
-                      )}
-                    </button>
-                  )}
-
-                  {/* Benefícios do card */}
-                  <div className="space-y-4">
-                    <p className="text-[9px] font-bold text-gray-400 border-b border-gray-50 pb-2">
-                      Principais recursos
-                    </p>
-                    <ul className="space-y-3">
-                      {benefits.slice(0, 3).map((b, i) => {
-                        const label = typeof b === "string" ? b : b.name || b.label;
-                        return (
-                          <li key={i} className="flex items-center gap-3 text-xs font-medium text-gray-500">
-                            <CircleCheck size={14} className="text-[#7F33D9]/70 shrink-0" />
-                            {label}
-                          </li>
-                        );
-                      })}
-                      {benefits.length === 0 && (
-                        <li className="flex items-center gap-3 text-xs font-medium text-gray-400">
-                          <CircleCheck size={14} className="text-[#7F33D9]/70 shrink-0" />
-                          Acesso básico à plataforma
-                        </li>
-                      )}
-                    </ul>
+                  <div className="mt-8">
+                    {isCurrent && !isFree ? (
+                      <PillButton onClick={() => navigate("/me/financial")}>Gerenciar assinatura</PillButton>
+                    ) : isFree ? (
+                      <PillButton variant="secondary" onClick={() => navigate("/dashboard")}>
+                        Continuar no plano gratuito
+                      </PillButton>
+                    ) : userIsPaid ? (
+                      <PillButton onClick={() => navigate("/me/financial")}>Mudar para {plan.name}</PillButton>
+                    ) : (
+                      <PillButton
+                        onClick={() => handleSubscribe(plan.id)}
+                        disabled={!!checkoutLoading}
+                        loading={isLoadingThis}
+                      >
+                        {isLoadingThis ? "Abrindo pagamento seguro..." : `Assinar ${plan.name}`}
+                      </PillButton>
+                    )}
                   </div>
-                </div>
+                </section>
               );
             })}
       </div>
 
-      {/* TABELA COMPARATIVA */}
+      {/* COMPARATIVO — tabela com linhas finas; rola na horizontal no celular */}
       {!loadingPlans && allFeatures.length > 0 && (
-        <div className="space-y-10">
-          <div className="bg-white rounded-[2.5rem] border border-gray-200/50 shadow-[0_4px_25px_rgba(0,0,0,0.02)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-50 bg-gray-50/40">
-                    <th className="py-6 px-10">
-                      <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shadow-sm">
-                        <img src={IconInsider} alt="Logo" className="w-4 h-auto opacity-80" />
-                      </div>
+        <section className="mt-16 lg:mt-20" aria-label="Comparação de recursos por plano">
+          <div className="relative overflow-x-auto overflow-y-hidden" tabIndex={0} role="region" aria-label="Tabela comparativa de planos, role para o lado no celular">
+            <table className="w-full border-collapse table-fixed min-w-[560px]">
+              <caption className="sr-only">Recursos incluídos em cada plano</caption>
+              <colgroup>
+                <col className="w-[11rem] lg:w-[20rem]" />
+                {plans.map((p) => <col key={p.id} />)}
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col" className="pb-4 text-left text-[11px] font-bold uppercase tracking-[0.24em]" style={{ color: MUTED, borderBottom: `1px solid ${LINE}` }}>
+                    Recurso
+                  </th>
+                  {plans.map((p) => (
+                    <th
+                      key={p.id}
+                      scope="col"
+                      className="pb-4 pl-8 lg:pl-14 text-left text-[11px] font-bold uppercase tracking-[0.24em]"
+                      style={{ color: p.id === user?.plan_id ? "var(--dm-brand, #7F33D9)" : MUTED, borderBottom: `1px solid ${LINE}` }}
+                    >
+                      {p.name}
                     </th>
-                    {plans.map((p) => (
-                      <th key={p.id} className="py-6 px-4 text-center">
-                        <span className={`text-[10px] font-bold ${isCurrentPlan(p) ? "text-[#7F33D9]" : "text-[#6025A8]"}`}>
-                          {p.name}
-                        </span>
-                        {isCurrentPlan(p) && (
-                          <div className="text-[8px] text-[#7F33D9]/60 font-bold mt-0.5">atual</div>
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {allFeatures.map((feature, fIdx) => (
-                    <tr key={fIdx} className="group hover:bg-gray-50/50 transition-colors">
-                      <td className="py-5 px-10">
-                        <p className="text-xs font-semibold text-gray-600 group-hover:text-gray-900 transition-colors">
-                          {feature.name}
-                        </p>
-                        {feature.desc && (
-                          <p className="text-[10px] text-gray-400 font-normal mt-0.5">{feature.desc}</p>
-                        )}
-                      </td>
-                      {plans.map((p) => (
-                        <td key={p.id} className="py-5 px-4 text-center">
-                          <div className="flex justify-center">
-                            {planHasFeature(p, feature.name) ? (
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center transition-all group-hover:scale-110">
-                                <Check size={14} className="text-[#7F33D9]" strokeWidth={3} />
-                              </div>
-                            ) : (
-                              <div className="w-7 h-7 flex items-center justify-center">
-                                <div className="w-1.5 h-0.5 bg-gray-200 rounded" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      ))}
-                    </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </thead>
+              <tbody>
+                {allFeatures.map((feature) => (
+                  <tr key={feature.name}>
+                    <th scope="row" className="py-5 text-left align-top" style={{ borderBottom: `1px solid ${LINE_SOFT}` }}>
+                      <span className="block text-[17px] font-medium" style={{ color: INK }}>{feature.name}</span>
+                      {feature.desc && <span className="block text-sm font-normal mt-1" style={{ color: MUTED }}>{feature.desc}</span>}
+                    </th>
+                    {plans.map((p) => {
+                      const has = planHasFeature(p, feature.name);
+                      return (
+                        <td
+                          key={p.id}
+                          aria-label={`${has ? "Incluído" : "Não incluído"} no ${p.name}`}
+                          className="py-5 pl-8 lg:pl-14"
+                          style={{ borderBottom: `1px solid ${LINE_SOFT}` }}
+                        >
+                          {has ? (
+                            <Check size={20} strokeWidth={2.4} className="text-[#7F33D9]" aria-hidden="true" />
+                          ) : (
+                            <span className="inline-block w-4 h-0.5 align-middle" style={{ background: "rgba(60,24,103,0.3)" }} aria-hidden="true" />
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* FOOTER */}
-      <div className="mt-20 flex flex-col items-center opacity-20">
-        <ShieldCheck size={20} className="text-gray-400 mb-2" />
-        <span className="text-[8px] font-bold text-gray-500">Secure ssl payment system</span>
-      </div>
-    </div>
+      {/* Rodapé de confiança */}
+      <ul
+        className="mt-14 pt-[22px] flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 text-[15px]"
+        style={{ borderTop: `1px solid ${LINE}`, color: MUTED }}
+      >
+        <li>Pagamento processado pelo Stripe</li>
+        <li className="hidden sm:block mx-[22px]"><Dot /></li>
+        <li>Cancele quando quiser, sem multa</li>
+        <li className="hidden sm:block mx-[22px]"><Dot /></li>
+        <li>Não guardamos os dados do seu cartão</li>
+      </ul>
+    </BillingShell>
   );
 }

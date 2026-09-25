@@ -296,7 +296,7 @@ export default function ApiImport() {
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">País</label>
                 <select value={country}
-                  onChange={(e) => { setCountry(e.target.value); setApiLeague(null); setSeason(null); setTeamsData(null); setPreview(null); }}
+                  onChange={(e) => { setCountry(e.target.value); setApiLeague(null); setSelSeasons([]); setTeamsData(null); setPreview(null); }}
                   className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
                   <option value="">Selecione o país…</option>
                   {countryList.map(([c, n]) => <option key={c} value={c}>{c} ({n})</option>)}

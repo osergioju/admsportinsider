@@ -5,6 +5,7 @@ import { AuthContext } from "../../context/AuthContext";
 export default function PaymentSuccess() {
   const { user, loading, refreshUser } = useContext(AuthContext);
   const [syncing, setSyncing] = useState(true);
+  const [confirmed, setConfirmed] = useState(false);
 
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -29,8 +30,10 @@ export default function PaymentSuccess() {
       attempts += 1;
       const updated = await refreshUser();
 
-      if ((updated && updated.plan_id !== initialPlanId.current) || attempts >= maxAttempts) {
+      const planChanged = !!updated && updated.plan_id !== initialPlanId.current;
+      if (planChanged || attempts >= maxAttempts) {
         clearInterval(interval);
+        setConfirmed(planChanged);
         setSyncing(false);
       }
     }, 1500);
@@ -59,18 +62,24 @@ export default function PaymentSuccess() {
 
           {/* --- TÍTULO COM GRADIENTE --- */}
           <h1 className="mb-4 text-3xl lg:text-4xl font-bold bg-[linear-gradient(90deg,#FFFFFF_0%,#E2D6FF_100%)] bg-clip-text text-transparent">
-            Pagamento confirmado!
+            {syncing ? "Confirmando seu pagamento..." : confirmed ? "Pagamento confirmado!" : "Recebemos seu pagamento"}
           </h1>
 
           {/* --- TEXTO DE DESCRIÇÃO --- */}
-          <div className="space-y-2 mb-8">
-            <p className="text-[#FFFFFF99] text-lg leading-relaxed max-w-xs mx-auto">
-                Sua assinatura foi ativada com sucesso.
+          <div className="space-y-2 mb-8" role="status" aria-live="polite">
+            <p className="text-[#FFFFFFB3] text-lg leading-relaxed max-w-xs mx-auto">
+              {syncing
+                ? "Estamos ativando o seu plano. Leva só alguns segundos."
+                : confirmed
+                  ? "Sua assinatura foi ativada com sucesso."
+                  : "A ativação do plano está demorando um pouco mais que o normal."}
             </p>
-            <p className="text-[#FFFFFF66] text-sm leading-relaxed max-w-xs mx-auto">
-                {syncing
-                  ? "Estamos confirmando a ativação do seu plano..."
-                  : "Você já pode acessar os detalhes da sua conta."}
+            <p className="text-[#FFFFFF99] text-sm leading-relaxed max-w-xs mx-auto">
+              {syncing
+                ? "Não feche esta página."
+                : confirmed
+                  ? "Você já pode acessar os detalhes da sua conta."
+                  : "Não se preocupe: seu acesso será liberado assim que o Stripe confirmar. Se não mudar em alguns minutos, fale com o suporte."}
             </p>
           </div>
 
@@ -79,7 +88,7 @@ export default function PaymentSuccess() {
             onClick={() => navigate("/me/financial")}
             className="w-full h-14 rounded-full bg-[linear-gradient(109.09deg,#FFFFFF_3.35%,#E7D3FF_96.65%)] hover:opacity-90 transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-lg shadow-purple-500/10"
           >
-            <span className="text-[#7F33D9] font-semibold text-lg">Ir para meu plano</span>
+            <span className="text-[#7F33D9] font-semibold text-lg">{confirmed ? "Ir para meu plano" : "Ver minha assinatura"}</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#7F33D9] group-hover:translate-x-1 transition-transform">
                 <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -88,7 +97,7 @@ export default function PaymentSuccess() {
           {/* --- FOOTER STATUS --- */}
           {syncing && (
             <div className="mt-6">
-              <span className="inline-block text-xs text-[#FFFFFF40] animate-pulse">
+              <span className="inline-block text-xs text-[#FFFFFF99] animate-pulse motion-reduce:animate-none">
                 Processando assinatura...
               </span>
             </div>

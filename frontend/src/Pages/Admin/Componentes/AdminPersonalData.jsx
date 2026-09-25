@@ -35,7 +35,6 @@ export default function AdminProfile() {
   const [errorProfile, setErrorProfile] = useState(""); 
   const [errorPass, setErrorPass] = useState("");       
 
-  if (!user) return null;
 
   /*LÓGICA SENHA */
   const [form_pass, setFormPass] = useState({
@@ -197,6 +196,9 @@ export default function AdminProfile() {
   const inputClass = "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all disabled:bg-gray-50 disabled:text-gray-500 pl-10";
   const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
   const btnClass = "flex items-center gap-2 px-6 py-2.5 bg-[#7F33D9] text-white rounded-full text-sm font-medium hover:bg-[#6025A8] transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20";
+
+  // Só depois de TODOS os hooks (return antecipado antes deles quebra a ordem dos hooks)
+  if (!user) return null;
 
   return (
     <div className="w-full">

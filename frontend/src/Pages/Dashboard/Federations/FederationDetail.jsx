@@ -3,12 +3,12 @@ import NotasSection from "./../../Dashboard/Notas/NotasSection"
 import { useParams, useNavigate } from "react-router-dom";
 import { Heart, Shield, Trophy, ChevronLeft, ArrowRight, MapPin, Calendar, TrendingUp } from "lucide-react";
 import { federationLogo } from "../../../utils/federationUrl";
-import ReactECharts from "echarts-for-react";
 import { api } from "../../../services/api";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
 import { AuthContext } from "../../../context/AuthContext";
 import PageLoader from "../../../components/uxui/PageLoader";
+import EntityModules from "../../../components/publications/EntityModules";
 
 // ─── Helpers de cor ───────────────────────────────────────────────────────────
 
@@ -27,53 +27,6 @@ function resolveColors(primary, secondary, tertiary) {
   return [c1, c2, c3];
 }
 
-// Primeira cor visível sobre fundo branco (pula brancos/quase-brancos)
-function pickChartColor(...colors) {
-  for (const c of colors) {
-    const rgb = hexToRgb(c);
-    if (!rgb) continue;
-    const lum = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-    if (lum < 0.85) return c;
-  }
-  return "#7F33D9";
-}
-
-function lighten(hex, amount = 0.7) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return hex;
-  const r = Math.min(255, Math.floor(rgb.r + (255 - rgb.r) * amount));
-  const g = Math.min(255, Math.floor(rgb.g + (255 - rgb.g) * amount));
-  const b = Math.min(255, Math.floor(rgb.b + (255 - rgb.b) * amount));
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
-// ─── Helpers financeiros ──────────────────────────────────────────────────────
-
-function parseCycleYears(edition) {
-  if (edition.name) {
-    const match = edition.name.match(/(\d{4})\s*[-–]\s*(\d{4})/);
-    if (match) return { start: parseInt(match[1]), end: parseInt(match[2]) };
-  }
-  const end = edition.edition_year ?? new Date().getFullYear();
-  return { start: end - 3, end };
-}
-
-const CURRENCY_SYMBOL = { USD: "US$", BRL: "R$", EUR: "€", GBP: "£" };
-
-function fmtCycleValue(v, currency) {
-  if (v == null || isNaN(v)) return "—";
-  const cur = CURRENCY_SYMBOL[currency] ?? currency;
-  const abs = Math.abs(v);
-  const sign = v < 0 ? "-" : "";
-  if (abs >= 1000) return `${cur} ${sign}${(abs / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} bilhões`;
-  return `${cur} ${sign}${abs.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} milhões`;
-}
-
-function calcPct(latest, prev) {
-  if (prev == null || prev === 0) return null;
-  return ((latest - prev) / Math.abs(prev)) * 100;
-}
-
 // ─── Keyframes ────────────────────────────────────────────────────────────────
 
 const STYLE_ID = "fed-detail-styles";
@@ -88,63 +41,6 @@ function injectStyles() {
     .fed-comp-card:hover .card-arrow { transform: translateX(4px); }
   `;
   document.head.appendChild(el);
-}
-
-// ─── Gráfico de barras por ciclo ──────────────────────────────────────────────
-
-function CycleBarChart({ editions, field, color }) {
-  if (!editions?.length) return null;
-
-  const labels = editions.map(e => {
-    const { start, end } = parseCycleYears(e);
-    return `${start}-${end}`;
-  });
-
-  const values = editions.map(e => {
-    const v = parseFloat(e[field]);
-    return isNaN(v) ? null : Math.round(v * 10) / 10;
-  });
-
-  const fmt = (v) => {
-    if (v == null) return "—";
-    const abs = Math.abs(v);
-    if (abs >= 1000) return `${(v / 1000).toFixed(1)}B`;
-    return `${Math.round(v)}M`;
-  };
-
-  const option = {
-    tooltip: {
-      trigger: "axis",
-      formatter: (params) => {
-        const p = params[0];
-        return `<b>${labels[p.dataIndex]}</b><br/>${p.marker} ${fmt(p.value)}`;
-      },
-    },
-    grid: { left: 8, right: 8, top: 28, bottom: 24, containLabel: true },
-    xAxis: {
-      type: "category",
-      data: labels,
-      axisLabel: { fontSize: 11, color: "#9ca3af" },
-      axisLine: { show: false },
-      axisTick: { show: false },
-    },
-    yAxis: {
-      type: "value",
-      axisLabel: { formatter: (v) => fmt(v), fontSize: 10, color: "#9ca3af" },
-      splitLine: { lineStyle: { color: "#f3f4f6" } },
-      max: (v) => (v.max > 0 ? v.max * 1.12 : undefined),
-    },
-    series: [{
-      type: "bar",
-      data: values,
-      barMaxWidth: 70,
-      clip: false,
-      itemStyle: { color, borderRadius: [6, 6, 0, 0] },
-      label: { show: true, position: "top", formatter: (p) => fmt(p.value), fontSize: 10, color: "#6b7280" },
-    }],
-  };
-
-  return <ReactECharts option={option} style={{ height: 220 }} />;
 }
 
 // ─── Seletor de moeda ─────────────────────────────────────────────────────────
@@ -165,8 +61,6 @@ export default function FederationDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const [editions, setEditions] = useState(null);
-  const [loadingFin, setLoadingFin] = useState(false);
   const [currency, setCurrency] = useState(user?.currency_code || "USD");
 
   const token = localStorage.getItem("token");
@@ -180,16 +74,6 @@ export default function FederationDetail() {
       .catch((err) => { if (err.response?.status === 404) setNotFound(true); else console.error(err); })
       .finally(() => setLoading(false));
   }, [slug]);
-
-  useEffect(() => {
-    if (!federation) return;
-    if (!["global", "continental"].includes(federation.sphere)) return;
-    setLoadingFin(true);
-    api.get(`/dashboard/federations/${slug}/cycle-financials?to=${currency}`)
-      .then(({ data }) => setEditions(data.editions?.length ? data.editions : []))
-      .catch(() => setEditions([]))
-      .finally(() => setLoadingFin(false));
-  }, [slug, federation, currency]);
 
   if (notFound) {
     return (
@@ -230,21 +114,8 @@ export default function FederationDetail() {
     ? `radial-gradient(circle, rgba(${rgb2.r},${rgb2.g},${rgb2.b},0.35) 0%, transparent 70%)`
     : glowPrimary;
 
-  const chartColor = pickChartColor(federation.primary_color, federation.secondary_color, federation.tertiary_color);
-
-  // ── Dados financeiros ──────────────────────────────────────────────────────
-  const hasFinancials = editions && editions.length > 0;
-  const latestEd = hasFinancials ? editions[editions.length - 1] : null;
-  const prevEd = editions?.length >= 2 ? editions[editions.length - 2] : null;
-
-  const latestRev = latestEd ? parseFloat(latestEd.revenue_converted) : null;
-  const prevRev = prevEd ? parseFloat(prevEd.revenue_converted) : null;
-  const revPct = (latestRev != null && prevRev != null) ? calcPct(latestRev, prevRev) : null;
-
-  const latestNet = latestEd ? parseFloat(latestEd.net_income_converted) : null;
-  const prevNet = prevEd ? parseFloat(prevEd.net_income_converted) : null;
-
-  const latestCycle = latestEd ? parseCycleYears(latestEd) : null;
+  // Só federações globais/continentais com liga financeira têm indicadores por ciclo
+  const hasFinancials = !!federation.financial_league_id && ["global", "continental"].includes(federation.sphere);
 
   const formatFoundedAt = (dateStr) => {
     if (!dateStr) return null;
@@ -399,18 +270,17 @@ export default function FederationDetail() {
         </div>
       </div>
 
-      {/* ── Seção financeira ─────────────────────────────────────────────── */}
-      {!loading && editions !== null && (
-        <div id="financials">
-
-          {/* Seletor de moeda */}
+      {/* ── Área modular (layout padrão ou próprio da federação — editado em Admin > Publicações > Federações) ── */}
+      <div id="financials">
+        {hasFinancials && (
           <div className="flex items-center justify-between gap-4 mb-4">
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Receitas por ciclo</p>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Valores em</p>
             <div className="flex gap-1 bg-gray-100 rounded-full p-1 shrink-0">
               {CURRENCIES.map(c => (
                 <button
                   key={c}
                   onClick={() => setCurrency(c)}
+                  aria-pressed={currency === c}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${currency === c ? "bg-black text-[#ffffff] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                 >
                   {c}
@@ -418,105 +288,9 @@ export default function FederationDetail() {
               ))}
             </div>
           </div>
-
-          {loadingFin ? (
-            <div className="space-y-4">
-              <div className="h-72 bg-white rounded-2xl border border-gray-100 animate-pulse" />
-              <div className="h-72 bg-white rounded-2xl border border-gray-100 animate-pulse" />
-            </div>
-          ) : !hasFinancials ? (
-            <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-              <p className="text-gray-400 text-sm">Sem dados financeiros para esta federação.</p>
-            </div>
-          ) : (
-            <>
-              {/* ── Gráfico de Receitas ── */}
-              <div className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
-                <div className="flex flex-wrap w-full items-center">
-                  <div className="w-full lg:w-1/2">
-                    <CycleBarChart editions={editions} field="revenue_converted" color={chartColor} />
-                  </div>
-                  <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                    <h2
-                      style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                      className="mb-4 text-3xl font-light lg:text-4xl relative"
-                    >
-                      Receitas por ciclo
-                    </h2>
-                    {latestEd && latestCycle && latestRev != null && (
-                      <p
-                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                        className="text-sm font-light lg:text-base"
-                      >
-                        <>
-                          A {fedName} projeta receita de{" "}
-                          <b className="font-[600]">{fmtCycleValue(latestRev, currency)}</b>
-                          {" entre "}
-                          {latestCycle.start} e {latestCycle.end}
-                          {revPct != null && (
-                            <>
-                              , <span className="font-[600]">{revPct >= 0 ? "aumento" : "redução"} de{" "}
-                                {Math.abs(revPct).toFixed(0)}%</span>  em relação ao período anterior
-                            </>
-                          )}
-                          .
-                        </>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Resultado Líquido ── */}
-              <div id="resultado" className="rounded-2xl mb-4 w-full px-6 py-6 xl:py-8 lg:px-11 bg-white">
-                <div className="flex flex-wrap w-full items-center">
-                  <div className="w-full lg:w-1/2">
-                    <CycleBarChart
-                      editions={editions}
-                      field="net_income_converted"
-                      color={latestNet != null && latestNet >= 0 ? "#946E1C" : "#ef4444"}
-                    />
-                  </div>
-                  <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                    <h2
-                      style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                      className="mb-4 text-3xl font-light lg:text-4xl relative"
-                    >
-                      Resultado líquido
-                    </h2>
-                    {latestEd && latestCycle && latestNet != null && (
-                      <p
-                        style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                        className="text-sm font-light lg:text-base"
-                      >
-                        <>
-                          A {fedName} projeta{" "}
-                          <b className="font-[600]">
-                            {latestNet >= 0 ? "lucro" : "prejuízo"} de{" "}
-                            {fmtCycleValue(Math.abs(latestNet), currency)}
-                          </b>{" "}
-                          entre {latestCycle.start} e {latestCycle.end}
-                          {prevNet != null && (
-                            <>
-                              , {latestNet >= prevNet ? "acima" : "abaixo"} do{" "}
-                              <b className="font-[600]">
-                                {prevNet >= 0 ? "lucro" : "prejuízo"} de{" "}
-                                {fmtCycleValue(Math.abs(prevNet), currency)}
-                              </b>{" "}
-                              registrado no período anterior
-                            </>
-                          )}
-                          .
-                        </>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+        )}
+        <EntityModules kind="federation" entityKey={slug} entity={federation} currency={currency} className="mb-4" />
+      </div>
 
       <NotasSection />
     </div>

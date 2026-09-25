@@ -2,7 +2,7 @@
 import { X } from "lucide-react";
 import NetResultLineChart from "./NetResultLineChart";
 import ChartFilter from "../filter/ChartFilter";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "../../../../../context/TranslationContext";
 import NoFinancialData from "../NoFinancialData";
 
@@ -49,8 +49,8 @@ export default function NetResultSection({
     );
   }
 
-  const [startYear, setStartYear] = useState(null);
-  const [endYear, setEndYear] = useState(null);
+  const [startYearPick, setStartYear] = useState(null);
+  const [endYearPick, setEndYear] = useState(null);
 
   const availableYears = useMemo(() => {
     const years = new Set();
@@ -64,11 +64,9 @@ export default function NetResultSection({
     return Array.from(years).sort((a, b) => a - b);
   }, [data]);
 
-  useEffect(() => {
-    if (!availableYears || availableYears.length === 0) return;
-    setStartYear(availableYears[0]);
-    setEndYear(availableYears[availableYears.length - 1]);
-  }, [availableYears]);
+  // Período: o que o usuário escolheu; enquanto não escolheu, todo o intervalo dos dados (sem efeito de sincronização)
+  const startYear = startYearPick ?? availableYears[0] ?? null;
+  const endYear = endYearPick ?? availableYears[availableYears.length - 1] ?? null;
 
   const mainData = data?.[mainLeagueId];
 

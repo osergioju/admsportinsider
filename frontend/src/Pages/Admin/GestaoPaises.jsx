@@ -104,7 +104,7 @@ export default function GestaoPaises() {
                 setSuccess(true);
                 setTimeout(() => { closeModal(); loadCountries(); }, 1000);
             } else { setLoading(false); alert("Erro ao cadastrar."); }
-        } catch (error) { setLoading(false); alert("Erro ao cadastrar."); }
+        } catch { setLoading(false); alert("Erro ao cadastrar."); }
     };
 
     const updateCountry = async () => {
@@ -118,7 +118,7 @@ export default function GestaoPaises() {
             });
             setSuccess(true);
             setTimeout(() => { closeModal(); loadCountries(); }, 700);
-        } catch (error) { setLoading(false); alert("Erro ao atualizar país."); }
+        } catch { setLoading(false); alert("Erro ao atualizar país."); }
     };
 
     const deleteCountry = async () => {
@@ -127,7 +127,7 @@ export default function GestaoPaises() {
             await api.delete(`/admin/disable-country/${currentCountry.id_country}`);
             closeModal();
             loadCountries();
-        } catch (error) { setLoading(false); alert("Erro ao realizar operação."); }
+        } catch { setLoading(false); alert("Erro ao realizar operação."); }
     };
 
     // Estilos

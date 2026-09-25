@@ -4,7 +4,7 @@ import { api } from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 
 export default function SubscriptionInvoices() {
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   
   

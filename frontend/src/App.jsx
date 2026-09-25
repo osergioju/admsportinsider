@@ -39,6 +39,7 @@ import LeaguesFavorites from "./Pages/User/LeaguesFavorites";
 import AdminIndex from "./Pages/Admin/Index";
 import SendLeaguePage from "./Pages/Admin/Datasend/SendLeaguePage";
 import UploadFederationFinancialPage from "./Pages/Admin/Datasend/UploadFederationFinancialPage";
+import UploadIdentificationPage from "./Pages/Admin/Datasend/UploadIdentificationPage";
 import AdminProfileDetails from "./Pages/Admin/AdminProfileDetails";
 import UploadTeamsPage from "./Pages/Admin/Datasend/UploadTeamsPage";
 import UploadPlayersPage from "./Pages/Admin/Datasend/UploadPlayersPage";
@@ -294,6 +295,7 @@ export default function App() {
               {/* ── Hospitalidade ── */}
               <Route element={<AdminPermissionRoute permissionKey="gestao-dados" />}>
                 <Route path="/admin/hospitalidade" element={<GestaoHospitalidade />} />
+                <Route path="/admin/upload/identificacao" element={<UploadIdentificationPage />} />
               </Route>
 
               {/* ── Gestão de usuários ── */}

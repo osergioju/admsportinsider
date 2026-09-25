@@ -4,7 +4,6 @@ import { api } from "../../../services/api";
 import { ChevronLeft, ChevronRight, Search, X, Heart, Globe, Trophy } from "lucide-react";
 import { useFavorites } from "../../../hooks/useFavorites";
 import { useTranslation } from "../../../context/TranslationContext";
-import { federationLogo } from "../../../utils/federationUrl";
 
 const PAGE_SIZE = 24;
 

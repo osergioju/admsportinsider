@@ -2,10 +2,17 @@ import { useEffect, useState } from "react";
 import ReactECharts from "echarts-for-react";
 import { api } from "../../../services/api";
 import { buildChartOption } from "../../../utils/chartOptionBuilders";
+import ContextChartBlock, { LockedChart } from "./ContextChartBlock";
 
 // Renderização interna (dentro do PRO) — nunca mostra a marca Sport Insider.
 // O caminho com marca é exclusivamente o script de embed (chart-embed.js).
 export default function ChartBlock({ slot }) {
+  // Gráfico "do clube da página" (página financeira do clube): tem componente próprio
+  if (slot.source_params?.entity_mode === "context") return <ContextChartBlock slot={slot} />;
+  return <FixedChartBlock slot={slot} />;
+}
+
+function FixedChartBlock({ slot }) {
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -17,6 +24,9 @@ export default function ChartBlock({ slot }) {
   if (!data) {
     return <div className="w-full h-full min-h-[280px] bg-gray-50 rounded-2xl animate-pulse" />;
   }
+
+  // Trava por plano (validada no servidor): mostra o aviso em vez do gráfico
+  if (data.locked) return <LockedChart data={data} />;
 
   const option = buildChartOption(data.chart_type, data, data.target_max);
 

@@ -84,7 +84,7 @@ export default function Notifications() {
         setDeleteFeedback(null);
       }, 1500);
 
-    } catch (error) {
+    } catch {
       setDeleteFeedback({ type: 'error', text: 'Erro ao excluir notificação.' });
     } finally {
       setDeleteProcessing(false);

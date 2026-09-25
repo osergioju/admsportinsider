@@ -2,16 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "../../services/api";
 import { useTranslation } from "../../context/TranslationContext";
 
-const formatDate = (dateString) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
 // O WordPress não marca o idioma dos relatórios — detecta pelo título/URI
 // para não exibir o mesmo relatório duplicado em português e inglês.
 const detectLang = (rel) => {
@@ -25,7 +15,7 @@ const detectLang = (rel) => {
 
 const RelatorioCard = ({ relatorio }) => {
   const { t } = useTranslation();
-  const { id, title, uri, featuredImage } = relatorio;
+  const { title, uri, featuredImage } = relatorio;
   const cover = featuredImage?.node?.sourceUrl;
 
   return (
@@ -114,7 +104,7 @@ export default function Relatorios() {
       );
 
       setPageInfo(newPageInfo);
-    } catch (err) {
+    } catch {
       setError("Não foi possível carregar os relatórios.");
     } finally {
       setLoading(false);

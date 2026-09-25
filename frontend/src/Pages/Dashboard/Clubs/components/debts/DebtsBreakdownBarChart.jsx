@@ -15,9 +15,6 @@ function NoDebtsData() {
   );
 }
 import { adaptDebtsBreakdown } from "./debtsBreakdown.adapter";
-import { useContext } from "react";
-import { AuthContext } from "../../../../../context/AuthContext"
-import PlanUpgradePrompt from "../blockplan/PlanUpgradePrompt";
 
 export default function DebtsBreakdownBarChart({
   data,
@@ -25,16 +22,12 @@ export default function DebtsBreakdownBarChart({
   clubMap,
   mainClubId
 }) {
-  const { t } = useTranslation();
   const adapted = adaptDebtsBreakdown(
     data,
     clubesSelecionados,
     mainClubId,
     clubMap
   );
-
-  const { user } = useContext(AuthContext);
-  const planID = user?.plan_id;
 
   if (!adapted) {
     return <NoDebtsData />;

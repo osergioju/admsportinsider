@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext } from "react";
 import Input from "../../components/uxui/Input";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
@@ -12,33 +12,30 @@ import SubmitButton from "../../components/uxui/SubmitButton";
 // Importa o redirect 
 import { useRedirectIfAuthenticated } from "../../services/checkUser";
 
+const URL_ERRORS = {
+    google_cancelled: "Login com Google cancelado.",
+    google_failed: "Erro ao autenticar com o Google. Tente novamente.",
+    email_in_used: "O e-mail da sua conta Google já está em uso.",
+    google_error: "Erro ao autenticar com o Google. Tente novamente."
+};
+
 export default function Login() {
-    const { loadingAuth, user } = useRedirectIfAuthenticated();
+    const { loadingAuth } = useRedirectIfAuthenticated();
 
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
-    const [error, setError] = useState("");
+    const [submitError, setError] = useState("");
     //const [lembrar, setLembrar] = useState(false);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [searchParams] = useSearchParams();
 
-    useEffect(() => {
-        const errorParam = searchParams.get("error");
-
-        if (!errorParam) return;
-
-        const messages = {
-            google_cancelled: "Login com Google cancelado.",
-            google_failed: "Erro ao autenticar com o Google. Tente novamente.",
-            email_in_used: "O e-mail da sua conta Google já está em uso.",
-            google_error: "Erro ao autenticar com o Google. Tente novamente."
-        };
-
-        setError(messages[errorParam] || "Erro inesperado.");
-    }, [searchParams]);
+    // Erro vindo do redirecionamento do Google (?error=...): derivado da URL, sem efeito
+    const errorParam = searchParams.get("error");
+    const urlError = errorParam ? (URL_ERRORS[errorParam] || "Erro inesperado.") : "";
+    const error = submitError || urlError;
 
 
 

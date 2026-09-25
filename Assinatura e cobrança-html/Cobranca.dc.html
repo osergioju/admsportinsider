@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Assinatura e cobrança</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Effra','Hanken Grotesk',system-ui,sans-serif;background:#ffffff}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+.pri{transition:background .2s ease}
+.pri:hover{background:#6B22C4!important}
+.lnk{transition:color .2s ease}
+.lnk:hover{color:#7F33D9!important}
+.lnk:hover .arw{transform:translate(2px,-2px)}
+.arw{transition:transform .2s ease}
+.pri:focus-visible,.lnk:focus-visible{outline:2px solid #7F33D9;outline-offset:4px}
+</style>
+</helmet>
+<div style="position: relative; width: 1694px; height: 880px; box-sizing: border-box; overflow: hidden; background: linear-gradient(180deg, #ffffff 0%, #FCFAFE 100%); font-family: 'Effra', 'Hanken Grotesk', system-ui, sans-serif;">
+
+<div style="position: absolute; left: 1220px; top: 540px; width: 560px; height: 560px; border-radius: 50%; background: linear-gradient(180deg, #7F33D9 0%, #E5D5F7 100%);"></div>
+<div style="position: absolute; left: 1400px; top: 660px; width: 460px; height: 460px; border-radius: 50%; background: linear-gradient(180deg, #CEB1F1 0%, #FCFAFE 100%); opacity: 0.92;"></div>
+
+<div style="position: absolute; left: 56px; top: 56px; width: 900px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.26em; text-transform: uppercase; color: #7F33D9;">Minha conta · Financeiro</div>
+<h1 style="margin: 24px 0 0; font-size: 58px; line-height: 1; font-weight: 300; letter-spacing: -0.028em; color: #050111;">Assinatura e cobrança</h1>
+<div style="margin-top: 20px; font-size: 17px; font-weight: 400; color: #3C1867;">Gerencie seu plano, formas de pagamento e notas fiscais.</div>
+</div>
+
+<div style="position: absolute; left: 56px; top: 214px; width: 1582px; height: 1px; background: rgba(60,24,103,0.16);"></div>
+
+<div style="position: absolute; left: 56px; top: 260px; width: 1020px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #050111;">Cancelamento agendado</div>
+<h2 style="margin: 22px 0 0; font-size: 46px; line-height: 1.08; font-weight: 300; letter-spacing: -0.028em; color: #050111;">Seu acesso Business termina em<br><strong style="font-weight: 600;">12 de outubro de 2026</strong></h2>
+<p style="margin: 22px 0 0; font-size: 17px; font-weight: 400; color: #3C1867;">Até lá, todos os recursos continuam disponíveis. Reativando antes dessa data, nada é interrompido.</p>
+<button type="button" class="pri" style="margin-top: 34px; height: 56px; padding: 0 34px; border: 0; border-radius: 999px; background: #7F33D9; color: #ffffff; font-size: 16px; font-weight: 600; letter-spacing: -0.005em;">Reativar assinatura</button>
+</div>
+
+<div style="position: absolute; left: 1180px; top: 256px; width: 458px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #3C1867;">Seu plano</div>
+<div style="margin-top: 22px; display: flex; flex-direction: column;">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 15px 0; border-top: 1px solid rgba(60,24,103,0.16);">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #3C1867;">Plano</span>
+<span style="font-size: 19px; font-weight: 600; letter-spacing: -0.012em; color: #050111;">Business</span>
+</div>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 15px 0; border-top: 1px solid rgba(60,24,103,0.16);">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #3C1867;">Valor</span>
+<span style="font-size: 19px; font-weight: 600; letter-spacing: -0.012em; color: #050111;">€ 3.000,00 <span style="font-weight: 400; color: #3C1867;">/ano</span></span>
+</div>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 15px 0; border-top: 1px solid rgba(60,24,103,0.16);">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #3C1867;">Forma de pagamento</span>
+<span style="font-size: 19px; font-weight: 600; letter-spacing: -0.012em; color: #050111;">[•••• 0000]</span>
+</div>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 15px 0; border-top: 1px solid rgba(60,24,103,0.16); border-bottom: 1px solid rgba(60,24,103,0.16);">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #3C1867;">Acesso até</span>
+<span style="font-size: 19px; font-weight: 600; letter-spacing: -0.012em; color: #050111;">12 de outubro de 2026</span>
+</div>
+</div>
+<a class="lnk" href="#notas" style="display: inline-flex; align-items: center; gap: 9px; margin-top: 26px; font-size: 15px; font-weight: 600; color: #3C1867;">
+<span>Notas fiscais e histórico de cobranças</span>
+<span class="arw" style="display: flex;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"></path></svg></span>
+</a>
+</div>
+
+<div style="position: absolute; left: 56px; top: 596px; width: 1020px;">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #3C1867;">O que seu plano inclui</div>
+<div style="margin-top: 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 56px;">
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid rgba(60,24,103,0.14);">
+<span style="flex: none; width: 9px; height: 9px; border-radius: 999px; background: #7F33D9;"></span>
+<span style="font-size: 17px; font-weight: 500; color: #050111;">Benefício 1</span>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid rgba(60,24,103,0.14);">
+<span style="flex: none; width: 9px; height: 9px; border-radius: 999px; background: #7F33D9;"></span>
+<span style="font-size: 17px; font-weight: 500; color: #050111;">Benefício 2</span>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid rgba(60,24,103,0.14);">
+<span style="flex: none; width: 9px; height: 9px; border-radius: 999px; background: #7F33D9;"></span>
+<span style="font-size: 17px; font-weight: 500; color: #050111;">Benefício 3</span>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid rgba(60,24,103,0.14);">
+<span style="flex: none; width: 9px; height: 9px; border-radius: 999px; background: #7F33D9;"></span>
+<span style="font-size: 17px; font-weight: 500; color: #050111;">Benefício 4</span>
+</div>
+</div>
+</div>
+
+<div style="position: absolute; left: 56px; top: 792px; width: 1020px; border-top: 1px solid rgba(60,24,103,0.16); padding-top: 22px; display: flex; align-items: center;">
+<a class="lnk" href="#planos" style="display: inline-flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 600; color: #3C1867;">
+<span>Comparar planos</span>
+<span class="arw" style="display: flex;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"></path></svg></span>
+</a>
+<span style="width: 7px; height: 7px; margin: 0 22px; border-radius: 999px; background: #A977E5;" aria-hidden="true"></span>
+<a class="lnk" href="#suporte" style="display: inline-flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 600; color: #3C1867;">
+<span>Falar com o suporte financeiro</span>
+<span class="arw" style="display: flex;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"></path></svg></span>
+</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1694,"height":880}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -412,7 +412,7 @@ export default function DashboardLayout() {
                                 </div>
                                 <div className="hidden lg:block w-full border-b border-[#DADADA] mb-4"></div>
 
-                                <UserMenuContent />
+                                {UserMenuContent()}
                             </div>
                         </div>
                     </>
@@ -424,7 +424,7 @@ export default function DashboardLayout() {
                         <div className={`pb-4 mb-4 border-b border-gray-100 ${collapsed ? "flex justify-center px-0" : "px-6"}`}>
                             <img src={collapsed ? brandIcon : brand} alt="Brand" className={collapsed ? "h-7 w-auto object-contain" : "h-6 w-auto object-contain"} />
                         </div>
-                        <UserMenuContent />
+                        {UserMenuContent()}
                     </div>
                     <SidebarToggle collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} collapseLabel={t("menu.collapse", "Recolher menu")} expandLabel={t("menu.expand", "Expandir menu")} />
                 </div>

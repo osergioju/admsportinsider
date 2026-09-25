@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { withGradientArea } from "../../../../../utils/chartColor";
 import { useTranslation } from "../../../../../context/TranslationContext";
 import ReactECharts from "echarts-for-react";

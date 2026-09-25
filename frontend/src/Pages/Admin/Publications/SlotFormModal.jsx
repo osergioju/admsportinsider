@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import { api } from "../../../services/api";
 import { X, Loader2, Search, ExternalLink, RefreshCw } from "lucide-react";
 import RichTextEditor from "../../../components/uxui/RichTextEditor";
+import ClubChartFields, { IndicatorPicker } from "./ClubChartFields";
+import { BLOCK_TYPES_BY_PAGE } from "./EditorContext";
 
 const BLOCK_TYPES = [
   { value: "text", label: "Texto" },
   { value: "number", label: "Número (big number)" },
   { value: "ad", label: "Publicidade" },
   { value: "chart", label: "Gráfico" },
+  { value: "club_chart", label: "Gráfico do clube" },
+  { value: "federation_chart", label: "Gráfico da federação" },
+  { value: "league_chart", label: "Gráfico da competição" },
   { value: "external_link", label: "Link externo" },
   { value: "carousel", label: "Carrossel de Publicações" },
 ];
@@ -28,7 +33,7 @@ const btnPrimary =
 // Editor de conteúdo de UM bloco (folha da árvore de layout). Não fala com a
 // API pra salvar — quem persiste é o botão "Salvar" da página inteira em
 // PublicationsAdmin.jsx; aqui só devolvemos os campos do bloco pro `onSaved`.
-export default function SlotFormModal({ node, onSaved, onClose }) {
+export default function SlotFormModal({ node, pageKey = "home", onSaved, onClose }) {
   const [form, setForm] = useState({
     block_type: node.block_type || "text",
     status: node.status || "draft",
@@ -40,16 +45,30 @@ export default function SlotFormModal({ node, onSaved, onClose }) {
   const [charts, setCharts] = useState([]);
   const [banners, setBanners] = useState([]);
   const [fetchingPreview, setFetchingPreview] = useState(false);
+  const [catalog, setCatalog] = useState([]);
+  const allowedTypes = BLOCK_TYPES_BY_PAGE[pageKey] || BLOCK_TYPES_BY_PAGE.default;
+  const isEntityChart = ["club_chart", "federation_chart", "league_chart"].includes(form.block_type);
+  const needsCatalog = isEntityChart || (form.block_type === "number" && form.content.mode === "indicator");
 
   useEffect(() => {
     if (form.block_type === "chart" && !charts.length) {
-      api.get("/admin/charts").then((res) => setCharts(res.data));
+      // Página financeira do clube usa só gráficos "do clube da página"; as demais, só os de entidade fixa
+      const wantContext = pageKey === "clubs-finance";
+      api.get("/admin/charts").then((res) =>
+        setCharts((res.data || []).filter((c) => (c.source_params?.entity_mode === "context") === wantContext))
+      );
+    }
+    if (needsCatalog && !catalog.length) {
+      // federação: só indicadores que têm dado por ciclo; clube: catálogo completo
+      const catalogUrls = { federations: "/admin/federation-modules/catalog", competitions: "/admin/league-modules/catalog" };
+      const url = catalogUrls[pageKey] || "/admin/charts/data-catalog";
+      api.get(url).then((res) => setCatalog(res.data.indicators || []));
     }
     if (form.block_type === "ad" && !banners.length) {
       loadBanners();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.block_type]);
+  }, [form.block_type, needsCatalog]);
 
   function loadBanners() {
     api.get("/admin/banners").then((res) => setBanners(res.data.banners || []));
@@ -100,7 +119,7 @@ export default function SlotFormModal({ node, onSaved, onClose }) {
           <div>
             <label className={labelClass}>Tipo de bloco</label>
             <div className="grid grid-cols-3 gap-2">
-              {BLOCK_TYPES.map(({ value, label }) => (
+              {BLOCK_TYPES.filter(({ value }) => allowedTypes.includes(value) || value === form.block_type).map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
@@ -135,26 +154,80 @@ export default function SlotFormModal({ node, onSaved, onClose }) {
           )}
 
           {form.block_type === "number" && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Valor</label>
-                <input
-                  className={inputClass}
-                  placeholder="Ex: R$ 1,2 bi"
-                  value={form.content.value || ""}
-                  onChange={(e) => updateContent({ value: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Legenda curta</label>
-                <input
-                  className={inputClass}
-                  placeholder="Ex: Receita 2025"
-                  value={form.content.caption || ""}
-                  onChange={(e) => updateContent({ caption: e.target.value })}
-                />
-              </div>
+            <div className="space-y-4">
+              {["clubs", "federations", "competitions"].includes(pageKey) && (
+                <div className="grid grid-cols-2 gap-2">
+                  {[{ v: "static", l: "Valor digitado" }, { v: "indicator", l: { federations: "Indicador da federação", competitions: "Indicador da competição" }[pageKey] || "Indicador do clube" }].map(({ v, l }) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => updateContent({ mode: v })}
+                      className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${(form.content.mode || "static") === v ? "border-[#7F33D9] bg-purple-50 text-[#7F33D9]" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {form.content.mode === "indicator" ? (
+                <>
+                  <div>
+                    <label className={labelClass}>Indicador (último ano com dado)</label>
+                    <IndicatorPicker
+                      single
+                      catalog={catalog}
+                      selected={form.content.indicator_code ? [form.content.indicator_code] : []}
+                      onChange={([code]) => updateContent({ indicator_code: code })}
+                    />
+                    {form.content.indicator_code && (
+                      <p className="text-xs text-[#7F33D9] font-bold mt-1">Selecionado: {catalog.find((i) => i.code === form.content.indicator_code)?.name_pt || form.content.indicator_code}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Formato do valor</label>
+                    <select className={inputClass} value={form.content.value_format || "currency"} onChange={(e) => updateContent({ value_format: e.target.value })}>
+                      <option value="currency">Dinheiro (moeda da página)</option>
+                      <option value="number">Número (contagem, ex.: público)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Legenda (opcional)</label>
+                    <input
+                      className={inputClass}
+                      placeholder="Deixe vazio para usar 'Indicador · ano'"
+                      value={form.content.caption || ""}
+                      onChange={(e) => updateContent({ caption: e.target.value })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Valor</label>
+                    <input
+                      className={inputClass}
+                      placeholder="Ex: R$ 1,2 bi"
+                      value={form.content.value || ""}
+                      onChange={(e) => updateContent({ value: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Legenda curta</label>
+                    <input
+                      className={inputClass}
+                      placeholder="Ex: Receita 2025"
+                      value={form.content.caption || ""}
+                      onChange={(e) => updateContent({ caption: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {isEntityChart && (
+            <ClubChartFields content={form.content} updateContent={updateContent} catalog={catalog} pageKey={pageKey} />
           )}
 
           {form.block_type === "ad" && (
@@ -212,7 +285,11 @@ export default function SlotFormModal({ node, onSaved, onClose }) {
                 ))}
               </select>
               {!charts.length && (
-                <p className="text-xs text-gray-400 mt-1">Nenhum gráfico criado ainda. Crie um no Gerador de Gráficos.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {pageKey === "clubs-finance"
+                    ? 'Nenhum gráfico "Clube da página" criado ainda. Crie um no Gerador de Gráficos, escolhendo esse escopo.'
+                    : "Nenhum gráfico criado ainda. Crie um no Gerador de Gráficos."}
+                </p>
               )}
             </div>
           )}

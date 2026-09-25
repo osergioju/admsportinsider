@@ -2,6 +2,8 @@
   var currentScript = document.currentScript;
   var token = currentScript.getAttribute("data-chart-token");
   var targetId = currentScript.getAttribute("data-target");
+  // Só p/ gráfico "do clube da página": id do clube cujos dados o gráfico mostra
+  var clubId = currentScript.getAttribute("data-club-id");
   if (!token || !targetId) {
     console.error("[SportInsider embed] data-chart-token e data-target são obrigatórios");
     return;
@@ -36,12 +38,14 @@
       xAxis: { type: "category", data: years, axisLine: { show: false }, axisTick: { show: false } },
       yAxis: { type: "value", axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: "#eee" } } },
       series: indicators.map(function (ind, i) {
-        return {
+        var item = {
           name: ind.label,
-          type: chartType,
+          type: chartType === "stacked_bar" ? "bar" : chartType,
           data: years.map(function (y) { return (series[ind.code] || {})[y] ?? null; }),
           itemStyle: { color: COLORS[i % COLORS.length] },
         };
+        if (chartType === "stacked_bar") item.stack = "total";
+        return item;
       }),
     };
   }
@@ -106,7 +110,9 @@
     renderFooter(target);
   }
 
-  fetch(base + "/charts/" + encodeURIComponent(token) + "/data")
+  var dataUrl = base + "/charts/" + encodeURIComponent(token) + "/data" + (clubId ? "?club=" + encodeURIComponent(clubId) : "");
+
+  fetch(dataUrl)
     .then(function (res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();

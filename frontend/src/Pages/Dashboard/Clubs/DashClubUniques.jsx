@@ -2,7 +2,6 @@ import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 import { Landmark } from "lucide-react";
-import { useTranslation } from "../../../context/TranslationContext";
 import { clubLogo, handleCrestRetry } from "../../../utils/clubUrl";
 
 // Sections
@@ -17,6 +16,7 @@ import DebtsSection from "./components/debts/DebtsSection";
 import { AuthContext } from "../../../context/AuthContext"
 import PlanUpgradePrompt from "../Clubs/components/blockplan/PlanUpgradePrompt";
 import PageLoader from "../../../components/uxui/PageLoader";
+import EntityModules from "../../../components/publications/EntityModules";
 
 export default function DashClubUniques() {
   function hexToRgb(hex) {
@@ -29,7 +29,6 @@ export default function DashClubUniques() {
     return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
   }
 
-  const { t } = useTranslation();
   const { id } = useParams();
   const mainClubId = Number(id);
 
@@ -56,6 +55,21 @@ export default function DashClubUniques() {
   const [loading, setLoading] = useState(true);
   const [theClub, setTheClub] = useState(null);
 
+  // Página financeira MODULAR: se existe layout salvo (próprio do clube ou padrão) em Admin > Publicações
+  // > Clubes > Financeiro, a área de gráficos vem dele. Sem layout salvo (tree null) ou em caso de erro,
+  // vale a versão original desta página, sem nenhuma mudança. undefined = ainda carregando.
+  const [finLayout, setFinLayout] = useState(undefined);
+  const isModular = !!finLayout?.tree;
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get(`/dashboard/clubs/${id}/layout`, { params: { page: "finance" } })
+      .then((res) => !cancelled && setFinLayout(res.data))
+      .catch(() => !cancelled && setFinLayout({ tree: null }));
+    return () => { cancelled = true; };
+  }, [id]);
+
   /**
    * apa id → nome do clube (global, reaproveitado)
    */
@@ -64,7 +78,7 @@ export default function DashClubUniques() {
 
   const [displayCurrency, setDisplayCurrency] = useState(user?.currency_code ?? "BRL");
   const [currencies, setCurrencies] = useState([]);
-  const [savingCurrency, setSavingCurrency] = useState(false);
+  const [, setSavingCurrency] = useState(false);
 
   const handleCurrencyChange = async (code) => {
     setDisplayCurrency(code);
@@ -106,18 +120,6 @@ export default function DashClubUniques() {
   });
 
 
-  // dados fixos (sem comparação)
-  const [revenuesBreakdown, setRevenuesBreakdown] = useState(null);
-  const [payrollCosts, setPayrollCosts] = useState(null);
-  const [costsBreakdown, setCostsBreakdown] = useState(null);
-  const [netResult, setNetResult] = useState(null);
-  const [netEvolution, setNetEvolution] = useState(null);
-  const [debtsBreakdown, setDebtsBreakdown] = useState(null);
-  const [debtsEvolution, setDebtsEvolution] = useState(null);
-  const [indicators, setIndicators] = useState(null);
-  const [availableYears, setAvailableYears] = useState(null);
-
-
   /**
    * clubes por gráfico (sempre inclui o principal)
    */
@@ -134,33 +136,23 @@ export default function DashClubUniques() {
    * load inicial (dados fixos do clube)
    */
   useEffect(() => {
+    if (finLayout === undefined) return; // ainda descobrindo se a página é modular
     async function loadDashboard() {
       try {
         setLoading(true);
 
-        const [
-          theclubData,
-          revenuesBreakdownRes,
-          payrollCostsRes,
-          costsBreakdownRes,
-          netResultRes,
-          netResultEvolutionRes,
-          debtsBreakdownRes,
-          debtsEvolutionRes,
-          indicatorsRes,
-          yearsRes,
-          currenciesRes,
-        ] = await Promise.all([
+        if (isModular) {
+          // Modular: só o cabeçalho precisa do clube; cada gráfico busca o próprio dado
+          const theclubData = await api.get(`/dashboard/clubs/${id}/info`);
+          setTheClub(theclubData.data);
+          setClubMap({ [mainClubId]: theclubData.data.club.name });
+          return;
+        }
+
+        // Só o que a tela usa: o clube (cabeçalho/cores) e as moedas do seletor. Os dados de cada
+        // gráfico são buscados pelo próprio gráfico (fetchChartData), com moeda e comparação.
+        const [theclubData, currenciesRes] = await Promise.all([
           api.get(`/dashboard/clubs/${id}/info`),
-          api.get(`/dashboard/clubs/${id}/financials/revenues/breakdown`),
-          api.get(`/dashboard/clubs/${id}/financials/costs/payroll`),
-          api.get(`/dashboard/clubs/${id}/financials/costs/breakdown`),
-          api.get(`/dashboard/clubs/${id}/financials/net-result`),
-          api.get(`/dashboard/clubs/${id}/financials/net-result/evolution`),
-          api.get(`/dashboard/clubs/${id}/financials/debts/breakdown`),
-          api.get(`/dashboard/clubs/${id}/financials/debts/evolution`),
-          api.get(`/dashboard/clubs/${id}/financials/indicators`),
-          api.get(`/dashboard/clubs/${id}/financials/available-years`),
           api.get(`/dashboard/clubs/${id}/financials/currencies`),
         ]);
 
@@ -178,15 +170,6 @@ export default function DashClubUniques() {
           }
         })
 
-        setRevenuesBreakdown(revenuesBreakdownRes.data);
-        setPayrollCosts(payrollCostsRes.data);
-        setCostsBreakdown(costsBreakdownRes.data);
-        setNetResult(netResultRes.data);
-        setNetEvolution(netResultEvolutionRes.data);
-        setDebtsBreakdown(debtsBreakdownRes.data);
-        setDebtsEvolution(debtsEvolutionRes.data);
-        setIndicators(indicatorsRes.data);
-        setAvailableYears(yearsRes.data);
         setCurrencies(currenciesRes.data || []);
       } catch (err) {
         console.error("Erro ao carregar dashboard:", err);
@@ -196,7 +179,7 @@ export default function DashClubUniques() {
     }
 
     loadDashboard();
-  }, [id, mainClubId]);
+  }, [id, mainClubId, finLayout, isModular]);
 
   /**
    * fetch genérico por gráfico
@@ -240,7 +223,7 @@ export default function DashClubUniques() {
    * force=true garante que dados existentes também sejam re-buscados com a nova moeda.
    */
   useEffect(() => {
-    if (!mainClubId) return;
+    if (!mainClubId || finLayout === undefined || isModular) return;
 
     const builders = {
       revenue:         (id) => `/dashboard/clubs/${id}/financials/revenues?to=${displayCurrency}`,
@@ -265,19 +248,15 @@ export default function DashClubUniques() {
     chartComparisons.netEvolution,
     chartComparisons.debts,
     chartComparisons.revenueBreakdown,
+    // Precisam estar aqui: o efeito só pode buscar depois de saber se a página é modular
+    // (finLayout chega depois do 1º render). Sem isso os gráficos nunca eram buscados.
+    finLayout,
+    isModular,
   ]);
 
   if (loading || !theClub) {
     return <PageLoader />;
   }
-
-  const foundedAt = theClub?.club?.founded_at
-    ? theClub.club.founded_at
-      .split("T")[0]
-      .split("-")
-      .reverse()
-      .join("/")
-    : "—";
 
 
   // Cores 
@@ -383,7 +362,10 @@ export default function DashClubUniques() {
         </div>
       </div>
 
-      {/* GRÁFICOS */}
+      {/* GRÁFICOS — modular (layout salvo no admin) ou a versão original */}
+      {isModular ? (
+        <EntityModules kind="club-finance" entityKey={mainClubId} entity={theClub.club} initialLayout={finLayout} className="mb-4" />
+      ) : (
       <div className="max-w-full w-full overflow-hidden relative ">
         <div className="max-w-full w-full grid lg:grid-cols-2 gap-4 mb-4">
           {!hasAccess("revenue", planID) ? (
@@ -607,6 +589,7 @@ export default function DashClubUniques() {
 
         </div>
       </div>
+      )}
     </div>
   );
 }

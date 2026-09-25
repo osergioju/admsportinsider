@@ -108,7 +108,7 @@ export default function FaqAdmin() {
         resetForm();
         loadFaqs();
       }
-    } catch (error) {
+    } catch {
       alert("Erro ao salvar pergunta");
     } finally {
       setSaving(false);
@@ -140,7 +140,7 @@ export default function FaqAdmin() {
       const remaining = faqs.filter(f => f.id !== id);
       await syncServerOrder(remaining);
       loadFaqs();
-    } catch (error) {
+    } catch {
       alert("Erro ao excluir");
     }
   }

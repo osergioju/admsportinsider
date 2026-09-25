@@ -104,7 +104,7 @@ export default function GestaoLigas() {
                 setSuccess(true);
                 setTimeout(() => { setModal(false); setSuccess(false); setLoading(false); loadData(); }, 700);
             } else { setLoading(false); alert("Erro inesperado."); }
-        } catch (err) { alert("Erro ao cadastrar"); setLoading(false); }
+        } catch { alert("Erro ao cadastrar"); setLoading(false); }
     };
 
     const updateLeague = async () => {
@@ -113,13 +113,13 @@ export default function GestaoLigas() {
             await api.put(`/admin/leagues/${currentLeague.id_league}/update`, newLeague);
             setSuccess(true);
             setTimeout(() => { setModal(false); setSuccess(false); setLoading(false); loadData(); }, 700);
-        } catch (err) { alert("Erro ao atualizar"); setLoading(false); }
+        } catch { alert("Erro ao atualizar"); setLoading(false); }
     };
 
     const disableLeague = async (id) => {
         if (!window.confirm("Desativar esta competição?")) return;
         setLoading(true);
-        try { await api.delete(`/admin/disable-league/${id}`); setModal(false); setLoading(false); loadData(); } catch (err) { alert("Erro"); setLoading(false); }
+        try { await api.delete(`/admin/disable-league/${id}`); setModal(false); setLoading(false); loadData(); } catch { alert("Erro"); setLoading(false); }
     };
 
     // Estilos

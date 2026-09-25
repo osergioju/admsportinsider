@@ -11,20 +11,16 @@ export default function VerifyEmail() {
     const navigate = useNavigate();
 
     const storedEmail = localStorage.getItem("pending_email_verification");
-    const [email, setEmail] = useState(storedEmail || "");
+    const [email] = useState(storedEmail || "");
 
     const token = searchParams.get("token");
 
-    const [status, setStatus] = useState("loading");
-    const [message, setMessage] = useState("");
+    const [status, setStatus] = useState(token ? "loading" : "error");
+    const [message, setMessage] = useState(token ? "" : "Token não informado.");
     const [resendFeedback, setResendFeedback] = useState({ type: "", text: "" });
 
     useEffect(() => {
-        if (!token) {
-            setStatus("error");
-            setMessage("Token não informado.");
-            return;
-        }
+        if (!token) return; // estado inicial já é "error / Token não informado."
 
         async function verify() {
             try {

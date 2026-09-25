@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../../services/api";
-import { Search, Loader2, X, LineChart, BarChart3, Gauge } from "lucide-react";
+import { Search, Loader2, X, LineChart, BarChart3, Gauge, Layers } from "lucide-react";
 import ChartPreview from "./ChartPreview";
 
-const SCOPE_LABELS = { club: "Clube", league: "Liga/Competição", federation: "Federação" };
+const SCOPE_LABELS = { club_context: "Clube da página (contextual)", club: "Clube", league: "Liga/Competição", federation: "Federação" };
+// Opções do gráfico contextual (o admin liga/desliga cada uma)
+const FILTER_OPTIONS = [
+  { key: "compare", label: "Comparar com outros clubes", hint: "Campo de busca para adicionar até 4 clubes ao gráfico." },
+  { key: "period", label: "Filtro de período", hint: "Seleção de ano inicial e final." },
+  { key: "currency", label: "Seletor de moeda", hint: "Converte pela cotação. Desligado: moeda nativa do clube." },
+  { key: "table", label: "Tabela abaixo do gráfico", hint: "Valores por ano em tabela." },
+];
 const CHART_TYPES = [
   { value: "line", label: "Linha", icon: LineChart },
   { value: "bar", label: "Barras verticais", icon: BarChart3 },
+  { value: "stacked_bar", label: "Barras empilhadas", icon: Layers },
   { value: "gauge", label: "Velocímetro", icon: Gauge },
 ];
 
@@ -26,6 +34,8 @@ function emptyForm() {
     indicator_codes: [],
     target_max: "",
     is_embeddable: false,
+    filters: { compare: false, period: false, currency: false, table: false },
+    allowed_plan_ids: [], // vazio = todos os planos
   };
 }
 
@@ -40,6 +50,11 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [plans, setPlans] = useState([]);
+
+  useEffect(() => {
+    api.get("/admin/plans").then((res) => setPlans((res.data.plans || []).filter((p) => p.active))).catch(() => setPlans([]));
+  }, []);
 
   useEffect(() => {
     api.get("/admin/charts/data-catalog").then((res) => setCatalog(res.data.indicators || []));
@@ -57,11 +72,13 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
       title: editingChart.title,
       description: editingChart.description || "",
       chart_type: editingChart.chart_type,
-      scope: params.scope || "club",
+      scope: params.entity_mode === "context" ? "club_context" : params.scope || "club",
       entity: params.entity_id ? { id: params.entity_id, name: params.entity_name || `#${params.entity_id}` } : null,
       indicator_codes: params.indicator_codes || [],
       target_max: params.target_max || "",
       is_embeddable: editingChart.is_embeddable,
+      filters: { compare: false, period: false, currency: false, table: false, ...(editingChart.filters_enabled || {}) },
+      allowed_plan_ids: editingChart.allowed_plan_ids || [],
     });
     setEntityQuery(params.entity_name || "");
   }, [editingChart]);
@@ -75,7 +92,7 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
     setSearchingEntity(true);
     const handle = setTimeout(async () => {
       try {
-        const res = await api.get("/admin/charts/entities", { params: { scope: form.scope, q: entityQuery } });
+        const res = await api.get("/admin/charts/entities", { params: { scope: form.scope === "club_context" ? "club" : form.scope, q: entityQuery } });
         setEntityResults(res.data.entities || []);
       } catch {
         setEntityResults([]);
@@ -114,8 +131,19 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
     }));
   }
 
-  const sourceParams = useMemo(() => {
-    if (!form.entity || !form.indicator_codes.length) return null;
+  const isContext = form.scope === "club_context";
+
+  // O que é SALVO: no contextual não há entidade fixa (o clube vem da página onde o gráfico aparece).
+  const savedParams = useMemo(() => {
+    if (!form.indicator_codes.length) return null;
+    if (isContext) {
+      return {
+        scope: "club",
+        entity_mode: "context",
+        indicator_codes: form.indicator_codes,
+      };
+    }
+    if (!form.entity) return null;
     return {
       scope: form.scope,
       entity_id: form.entity.id,
@@ -123,7 +151,25 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
       indicator_codes: form.indicator_codes,
       ...(form.chart_type === "gauge" && form.target_max ? { target_max: Number(form.target_max) } : {}),
     };
-  }, [form.scope, form.entity, form.indicator_codes, form.chart_type, form.target_max]);
+  }, [isContext, form.scope, form.entity, form.indicator_codes, form.chart_type, form.target_max]);
+
+  // O que vai pro PREVIEW: no contextual usa o clube escolhido só pra pré-visualizar
+  const sourceParams = useMemo(() => {
+    if (!savedParams) return null;
+    if (!isContext) return savedParams;
+    return form.entity ? { scope: "club", entity_id: form.entity.id, entity_name: form.entity.name, indicator_codes: form.indicator_codes } : null;
+  }, [savedParams, isContext, form.entity, form.indicator_codes]);
+
+  function toggleFilter(key) {
+    setForm((f) => ({ ...f, filters: { ...f.filters, [key]: !f.filters[key] } }));
+  }
+
+  function togglePlan(id) {
+    setForm((f) => ({
+      ...f,
+      allowed_plan_ids: f.allowed_plan_ids.includes(id) ? f.allowed_plan_ids.filter((p) => p !== id) : [...f.allowed_plan_ids, id],
+    }));
+  }
 
   async function handlePreview() {
     if (!sourceParams) return;
@@ -142,13 +188,15 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
 
   async function handleSave(e) {
     e.preventDefault();
-    if (!sourceParams) return;
+    if (!savedParams) return;
     setSaving(true);
     const payload = {
       title: form.title,
       description: form.description || null,
       chart_type: form.chart_type,
-      source_params: sourceParams,
+      source_params: savedParams,
+      filters_enabled: isContext ? form.filters : {},
+      allowed_plan_ids: form.allowed_plan_ids,
       is_embeddable: form.is_embeddable,
     };
     try {
@@ -208,7 +256,7 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
 
         <div>
           <label className={labelClass}>Tipo de gráfico</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {CHART_TYPES.map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
@@ -233,7 +281,10 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
             <select
               className={inputClass}
               value={form.scope}
-              onChange={(e) => setForm((f) => ({ ...f, scope: e.target.value, entity: null }))}
+              onChange={(e) => {
+                setEntityQuery("");
+                setForm((f) => ({ ...f, scope: e.target.value, entity: null }));
+              }}
             >
               {Object.entries(SCOPE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -243,7 +294,9 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
             </select>
           </div>
           <div className="relative">
-            <label className={labelClass}>{SCOPE_LABELS[form.scope]}</label>
+            <label className={labelClass}>
+              {isContext ? "Clube p/ pré-visualizar" : SCOPE_LABELS[form.scope]}
+            </label>
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -275,6 +328,25 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
             )}
           </div>
         </div>
+
+        {isContext && (
+          <div className="rounded-xl bg-purple-50/60 border border-purple-100 p-4 space-y-3">
+            <p className="text-xs text-gray-600">
+              <b>Gráfico do clube da página:</b> não fica preso a um clube. Ao colocá-lo na página financeira, ele mostra
+              os dados do clube de quem está vendo. O clube ao lado serve só para pré-visualizar.
+            </p>
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Recursos do gráfico</p>
+            {FILTER_OPTIONS.map((opt) => (
+              <label key={opt.key} className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={!!form.filters[opt.key]} onChange={() => toggleFilter(opt.key)} className="mt-0.5 accent-[#7F33D9]" />
+                <span>
+                  {opt.label}
+                  <span className="block text-xs text-gray-400">{opt.hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
 
         <div>
           <label className={labelClass}>
@@ -320,6 +392,25 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
           </div>
         )}
 
+        <div className="rounded-xl border border-gray-200 p-4 space-y-2">
+          <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Quem pode ver este gráfico</p>
+          <p className="text-xs text-gray-400">
+            Marque os planos com acesso. Sem nenhum marcado, <b>todos</b> os planos veem. Quem não tem acesso vê um aviso
+            para contratar o plano.
+          </p>
+          {plans.length === 0 ? (
+            <p className="text-xs text-gray-400">Carregando planos...</p>
+          ) : (
+            plans.map((plan) => (
+              <label key={plan.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={form.allowed_plan_ids.includes(plan.id)} onChange={() => togglePlan(plan.id)} className="accent-[#7F33D9]" />
+                {plan.name}
+                <span className="text-xs text-gray-400">{Number(plan.price) === 0 ? "gratuito" : "pago"}</span>
+              </label>
+            ))
+          )}
+        </div>
+
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
             type="checkbox"
@@ -339,7 +430,7 @@ export default function ChartBuilder({ editingChart, onSaved, onCancel }) {
           >
             {previewLoading ? <Loader2 size={16} className="animate-spin" /> : "Pré-visualizar"}
           </button>
-          <button type="submit" disabled={!sourceParams || saving} className={`${btnPrimary} flex-1`}>
+          <button type="submit" disabled={!savedParams || saving} className={`${btnPrimary} flex-1`}>
             {saving ? <Loader2 size={18} className="animate-spin" /> : editingChart ? "Atualizar" : "Criar gráfico"}
           </button>
         </div>

@@ -5,6 +5,7 @@ import AdBlock from "./blocks/AdBlock";
 import ChartBlock from "./blocks/ChartBlock";
 import ExternalLinkCard from "./blocks/ExternalLinkCard";
 import PublicationsCarousel from "./blocks/PublicationsCarousel";
+import ClubChartBlock from "./blocks/ClubChartBlock";
 
 const BLOCK_COMPONENTS = {
   text: TextBlock,
@@ -13,6 +14,10 @@ const BLOCK_COMPONENTS = {
   chart: ChartBlock,
   external_link: ExternalLinkCard,
   carousel: PublicationsCarousel,
+  club_chart: ClubChartBlock,
+  // federação e competição usam o mesmo módulo: muda só a fonte dos dados (ciclos), que vem do contexto
+  federation_chart: ClubChartBlock,
+  league_chart: ClubChartBlock,
 };
 
 // Espelho read-only de LayoutNode.jsx (admin) — renderiza a árvore de layout

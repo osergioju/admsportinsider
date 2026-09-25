@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api";
+import { formatPlanPrice, intervalSuffix } from "../../../utils/planBilling";
 import {
     Plus,
     ChevronRight,
     CreditCard,
     Trash2,
+    Ban,
     Loader2,
     CheckCircle2,
     AlertCircle,
@@ -23,6 +25,7 @@ export default function GestaoPlanos() {
     // Estados para o Modal de Confirmação
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [planToDisable, setPlanToDisable] = useState(null);
+    const [modalMode, setModalMode] = useState('disable'); // 'disable' | 'delete'
     const [processing, setProcessing] = useState(false);
     const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: '' }
 
@@ -46,7 +49,8 @@ export default function GestaoPlanos() {
     }, [page]);
 
     // Função para abrir modal de confirmação
-    function openDisableModal(plan) {
+    function openDisableModal(plan, mode = 'disable') {
+        setModalMode(mode);
         setPlanToDisable(plan);
         setFeedback(null);
         setDeleteModalOpen(true);
@@ -58,9 +62,10 @@ export default function GestaoPlanos() {
         setProcessing(true);
         setFeedback(null);
 
+        const isDelete = modalMode === 'delete';
         try {
-            await api.delete(`/admin/plans/${planToDisable.id}`);
-            setFeedback({ type: 'success', text: 'Plano desativado com sucesso!' });
+            await api.delete(`/admin/plans/${planToDisable.id}${isDelete ? '/permanent' : ''}`);
+            setFeedback({ type: 'success', text: isDelete ? 'Plano excluído com sucesso!' : 'Plano desativado com sucesso!' });
 
             await loadPlans();
 
@@ -72,7 +77,8 @@ export default function GestaoPlanos() {
             }, 1500);
 
         } catch (error) {
-            setFeedback({ type: 'error', text: 'Erro ao desativar o plano.' });
+            // Backend explica o motivo (ex.: plano com usuários vinculados)
+            setFeedback({ type: 'error', text: error.response?.data?.message || (isDelete ? 'Erro ao excluir o plano.' : 'Erro ao desativar o plano.') });
         } finally {
             setProcessing(false);
         }
@@ -151,10 +157,15 @@ export default function GestaoPlanos() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm text-gray-600 font-medium">
-                                                    R$ {Number(plan.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    {formatPlanPrice(plan)}{Number(plan.price) > 0 && <span className="text-gray-400 font-normal">{intervalSuffix(plan)}</span>}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
+                                                {plan.is_featured && (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 mr-2 rounded-full text-xs font-bold bg-purple-50 text-[#7F33D9] border border-purple-100">
+                                                        Recomendado
+                                                    </span>
+                                                )}
                                                 {plan.active ? (
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
                                                         Ativo
@@ -170,10 +181,22 @@ export default function GestaoPlanos() {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            openDisableModal(plan);
+                                                            openDisableModal(plan, 'disable');
+                                                        }}
+                                                        className="text-gray-400 hover:text-amber-600 p-1.5 hover:bg-amber-50 rounded-lg transition-all"
+                                                        title="Desativar plano"
+                                                        aria-label={`Desativar plano ${plan.name}`}
+                                                    >
+                                                        <Ban size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openDisableModal(plan, 'delete');
                                                         }}
                                                         className="text-gray-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-all"
-                                                        title="Desativar plano"
+                                                        title="Excluir plano"
+                                                        aria-label={`Excluir plano ${plan.name}`}
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
@@ -222,14 +245,16 @@ export default function GestaoPlanos() {
                         <div className="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                             <AlertTriangle size={28} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Desativar plano?</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{modalMode === 'delete' ? 'Excluir plano?' : 'Desativar plano?'}</h3>
                         <p className="text-sm text-gray-500 mb-6">
-                            Você tem certeza que deseja desativar o plano <strong>"{planToDisable.name}"</strong>?
+                            {modalMode === 'delete'
+                                ? <>Você tem certeza que deseja excluir <strong>"{planToDisable.name}"</strong>? Essa ação é <strong>permanente</strong> e não pode ser desfeita.</>
+                                : <>Você tem certeza que deseja desativar o plano <strong>"{planToDisable.name}"</strong>?</>}
                         </p>
 
                         <FeedbackMessage msg={feedback} />
 
-                        {!feedback && (
+                        {feedback?.type !== 'success' && (
                             <div className="flex gap-3 justify-center">
                                 <button
                                     onClick={() => setDeleteModalOpen(false)}
@@ -244,7 +269,7 @@ export default function GestaoPlanos() {
                                     disabled={processing}
                                 >
                                     {processing && <Loader2 size={14} className="animate-spin" />}
-                                    Sim, desativar
+                                    {modalMode === 'delete' ? 'Sim, excluir' : 'Sim, desativar'}
                                 </button>
                             </div>
                         )}

@@ -5,9 +5,6 @@ import {
     ChevronLeft, ChevronRight, User
 } from "lucide-react";
 
-const inputClass =
-    "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#7F33D9] focus:ring-1 focus:ring-[#7F33D9] transition-all placeholder:text-gray-400";
-
 const ITEMS_PER_PAGE = 30;
 
 // ── Linha de jogador ────────────────────────────────────────────────────────

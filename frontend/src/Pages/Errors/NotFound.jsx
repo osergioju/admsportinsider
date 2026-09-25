@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const BALLS = [
@@ -14,7 +14,6 @@ const BALLS = [
 
 export default function NotFound() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [count, setCount] = useState(5);
 
   useEffect(() => {

@@ -16,13 +16,6 @@ function hexToRgb(hex) {
     return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-/* Valores da planilha estão em MILHÕES de USD */
-function fmtMi(v, prefix = "") {
-    if (v == null) return "—";
-    if (Math.abs(v) >= 1000) return `${prefix}${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} bi`;
-    return `${prefix}${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`;
-}
-
 /* Quadrinhos da tabela: apenas o número, sem "mi" */
 function fmtNumOnly(v) {
     if (v == null) return "—";

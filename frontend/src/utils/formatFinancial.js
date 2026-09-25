@@ -99,7 +99,7 @@ export function formatFinancial(valueInMillions, currencyCode = "", locale = "pt
 
   const symbol = getCurrencySymbol(currencyCode, intlLocale);
   const sign = isNegative ? "-" : "";
-  const prefix = symbol ? `${symbol} ` : ""; // non-breaking space
+  const prefix = symbol ? `${symbol}\u00a0` : ""; // non-breaking space
 
   return `${sign}${prefix}${formatted} ${unit}`;
 }

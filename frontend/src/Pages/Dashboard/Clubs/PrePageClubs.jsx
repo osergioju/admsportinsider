@@ -2,33 +2,15 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../../../services/api";
 import { useTranslation } from "../../../context/TranslationContext";
-import { formatFinancial } from "../../../utils/formatFinancial";
 import { clubLogo, handleCrestRetry } from "../../../utils/clubUrl";
 import { getStadiumSlug } from "../../../data/stadiums";
 import {
     TrendingUp,
     Trophy, Users, EyeOff,
 } from "lucide-react";
-import RevenueLineChart from "./components/revenue/RevenueLineChart";
-import NetResultLineChart from "./components/netResult/NetResultLineChart";
-import DebtsBreakdownBarChart from "./components/debts/DebtsBreakdownBarChart";
 import PageLoader from "../../../components/uxui/PageLoader";
 import ClubHeaderO from "./components/header/ClubHeaderO";
-
-function NoFinancialData({ title }) {
-    const { t } = useTranslation();
-    return (
-        <div className="flex flex-col items-center justify-center py-14 text-center">
-            {title && <p className="text-base font-semibold text-gray-500 mb-3">{title}</p>}
-            <p className="font-semibold text-[#0A0A0A] text-lg">
-                {t("finance.no_data_title", "Ah, não!")}
-            </p>
-            <p className="text-sm text-gray-400 max-w-xs mt-2">
-                {t("finance.no_data_desc", "Esses dados não estão disponíveis no documento publicado pelo clube.")}
-            </p>
-        </div>
-    );
-}
+import ClubModules from "../../../components/publications/ClubModules";
 
 /* ─── Utilitários de cor ───────────────────────────────────────── */
 
@@ -80,7 +62,6 @@ export default function PrePageClubs({ initialData } = {}) {
     const { id } = useParams();
 
     const [theClub, setTheClub] = useState(initialData?.theClub ?? null);
-    const [financials, setFinancials] = useState(initialData?.financials ?? null);
     const [loading, setLoading] = useState(!initialData);
 
     useEffect(() => { injectStyles(); }, []);
@@ -88,87 +69,25 @@ export default function PrePageClubs({ initialData } = {}) {
     useEffect(() => {
         if (initialData) return;
 
-        async function loadDashboard() {
+        async function loadClub() {
             try {
                 setLoading(true);
-                const [res, revRes, netRes, netEvoRes, debtEvRes, debtBrkRes] = await Promise.all([
-                    api.get(`/dashboard/clubs/${id}/info`),
-                    api.get(`/dashboard/clubs/${id}/financials/revenues`),
-                    api.get(`/dashboard/clubs/${id}/financials/net-result`),
-                    api.get(`/dashboard/clubs/${id}/financials/net-result/evolution`),
-                    api.get(`/dashboard/clubs/${id}/financials/debts/evolution`),
-                    api.get(`/dashboard/clubs/${id}/financials/debts/breakdown`),
-                ]);
+                const res = await api.get(`/dashboard/clubs/${id}/info`);
                 setTheClub(res.data);
-                setFinancials({
-                    revenues: revRes.data?.data || [],
-                    netResult: netRes.data?.data || [],
-                    netEvolution: netEvoRes.data?.data || [],
-                    debts: debtEvRes.data?.data || [],
-                    debtsBreakdown: debtBrkRes.data?.data || [],
-                    currency: revRes.data?.fromCurrency || "BRL",
-                });
             } catch (err) {
-                console.error("Erro ao carregar dashboard:", err);
+                console.error("Erro ao carregar clube:", err);
             } finally {
                 setLoading(false);
             }
         }
-        loadDashboard();
+        loadClub();
     }, [id]);
 
     if (loading || !theClub) return <PageLoader />;
 
-    /* ─── Helpers financeiros ──────────────────────────────────── */
-    function formatMoney(value, currency) {
-        return formatFinancial(value, currency, "pt-BR");
-    }
-
-    function getLatestTwo(arr) {
-        const sorted = [...arr]
-            .filter(r => r.value != null && Number(r.value) !== 0)
-            .sort((a, b) => b.year - a.year);
-        return [sorted[0] || null, sorted[1] || null];
-    }
-
-    function calcPct(latest, prev) {
-        if (!prev || prev === 0) return null;
-        return ((latest - prev) / Math.abs(prev)) * 100;
-    }
-
-    const fCurrency = financials?.currency || "BRL";
-
-    // Receita
-    const revData = (financials?.revenues || []).filter(r => r.code === "revenue");
-    const [latestRev, prevRev] = getLatestTwo(revData);
-    const revPct = latestRev && prevRev ? calcPct(latestRev.value, prevRev.value) : null;
-
-    // Dívida
-    const [latestDebt, prevDebt] = getLatestTwo(financials?.debts || []);
-    const debtPct = latestDebt && prevDebt ? calcPct(latestDebt.value, prevDebt.value) : null;
-
-    // Resultado líquido
-    const netData = (financials?.netResult || []).filter(r => r.code === "net_income");
-    const [latestNet, prevNet] = getLatestTwo(netData);
-
     const isHidden = theClub.club.hidden === true;
     const { primary_color, secondary_color, tertiary_color } = theClub.club;
-    const [c1, c2, c3] = resolveColors(primary_color, secondary_color, tertiary_color);
-
-    // Dados para os gráficos (mesmo formato do DashClubUniques)
-    const chartClubId = Number(id);
-    const clubMapLocal = { [chartClubId]: theClub.club.name };
-    const clubColorMapLocal = { [chartClubId]: { color_one: c1, color_two: c2 } };
-
-    // Gráficos sempre na moeda nativa do clube: sobrescreve converted_value com value
-    const toNative = (arr) => (arr || []).filter(item => item.value != null && Number(item.value) !== 0).map(item => ({ ...item, converted_value: item.value }));
-    const revenueChartData = { [chartClubId]: toNative(financials?.revenues) };
-    const netChartData = { [chartClubId]: toNative(financials?.netEvolution) };
-    const debtsChartData = { [chartClubId]: toNative(financials?.debtsBreakdown) };
-
-    const backgroundLine = `
-        linear-gradient(to bottom, ${c1}, ${c3}, ${c2}, transparent)
-    `.trim();
+    const [c1, c2] = resolveColors(primary_color, secondary_color, tertiary_color);
 
     const clubName = theClub.club.name;
 
@@ -244,99 +163,8 @@ export default function PrePageClubs({ initialData } = {}) {
                 <ClubHeaderO {...headerProps} />
             </div>
 
-            {/* ── Card Receita ─────────────────────────────────── */}
-            <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                {!latestRev ? <NoFinancialData title={t("clubs.revenues", "Receitas")} /> : (
-                    <div className="flex flex-wrap w-full items-center">
-                        <div className="w-full lg:w-1/2">
-                            <div className="w-full">
-                                <RevenueLineChart
-                                    data={revenueChartData}
-                                    clubesSelecionados={[]}
-                                    clubMap={clubMapLocal}
-                                    mainClubId={chartClubId}
-                                    clubColorMap={clubColorMapLocal}
-                                />
-                            </div>
-                        </div>
-                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                            <h2
-                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
-                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                                {t("clubs.revenues", "Receitas")} {` em ${latestRev.year}`}
-                            </h2>
-                            <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                className="text-lg font-light lg:text-xl xl:text-2xl">
-                                {`O ${clubName} registrou receita de ${formatMoney(latestRev.value, fCurrency)} em ${latestRev.year}${revPct != null ? `, ${revPct >= 0 ? "aumento" : "redução"} de ${Math.abs(revPct).toFixed(1)}% em relação a ${prevRev.year}` : ""}.`}
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* ── Card Dívidas ──────────────────────────────────── */}
-            <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                {!latestDebt ? <NoFinancialData title={t("clubs.debts", "Dívidas")} /> : (
-                    <div className="flex flex-wrap w-full items-center">
-                        <div className="w-full lg:w-1/2">
-                            <div className="w-full">
-                                <DebtsBreakdownBarChart
-                                    data={debtsChartData}
-                                    clubesSelecionados={[]}
-                                    clubMap={clubMapLocal}
-                                    mainClubId={chartClubId}
-                                />
-                            </div>
-                        </div>
-                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                            <h2
-                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
-                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                                {t("clubs.debts", "Dívidas")} {` em ${latestDebt.year}`}
-                            </h2>
-                            <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                className="text-lg font-light lg:text-xl xl:text-2xl">
-                                {`O ${clubName} encerrou ${latestDebt.year} com dívida líquida de ${formatMoney(latestDebt.value, fCurrency)}${debtPct != null ? `, ${debtPct >= 0 ? "aumento" : "redução"} de ${Math.abs(debtPct).toFixed(1)}% em relação a ${prevDebt.year}` : ""}.`}
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* ── Card Resultado ────────────────────────────────── */}
-            <div className="rounded-2xl mb-4 w-full px-6 py-4 xl:py-8 lg:px-11 bg-white">
-                {!latestNet ? <NoFinancialData title={t("clubs.result", "Resultado")} /> : (
-                    <div className="flex flex-wrap w-full items-center">
-                        <div className="w-full lg:w-1/2">
-                            <div className="w-full">
-                                <NetResultLineChart
-                                    data={netChartData}
-                                    clubesSelecionados={[]}
-                                    clubMap={clubMapLocal}
-                                    mainClubId={chartClubId}
-                                    clubColorMap={clubColorMapLocal}
-                                />
-                            </div>
-                        </div>
-                        <div className="w-full lg:w-1/2 pl-0 pt-8 lg:pt-0 lg:pl-10">
-                            <h2
-                                style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                className="mb-4 text-3xl font-light lg:text-4xl relative pl-2 lg:pl-6">
-                                <div className="top-0 left-0 w-1 h-full absolute rounded-full" style={{ background: backgroundLine }} />
-                                {t("clubs.result", "Resultado")} {` em ${latestNet.year}`}
-                            </h2>
-                            <p style={{ background: "linear-gradient(99deg, #0a0a0a, #444, #888)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                                className="text-lg font-light lg:text-xl xl:text-2xl">
-                                {`O ${clubName} teve ${latestNet.value >= 0 ? "lucro" : "prejuízo"} de ${formatMoney(Math.abs(latestNet.value), fCurrency)} em ${latestNet.year}${prevNet ? `, ${latestNet.value >= prevNet.value ? "acima" : "abaixo"} ${prevNet.value >= 0 ? "do lucro" : "do prejuízo"} de ${formatMoney(Math.abs(prevNet.value), fCurrency)} registrado em ${prevNet.year}` : ""}.`}
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-
+            {/* ── Área modular (layout padrão ou próprio do clube — editado em Admin > Publicações > Clubes) ── */}
+            <ClubModules clubId={Number(id)} club={theClub.club} initialLayout={initialData?.layout} />
         </div>
     );
 }

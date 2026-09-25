@@ -23,7 +23,6 @@ export default function SearchableSelect({
   onChange,
   placeholder = "Selecione...",
   disabled = false,
-  imageClass = "w-6 h-4 object-cover rounded shadow-sm flex-shrink-0",
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");

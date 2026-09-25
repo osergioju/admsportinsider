@@ -156,10 +156,9 @@ export default function Manutencao() {
   }, [data, q]);
 
   // Header com botão Ativar/Desativar todos
-  function BulkHeader({ items, type, idKey }) {
+  function BulkHeader({ items, type }) {
     const allActive   = items.every(i => i.active);
-    const allInactive = items.every(i => !i.active);
-    const label = allActive   ? "Desativar todos" : "Ativar todos";
+      const label = allActive   ? "Desativar todos" : "Ativar todos";
     const nextActive = !allActive;
 
     return (

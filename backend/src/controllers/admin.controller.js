@@ -2021,6 +2021,110 @@ function buildSuggestionPayload(fileNamePtBr) {
 }
 
 // ---------------------------------------------------------------------------
+// Leitura por NOME de cabeçalho (planilha "Identificação.xlsx" — Tier 1/2/3 e
+// Competições têm 2 linhas de preâmbulo — título e faixa de grupos — antes do
+// cabeçalho de verdade; a posição das colunas não é fixa, o nome é).
+// ---------------------------------------------------------------------------
+export const findHeaderRowIndex = (rows) => {
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const first = String(rows[i]?.[0] || "").trim().toLowerCase();
+    if (first.startsWith("slug")) return i;
+  }
+  return 0;
+};
+
+export const buildHeaderMap = (headerRow) => {
+  const map = {};
+  (headerRow || []).forEach((h, idx) => {
+    const key = String(h || "").trim();
+    if (key && !(key in map)) map[key] = idx;
+  });
+  return map;
+};
+
+export const toStrCell = (val) => (val == null ? "" : String(val).trim());
+
+// Colunas da aba Clubes (Tier 1 / Tier 2 / Tier 3) por nome de cabeçalho.
+const CLUB_HEADERS = {
+  slug: "Slug do clube",
+  countryName: "País",
+  countrySlug: "Slug do país",
+  citySlug: "Slug da cidade",
+  cityName: "Cidade",
+  stadiumSlug: "Slug do estádio",
+  namePt: "Nome do clube (PT)",
+  nameEn: "Nome do clube (EN)",
+  nameEs: "Nome do clube (ES)",
+  foundedAt: "Data de fundação",
+  yearOnly: "Só ano?",
+  primaryHex: "Código primário",
+  secondaryHex: "Código secundário",
+  tertiaryHex: "Código terciário",
+  companyName: "Nome da empresa",
+  legalStructure: "Estrutura societária",
+  documentSource: "Fonte do documento",
+  companyCode: "Código da empresa",
+  status: "Status",
+  phase: "Fase",
+  successionChain: "Linha sucessória",
+  successorSlug: "Slug do sucessor",
+  predecessorSlug: "Slug do antecessor",
+};
+
+/** Extrai e normaliza uma linha da aba de Clubes. Retorna null se faltar o essencial
+ *  (slug ou nome). Usada tanto no preview (mapeamento de país) quanto na importação
+ *  de fato — mantém as duas etapas lendo exatamente a mesma coisa. */
+function parseClubRow(row, headerMap) {
+  const get = (key) => row[headerMap[CLUB_HEADERS[key]]];
+
+  const slug = toStrCell(get("slug"));
+  const namePt = toStrCell(get("namePt"));
+  if (!slug || !namePt) return null;
+
+  // Ano isolado (marcado em "Só ano?", ou texto "0000") NÃO vira data: fica só em
+  // founded_year, senão o banco ganharia um "1º de janeiro" que ninguém apurou.
+  // Número puro sem a marca é data em número de série do Excel (1603 = 1904-05-21).
+  const rawFounded = get("foundedAt");
+  const yearOnly = toStrCell(get("yearOnly")).toLowerCase() === "sim" ||
+    (typeof rawFounded === "string" && /^\d{4}$/.test(rawFounded.trim()));
+  let foundedAt = null, foundedYear = null;
+  if (yearOnly) {
+    const y = parseInt(rawFounded, 10);
+    foundedYear = y >= 1000 && y <= 2200 ? y : null;
+  } else {
+    foundedAt = parseDate(rawFounded);
+    foundedYear = foundedAt ? Number(foundedAt.slice(0, 4)) : null;
+  }
+
+  return {
+    slug,
+    // "País" é fórmula (lookup pelo slug); se a planilha foi salva por script
+    // sem recálculo, a fórmula pode vir vazia — cai pro slug do país como chave.
+    countryFile: toStrCell(get("countryName")) || toStrCell(get("countrySlug")),
+    citySlugRaw: toStrCell(get("citySlug")) || null,
+    cityNameRaw: toStrCell(get("cityName")) || null,
+    stadiumSlugRaw: toStrCell(get("stadiumSlug")) || null,
+    namePt,
+    nameEn: toStrCell(get("nameEn")) || namePt,
+    nameEs: toStrCell(get("nameEs")) || namePt,
+    foundedAt,
+    foundedYear,
+    primaryColor: normalizeHex(get("primaryHex")),
+    secondaryColor: normalizeHex(get("secondaryHex")),
+    tertiaryColor: normalizeHex(get("tertiaryHex")),
+    companyName: toStrCell(get("companyName")) || null,
+    ownershipModel: toStrCell(get("legalStructure")) || null,
+    documentSource: toStrCell(get("documentSource")) || null,
+    companyCode: toStrCell(get("companyCode")) || null,
+    active: toStrCell(get("status")).toLowerCase() !== "inativo",
+    lifecyclePhase: toStrCell(get("phase")) || null,
+    hasSuccessionChain: toStrCell(get("successionChain")).toLowerCase() === "sim",
+    successorSlug: toStrCell(get("successorSlug")) || null,
+    predecessorSlug: toStrCell(get("predecessorSlug")) || null,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // POST /admin/preview-import
 // Body (multipart): file, sheetName? (opcional — sem ela, só lista as abas)
 // ---------------------------------------------------------------------------
@@ -2050,26 +2154,15 @@ export async function previewClubImport(req, res) {
       return res.status(400).json({ error: "Aba vazia" });
     }
 
-    // Remove header (coluna 0 = "Slug" ou coluna 1 = string com "nome")
-    if (
-      rows[0] &&
-      (String(rows[0][0] || "").toLowerCase() === "slug" ||
-        (typeof rows[0][1] === "string" && rows[0][1].toLowerCase().includes("nome")))
-    ) {
-      rows.shift();
-    }
+    // Cabeçalho real (linha "Slug do clube ..."): Tier 1/2/3 têm 2 linhas de
+    // preâmbulo (título + faixa de grupos) antes dele.
+    const headerIdx = findHeaderRowIndex(rows);
+    const headerMap = buildHeaderMap(rows[headerIdx]);
+    const dataRows = rows.slice(headerIdx + 1);
 
-    // Lê país da coluna 2 (formato planilha: Slug | Escudo | País | Nome ...)
-    // Fallback: extrai prefixo do slug na coluna 0 (formato legado)
-    const countriesInFile = [
-      ...new Set(rows.map((r) => {
-        const col2 = String(r[2] || "").trim();
-        if (col2 && col2.toLowerCase() !== "país") return col2;
-        const val = String(r[0] || "").trim();
-        const idx = val.indexOf("_");
-        return idx > 0 ? val.slice(0, idx) : val;
-      }).filter(Boolean)),
-    ];
+    const parsedClubRows = dataRows.map((r) => parseClubRow(r, headerMap)).filter(Boolean);
+
+    const countriesInFile = [...new Set(parsedClubRows.map((r) => r.countryFile).filter(Boolean))];
 
     const { rows: dbRows } = await db.query(
       `SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`
@@ -2100,11 +2193,10 @@ export async function previewClubImport(req, res) {
       };
     });
 
-    // Mudanças de nome: col 21 = "Mudou de nome?", col 22 = "Nome novo", col 23 = "Nome antigo"
-    const toStr = (val) => (val == null ? "" : String(val).trim());
-    const nameChanges = rows
-      .filter(r => toStr(r[21]) && toStr(r[22]))
-      .map(r => ({ slug: toStr(r[0]), newName: toStr(r[22]), oldName: toStr(r[23]) }));
+    // Sucessão: linhas com sucessor/antecessor preenchido (informativo pro admin conferir)
+    const nameChanges = parsedClubRows
+      .filter((r) => r.successorSlug || r.predecessorSlug)
+      .map((r) => ({ slug: r.slug, newName: r.successorSlug, oldName: r.predecessorSlug }));
 
     return res.json({ countries: result, dbCountries: dbRows, nameChanges });
   } catch (err) {
@@ -2113,19 +2205,11 @@ export async function previewClubImport(req, res) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// uploadClubXlsx — sem alterações (contrato de country_map não mudou)
-// ---------------------------------------------------------------------------
-const toSlug = (str) => {
-  if (!str) return null;
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_|_$/g, "");
-};
+/** "YYYY-MM-DD" a partir de componentes UTC — devolver string em vez de Date
+ *  evita que o driver do pg reformate a data pelo fuso local do servidor
+ *  (Date.UTC(1898,0,1) virava "1897-12-31" no banco por causa disso). */
+const toDateString = (year, monthIndex, day) =>
+  `${String(year).padStart(4, "0")}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
 const parseDate = (raw) => {
   if (raw == null || raw === "") return null;
@@ -2133,7 +2217,8 @@ const parseDate = (raw) => {
   // Excel serial number
   if (typeof raw === "number" && raw > 0 && raw < 3_000_000) {
     const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    return new Date(excelEpoch.getTime() + raw * 86_400_000);
+    const d = new Date(excelEpoch.getTime() + raw * 86_400_000);
+    return toDateString(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
   }
 
   const str = String(raw).trim();
@@ -2141,15 +2226,23 @@ const parseDate = (raw) => {
   // Ano puro: "1902" → 1902-01-01
   if (/^\d{4}$/.test(str)) {
     const year = parseInt(str, 10);
-    return year >= 1800 && year <= 2100 ? new Date(Date.UTC(year, 0, 1)) : null;
+    return year >= 1800 && year <= 2100 ? toDateString(year, 0, 1) : null;
+  }
+
+  // Pré-1900: a planilha grava como texto "dd-mm-aaaa" (Excel não representa
+  // datas antes de 1900 como número de série).
+  const preMatch = str.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (preMatch) {
+    const [, d2, m2, y2] = preMatch;
+    return toDateString(Number(y2), Number(m2) - 1, Number(d2));
   }
 
   const d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
+  return isNaN(d.getTime()) ? null : toDateString(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 };
 
 /** Normaliza hex expandindo shorthand #ABC → #AABBCC */
-const normalizeHex = (value) => {
+export const normalizeHex = (value) => {
   const v = (value == null ? "" : String(value).trim()).toUpperCase();
   const m3 = v.match(/^#([0-9A-F])([0-9A-F])([0-9A-F])$/);
   if (m3) return `#${m3[1]}${m3[1]}${m3[2]}${m3[2]}${m3[3]}${m3[3]}`;
@@ -2176,21 +2269,17 @@ const insertClubBatch = async (client, batchTuples, updateFields = []) => {
     ? `ON CONFLICT (slug) DO UPDATE SET ${updateFields.map(f => `${f} = EXCLUDED.${f}`).join(", ")}`
     : `ON CONFLICT (slug) DO NOTHING`;
 
-  const nameCoalesce = `new_name = COALESCE(EXCLUDED.new_name, clubs.new_name), old_name = COALESCE(EXCLUDED.old_name, clubs.old_name)`;
-  const finalConflict = onConflict === `ON CONFLICT (slug) DO NOTHING`
-    ? `ON CONFLICT (slug) DO UPDATE SET ${nameCoalesce}`
-    : `${onConflict}, ${nameCoalesce}`;
-
   const { rowCount } = await client.query(
     `INSERT INTO clubs (
-       id_country, name, slug, crest_url,
-       description, location, founded_at,
-       stadium_name, stadium_capacity, stadium_ownership, ownership_model,
-       primary_color, secondary_color, tertiary_color, gender,
-       new_name, old_name
+       id_country, name, slug, crest_url, location,
+       founded_at, founded_year,
+       primary_color, secondary_color, tertiary_color,
+       id_city, stadium_slug,
+       company_name, ownership_model, document_source, company_code,
+       active, lifecycle_phase, has_succession_chain, successor_slug, predecessor_slug
      )
      VALUES ${phs.join(",")}
-     ${finalConflict}`,
+     ${onConflict}`,
     flat
   );
 
@@ -2222,12 +2311,12 @@ export async function uploadClubXlsx(req, res) {
   } catch { /* usa defaults */ }
 
   // Monta lista de colunas a atualizar em caso de conflito
+  // (a planilha nova, Tier 1/2/3, não traz mais gênero — opção updateGender sem efeito aqui)
   const updateFields = [
     ...(options.updateColors ? ["primary_color", "secondary_color", "tertiary_color"] : []),
-    ...(options.updateGender ? ["gender"] : []),
   ];
 
-  // ── Leitura XLSX ──────────────────────────────────────────────────────
+  // ── Leitura XLSX ────────────────────────────────────────────────────
   let rows;
   try {
     const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
@@ -2248,14 +2337,11 @@ export async function uploadClubXlsx(req, res) {
     return res.status(400).json({ error: "Aba vazia" });
   }
 
-  // Remove header (coluna 0 = "Slug" ou coluna 1 string com "nome")
-  if (
-    rows[0] &&
-    (String(rows[0][0] || "").toLowerCase() === "slug" ||
-      (typeof rows[0][1] === "string" && rows[0][1].toLowerCase().includes("nome")))
-  ) {
-    rows.shift();
-  }
+  // Cabeçalho real (linha "Slug do clube ..."): Tier 1/2/3 têm 2 linhas de
+  // preâmbulo (título + faixa de grupos) antes dele.
+  const headerIdx = findHeaderRowIndex(rows);
+  const headerMap = buildHeaderMap(rows[headerIdx]);
+  const dataRows = rows.slice(headerIdx + 1);
 
   // ── Country lookup pré-computado (O(1) por row) ──────────────────────
   const countryLookup = new Map();
@@ -2264,75 +2350,76 @@ export async function uploadClubXlsx(req, res) {
   }
 
   // ── Parse de todas as rows ────────────────────────────────────────────
-  const toStr = (val) => (val == null ? "" : String(val).trim());
+  const errors = [];
+  const parsedRows = [];
+
+  for (let i = 0; i < dataRows.length; i++) {
+    const parsed = parseClubRow(dataRows[i], headerMap);
+    if (!parsed) {
+      errors.push({ row: i + 1, reason: "slug_ou_nome_vazio" });
+      continue;
+    }
+
+    const countryId = countryLookup.get(parsed.countryFile.toLowerCase());
+    if (!countryId) {
+      errors.push({ row: i + 1, reason: "pais_nao_encontrado", detail: parsed.countryFile });
+      continue;
+    }
+
+    parsedRows.push({ ...parsed, countryId });
+  }
+
+  // ── Cidade e estádio: só linka se já houver cadastro em cities/stadiums ──
+  // (essas duas tabelas ainda não têm importação própria; se o slug não existir
+  // ainda, o campo fica null em vez de travar a linha inteira)
+  const citySlugsInFile = [...new Set(parsedRows.map(r => r.citySlugRaw).filter(Boolean))];
+  const stadiumSlugsInFile = [...new Set(parsedRows.map(r => r.stadiumSlugRaw).filter(Boolean))];
+
+  const cityBySlug = new Map();
+  if (citySlugsInFile.length) {
+    const { rows: cityRows } = await db.query(
+      `SELECT id_city, slug FROM cities WHERE slug = ANY($1::text[])`, [citySlugsInFile]
+    );
+    cityRows.forEach(r => cityBySlug.set(r.slug, r.id_city));
+  }
+
+  const knownStadiumSlugs = new Set();
+  if (stadiumSlugsInFile.length) {
+    const { rows: stadiumRows } = await db.query(
+      `SELECT slug FROM stadiums WHERE slug = ANY($1::text[])`, [stadiumSlugsInFile]
+    );
+    stadiumRows.forEach(r => knownStadiumSlugs.add(r.slug));
+  }
 
   const validTuples = [];
-  const errors = [];
-
-  // Coluna map do Excel (Clubes >>):
-  // 0=Slug | 1=Continente | 2=País | 3=Nome(PT) | 4=Nome(EN) | 5=Nome(ES)
-  // 6=Gênero | 7=Status | 8=Nome completo | 9=Cidade | 10=Data fundação
-  // 11=Pré-1900 | 12=Só ano | 13=Estádio | 14=Capacidade
-  // 15=Cor primária(texto) | 16=Código primário(hex) | 17=Cor secundária(texto)
-  // 18=Código secundário(hex) | 19=Cor terciária(texto) | 20=Código terciário(hex)
-  // 21=Mudou de nome? (V) | 22=Nome novo (W) | 23=Nome antigo (X)
-
   const translationRows = []; // { slug, pt, en, es }
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-
-    const fullSlug   = toStr(row[0]);
-    const countryRaw = toStr(row[2]);
-    const namePt     = toStr(row[3]);
-
-    if (!namePt) {
-      errors.push({ row: i + 1, reason: "nome_vazio" });
-      continue;
-    }
-
-    // Resolve país: tenta coluna 2, fallback ao prefixo do slug
-    let countryKey = countryRaw.toLowerCase();
-    if (!countryLookup.has(countryKey)) {
-      const sepIdx = fullSlug.indexOf("_");
-      if (sepIdx > 0) countryKey = fullSlug.slice(0, sepIdx).toLowerCase();
-    }
-
-    const countryId = countryLookup.get(countryKey);
-    if (!countryId) {
-      errors.push({ row: i + 1, reason: "pais_nao_encontrado", detail: countryRaw || fullSlug });
-      continue;
-    }
-
-    const nameEn = toStr(row[4]) || namePt;
-    const nameEs = toStr(row[5]) || namePt;
-    const gender = toStr(row[6]) || null;
-
-    const hexPrimary   = normalizeHex(row[16]);
-    const hexSecondary = normalizeHex(row[18]);
-    const hexTertiary  = normalizeHex(row[20]);
-
+  for (const r of parsedRows) {
     validTuples.push([
-      countryId,
-      namePt,
-      fullSlug,                                                                           // slug
-      fullSlug,                                                                           // crest_url
-      toStr(row[8]) || null,                                                              // description
-      toStr(row[9]) || null,                                                              // location
-      parseDate(row[10]),                                                                 // founded_at
-      toStr(row[13]) || null,                                                             // stadium_name
-      row[14] ? (parseInt(String(row[14]).replace(/[.,\s]/g, ""), 10) || null) : null,   // stadium_capacity
-      null,                                                                                // stadium_ownership (removido do Excel)
-      null,                                                                                // ownership_model (removido do Excel)
-      hexPrimary,                                                                         // primary_color
-      hexSecondary,                                                                       // secondary_color
-      hexTertiary,                                                                        // tertiary_color
-      gender,                                                                             // gender
-      toStr(row[22]) || null,                                                             // new_name (col W)
-      toStr(row[23]) || null,                                                             // old_name (col X)
+      r.countryId,
+      r.namePt,
+      r.slug,                                                                    // slug
+      r.slug,                                                                    // crest_url
+      r.cityNameRaw,                                                             // location
+      r.foundedAt,                                                               // founded_at
+      r.foundedYear,                                                             // founded_year
+      r.primaryColor,                                                            // primary_color
+      r.secondaryColor,                                                          // secondary_color
+      r.tertiaryColor,                                                           // tertiary_color
+      r.citySlugRaw ? (cityBySlug.get(r.citySlugRaw) ?? null) : null,            // id_city
+      r.stadiumSlugRaw && knownStadiumSlugs.has(r.stadiumSlugRaw) ? r.stadiumSlugRaw : null, // stadium_slug
+      r.companyName,                                                             // company_name
+      r.ownershipModel,                                                          // ownership_model (Estrutura societária)
+      r.documentSource,                                                          // document_source
+      r.companyCode,                                                             // company_code
+      r.active,                                                                  // active
+      r.lifecyclePhase,                                                          // lifecycle_phase
+      r.hasSuccessionChain,                                                      // has_succession_chain
+      r.successorSlug,                                                           // successor_slug
+      r.predecessorSlug,                                                         // predecessor_slug
     ]);
 
-    translationRows.push({ slug: fullSlug, pt: namePt, en: nameEn, es: nameEs });
+    translationRows.push({ slug: r.slug, pt: r.namePt, en: r.nameEn, es: r.nameEs });
   }
 
   // Deduplica por slug — última linha vence (mesmo lote não pode ter slug duplicado)
@@ -3540,10 +3627,50 @@ export async function createHiddenClub(req, res) {
 }
 
 // ---------------------------------------------------------------------------
-// LEAGUE XLSX IMPORT
-// col 0=Slug | col 4=País | col 6=Nome(PT) | col 7=Nome(EN) | col 8=Nome(ES)
-// col 9=Gênero | col 10=Nome completo | col 11=Fórmula | col 13=Nome entidade
+// LEAGUE XLSX IMPORT — aba Competições da planilha de Identificação
 // ---------------------------------------------------------------------------
+
+// Colunas da aba Competições por nome de cabeçalho.
+const LEAGUE_HEADERS = {
+  slug: "Slug da competição",
+  countryName: "País",
+  countrySlug: "Slug do país",
+  namePt: "Nome da competição (PT)",
+  nameEn: "Nome da competição (EN)",
+  nameEs: "Nome da competição (ES)",
+  tier: "Nível",
+  sphere: "Esfera",
+  format: "Fórmula de disputa",
+  organizerType: "Organizador",
+  organizerName: "Nome da entidade",
+};
+
+/** Extrai e normaliza uma linha da aba Competições. Retorna null se faltar o
+ *  essencial (slug ou nome). Usada tanto no preview quanto na importação. */
+function parseLeagueRow(row, headerMap) {
+  const get = (key) => row[headerMap[LEAGUE_HEADERS[key]]];
+
+  const slug = toStrCell(get("slug"));
+  const namePt = toStrCell(get("namePt"));
+  if (!slug || !namePt) return null;
+
+  return {
+    slug,
+    // "País" é fórmula (lookup pelo slug do país); vazio = liga continental/mundial,
+    // sem país (ex: Champions League, Copa Libertadores, FIFA).
+    countryFile: toStrCell(get("countryName")) || toStrCell(get("countrySlug")) || null,
+    namePt,
+    nameEn: toStrCell(get("nameEn")) || namePt,
+    nameEs: toStrCell(get("nameEs")) || namePt,
+    tier: toStrCell(get("tier")) || null,
+    sphere: toStrCell(get("sphere")) || null,
+    format: toStrCell(get("format")) || null,
+    organizerType: toStrCell(get("organizerType")) || null,
+    // "Nome da entidade" é o organizador de fato (ex: CAF, LaLiga) — equivale
+    // ao `organizer` que já existia no banco antes desta planilha.
+    organizer: toStrCell(get("organizerName")) || null,
+  };
+}
 
 export async function previewLeagueImport(req, res) {
   try {
@@ -3560,15 +3687,15 @@ export async function previewLeagueImport(req, res) {
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
     if (!rows.length) return res.status(400).json({ error: "Aba vazia" });
 
-    // Remove header se primeira coluna for "Slug"
-    if (String(rows[0]?.[0] || "").toLowerCase() === "slug") rows.shift();
+    // Cabeçalho real (linha "Slug da competição ..."): Competições tem 2 linhas
+    // de preâmbulo (título + faixa de grupos) antes dele.
+    const headerIdx = findHeaderRowIndex(rows);
+    const headerMap = buildHeaderMap(rows[headerIdx]);
+    const dataRows = rows.slice(headerIdx + 1);
 
-    const toStr = (v) => (v == null ? "" : String(v).trim());
+    const parsedLeagueRows = dataRows.map((r) => parseLeagueRow(r, headerMap)).filter(Boolean);
 
-    // Países únicos na coluna 4 (ignora "N/A" — ligas continentais)
-    const countriesInFile = [...new Set(
-      rows.map(r => toStr(r[4])).filter(v => v && v.toUpperCase() !== "N/A")
-    )];
+    const countriesInFile = [...new Set(parsedLeagueRows.map((r) => r.countryFile).filter(Boolean))];
 
     const { rows: dbRows } = await db.query(
       `SELECT id_country, name, flag_url FROM countries ORDER BY name ASC`
@@ -3610,54 +3737,51 @@ export async function uploadLeagueXlsx(req, res) {
     rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
   } catch { return res.status(400).json({ error: "Falha ao ler arquivo" }); }
 
-  if (String(rows[0]?.[0] || "").toLowerCase() === "slug") rows.shift();
   if (!rows.length) return res.status(400).json({ error: "Aba vazia" });
 
-  const toStr = (v) => (v == null ? "" : String(v).trim());
+  const headerIdx = findHeaderRowIndex(rows);
+  const headerMap = buildHeaderMap(rows[headerIdx]);
+  const dataRows = rows.slice(headerIdx + 1);
 
   const countryLookup = new Map();
   for (const [key, value] of Object.entries(country_map)) {
     if (key && value) countryLookup.set(key.toLowerCase().trim(), value);
   }
 
-  // Campos a atualizar no ON CONFLICT
+  // Campos a atualizar no ON CONFLICT — updateFullName/updateGender ficam sem
+  // efeito: a planilha nova não traz "Nome completo" nem gênero de competição.
   const updateFields = [
     ...(options.updateName      ? ["name"]        : []),
-    ...(options.updateFullName  ? ["description"]  : []),
     ...(options.updateOrganizer ? ["organizer"]    : []),
     ...(options.updateFormat    ? ["format"]       : []),
-    ...(options.updateGender    ? ["gender"]       : []),
   ];
 
   const validRows = [];
   const translationRows = [];
   const errors = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const slug      = toStr(row[0]);
-    const countryRaw = toStr(row[4]);
-    const namePt    = toStr(row[6]);
+  for (let i = 0; i < dataRows.length; i++) {
+    const parsed = parseLeagueRow(dataRows[i], headerMap);
+    if (!parsed) { errors.push({ row: i + 1, reason: "slug_ou_nome_vazio" }); continue; }
 
-    if (!slug || !namePt) { errors.push({ row: i + 1, reason: "slug_ou_nome_vazio" }); continue; }
-
-    // País: pode ser N/A (liga continental → sem id_country)
+    // País: pode ser vazio (liga continental/mundial → sem id_country)
     let countryId = null;
-    if (countryRaw && countryRaw.toUpperCase() !== "N/A") {
-      countryId = countryLookup.get(countryRaw.toLowerCase()) || null;
-      if (!countryId) { errors.push({ row: i + 1, reason: "pais_nao_encontrado", detail: countryRaw }); continue; }
+    if (parsed.countryFile) {
+      countryId = countryLookup.get(parsed.countryFile.toLowerCase()) || null;
+      if (!countryId) { errors.push({ row: i + 1, reason: "pais_nao_encontrado", detail: parsed.countryFile }); continue; }
     }
 
     validRows.push({
-      slug,
+      slug: parsed.slug,
       countryId,
-      name:        namePt,
-      description: toStr(row[10]) || null,
-      format:      toStr(row[11]) || null,
-      organizer:   toStr(row[13]) || null,
-      gender:      toStr(row[9])  || null,
+      name: parsed.namePt,
+      organizer: parsed.organizer,
+      organizerType: parsed.organizerType,
+      format: parsed.format,
+      tier: parsed.tier,
+      sphere: parsed.sphere,
     });
-    translationRows.push({ slug, pt: namePt, en: toStr(row[7]) || namePt, es: toStr(row[8]) || namePt });
+    translationRows.push({ slug: parsed.slug, pt: parsed.namePt, en: parsed.nameEn, es: parsed.nameEs });
   }
 
   // Deduplica por slug
@@ -3700,11 +3824,11 @@ export async function uploadLeagueXlsx(req, res) {
       const flat = [], phs = [];
       let idx = 1;
       for (const r of batch) {
-        phs.push(`($${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++})`);
-        flat.push(r.slug, r.name, r.description, r.organizer, r.format, r.gender, r.countryId);
+        phs.push(`($${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++},$${idx++})`);
+        flat.push(r.slug, r.name, r.organizer, r.organizerType, r.format, r.tier, r.sphere, r.countryId);
       }
       const { rowCount } = await client.query(
-        `INSERT INTO leagues (slug, name, description, organizer, format, gender, id_country)
+        `INSERT INTO leagues (slug, name, organizer, organizer_type, format, tier, sphere, id_country)
          VALUES ${phs.join(",")}
          ${onConflict}`,
         flat

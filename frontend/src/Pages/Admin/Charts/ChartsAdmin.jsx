@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../../../services/api";
-import { Pencil, Trash2, Plus, LineChart, BarChart3, Gauge, Loader2, ChartArea, Share2 } from "lucide-react";
+import { Pencil, Trash2, Plus, LineChart, BarChart3, Gauge, Layers, Loader2, ChartArea, Share2 } from "lucide-react";
 import ChartBuilder from "./ChartBuilder";
 import EmbedModal from "./EmbedModal";
 
-const CHART_TYPE_ICON = { line: LineChart, bar: BarChart3, gauge: Gauge };
+const CHART_TYPE_ICON = { line: LineChart, bar: BarChart3, stacked_bar: Layers, gauge: Gauge };
 const SCOPE_LABELS = { club: "Clube", league: "Liga/Competição", federation: "Federação" };
 
 export default function ChartsAdmin() {
@@ -51,7 +51,7 @@ export default function ChartsAdmin() {
     try {
       await api.delete(`/admin/charts/${id}`);
       loadCharts();
-    } catch (error) {
+    } catch {
       alert("Erro ao arquivar gráfico");
     }
   }
@@ -121,7 +121,7 @@ export default function ChartsAdmin() {
                         <div className="min-w-0">
                           <h3 className="font-bold text-gray-900 truncate">{chart.title}</h3>
                           <p className="text-xs text-gray-400">
-                            {SCOPE_LABELS[chart.source_params?.scope] || "—"}
+                            {chart.source_params?.entity_mode === "context" ? "Clube da página" : SCOPE_LABELS[chart.source_params?.scope] || "—"}
                             {chart.source_params?.entity_name ? ` · ${chart.source_params.entity_name}` : ""}
                           </p>
                         </div>
@@ -145,6 +145,11 @@ export default function ChartsAdmin() {
                     </div>
                     {chart.description && (
                       <p className="text-sm text-gray-500 mt-3 line-clamp-2">{chart.description}</p>
+                    )}
+                    {Array.isArray(chart.allowed_plan_ids) && chart.allowed_plan_ids.length > 0 && (
+                      <p className="mt-3 text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-50 inline-block px-2 py-0.5 rounded">
+                        Restrito por plano
+                      </p>
                     )}
                     {chart.is_embeddable && (
                       <div className="flex items-center justify-between mt-3">

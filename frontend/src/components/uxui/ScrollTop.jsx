@@ -56,6 +56,7 @@ const STATIC_TITLES = {
   "/admin/currencies": "Moedas",
   "/admin/faq": "FAQ",
   "/admin/upload/ligas": "Upload de Competições",
+  "/admin/upload/identificacao": "Upload · Base de identificação",
   "/admin/upload/teams": "Upload de Times",
   "/admin/upload/players": "Upload de Jogadores",
   "/admin/upload/matches": "Upload de Partidas",

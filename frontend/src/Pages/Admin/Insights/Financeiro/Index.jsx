@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import { BarChart, PieChart, LineChart } from '@mui/x-charts';
 import { useFinanceiroInsights } from '../../../../hooks/useFinanceiroInsights';
+import { formatMoney, mrrSummary } from '../../../../utils/planBilling';
 
 function KpiCard({ label, value, sub, highlight }) {
   return (
@@ -51,7 +52,8 @@ export default function InsightFinanceiro() {
   }));
 
   const planLabels = (charts?.plan_revenue ?? []).map(r => r.plan);
-  const planMrr = (charts?.plan_revenue ?? []).map(r => Number(r.estimated_mrr));
+  // Gráfico em BRL (mesma unidade p/ todas as barras); plano sem cotação entra como 0
+  const planMrr = (charts?.plan_revenue ?? []).map(r => Number(r.estimated_mrr_brl ?? 0));
   const planUsers = (charts?.plan_revenue ?? []).map(r => Number(r.users_count));
 
   const monthLabels = (charts?.paid_users_per_month ?? []).map(r =>
@@ -59,9 +61,7 @@ export default function InsightFinanceiro() {
   );
   const monthValues = (charts?.paid_users_per_month ?? []).map(r => Number(r.paid_count));
 
-  const mrrFormatted = kpis?.mrr != null
-    ? kpis.mrr.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-    : '-';
+  const mrr = mrrSummary(kpis);
 
   return (
     <div className="space-y-10">
@@ -70,7 +70,7 @@ export default function InsightFinanceiro() {
       <section>
         <h2 className="text-xl font-semibold mb-4">Visão Geral — Financeiro</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          <KpiCard label="MRR Estimado" value={mrrFormatted} sub="Receita recorrente mensal" highlight />
+          <KpiCard label="MRR Estimado" value={mrr.value} sub={mrr.sub} highlight />
           <KpiCard label="Assinaturas Ativas" value={kpis?.total_active_subscriptions?.toLocaleString('pt-BR')} />
           <KpiCard label="Usuários Pagos" value={kpis?.total_paid?.toLocaleString('pt-BR')} />
           <KpiCard label="Usuários Gratuitos" value={kpis?.total_free?.toLocaleString('pt-BR')} />
@@ -139,7 +139,7 @@ export default function InsightFinanceiro() {
                 <tr>
                   <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Plano</th>
                   <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Usuários</th>
-                  <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">MRR Est.</th>
+                  <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500 uppercase">MRR Est. (mensal)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -148,7 +148,12 @@ export default function InsightFinanceiro() {
                     <td className="px-4 py-2 font-medium text-gray-900">{r.plan}</td>
                     <td className="px-4 py-2 text-right text-gray-600">{Number(r.users_count).toLocaleString('pt-BR')}</td>
                     <td className="px-4 py-2 text-right font-semibold text-violet-700">
-                      {Number(r.estimated_mrr).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {formatMoney(r.estimated_mrr, r.currency || 'BRL')}
+                      {(r.currency || 'BRL') !== 'BRL' && (
+                        <span className="block text-xs font-normal text-gray-400">
+                          {r.estimated_mrr_brl != null ? `≈ ${formatMoney(r.estimated_mrr_brl, 'BRL')}` : 'sem cotação p/ BRL'}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -159,7 +159,7 @@ function ClubMappingRow({ csvName, countryName, clubMappings, hiddenClubs, creat
 }
 
 // ── Season tag list (shows all seasons detected across files) ─────────────────
-function SeasonBadges({ previews, label }) {
+function SeasonBadges({ previews }) {
   const seasons = previews.map((p) => p.csvSeason || p.detectedYear || "—");
   return (
     <div className="flex flex-wrap gap-1.5">

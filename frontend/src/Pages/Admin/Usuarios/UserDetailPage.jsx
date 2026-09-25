@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useState, useEffect, useContext } from "react";
 import { api } from "../../../services/api";
 import { AuthContext } from "../../../context/AuthContext";
@@ -24,8 +24,7 @@ import {
 export default function UserDetailPage() {
     const { user: currentUser } = useContext(AuthContext);
     const { id } = useParams();
-    const navigate = useNavigate();
-
+  
     const [theUser, setUser] = useState(null);
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -123,7 +122,7 @@ export default function UserDetailPage() {
             await api.put(`/admin/users/${id}/update`, form);
             handleFeedback(setProfileMsg, 'success', 'Perfil atualizado com sucesso!');
             await refreshData();
-        } catch (error) {
+        } catch {
             handleFeedback(setProfileMsg, 'error', 'Erro ao atualizar. Verifique os campos.');
         } finally {
             setSavingProfile(false);
@@ -146,7 +145,7 @@ export default function UserDetailPage() {
             await api.put(`/admin/users/${id}/update-password`, { password: passwordForm.password });
             handleFeedback(setSecurityMsg, 'success', 'Senha alterada com sucesso!');
             setPasswordForm({ password: "", confirmPassword: "" });
-        } catch (err) {
+        } catch {
             handleFeedback(setSecurityMsg, 'error', 'Erro ao alterar senha.');
         } finally {
             setSavingSecurity(false);
@@ -167,7 +166,7 @@ export default function UserDetailPage() {
                 setPlanMsg(null);
             }, 1500);
 
-        } catch (error) {
+        } catch {
             handleFeedback(setPlanMsg, 'error', 'Não foi possível alterar o plano.');
         } finally {
             setSavingPlan(false);
@@ -189,7 +188,7 @@ export default function UserDetailPage() {
                 setModalMsg(null);
             }, 1500);
 
-        } catch (error) {
+        } catch {
             handleFeedback(setModalMsg, 'error', 'Erro ao realizar operação.');
         } finally {
             setProcessingAction(false);

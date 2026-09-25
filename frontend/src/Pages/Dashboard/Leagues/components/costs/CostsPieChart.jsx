@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import ReactECharts from "echarts-for-react";
 import { adaptCostsBreakdown } from "./costsBreakdownLeague.adapter";
 
@@ -39,7 +40,7 @@ export default function CostsPieChart({
       leagueMap,
       leagueColor,
     );
-  }, [data, ligasSelecionadas, mainLeagueId, leagueMap, leagueColor, startYear, endYear, leagueColorMap]);
+  }, [data, ligasSelecionadas, mainLeagueId, leagueMap, leagueColor, startYear, endYear]);
 
   function adjustColor(hex, percent) {
     const num = parseInt(hex.replace("#", ""), 16);

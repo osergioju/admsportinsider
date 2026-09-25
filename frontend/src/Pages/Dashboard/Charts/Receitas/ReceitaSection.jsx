@@ -11,7 +11,6 @@ export default function ReceitaSection({
   leagueMap,
   setLeagueMap,
   leagueColor,
-  setLeagueColor,
   leagueMetaMap = {},
   setLeagueMetaMap,
   selectedLeagues,

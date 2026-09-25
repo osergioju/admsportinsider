@@ -82,7 +82,7 @@ export default function AdminLayout() {
         }
     }, []);
 
-    const handleGoPerfil = (id) => {
+    const handleGoPerfil = () => {
         navigate("/admin/profile");
     };
 
@@ -208,6 +208,19 @@ export default function AdminLayout() {
                                         className={menuItemStyle}
                                         icon={<Building2 strokeWidth={1.25} size={18} className={iconStyle} />}
                                         label={<span className={textStyle}>Hospitalidade</span>}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Upload da base (Países, Cidades, Federações, Estádios) da planilha Identificação */}
+                            {canAccess("gestao-dados") && (
+                                <div className="group">
+                                    <MenuItem compact
+                                        to="/admin/upload/identificacao"
+                                        onClick={() => setOpenMenu(false)}
+                                        className={menuItemStyle}
+                                        icon={<Upload strokeWidth={1.25} size={18} className={iconStyle} />}
+                                        label={<span className={textStyle}>Importar base</span>}
                                     />
                                 </div>
                             )}
@@ -441,7 +454,7 @@ export default function AdminLayout() {
                                 </div>
                                 <div className="block w-full border-b border-[#DADADA] mb-4"></div>
 
-                                <AdminMenuContent />
+                                {AdminMenuContent()}
                             </div>
                         </div>
                     </>
@@ -453,7 +466,7 @@ export default function AdminLayout() {
                         <div className={`pb-4 mb-4 border-b border-gray-100 ${collapsed ? "flex justify-center px-0" : "px-6"}`}>
                             <img src={collapsed ? brandIcon : brand} alt="Brand" className="h-8 w-auto object-contain" />
                         </div>
-                        <AdminMenuContent />
+                        {AdminMenuContent()}
                     </div>
                     <SidebarToggle collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
                 </div>

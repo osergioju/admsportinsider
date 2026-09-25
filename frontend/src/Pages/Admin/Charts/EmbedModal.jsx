@@ -16,8 +16,11 @@ export default function EmbedModal({ chart, onClose }) {
 
   const targetId = `si-chart-${chart.embed_token}`;
   const embedBase = resolveEmbedBase();
+  // Gráfico "do clube da página" não tem clube fixo: o snippet informa de qual clube são os dados
+  const isContext = chart.source_params?.entity_mode === "context";
+  const clubAttr = isContext ? ` data-club-id="ID_DO_CLUBE"` : "";
   const snippet = `<div id="${targetId}"></div>
-<script src="${embedBase}/public/embed/chart-embed.js" data-chart-token="${chart.embed_token}" data-target="${targetId}" async></script>`;
+<script src="${embedBase}/public/embed/chart-embed.js" data-chart-token="${chart.embed_token}" data-target="${targetId}"${clubAttr} async></script>`;
 
   function handleCopy() {
     navigator.clipboard.writeText(snippet);
@@ -39,6 +42,12 @@ export default function EmbedModal({ chart, onClose }) {
             Cole este trecho na página onde o gráfico deve aparecer (WordPress, site de parceiro etc.). O gráfico
             incorporado sempre mostra a marca Sport Insider no rodapé.
           </p>
+          {isContext && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              Este gráfico é do tipo <b>clube da página</b>: troque <code>ID_DO_CLUBE</code> pelo id do clube que deve
+              aparecer. O gráfico incorporado mostra só o clube informado, na moeda nativa e sem comparação.
+            </p>
+          )}
           <pre className="bg-gray-900 text-gray-100 text-xs p-4 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
             {snippet}
           </pre>

@@ -47,7 +47,7 @@ function ClubChip({ club, onRemove }) {
 
 // ─── GroupPanel ───────────────────────────────────────────────────────────────
 
-function GroupPanel({ letter, clubs, allClubs, onAssign, onRemove, color }) {
+function GroupPanel({ letter, clubs, onRemove, color }) {
   return (
     <div className={`flex-1 min-w-0 border rounded-xl p-3 space-y-2 ${color.border} ${color.bg}`}>
       <div className="flex items-center justify-between">
@@ -293,7 +293,6 @@ export default function TeamGroupAssignment({ league, onClose, onSaved }) {
                       </p>
                       {filteredClubs.map(club => {
                         // Verifica se está atribuído em algum grupo desta fase ativa
-                        const pk = phaseKey(activeTorneio.key, grupoFases(activeTorneio)[0]?.nome ?? "");
                         const assignedInAnyPhase = grupoFases(activeTorneio).some(f => {
                           const pkey = phaseKey(activeTorneio.key, f.nome);
                           return getAssignedInPhase(pkey).has(club.id_club);
@@ -324,7 +323,7 @@ export default function TeamGroupAssignment({ league, onClose, onSaved }) {
 
                   {/* Coluna direita: fases e grupos */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {grupoFases(activeTorneio).map((fase, fi) => {
+                    {grupoFases(activeTorneio).map((fase) => {
                       const pk = phaseKey(activeTorneio.key, fase.nome);
                       const nGrupos = fase.grupos ?? 2;
                       const letters = GROUP_LETTERS.slice(0, nGrupos);

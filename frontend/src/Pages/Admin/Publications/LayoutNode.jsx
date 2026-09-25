@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   GripVertical, Plus, Trash2, Pencil, LayoutGrid,
-  Type, Hash, Image as ImageIcon, ChartArea, Link as LinkIcon, CheckCircle2, XCircle, GalleryHorizontal,
+  Type, Hash, Image as ImageIcon, ChartArea, Link as LinkIcon, CheckCircle2, XCircle, GalleryHorizontal, Columns2, PanelRight,
 } from "lucide-react";
 import SlotFormModal from "./SlotFormModal";
+import { useEditorPage } from "./EditorContext";
+import { newClubChartBlock, newClubChartGridRow, newFinanceChartBlock, newFinanceChartGridRow } from "../../../utils/clubDefaultLayout";
 import { emptyRow, emptyBlock, wrapInGrid, updateNode, removeNode, addChild } from "../../../utils/layoutTree";
 
 const WIDTH_PRESETS = [
@@ -16,8 +18,8 @@ const WIDTH_PRESETS = [
   { label: "Inteira", value: 12 },
 ];
 
-const BLOCK_ICON = { text: Type, number: Hash, ad: ImageIcon, chart: ChartArea, external_link: LinkIcon, carousel: GalleryHorizontal };
-const BLOCK_LABEL = { text: "Texto", number: "Número", ad: "Publicidade", chart: "Gráfico", external_link: "Link externo", carousel: "Carrossel de Publicações" };
+const BLOCK_ICON = { text: Type, number: Hash, ad: ImageIcon, chart: ChartArea, club_chart: ChartArea, federation_chart: ChartArea, league_chart: ChartArea, external_link: LinkIcon, carousel: GalleryHorizontal };
+const BLOCK_LABEL = { text: "Texto", number: "Número", ad: "Publicidade", chart: "Gráfico", club_chart: "Gráfico do clube", federation_chart: "Gráfico da federação", league_chart: "Gráfico da competição", external_link: "Link externo", carousel: "Carrossel de Publicações" };
 const CAROUSEL_SOURCE_LABELS = { nota: "Notas", destaque: "Destaques", financas: "Finanças", externa: "Publicação Externa" };
 
 function blockSummary(node) {
@@ -25,7 +27,15 @@ function blockSummary(node) {
     case "text":
       return node.content?.title || "(sem título)";
     case "number":
+      if (node.content?.mode === "indicator") return `Indicador: ${node.content?.indicator_code || "(escolha o indicador)"}`;
       return `${node.content?.value || "—"} · ${node.content?.caption || ""}`;
+    case "club_chart":
+    case "federation_chart":
+    case "league_chart": {
+      const n = node.content?.indicator_codes?.length || 0;
+      const kind = node.content?.variant === "split" ? "Gráfico + conteúdo" : "Só gráfico";
+      return `${node.content?.title || "(sem título)"} · ${kind} · ${n} indicador(es)`;
+    }
     case "external_link":
       return node.content?.title || node.content?.url || "(sem título)";
     case "chart":
@@ -97,6 +107,7 @@ function NodeChrome({ node, parentDirection, dispatch, dragHandleProps, children
 
 export default function LayoutNode({ node, parentDirection, dispatch, dragHandleProps, isRoot = false }) {
   const [editingBlock, setEditingBlock] = useState(false);
+  const pageKey = useEditorPage();
 
   if (node.type === "block") {
     const Icon = BLOCK_ICON[node.block_type] || Type;
@@ -140,6 +151,7 @@ export default function LayoutNode({ node, parentDirection, dispatch, dragHandle
         {editingBlock && (
           <SlotFormModal
             node={node}
+            pageKey={pageKey}
             onSaved={(fields) => {
               dispatch((tree) => updateNode(tree, node.id, (n) => ({ ...n, ...fields })));
               setEditingBlock(false);
@@ -157,6 +169,23 @@ export default function LayoutNode({ node, parentDirection, dispatch, dragHandle
   const stackActions = isColumn
     ? [{ label: "Adicionar linha", icon: Plus, onClick: () => dispatch((tree) => addChild(tree, node.id, emptyRow(12))) }]
     : [{ label: "Adicionar coluna", icon: Plus, onClick: () => dispatch((tree) => addChild(tree, node.id, emptyBlock(12))) }];
+
+  // Atalhos de módulos das páginas de clube e federação (só em containers empilhados)
+  if (pageKey === "clubs-finance" && isColumn) {
+    stackActions.push(
+      { label: "Módulo: gráfico", icon: ChartArea, onClick: () => dispatch((tree) => addChild(tree, node.id, newFinanceChartBlock(12))) },
+      { label: "Módulo: grid de gráficos", icon: Columns2, onClick: () => dispatch((tree) => addChild(tree, node.id, newFinanceChartGridRow(2))) },
+    );
+  }
+
+  if (["clubs", "federations", "competitions"].includes(pageKey) && isColumn) {
+    const chartType = { clubs: "club_chart", federations: "federation_chart", competitions: "league_chart" }[pageKey];
+    stackActions.push(
+      { label: "Módulo: gráfico", icon: ChartArea, onClick: () => dispatch((tree) => addChild(tree, node.id, newClubChartBlock("basic", 12, chartType))) },
+      { label: "Módulo: gráfico + conteúdo", icon: PanelRight, onClick: () => dispatch((tree) => addChild(tree, node.id, newClubChartBlock("split", 12, chartType))) },
+      { label: "Módulo: grid de gráficos", icon: Columns2, onClick: () => dispatch((tree) => addChild(tree, node.id, newClubChartGridRow(2, chartType))) },
+    );
+  }
 
   if (!isRoot) {
     stackActions.push({ label: "Excluir", icon: Trash2, onClick: () => dispatch((tree) => removeNode(tree, node.id)) });
@@ -199,7 +228,7 @@ export default function LayoutNode({ node, parentDirection, dispatch, dragHandle
   if (isRoot) {
     return (
       <div>
-        <div className="flex justify-end mb-3">
+        <div className="flex justify-end flex-wrap gap-2 mb-3">
           {stackActions.map((action) => (
             <button
               key={action.label}

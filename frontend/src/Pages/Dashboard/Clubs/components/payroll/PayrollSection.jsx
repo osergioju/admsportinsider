@@ -3,7 +3,7 @@ import { useTranslation } from "../../../../../context/TranslationContext";
 import { X } from "lucide-react";
 import PayrollLineChart from "./PayrollLineChart";
 import ChartFilter from "../filter/ChartFilter";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function PayrollSection({
   data,
@@ -48,8 +48,8 @@ export default function PayrollSection({
     );
   }
 
-  const [startYear, setStartYear] = useState(null);
-  const [endYear, setEndYear] = useState(null);
+  const [startYearPick, setStartYear] = useState(null);
+  const [endYearPick, setEndYear] = useState(null);
 
   const availableYears = useMemo(() => {
     const years = new Set();
@@ -64,15 +64,11 @@ export default function PayrollSection({
   }, [data]);
 
 
-  const [selectedYears, setSelectedYears] = useState([]);
 
   // Inicializa selectedYears quando availableYears chega
-  useEffect(() => {
-    if (!availableYears || availableYears.length === 0) return;
-    setStartYear(availableYears[0]);
-    setEndYear(availableYears[availableYears.length - 1]);
-    setSelectedYears(availableYears); // ← seleciona todos por padrão
-  }, [availableYears]);
+  // Período: o que o usuário escolheu; enquanto não escolheu, todo o intervalo dos dados (sem efeito de sincronização)
+  const startYear = startYearPick ?? availableYears[0] ?? null;
+  const endYear = endYearPick ?? availableYears[availableYears.length - 1] ?? null;
 
   return (
     <div className="relative w-full bg-white lg:p-10 p-6 rounded-xl">

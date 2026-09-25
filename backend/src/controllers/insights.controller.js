@@ -389,13 +389,16 @@ export async function getFinanceiroInsights(req, res) {
         ORDER BY total DESC
       `),
 
+      // MRR = equivalente MENSAL na moeda do próprio plano (plano anual: preço / 12)
       db.query(`
-        SELECT p.name AS plan, p.price, COUNT(u.id) AS users_count,
-               COALESCE(p.price * COUNT(u.id), 0) AS estimated_mrr
+        SELECT p.name AS plan, p.price, p.currency, p.billing_interval, COUNT(u.id) AS users_count,
+               COALESCE(ROUND(
+                 p.price / CASE WHEN p.billing_interval = 'year' THEN 12 ELSE 1 END * COUNT(u.id)
+               , 2), 0) AS estimated_mrr
         FROM users u
         JOIN plans p ON p.id = u.plan_id
         WHERE u.subscription_status = 'active'
-        GROUP BY p.id, p.name, p.price
+        GROUP BY p.id, p.name, p.price, p.currency, p.billing_interval
         ORDER BY estimated_mrr DESC
       `),
 
@@ -422,12 +425,43 @@ export async function getFinanceiroInsights(req, res) {
       `)
     ]);
 
-    const mrr = planRevenue.rows.reduce((sum, r) => sum + Number(r.estimated_mrr), 0);
+    // Moedas diferentes não se somam: o MRR exato é por moeda. O total em BRL usa a cotação mais
+    // recente de currency_rates (base BRL: 1 BRL = rate unidades da moeda). Moeda sem cotação
+    // fica fora do total e é listada em mrr_missing_rates — nunca somada como se fosse real.
+    const ratesRes = await db.query(`
+      SELECT DISTINCT ON (reference_currency) reference_currency AS currency, rate
+      FROM currency_rates
+      WHERE base_currency = 'BRL'
+      ORDER BY reference_currency, period DESC
+    `);
+    const toBrlRate = Object.fromEntries(ratesRes.rows.map(r => [r.currency, Number(r.rate)]));
+
+    const mrrByCurrency = {};
+    const missingRates = new Set();
+    let mrr = 0;
+    for (const r of planRevenue.rows) {
+      const cur = (r.currency || 'BRL').trim();
+      const value = Number(r.estimated_mrr);
+      mrrByCurrency[cur] = (mrrByCurrency[cur] || 0) + value;
+
+      if (cur === 'BRL') {
+        r.estimated_mrr_brl = value;
+      } else if (toBrlRate[cur] > 0) {
+        r.estimated_mrr_brl = Number((value / toBrlRate[cur]).toFixed(2));
+      } else {
+        r.estimated_mrr_brl = null;
+        missingRates.add(cur);
+      }
+      if (r.estimated_mrr_brl != null) mrr += r.estimated_mrr_brl;
+    }
 
     return res.json({
       success: true,
       kpis: {
         mrr: Number(mrr.toFixed(2)),
+        mrr_currency: 'BRL',
+        mrr_by_currency: Object.entries(mrrByCurrency).map(([currency, value]) => ({ currency, mrr: Number(value.toFixed(2)) })),
+        mrr_missing_rates: [...missingRates],
         total_paid: Number(totalPaid.rows[0].total),
         total_free: Number(totalFree.rows[0].total),
         total_active_subscriptions: Number(totalActive.rows[0].total)
@@ -471,12 +505,14 @@ export async function getPlanosInsights(req, res) {
           p.id,
           p.name,
           COALESCE(p.price, 0) AS price,
+          p.currency,
+          p.billing_interval,
           COUNT(u.id) AS total_users,
           COUNT(u.id) FILTER (WHERE u.subscription_status = 'active') AS active_users,
           COUNT(u.id) FILTER (WHERE u.subscription_status = 'canceled') AS canceled_users
         FROM plans p
         LEFT JOIN users u ON u.plan_id = p.id
-        GROUP BY p.id, p.name, p.price
+        GROUP BY p.id, p.name, p.price, p.currency, p.billing_interval
         ORDER BY p.id ASC
       `),
 
