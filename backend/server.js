@@ -89,6 +89,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] origem bloqueada: ${origin}`);
       callback(new Error("Origin não permitido pelo CORS"));
     }
   },
@@ -132,6 +133,14 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/stripe", stripeRoutes);
 
 // 🔴 MIDDLEWARE DE ERRO (SEMPRE NO FINAL)
+// Origem fora da lista do CORS: resposta 403 curta (a origem já foi registrada acima), em vez de
+// stack trace de 500 no log a cada requisição de robô/scanner.
+app.use((err, req, res, next) => {
+  if (err?.message === "Origin não permitido pelo CORS") {
+    return res.status(403).json({ message: "Origin não permitido" });
+  }
+  return next(err);
+});
 app.use(multerErrorHandler);
 
 app.listen(PORT, () => {
