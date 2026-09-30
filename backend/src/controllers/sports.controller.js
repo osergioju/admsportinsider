@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { resolveTorneioKey } from "../utils/tournamentPhase.js";
 
 // Mapeia posição em inglês → PT-BR (como o ClubPlayers espera)
 function mapPositionPT(pos) {
@@ -854,21 +855,10 @@ export async function getLeagueSports(req, res) {
     let resolvePhase;
 
     if (isAperturaClausura) {
-      const torneioKeys = acTorneioKeys.length >= 2 ? acTorneioKeys : ['apertura', 'clausura'];
+      // torneios, na ordem em que o admin cadastrou (= ordem cronológica assumida)
+      const torneiosOrdenados = configuredTorneios?.length ? configuredTorneios : acTorneioKeys.map(k => ({ key: k }));
+      const torneioKeys = torneiosOrdenados.map(t => t.key);
       const torneioKeysLower = torneioKeys.map(k => k.toLowerCase());
-      const key0 = torneioKeys[0];
-      const key1 = torneioKeys[1];
-
-      console.log(`\n========== [getLeagueSports] AC DIAGNOSTIC ==========`);
-      console.log(`League=${leagueId} Season=${season} Torneios=${JSON.stringify(torneioKeys)}`);
-      console.log(`configuredTorneios:`, JSON.stringify((configuredTorneios ?? []).map(t => ({ key: t.key, nome: t.nome, startDate: t.startDate, numFases: t.fases?.length })), null, 2));
-      console.log(`Total matches: ${matchesRes.rows.length}, com data: ${matchesRes.rows.filter(m => m.match_date).length}`);
-      const phaseKeyStats = {};
-      for (const m of matchesRes.rows) {
-        const k = m.phase_key ?? 'null';
-        phaseKeyStats[k] = (phaseKeyStats[k] ?? 0) + 1;
-      }
-      console.log(`phase_key distribution:`, JSON.stringify(phaseKeyStats, null, 2));
 
       // Tenta bater phase_key direto com torneio key (ex: "Apertura" → "apertura")
       const directPhaseMatch = (pk) => {
@@ -881,53 +871,49 @@ export async function getLeagueSports(req, res) {
         return null;
       };
 
-      // 1) PRIMÁRIO: startDate configurado
-      // Funciona com 2 datas (ambos configurados) ou 1 data no torneio POSTERIOR (key1/clausura).
-      // Se apenas o torneio inicial (key0) tem data, não é suficiente para determinar onde o segundo começa
-      // → cai no fallback temporal.
-      const torneiosComData = (configuredTorneios ?? []).filter(t => t.startDate);
-      // Considera utilizável se: >=2 datas, ou a única data é de um torneio que NÃO seja key0
-      const usableStartDates = torneiosComData.length >= 2
-        || (torneiosComData.length === 1 && torneiosComData[0].key !== key0);
+      // 1) PRIMÁRIO: startDate configurado. Generaliza pra N torneios: funciona
+      // desde que todo torneio, EXCETO o primeiro (cronologicamente, na ordem
+      // cadastrada), tenha startDate — o primeiro herda "tudo antes da 2ª data".
+      // Se faltar data em qualquer torneio do meio/fim, não dá pra confiar
+      // (não sabemos onde ele termina) → cai no fallback de gap temporal.
+      const usableStartDates = torneiosOrdenados.length > 0
+        && torneiosOrdenados.slice(1).every(t => t.startDate);
 
       if (usableStartDates) {
-        // Torneio sem startDate recebe todas as partidas ANTES da primeira data configurada (= é o inicial)
-        const noDateKey = torneioKeys.find(k => !torneiosComData.some(t => t.key === k)) ?? key0;
-        const sorted = [...torneiosComData].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-        console.log(`[AC] Usando startDate. noDateKey=${noDateKey}, sorted=${JSON.stringify(sorted.map(t => ({ key: t.key, startDate: t.startDate })))}`);
         resolvePhase = (m) => {
           const direct = directPhaseMatch(m.phase_key);
           if (direct) return direct;
-          if (!m.match_date) return noDateKey;
+          if (!m.match_date) return torneioKeys[0];
           const ms = new Date(m.match_date).getTime();
-          let assigned = noDateKey;
-          for (const t of sorted) {
-            if (ms >= new Date(t.startDate).getTime()) assigned = t.key;
-          }
-          return assigned;
+          return resolveTorneioKey(torneiosOrdenados, ms) ?? torneioKeys[0];
         };
       } else {
-        // 2) FALLBACK: maior gap temporal (> 15 dias)
+        // 2) FALLBACK: (N-1) maiores gaps temporais (> 15 dias) dividem as
+        // partidas em N blocos cronológicos, na mesma ordem de torneioKeys.
         const sortedByDate = matchesRes.rows
           .filter(r => r.match_date)
           .sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
         const MIN_GAP_MS = 15 * 24 * 3600 * 1000;
-        let maxGapMs = 0;
-        let splitDate = null;
+        const gaps = [];
         for (let i = 1; i < sortedByDate.length; i++) {
           const gap = new Date(sortedByDate[i].match_date) - new Date(sortedByDate[i - 1].match_date);
-          if (gap > maxGapMs && gap >= MIN_GAP_MS) {
-            maxGapMs = gap;
-            splitDate = sortedByDate[i].match_date;
-          }
+          if (gap >= MIN_GAP_MS) gaps.push({ dateMs: new Date(sortedByDate[i].match_date).getTime(), gap });
         }
-        console.log(`[AC] Usando temporal gap. splitDate=${splitDate}, maxGap=${Math.round(maxGapMs / 86400000)}d`);
+        const neededSplits = Math.max(0, torneioKeys.length - 1);
+        const splitDates = gaps
+          .sort((a, b) => b.gap - a.gap)
+          .slice(0, neededSplits)
+          .map(g => g.dateMs)
+          .sort((a, b) => a - b);
 
         resolvePhase = (m) => {
           const direct = directPhaseMatch(m.phase_key);
           if (direct) return direct;
-          if (!splitDate) return key0;
-          return m.match_date && new Date(m.match_date) >= new Date(splitDate) ? key1 : key0;
+          if (!m.match_date || !splitDates.length) return torneioKeys[0];
+          const ms = new Date(m.match_date).getTime();
+          let idx = 0;
+          for (const sd of splitDates) { if (ms >= sd) idx++; else break; }
+          return torneioKeys[Math.min(idx, torneioKeys.length - 1)];
         };
       }
     } else if (phaseKeyConfirmed) {
@@ -949,7 +935,7 @@ export async function getLeagueSports(req, res) {
       const splitResult = Object.fromEntries(Object.entries(byTorneio).map(([k, v]) => [k, v.length]));
       console.log(`[AC] Split result:`, JSON.stringify(splitResult));
 
-      const torneioKeys = acTorneioKeys.length >= 2
+      const torneioKeys = acTorneioKeys.length
         ? acTorneioKeys
         : ['apertura', 'clausura'];
 

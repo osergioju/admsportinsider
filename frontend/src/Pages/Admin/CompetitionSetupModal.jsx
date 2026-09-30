@@ -17,7 +17,7 @@ const COMPETITION_TYPES = [
   { value: "grupos",                    label: "Grupos",                 desc: "Fase de grupos pura" },
   { value: "grupos_mata_mata",          label: "Grupos + Mata-Mata",     desc: "Grupos seguidos de eliminatória" },
   { value: "misto",                     label: "Misto",                  desc: "Combinação personalizada de fases" },
-  { value: "apertura_clausura",         label: "Apertura / Clausura",    desc: "Dois torneios na mesma temporada" },
+  { value: "apertura_clausura",         label: "Apertura / Clausura",    desc: "Dois ou mais torneios na mesma temporada" },
   { value: "personalizado",             label: "Personalizado",          desc: "Formato livre configurado manualmente" },
 ];
 
@@ -62,6 +62,17 @@ function buildDefaultTorneios() {
     { key: "apertura", nome: "Apertura", startDate: "", fases: DEFAULT_TORNEIO_FASES.map(f => ({ ...f })) },
     { key: "clausura", nome: "Clausura", startDate: "", fases: DEFAULT_TORNEIO_FASES.map(f => ({ ...f })) },
   ];
+}
+
+// Torneio extra além do padrão Apertura/Clausura (temporadas com 3+ torneios,
+// ex: torneio triangular/interzonal sul-americano).
+function novoTorneioVazio(index) {
+  return {
+    key: `torneio_${index + 1}`,
+    nome: `Torneio ${index + 1}`,
+    startDate: "",
+    fases: DEFAULT_TORNEIO_FASES.map(f => ({ ...f })),
+  };
 }
 
 function buildPresetFases(tipoComp) {
@@ -165,6 +176,21 @@ function FaseCard({ fase, index, onChange, onRemove, total, dragHandleProps, isD
       <div>
         <label className={labelClass}>Nome da fase</label>
         <input className={inputClass} value={fase.nome} onChange={e => update("nome", e.target.value)} placeholder="Ex: Oitavas de Final" />
+      </div>
+
+      <div>
+        <label className={labelClass}>
+          Início da fase <span className="normal-case font-normal text-gray-400">(opcional)</span>
+        </label>
+        <input
+          type="date"
+          className={inputClass}
+          value={fase.startDate ?? ""}
+          onChange={e => update("startDate", e.target.value || undefined)}
+        />
+        <p className="mt-1 text-[11px] text-gray-400">
+          Se preenchido, o import classifica as partidas nesta fase automaticamente pela data.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -304,7 +330,7 @@ function DraggableFaseList({ fases, onFasesChange, onFaseChange, onAddFase, onRe
 // TorneioPanel — painel de fases de um torneio (Apertura ou Clausura)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function TorneioPanel({ torneio, color, onChange }) {
+function TorneioPanel({ torneio, color, onChange, onRemove, canRemove }) {
   const dragIdx = useRef(null);
   const [overIdx, setOverIdx] = useState(null);
 
@@ -333,8 +359,17 @@ function TorneioPanel({ torneio, color, onChange }) {
     <div className={`flex-1 min-w-0 border rounded-2xl p-4 space-y-3 ${color.border} ${color.bg}`}>
       <div className="flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${color.dot}`} />
-        <span className={`text-sm font-bold ${color.text}`}>{torneio.nome}</span>
+        <input
+          className={`text-sm font-bold bg-transparent border-none outline-none ${color.text} w-32`}
+          value={torneio.nome}
+          onChange={e => onChange({ ...torneio, nome: e.target.value })}
+        />
         <span className="ml-auto text-[11px] text-gray-400">{torneio.fases.length} fase{torneio.fases.length !== 1 ? "s" : ""}</span>
+        {canRemove && (
+          <button onClick={onRemove} className="text-gray-300 hover:text-red-400 transition-colors" title="Remover torneio">
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
 
       <div>
@@ -389,6 +424,8 @@ function TorneioPanel({ torneio, color, onChange }) {
 const TORNEIO_COLORS = [
   { border: "border-violet-200", bg: "bg-violet-50/40", text: "text-violet-700", dot: "bg-violet-400" },
   { border: "border-blue-200",   bg: "bg-blue-50/40",   text: "text-blue-700",   dot: "bg-blue-400"   },
+  { border: "border-emerald-200",bg: "bg-emerald-50/40",text: "text-emerald-700",dot: "bg-emerald-400" },
+  { border: "border-amber-200",  bg: "bg-amber-50/40",  text: "text-amber-700",  dot: "bg-amber-400"   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -769,17 +806,27 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
                 </div>
               )}
 
-              {/* Apertura / Clausura: dois painéis lado a lado */}
+              {/* Apertura / Clausura: um painel por torneio (2 ou mais) */}
               {isAC ? (
-                <div className="flex gap-4">
-                  {torneios.map((t, i) => (
-                    <TorneioPanel
-                      key={t.key}
-                      torneio={t}
-                      color={TORNEIO_COLORS[i % TORNEIO_COLORS.length]}
-                      onChange={updated => setTorneios(prev => prev.map((x, idx) => idx === i ? updated : x))}
-                    />
-                  ))}
+                <div className="space-y-3">
+                  <div className="flex gap-4 flex-wrap">
+                    {torneios.map((t, i) => (
+                      <TorneioPanel
+                        key={t.key}
+                        torneio={t}
+                        color={TORNEIO_COLORS[i % TORNEIO_COLORS.length]}
+                        onChange={updated => setTorneios(prev => prev.map((x, idx) => idx === i ? updated : x))}
+                        onRemove={() => setTorneios(prev => prev.filter((_, idx) => idx !== i))}
+                        canRemove={torneios.length > 1}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setTorneios(prev => [...prev, novoTorneioVazio(prev.length)])}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-[#7F33D9] hover:text-[#7F33D9] transition-colors"
+                  >
+                    <Plus size={16} /> Adicionar torneio
+                  </button>
                 </div>
               ) : (
                 <DraggableFaseList
@@ -816,9 +863,9 @@ export default function CompetitionSetupModal({ league, onClose, onSaved }) {
                 </div>
 
                 {isAC ? (
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
                     {torneios.map((t, i) => (
-                      <div key={t.key} className={`flex-1 p-3 rounded-xl border ${TORNEIO_COLORS[i % TORNEIO_COLORS.length].border} ${TORNEIO_COLORS[i % TORNEIO_COLORS.length].bg}`}>
+                      <div key={t.key} className={`flex-1 min-w-[180px] p-3 rounded-xl border ${TORNEIO_COLORS[i % TORNEIO_COLORS.length].border} ${TORNEIO_COLORS[i % TORNEIO_COLORS.length].bg}`}>
                         <p className={`text-xs font-bold mb-2 ${TORNEIO_COLORS[i % TORNEIO_COLORS.length].text}`}>{t.nome}</p>
                         <ReviewFases fases={t.fases} />
                       </div>

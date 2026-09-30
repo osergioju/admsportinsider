@@ -2,6 +2,7 @@ import xlsx from "xlsx";
 import slugify from "slugify";
 import db from "../config/db.js";
 import allCountries from "world-countries";
+import { resolvePhaseForMatch } from "../utils/tournamentPhase.js";
 
 const toNumber = (v) => {
   if (!v || v === "N/A") return 0;
@@ -251,6 +252,29 @@ export async function importMatches(req, res) {
     }
 
     /* ------------------------------------------------------------------
+       ESTRUTURA DA TEMPORADA (structure_json) — pra calcular phase_key/
+       group_key automaticamente na hora do insert, em vez de deixar pra
+       mapear depois numa tela separada.
+    ------------------------------------------------------------------ */
+
+    const structRes = await client.query(
+      `SELECT structure_json FROM leagues WHERE id_league = $1`, [idLeague]
+    );
+    const seasonConfig = structRes.rows[0]?.structure_json?.[String(seasonYear)] ?? null;
+
+    // Mapa (phase_key + id_club) → group_key, só é preenchido se o admin já
+    // atribuiu os clubes a grupos (competition_group_clubs) antes de importar.
+    const groupKeyMap = new Map();
+    if (seasonConfig) {
+      const cgcRes = await client.query(
+        `SELECT phase_key, group_key, id_club FROM competition_group_clubs
+         WHERE id_league = $1 AND id_season = $2`,
+        [idLeague, idSeason]
+      );
+      for (const r of cgcRes.rows) groupKeyMap.set(`${r.phase_key}::${r.id_club}`, r.group_key);
+    }
+
+    /* ------------------------------------------------------------------
        PREPARE ROWS
     ------------------------------------------------------------------ */
 
@@ -295,6 +319,9 @@ export async function importMatches(req, res) {
         }
       }
 
+      const { phaseKey } = resolvePhaseForMatch(seasonConfig, matchDate);
+      const groupKey = phaseKey ? (groupKeyMap.get(`${phaseKey}::${homeId}`) ?? null) : null;
+
       matchRows.push([
         idLeague,
         idSeason,
@@ -309,7 +336,9 @@ export async function importMatches(req, res) {
         toInt(row["Game Week"]),
         Number(row["home_team_goal_count"] || 0),
         Number(row["away_team_goal_count"] || 0),
-        // stats columns (index 13–30)
+        phaseKey,
+        groupKey,
+        // stats columns (index 15–32)
         toInt(row["home_team_shots"]),
         toInt(row["away_team_shots"]),
         toInt(row["home_team_shots_on_target"]),
@@ -340,7 +369,7 @@ export async function importMatches(req, res) {
 
     let inserted = 0;
 
-    const MATCH_COLS = 13;
+    const MATCH_COLS = 15; // +2: phase_key, group_key (calculados via structure_json)
     const STATS_COLS = 18; // 14 base + 4 extended (xG pre, ht goals)
 
     // Separa em dois grupos para usar o conflict target correto
@@ -354,6 +383,9 @@ export async function importMatches(req, res) {
     const rowsWithGW = [...dedupWithGW.values()];
     const rowsWithoutGW = matchRows.filter(r => r[10] == null);
 
+    // phase_key/group_key: preserva correção manual já existente (COALESCE com o
+    // valor antigo da linha) — só preenche quando ainda está vazio ou quando o
+    // cálculo automático tem um valor e o antigo não.
     const MATCH_UPDATE = `
       match_timestamp = EXCLUDED.match_timestamp,
       match_date      = EXCLUDED.match_date,
@@ -362,7 +394,9 @@ export async function importMatches(req, res) {
       status          = EXCLUDED.status,
       attendance      = EXCLUDED.attendance,
       referee         = EXCLUDED.referee,
-      stadium_name    = EXCLUDED.stadium_name
+      stadium_name    = EXCLUDED.stadium_name,
+      phase_key       = COALESCE(matches.phase_key, EXCLUDED.phase_key),
+      group_key       = COALESCE(matches.group_key, EXCLUDED.group_key)
     `;
 
     const homeAwayCols = isCountryMode
@@ -381,7 +415,8 @@ export async function importMatches(req, res) {
         INSERT INTO matches (
           id_league, id_season, ${homeAwayCols},
           match_timestamp, match_date, status, attendance,
-          referee, stadium_name, game_week, home_goals, away_goals
+          referee, stadium_name, game_week, home_goals, away_goals,
+          phase_key, group_key
         )
         VALUES ${matchValues}
         ${conflictClause}

@@ -2949,6 +2949,20 @@ export async function saveGroupAssignments(req, res) {
       `, params);
     }
 
+    // Backfill: partidas já importadas antes desta atribuição de grupos ficam
+    // com group_key NULL (o import só calcula group_key se o grupo já existia
+    // na hora do insert). Agora que os grupos existem, preenche retroativamente
+    // pelo clube mandante — cobre o caso de organizar os grupos DEPOIS de importar.
+    await client.query(
+      `UPDATE matches m SET group_key = cgc.group_key
+       FROM competition_group_clubs cgc
+       WHERE m.id_league = $1 AND m.id_season = $2
+         AND m.phase_key = cgc.phase_key AND m.home_club_id = cgc.id_club
+         AND cgc.id_league = $1 AND cgc.id_season = $2
+         AND (m.group_key IS NULL OR m.group_key IS DISTINCT FROM cgc.group_key)`,
+      [idLeague, idSeason]
+    );
+
     await client.query("COMMIT");
     res.json({ ok: true, saved: assignments.length });
   } catch (err) {
@@ -3514,6 +3528,18 @@ export async function saveGroupClubs(req, res) {
       `, params);
       inserted = rows.length;
     }
+
+    // Backfill: preenche group_key retroativamente em partidas já importadas
+    // antes desta atribuição de grupos (mesmo mecanismo de saveGroupAssignments).
+    await client.query(
+      `UPDATE matches m SET group_key = cgc.group_key
+       FROM competition_group_clubs cgc
+       WHERE m.id_league = $1 AND m.id_season = $2
+         AND m.phase_key = cgc.phase_key AND m.home_club_id = cgc.id_club
+         AND cgc.id_league = $1 AND cgc.id_season = $2
+         AND (m.group_key IS NULL OR m.group_key IS DISTINCT FROM cgc.group_key)`,
+      [idLeague, idSeason]
+    );
 
     await client.query("COMMIT");
     res.json({ ok: true, inserted });

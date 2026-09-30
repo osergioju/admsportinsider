@@ -1,5 +1,6 @@
 import db from "../config/db.js";
 import slugify from "slugify";
+import { resolvePhaseForMatch } from "../utils/tournamentPhase.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Import de dados esportivos via API FootyStats (tela /admin/api/importar).
@@ -430,16 +431,19 @@ async function collectData({ token, seasonId, targets, includeIncomplete }) {
   return { teams, matches, usableMatches, players, clubByApiId, unmappedTeams };
 }
 
-function buildMatchRow(m, idLeague, idSeason, clubByApiId) {
+function buildMatchRow(m, idLeague, idSeason, clubByApiId, seasonConfig = null, groupKeyMap = null) {
   const homeId = clubByApiId.get(Number(m.homeID));
   const awayId = clubByApiId.get(Number(m.awayID));
   if (!homeId || !awayId) return null;
   const ts = Number(m.date_unix) > 0 ? Number(m.date_unix) : null;
   const gw = toInt(m.game_week);
   const attendance = toInt(m.attendance);
+  const matchDate = ts ? new Date(ts * 1000) : null;
+  const { phaseKey } = resolvePhaseForMatch(seasonConfig, matchDate);
+  const groupKey = phaseKey ? (groupKeyMap?.get(`${phaseKey}::${homeId}`) ?? null) : null;
   return [
     idLeague, idSeason, homeId, awayId,
-    ts, ts ? new Date(ts * 1000) : null,
+    ts, matchDate,
     m.status ?? null,
     attendance != null && attendance >= 0 ? attendance : null,
     null, // referee (API manda só refereeID)
@@ -447,7 +451,9 @@ function buildMatchRow(m, idLeague, idSeason, clubByApiId) {
     gw != null && gw > 0 ? gw : null,
     toInt(m.homeGoalCount) ?? 0,
     toInt(m.awayGoalCount) ?? 0,
-    // stats (13–30) — mesmo layout do importMatches
+    phaseKey,
+    groupKey,
+    // stats (15–32) — mesmo layout do importMatches
     toInt(m.team_a_shots), toInt(m.team_b_shots),
     toInt(m.team_a_shotsOnTarget), toInt(m.team_b_shotsOnTarget),
     toInt(m.team_a_possession), toInt(m.team_b_possession),
@@ -782,11 +788,30 @@ async function writeOneSeason({ leagueId, seasonYear, targets, mode, data, inclu
 
     /* ───────────── PARTIDAS ───────────── */
     if (targets.matches) {
+      // Estrutura da temporada (structure_json) + atribuição de grupos já feita
+      // (competition_group_clubs), pra calcular phase_key/group_key no insert —
+      // mesma mecânica do import CSV (import.controller.js).
+      const structRes = await client.query(
+        `SELECT structure_json FROM leagues WHERE id_league = $1`, [leagueId]
+      );
+      const seasonConfig = structRes.rows[0]?.structure_json?.[String(seasonYear)] ?? null;
+      const groupKeyMap = new Map();
+      if (seasonConfig) {
+        const cgcRes = await client.query(
+          `SELECT phase_key, group_key, id_club FROM competition_group_clubs
+           WHERE id_league = $1 AND id_season = $2`,
+          [leagueId, idSeason]
+        );
+        for (const r of cgcRes.rows) groupKeyMap.set(`${r.phase_key}::${r.id_club}`, r.group_key);
+      }
+
       const rows = data.usableMatches
-        .map((m) => buildMatchRow(m, leagueId, idSeason, data.clubByApiId))
+        .map((m) => buildMatchRow(m, leagueId, idSeason, data.clubByApiId, seasonConfig, groupKeyMap))
         .filter(Boolean);
 
-      const MATCH_COLS = 13;
+      const MATCH_COLS = 15; // +2: phase_key, group_key
+      // phase_key/group_key: preserva correção manual já existente (COALESCE),
+      // só preenche quando ainda está vazio.
       const MATCH_UPDATE = `
         match_timestamp = EXCLUDED.match_timestamp,
         match_date      = EXCLUDED.match_date,
@@ -794,7 +819,9 @@ async function writeOneSeason({ leagueId, seasonYear, targets, mode, data, inclu
         away_goals      = EXCLUDED.away_goals,
         status          = EXCLUDED.status,
         attendance      = EXCLUDED.attendance,
-        stadium_name    = EXCLUDED.stadium_name
+        stadium_name    = EXCLUDED.stadium_name,
+        phase_key       = COALESCE(matches.phase_key, EXCLUDED.phase_key),
+        group_key       = COALESCE(matches.group_key, EXCLUDED.group_key)
       `;
       const conflictWithGW = mode === "upsert"
         ? `ON CONFLICT (id_league, id_season, home_club_id, away_club_id, game_week) DO UPDATE SET ${MATCH_UPDATE}`
@@ -822,7 +849,8 @@ async function writeOneSeason({ leagueId, seasonYear, targets, mode, data, inclu
           `INSERT INTO matches (
              id_league, id_season, home_club_id, away_club_id,
              match_timestamp, match_date, status, attendance,
-             referee, stadium_name, game_week, home_goals, away_goals
+             referee, stadium_name, game_week, home_goals, away_goals,
+             phase_key, group_key
            ) VALUES ${values} ${conflictClause}
            RETURNING id_match, home_club_id, away_club_id, game_week, match_timestamp`,
           params
