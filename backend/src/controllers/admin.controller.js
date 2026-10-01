@@ -2369,6 +2369,36 @@ export async function uploadClubXlsx(req, res) {
     parsedRows.push({ ...parsed, countryId });
   }
 
+  // ── Evita 2 clubes "Atual" com mesmo nome+país no mesmo lote ────────────
+  // uq_club_name_country só permite 1 linha com lifecycle_phase='Atual' por
+  // (nome, país) — se a planilha trouxer um par histórico+atual com os dois
+  // marcados "Atual" por engano, o INSERT do lote inteiro estoura. Resolve
+  // automático: mantém "Atual" quem tem founded_year mais recente (empate →
+  // quem não tem sufixo de ano no slug, ex "-1878"); o resto do grupo vira
+  // "Histórico" e entra como aviso na resposta pra conferência.
+  const lifecycleFixes = [];
+  const atualGroups = new Map();
+  for (const r of parsedRows) {
+    if (r.lifecyclePhase !== "Atual") continue;
+    const key = `${r.countryId}|${r.namePt.toLowerCase()}`;
+    if (!atualGroups.has(key)) atualGroups.set(key, []);
+    atualGroups.get(key).push(r);
+  }
+  for (const group of atualGroups.values()) {
+    if (group.length < 2) continue;
+    group.sort((a, b) => {
+      const byYear = (b.foundedYear || 0) - (a.foundedYear || 0);
+      if (byYear !== 0) return byYear;
+      const aYearSuffix = /-\d{4}$/.test(a.slug) ? 1 : 0;
+      const bYearSuffix = /-\d{4}$/.test(b.slug) ? 1 : 0;
+      return aYearSuffix - bYearSuffix;
+    });
+    for (const demoted of group.slice(1)) {
+      demoted.lifecyclePhase = "Histórico";
+      lifecycleFixes.push({ nome: demoted.namePt, slug: demoted.slug, mantido_atual: group[0].slug });
+    }
+  }
+
   // ── Cidade e estádio: só linka se já houver cadastro em cities/stadiums ──
   // (essas duas tabelas ainda não têm importação própria; se o slug não existir
   // ainda, o campo fica null em vez de travar a linha inteira)
@@ -2598,6 +2628,7 @@ export async function uploadClubXlsx(req, res) {
       ja_existentes_outro_slug: skippedByIdentityConflict,
       skipped: errors.length,
       clubs_to_disable,
+      ...(lifecycleFixes.length > 0 && { lifecycle_fixes: lifecycleFixes }),
       ...(errors.length > 0 && {
         sample_errors: errors.slice(0, 50),
         total_errors: errors.length,
