@@ -11,10 +11,13 @@
 -- de um país quebrar com violação de unique constraint sempre que esse país
 -- tinha um par histórico+atual, porque a cascata liga os dois de uma vez.
 
--- Corrige 2 pares que vieram do import com os dois lados marcados "Atual"
--- (deveria ser 1 Atual + 1 Histórico, como já está correto no par Miami FC):
-UPDATE clubs SET lifecycle_phase = 'Histórico' WHERE id_club = 34243; -- Airdrieonians 1878 (scotland_airdrieonians-1878)
-UPDATE clubs SET lifecycle_phase = 'Histórico' WHERE id_club = 34891; -- Kuban Krasnodar 1928 (russia_kuban-1928)
+-- OBS: a tabela clubs foi zerada e reimportada em 2026-10 antes de rodar esta
+-- migration, então os 2 pares que vieram errados do import antigo (dois lados
+-- marcados "Atual" em vez de 1 Atual + 1 Histórico, ex: Kuban Krasnodar e
+-- Airdrieonians) não existem mais com esses id_club — se o novo import repetir
+-- o mesmo erro, corrigir lifecycle_phase manualmente pelo admin para o par
+-- duplicado antes de ativar o país em massa, senão esse índice barra o bulk
+-- toggle de novo.
 
 DROP INDEX IF EXISTS uq_club_name_country;
 
