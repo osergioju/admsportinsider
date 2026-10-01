@@ -69,10 +69,14 @@ function parseCoordinates(raw) {
   return { lat, lng, invalid: false };
 }
 
+// Limite defensivo bem acima de qualquer capacidade/ano real (Postgres INTEGER
+// estoura em 2.147.483.647) — dado sujo na planilha vira aviso + linha
+// ignorada NESSE CAMPO, em vez de derrubar a transação inteira no INSERT.
+const INT_CELL_MAX = 2_000_000_000;
 const parseIntCell = (raw) => {
   if (raw == null || raw === "") return { value: null, invalid: false };
   const n = typeof raw === "number" ? Math.trunc(raw) : Number(String(raw).replace(/[.\s]/g, "").replace(",", "."));
-  return Number.isFinite(n) && n >= 0 ? { value: Math.trunc(n), invalid: false } : { value: null, invalid: true };
+  return Number.isFinite(n) && n >= 0 && n <= INT_CELL_MAX ? { value: Math.trunc(n), invalid: false } : { value: null, invalid: true };
 };
 
 /** Prefixo de país num slug de cidade/estádio/federação: "afghanistan_farah" → "afghanistan". */
