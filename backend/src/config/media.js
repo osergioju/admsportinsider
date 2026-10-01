@@ -21,7 +21,7 @@ export const MEDIA_SIZES = {
   xsmall: 96,
 };
 
-export const MEDIA_MAX_BYTES = 3 * 1024 * 1024;
+export const MEDIA_MAX_BYTES = 10 * 1024 * 1024;
 // Proteção contra "decompression bomb" (imagem pequena em bytes, gigante em pixels).
 export const MEDIA_MAX_PIXELS = 50_000_000;
 export const MEDIA_NAME_MAX = 80;

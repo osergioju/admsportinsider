@@ -432,7 +432,7 @@ export default function GestaoLigas() {
                                         <input type="file" accept={IMAGE_ACCEPT} className="hidden" disabled={!!uploadingLogo} onChange={makeLogoUpload("logo_url")} />
                                     </label>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-1.5">A imagem vai para a biblioteca de Mídias (jpeg, jpg, png, gif ou webp · até 3 MB) e a URL é preenchida automaticamente.</p>
+                                <p className="text-xs text-gray-400 mt-1.5">A imagem vai para a biblioteca de Mídias (jpeg, jpg, png, gif ou webp · até 10 MB) e a URL é preenchida automaticamente.</p>
                             </div>
 
                             {/* Escudo alternativo (versão negativa) — usado SÓ na página da liga */}

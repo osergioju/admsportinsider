@@ -2,15 +2,15 @@
 // A validação real é do servidor; aqui só evitamos enviar o que já sabemos que será recusado.
 export const IMAGE_ACCEPT = ".jpg,.jpeg,.png,.gif,.webp,.svg";
 export const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
-export const IMAGE_MAX_BYTES = 3 * 1024 * 1024;
-export const IMAGE_RULES_TEXT = "JPEG, JPG, PNG, GIF, WEBP ou SVG · até 3 MB";
+export const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+export const IMAGE_RULES_TEXT = "JPEG, JPG, PNG, GIF, WEBP ou SVG · até 10 MB";
 
 // Retorna a mensagem de erro (string) ou null se o arquivo pode ser enviado.
 export function validateImageFile(file) {
   if (!file) return "Nenhum arquivo selecionado.";
   const ext = (file.name.split(".").pop() || "").toLowerCase();
   if (!IMAGE_EXTENSIONS.includes(ext)) return "Formato não permitido. Envie apenas jpeg, jpg, png, gif, webp ou svg.";
-  if (file.size > IMAGE_MAX_BYTES) return "Arquivo maior que o limite permitido (3 MB).";
+  if (file.size > IMAGE_MAX_BYTES) return "Arquivo maior que o limite permitido (10 MB).";
   return null;
 }
 
