@@ -50,6 +50,7 @@ export default function EscudosEmMassa() {
   const [shown, setShown] = useState(PAGE_ROWS);
   const [error, setError] = useState("");
   const [ignored, setIgnored] = useState(0);
+  const [noClubBusy, setNoClubBusy] = useState(false);
   const [, rerender] = useReducer((x) => x + 1, 0);
 
   // 3.600+ linhas mudando a cada arquivo: ficam num ref e a tela é atualizada em intervalo, não a cada resposta.
@@ -138,6 +139,35 @@ export default function EscudosEmMassa() {
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
     queue.forEach((r) => { if (r.result === "sending") r.result = null; }); // cancelado no meio
     setPhase("done");
+  };
+
+  // ---------- 2b) "Sem clube": sobe pra biblioteca de Mídias sem vincular, pra linkar depois ----------
+  const sendUnmatchedToLibrary = async () => {
+    const queue = rowsRef.current.filter((r) => r.status === "no_club" && r.result !== "ok");
+    if (!queue.length) return;
+    setNoClubBusy(true);
+    queue.forEach((r) => { r.result = null; r.message = ""; });
+
+    let next = 0;
+    const worker = async () => {
+      while (next < queue.length) {
+        const r = queue[next++];
+        r.result = "sending";
+        rerender();
+        try {
+          const fd = new FormData();
+          fd.append("file", r.file);
+          await api.post("/admin/media", fd, { headers: { "Content-Type": "multipart/form-data" } });
+          r.result = "ok";
+        } catch (err) {
+          r.result = "error";
+          r.message = uploadErrorMessage(err);
+        }
+        rerender();
+      }
+    };
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+    setNoClubBusy(false);
   };
 
   const reset = () => { rowsRef.current = []; setPhase("idle"); setError(""); setIgnored(0); };
@@ -266,6 +296,20 @@ export default function EscudosEmMassa() {
               </>
             )}
           </div>
+
+          {/* "Sem clube": sobe pra biblioteca sem vínculo, pra linkar manualmente depois */}
+          {byStatus("no_club") > 0 && (
+            <div className="flex flex-wrap items-center gap-3 mb-4 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+              <p className="text-xs text-amber-800 flex-1 min-w-[220px]">
+                <b>{byStatus("no_club")}</b> arquivo(s) sem clube correspondente.
+                {" "}{count((r) => r.status === "no_club" && r.result === "ok")} já enviado(s) pra biblioteca de Mídias (sem vínculo) · vincula ao clube manualmente depois.
+              </p>
+              <button className={btnGhost} disabled={noClubBusy || !rows.some((r) => r.status === "no_club" && r.result !== "ok")} onClick={sendUnmatchedToLibrary}>
+                {noClubBusy ? <Loader2 size={15} className="animate-spin" /> : <UploadCloud size={15} />}
+                {noClubBusy ? "Enviando…" : `Enviar sem clube pra biblioteca (${count((r) => r.status === "no_club" && r.result !== "ok")})`}
+              </button>
+            </div>
+          )}
 
           {/* tabela */}
           <div className="flex flex-wrap gap-2 mb-3">
