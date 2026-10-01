@@ -14,7 +14,7 @@ const STATUS = {
   match:          { label: "Casado",            cls: "bg-emerald-50 text-emerald-700 border-emerald-100" },
   no_club:        { label: "Sem clube",         cls: "bg-amber-50 text-amber-700 border-amber-100" },
   invalid_format: { label: "Formato inválido",  cls: "bg-red-50 text-red-600 border-red-100" },
-  too_big:        { label: "Maior que 10 MB",   cls: "bg-red-50 text-red-600 border-red-100" },
+  too_big:        { label: "Maior que 20 MB",   cls: "bg-red-50 text-red-600 border-red-100" },
   duplicate:      { label: "Duplicado",         cls: "bg-amber-50 text-amber-700 border-amber-100" },
 };
 const CREST_LABEL = { none: "Sem escudo", legacy: "Escudo antigo", media: "Escudo da biblioteca" };
