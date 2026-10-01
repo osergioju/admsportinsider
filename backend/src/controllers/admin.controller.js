@@ -2052,6 +2052,7 @@ const CLUB_HEADERS = {
   citySlug: "Slug da cidade",
   cityName: "Cidade",
   stadiumSlug: "Slug do estádio",
+  nameGeneric: "Nome do clube",
   namePt: "Nome do clube (PT)",
   nameEn: "Nome do clube (EN)",
   nameEs: "Nome do clube (ES)",
@@ -2078,7 +2079,9 @@ function parseClubRow(row, headerMap) {
   const get = (key) => row[headerMap[CLUB_HEADERS[key]]];
 
   const slug = toStrCell(get("slug"));
-  const namePt = toStrCell(get("namePt"));
+  // Algumas abas (ex: Tier 2) só preenchem "Nome do clube (PT)" quando o nome em
+  // português difere do genérico — o nome de verdade vem em "Nome do clube" puro.
+  const namePt = toStrCell(get("namePt")) || toStrCell(get("nameGeneric"));
   if (!slug || !namePt) return null;
 
   // Ano isolado (marcado em "Só ano?", ou texto "0000") NÃO vira data: fica só em
